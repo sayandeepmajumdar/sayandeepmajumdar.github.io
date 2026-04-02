@@ -8,6 +8,7 @@ const ROUTES = {
   '#/age-calculator':        'pages/age-calculator.html',
   '#/mortgage-calculator':   'pages/mortgage-calculator.html',
   '#/percentage-calculator': 'pages/percentage-calculator.html',
+  '#/amortization-calculator': 'pages/amortization-calculator.html',
 };
 
 const appEl = () => document.getElementById('app');
@@ -82,8 +83,10 @@ async function navigate() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Update active nav link
-    document.querySelectorAll('.site-nav__link').forEach(a => {
-      a.classList.toggle('active', a.getAttribute('href') === hash);
+    document.querySelectorAll('.site-nav__link, .site-nav__drop-link').forEach(a => {
+      if (a.tagName === 'A') {
+        a.classList.toggle('active', a.getAttribute('href') === hash);
+      }
     });
   } catch (err) {
     console.error('Router fetch error:', err);

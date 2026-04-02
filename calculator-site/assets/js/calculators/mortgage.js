@@ -11,12 +11,12 @@ export function render(container) {
       <div class="calc-panel__body">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="mort-price">Home Price ($)</label>
-            <input class="form-input" type="number" id="mort-price" min="0" placeholder="350000" aria-label="Home price in dollars">
+            <label class="form-label" for="mort-price">Home Price (₹)</label>
+            <input class="form-input" type="number" id="mort-price" min="0" placeholder="5000000" aria-label="Home price in rupees">
           </div>
           <div class="form-group">
-            <label class="form-label" for="mort-down">Down Payment ($)</label>
-            <input class="form-input" type="number" id="mort-down" min="0" placeholder="70000" aria-label="Down payment in dollars">
+            <label class="form-label" for="mort-down">Down Payment (₹)</label>
+            <input class="form-input" type="number" id="mort-down" min="0" placeholder="1000000" aria-label="Down payment in rupees">
           </div>
         </div>
         <div class="form-row">
@@ -110,8 +110,8 @@ export function calculate({ price, down, annualRate, termYears }) {
   return { monthly, totalPayment, totalInterest, principal, rows, n };
 }
 
-function dollar(n) {
-  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatRupee(n) {
+  return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function bindEvents(container) {
@@ -147,20 +147,20 @@ export function bindEvents(container) {
     }
 
     resultEl.classList.remove('result-box--hidden');
-    monthlyEl.textContent = dollar(r.monthly);
+    monthlyEl.textContent = formatRupee(r.monthly);
 
     statsEl.innerHTML = `
       <div class="result-stat">
         <div class="result-stat__label">Loan Amount</div>
-        <div class="result-stat__value">${dollar(r.principal)}</div>
+        <div class="result-stat__value">${formatRupee(r.principal)}</div>
       </div>
       <div class="result-stat">
         <div class="result-stat__label">Total Payment</div>
-        <div class="result-stat__value">${dollar(r.totalPayment)}</div>
+        <div class="result-stat__value">${formatRupee(r.totalPayment)}</div>
       </div>
       <div class="result-stat">
         <div class="result-stat__label">Total Interest</div>
-        <div class="result-stat__value">${dollar(r.totalInterest)}</div>
+        <div class="result-stat__value">${formatRupee(r.totalInterest)}</div>
       </div>
     `;
 
@@ -168,10 +168,10 @@ export function bindEvents(container) {
     tbody.innerHTML = r.rows.map(row => `
       <tr>
         <td>${row.month}</td>
-        <td>${dollar(row.payment)}</td>
-        <td>${dollar(row.principal)}</td>
-        <td>${dollar(row.interest)}</td>
-        <td>${dollar(row.balance)}</td>
+        <td>${formatRupee(row.payment)}</td>
+        <td>${formatRupee(row.principal)}</td>
+        <td>${formatRupee(row.interest)}</td>
+        <td>${formatRupee(row.balance)}</td>
       </tr>
     `).join('');
 
@@ -185,7 +185,7 @@ export function bindEvents(container) {
       `;
     }
 
-    totPrin.textContent  = dollar(r.principal);
-    totInt.textContent   = dollar(r.totalInterest);
+    totPrin.textContent  = formatRupee(r.principal);
+    totInt.textContent   = formatRupee(r.totalInterest);
   });
 }

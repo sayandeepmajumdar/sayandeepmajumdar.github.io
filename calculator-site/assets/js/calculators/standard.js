@@ -163,6 +163,9 @@ export function bindEvents(container) {
   function onKeydown(e) {
     const calc = container.querySelector('#std-calc');
     if (!calc) { document.removeEventListener('keydown', onKeydown); return; }
+    // Ignore keyboard shortcuts if the user is typing in an input (like the search bar)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
     const action = keyMap[e.key];
     if (!action) return;
     e.preventDefault();

@@ -2,7 +2,7 @@
    MAIN.JS — Entry point: wires everything together
    ============================================================ */
 
-import { initTheme }  from './core/theme.js';
+import { initTheme } from './core/theme.js';
 import { initSearch } from './core/search.js';
 import { initRouter } from './core/router.js';
 import { render as renderStd, bindEvents as bindStd } from './calculators/standard.js';
@@ -17,8 +17,8 @@ function buildHomepage() {
       <!-- Hero -->
       <section class="hero">
         <div class="container">
-          <div class="hero__eyebrow">✦ 6 Free Calculators</div>
-          <h1 class="hero__title">Free Online Calculators</h1>
+          <div class="hero__eyebrow">✦ 50+ Free Calculators</div>
+          <h1 class="hero__title">Simplifying Everyday Math</h1>
           <p class="hero__subtitle">
             Fast, accurate, and beautifully designed tools for everyday calculations.
             No ads clutter, no sign-up required.
@@ -71,6 +71,7 @@ function buildHomepage() {
                   <div class="card__title">Financial</div>
                   <div class="card__links">
                     <a class="card__link" href="#/mortgage-calculator">Mortgage Calculator</a>
+                    <a class="card__link" href="#/amortization-calculator">Amortization Calculator</a>
                   </div>
                 </div>
 
@@ -124,21 +125,55 @@ async function loadCalcPage(hash) {
   // Dynamic import map
   const calcMap = {
     '#/scientific-calculator': () => import('./calculators/scientific.js'),
-    '#/bmi-calculator':        () => import('./calculators/bmi.js'),
-    '#/age-calculator':        () => import('./calculators/age.js'),
+    '#/bmi-calculator': () => import('./calculators/bmi.js'),
+    '#/age-calculator': () => import('./calculators/age.js'),
     '#/percentage-calculator': () => import('./calculators/percentage.js'),
-    '#/mortgage-calculator':   () => import('./calculators/mortgage.js'),
+    '#/mortgage-calculator': () => import('./calculators/mortgage.js'),
+    '#/amortization-calculator': () => import('./calculators/amortization.js'),
   };
 
   const loader = calcMap[hash];
   if (!loader) return;
 
-  const mod    = await loader();
-  const mount  = document.getElementById('calc-mount');
+  const mod = await loader();
+  const mount = document.getElementById('calc-mount');
   if (!mount) return;
 
   mod.render(mount);
   mod.bindEvents(mount);
+}
+
+/* ---------- Mobile Menu --------------------------------------- */
+function initMobileMenu() {
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const nav = document.querySelector('.site-nav');
+
+  if (menuBtn && nav) {
+    menuBtn.addEventListener('click', () => {
+      nav.classList.toggle('is-open');
+    });
+  }
+
+  const navItems = document.querySelectorAll('.site-nav__item');
+  navItems.forEach(item => {
+    const link = item.querySelector('.site-nav__link');
+    if (link) {
+      link.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+          e.preventDefault();
+          navItems.forEach(other => {
+            if (other !== item) other.classList.remove('is-active');
+          });
+          item.classList.toggle('is-active');
+        }
+      });
+    }
+  });
+
+  document.addEventListener('page:loaded', () => {
+    if (nav) nav.classList.remove('is-open');
+    navItems.forEach(i => i.classList.remove('is-active'));
+  });
 }
 
 /* ---------- Boot ---------------------------------------------- */
@@ -148,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initTheme();
   initRouter();
+  initMobileMenu();
 
   // After router renders a page, load the matching calc module
   document.addEventListener('page:loaded', (e) => {
