@@ -238,5 +238,97 @@ const templates = {
                 </div>
             `;
         }
+    },
+    
+    ats: {
+        name: 'ATS Optimized',
+        render: (data) => {
+            const formatDescription = (text) => {
+                if (!text) return '';
+                const lines = text.split('\n').filter(line => line.trim().length > 0);
+                if (lines.length === 1) return `<p style="margin: 0.25rem 0; color: #000;">${lines[0]}</p>`;
+                return `<ul style="margin: 0.25rem 0 0.5rem 1.5rem; padding: 0; color: #000; list-style-type: disc;">
+                    ${lines.map(line => `<li style="margin-bottom: 0.25rem;">${line.replace(/^[-\*•]\s*/, '').trim()}</li>`).join('')}
+                </ul>`;
+            };
+
+            return `
+                <div class="resume-container ats-template" style="font-family: Arial, Helvetica, sans-serif; color: #000; max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem;">
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                        <h1 style="margin: 0; font-size: 24pt; font-weight: bold; text-transform: uppercase;">${data.fullName || 'Your Name'}</h1>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 14pt;">${data.title || ''}</p>
+                        <div style="margin-top: 0.5rem; font-size: 11pt;">
+                            ${data.phone ? `<span>${data.phone}</span>` : ''}
+                            ${data.email ? `${data.phone ? ' | ' : ''}<span>${data.email}</span>` : ''}
+                            ${data.location ? `${data.phone || data.email ? ' | ' : ''}<span>${data.location}</span>` : ''}
+                        </div>
+                        ${data.linkedin || data.website ? `
+                            <div style="margin-top: 0.25rem; font-size: 11pt;">
+                                ${data.linkedin ? `<span>${data.linkedin}</span>` : ''}
+                                ${data.website ? `<span style="margin-left: 0.5rem;">${data.linkedin ? '| ' : ''}${data.website}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${data.summary ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 0.5rem; padding-bottom: 0.25rem; color: #000;">Professional Summary</h2>
+                            <p style="margin: 0; font-size: 11pt; line-height: 1.5; color: #000;">${data.summary}</p>
+                        </div>
+                    ` : ''}
+
+                    ${data.experience && data.experience.length > 0 ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 0.5rem; padding-bottom: 0.25rem; color: #000;">Work Experience</h2>
+                            ${data.experience.map(exp => `
+                                <div style="margin-bottom: 1rem; font-size: 11pt;">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                        <h3 style="margin: 0; font-size: 11pt; font-weight: bold; color: #000;">${exp.company}</h3>
+                                        <span style="font-size: 11pt; font-weight: bold;">${exp.startDate} - ${exp.endDate}</span>
+                                    </div>
+                                    <p style="margin: 0.25rem 0; font-style: italic; color: #000;">${exp.position}</p>
+                                    ${formatDescription(exp.description)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${data.education && data.education.length > 0 ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 0.5rem; padding-bottom: 0.25rem; color: #000;">Education</h2>
+                            ${data.education.map(edu => `
+                                <div style="margin-bottom: 0.75rem; font-size: 11pt;">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                        <h3 style="margin: 0; font-size: 11pt; font-weight: bold; color: #000;">${edu.school}</h3>
+                                        <span style="font-size: 11pt; font-weight: bold;">${edu.graduationYear}</span>
+                                    </div>
+                                    <p style="margin: 0.25rem 0; font-style: italic; color: #000;">${edu.degree}${edu.field ? `, ${edu.field}` : ''}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${data.skills && data.skills.length > 0 ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 0.5rem; padding-bottom: 0.25rem; color: #000;">Skills</h2>
+                            <p style="margin: 0; font-size: 11pt; line-height: 1.5; color: #000;">${data.skills.join(', ')}</p>
+                        </div>
+                    ` : ''}
+
+                    ${data.projects && data.projects.length > 0 ? `
+                        <div style="margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 12pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 0.5rem; padding-bottom: 0.25rem; color: #000;">Projects</h2>
+                            ${data.projects.map(proj => `
+                                <div style="margin-bottom: 1rem; font-size: 11pt;">
+                                    <h3 style="margin: 0; font-size: 11pt; font-weight: bold; color: #000;">${proj.title}</h3>
+                                    ${formatDescription(proj.description)}
+                                    ${proj.link ? `<p style="margin: 0.25rem 0; color: #000;">URL: ${proj.link}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
     }
 };

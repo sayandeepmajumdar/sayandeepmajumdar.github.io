@@ -358,7 +358,8 @@ const app = {
     // Complete resume
     completeResume() {
         this.saveFormData();
-        this.showSuccess('Resume Created!', 'Your resume is ready. Download or generate your portfolio now!');
+        this.previewResume();
+        showSuccess('Resume Created!', 'Your resume is ready. Download or generate your portfolio now!');
     },
 
     // Preview resume

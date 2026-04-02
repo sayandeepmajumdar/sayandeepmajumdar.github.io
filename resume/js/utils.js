@@ -22,25 +22,52 @@ function closeSuccess() {
     document.getElementById('successModal').classList.add('hidden');
 }
 
-// Generate PDF from HTML
+// Generate PDF from HTML (Using print dialog for ATS-friendly selectable text)
 async function generatePDF(htmlContent, filename = 'resume.pdf') {
     showLoading();
     try {
-        const element = document.createElement('div');
-        element.innerHTML = htmlContent;
-        
-        const opt = {
-            margin: 10,
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
 
-        await html2pdf().set(opt).from(element).save();
-        
-        hideLoading();
-        showSuccess('PDF Downloaded!', 'Your resume has been downloaded successfully.');
+        const frameDoc = printFrame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>${filename || 'Resume'}</title>
+                    <style>
+                        body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        @page { margin: 15mm; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                </body>
+            </html>
+        `);
+        frameDoc.close();
+
+        // Give it a moment to render
+        setTimeout(() => {
+            hideLoading();
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(printFrame);
+            }, 1000);
+            
+            showSuccess('Print ready!', 'Please select "Save as PDF" in the print dialog to get an ATS-friendly, text-searchable document.');
+        }, 500);
+
     } catch (error) {
         hideLoading();
         console.error('Error generating PDF:', error);
