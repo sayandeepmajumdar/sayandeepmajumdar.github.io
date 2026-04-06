@@ -9,6 +9,23 @@ const ROUTES = {
   '#/mortgage-calculator':   'pages/mortgage-calculator.html',
   '#/percentage-calculator': 'pages/percentage-calculator.html',
   '#/amortization-calculator': 'pages/amortization-calculator.html',
+  '#/random-calculator': 'pages/random-calculator.html',
+  '#/percent-error-calculator': 'pages/percent-error-calculator.html',
+  '#/exponent-calculator': 'pages/exponent-calculator.html',
+  '#/binary-calculator': 'pages/binary-calculator.html',
+  '#/hex-calculator': 'pages/hex-calculator.html',
+  '#/half-life-calculator': 'pages/half-life-calculator.html',
+  '#/quadratic-calculator': 'pages/quadratic-calculator.html',
+  '#/log-calculator': 'pages/log-calculator.html',
+  '#/ratio-calculator': 'pages/ratio-calculator.html',
+  '#/root-calculator': 'pages/root-calculator.html',
+  '#/lcm-calculator': 'pages/lcm-calculator.html',
+  '#/gcf-calculator': 'pages/gcf-calculator.html',
+  '#/factor-calculator': 'pages/factor-calculator.html',
+  '#/round-calculator': 'pages/round-calculator.html',
+  '#/matrix-calculator': 'pages/matrix-calculator.html',
+  '#/scientific-notation-calculator': 'pages/scientific-notation-calculator.html',
+  '#/big-number-calculator': 'pages/big-number-calculator.html',
 };
 
 const appEl = () => document.getElementById('app');
