@@ -1,21 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./index.html"],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Space Grotesk", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"]
       },
       colors: {
-        ink: "#081326",
-        panel: "#0d1d38",
-        accent: "#1fb6ff",
-        signal: "#21e6c1",
-        warm: "#ffcc66"
-      },
-      boxShadow: {
-        glow: "0 0 0 1px rgba(31,182,255,0.2), 0 16px 48px rgba(31,182,255,0.22)"
+        paper: "rgb(var(--color-bg) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        ink: "rgb(var(--color-text) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        line: "rgb(var(--color-line) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)"
       }
     }
   },
