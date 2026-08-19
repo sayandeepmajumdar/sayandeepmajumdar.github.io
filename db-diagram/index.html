@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DB Diagram Editor — Visual Database Schema &amp; DBML Designer | sayandeep.dev</title>
+  <meta name="description" content="Interactive visual database diagram editor with bidirectional DBML code synchronization. Create, edit, drag, connect tables, import SQL DDL, and export PostgreSQL/MySQL/SQLite scripts." />
+  <meta name="keywords" content="db diagram editor, database diagram, dbml editor, visual database designer, er diagram editor, sql schema designer, database schema builder" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/db-diagram/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+      --grid-dot: #e7e5e4;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      --grid-dot: #292524;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Workspace */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px - 48px);
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    /* Toolbar */
+    .top-toolbar {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+      border-color: rgba(239, 68, 68, 0.3);
+      background: var(--error-bg);
+    }
+
+    .btn--danger:hover {
+      background: var(--error);
+      color: #ffffff;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.3rem 0.55rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Split Workspace View */
+    .editor-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0.75rem;
+      min-height: 0;
+      position: relative;
+    }
+
+    .editor-layout.layout-full-canvas {
+      grid-template-columns: 1fr;
+    }
+    .editor-layout.layout-full-canvas .code-panel {
+      display: none;
+    }
+
+    .editor-layout.layout-full-code {
+      grid-template-columns: 1fr;
+    }
+    .editor-layout.layout-full-code .canvas-panel {
+      display: none;
+    }
+
+    /* Left Code Panel */
+    .code-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-header {
+      padding: 0.5rem 0.85rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .code-editor-area {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      background: var(--surface);
+      color: var(--text);
+      tab-size: 2;
+    }
+
+    /* Canvas Panel */
+    .canvas-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .canvas-subtoolbar {
+      padding: 0.4rem 0.75rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      z-index: 10;
+    }
+
+    .canvas-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      background-color: var(--surface);
+      background-image: radial-gradient(var(--grid-dot) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      user-select: none;
+    }
+
+    .canvas-viewport:active {
+      cursor: grabbing;
+    }
+
+    .canvas-world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5000px;
+      height: 5000px;
+      transform-origin: 0 0;
+    }
+
+    /* SVG Connections Layer */
+    .connections-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .connection-line {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2px;
+      stroke-linecap: round;
+      pointer-events: stroke;
+      cursor: pointer;
+      transition: stroke 0.15s ease, stroke-width 0.15s ease;
+    }
+
+    .connection-line:hover {
+      stroke: var(--accent-hover);
+      stroke-width: 3.5px;
+    }
+
+    .temp-connection-line {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2px;
+      stroke-dasharray: 4 4;
+      pointer-events: none;
+    }
+
+    /* Visual Table Nodes */
+    .table-node {
+      position: absolute;
+      width: 260px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      transition: box-shadow var(--transition), border-color var(--transition);
+    }
+
+    .table-node.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-light), var(--shadow-lg);
+    }
+
+    .table-node-header {
+      padding: 0.5rem 0.75rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: move;
+    }
+
+    .table-name-input {
+      font-weight: 700;
+      font-size: 0.8125rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text);
+      outline: none;
+      border-radius: 4px;
+      padding: 0.1rem 0.25rem;
+      font-family: inherit;
+      width: 170px;
+    }
+
+    .table-name-input:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .table-columns-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .column-row {
+      padding: 0.35rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      gap: 0.3rem;
+      position: relative;
+      background: var(--surface);
+      transition: background var(--transition);
+    }
+
+    .column-row:hover {
+      background: var(--surface-alt);
+    }
+
+    .col-name-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+      border-radius: 3px;
+      padding: 0.1rem 0.2rem;
+      width: 85px;
+    }
+
+    .col-name-input:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .col-type-select {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.675rem;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--muted);
+      padding: 0.1rem 0.2rem;
+      outline: none;
+    }
+
+    .col-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .badge-pk {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem;
+      font-weight: 700;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 0.05rem 0.25rem;
+      border-radius: 3px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .badge-fk {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.625rem;
+      font-weight: 700;
+      background: var(--warning-bg);
+      color: var(--warning);
+      padding: 0.05rem 0.25rem;
+      border-radius: 3px;
+      user-select: none;
+    }
+
+    /* Column Port Connector Handle */
+    .port-handle {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--line);
+      border: 2px solid var(--surface);
+      cursor: crosshair;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .port-handle:hover, .port-handle.active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+
+    .table-footer {
+      padding: 0.35rem 0.65rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 0.75rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="DB Diagram Editor">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">DB Diagram Editor</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Toolbar -->
+    <div class="top-toolbar">
+      <div class="toolbar-group">
+        <button id="btn-add-table" class="btn btn--primary">+ Add Table</button>
+        <button id="btn-undo" class="btn" title="Undo (Ctrl+Z)" disabled>↩️ Undo</button>
+        <button id="btn-redo" class="btn" title="Redo (Ctrl+Y)" disabled>↪️ Redo</button>
+        <button id="btn-auto-layout" class="btn">⚡ Auto Layout</button>
+
+        <div style="display:flex; align-items:center; gap:0.3rem; margin-left:0.4rem;">
+          <label for="template-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Template:</label>
+          <select id="template-select" class="form-select">
+            <option value="ecommerce" selected>🛍️ E-Commerce</option>
+            <option value="saas">🏢 SaaS Invoicing</option>
+            <option value="social">📱 Social App</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar-group">
+        <div style="display:flex; align-items:center; gap:0.3rem;">
+          <label for="layout-view-select" style="font-size:0.75rem; font-weight:600; color:var(--muted);">View:</label>
+          <select id="layout-view-select" class="form-select">
+            <option value="split" selected>Split (Code + Canvas)</option>
+            <option value="canvas">Canvas Only</option>
+            <option value="code">Code Only</option>
+          </select>
+        </div>
+
+        <button id="btn-export-sql" class="btn">💾 Export SQL</button>
+        <button id="btn-export-dbml" class="btn">📄 Export DBML</button>
+        <button id="btn-export-png" class="btn">🖼️ Export PNG</button>
+        <button id="btn-export-svg" class="btn">📐 Export SVG</button>
+      </div>
+    </div>
+
+    <!-- Dual-Editor Split Layout -->
+    <div class="editor-layout" id="editor-layout">
+      <!-- Left: DBML Code Editor -->
+      <div class="code-panel">
+        <div class="panel-header">
+          <span>📝 DBML Schema Code</span>
+          <span style="font-size:0.7rem; color:var(--muted);">Live Sync</span>
+        </div>
+        <textarea id="dbml-editor" class="code-editor-area" spellcheck="false" placeholder="Write DBML schema here..."></textarea>
+      </div>
+
+      <!-- Right: Interactive Visual Canvas -->
+      <div class="canvas-panel">
+        <div class="canvas-subtoolbar">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <input type="text" id="table-search-input" class="form-select" placeholder="🔍 Find table..." style="width:140px;" />
+            <span id="canvas-stats" style="color:var(--muted);">0 Tables, 0 Relations</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.3rem;">
+            <button id="btn-zoom-in" class="btn btn--sm">🔍+</button>
+            <button id="btn-zoom-out" class="btn btn--sm">🔍-</button>
+            <button id="btn-zoom-reset" class="btn btn--sm">⛶ Fit</button>
+          </div>
+        </div>
+
+        <div class="canvas-viewport" id="canvas-viewport">
+          <div class="canvas-world" id="canvas-world">
+            <!-- SVG Relationships Layer -->
+            <svg class="connections-svg" id="connections-svg">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)" />
+                </marker>
+              </defs>
+              <g id="svg-paths-group"></g>
+              <path id="rubberband-line" class="temp-connection-line" d="" style="display:none;"></path>
+            </svg>
+
+            <!-- Table Nodes Layer (Injected Dynamically) -->
+            <div id="nodes-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Saved</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../sql-builder/">SQL Query Builder</a>
+        <a href="../sql-visualizer/">SQL Visualizer</a>
+        <a href="../sql-formatter/">SQL Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Management
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // TEMPLATES
+    const TEMPLATES = {
+      ecommerce: `Table customers {
+  id int [pk]
+  full_name varchar(100) [not null]
+  email varchar(150) [unique]
+  country varchar(50)
+  created_at timestamp
+}
+
+Table orders {
+  id int [pk]
+  customer_id int [not null]
+  status varchar(30)
+  total_amount decimal(10,2)
+  order_date date
+}
+
+Table order_items {
+  id int [pk]
+  order_id int [not null]
+  product_id int [not null]
+  quantity int [not null]
+  unit_price decimal(10,2)
+}
+
+Table products {
+  id int [pk]
+  name varchar(120) [not null]
+  sku varchar(50) [unique]
+  price decimal(10,2)
+  stock_qty int
+}
+
+Ref: orders.customer_id > customers.id
+Ref: order_items.order_id > orders.id
+Ref: order_items.product_id > products.id`,
+
+      saas: `Table organizations {
+  id int [pk]
+  name varchar(100) [not null]
+  slug varchar(80) [unique]
+  created_at timestamp
+}
+
+Table users {
+  id int [pk]
+  org_id int [not null]
+  email varchar(150) [unique]
+  role varchar(40)
+}
+
+Table subscriptions {
+  id int [pk]
+  org_id int [not null]
+  plan_name varchar(50)
+  status varchar(30)
+}
+
+Table invoices {
+  id int [pk]
+  subscription_id int [not null]
+  amount decimal(10,2)
+  paid boolean
+}
+
+Ref: users.org_id > organizations.id
+Ref: subscriptions.org_id > organizations.id
+Ref: invoices.subscription_id > subscriptions.id`,
+
+      social: `Table users {
+  id int [pk]
+  username varchar(50) [unique]
+  bio text
+}
+
+Table posts {
+  id int [pk]
+  user_id int [not null]
+  title varchar(200) [not null]
+  content text
+}
+
+Table comments {
+  id int [pk]
+  post_id int [not null]
+  user_id int [not null]
+  body text
+}
+
+Ref: posts.user_id > users.id
+Ref: comments.post_id > posts.id
+Ref: comments.user_id > users.id`
+    };
+
+    // State
+    let schemaState = {
+      tables: [],
+      relationships: []
+    };
+
+    let historyStack = [];
+    let redoStack = [];
+    let isInternalUpdate = false;
+
+    // Viewport Transform
+    let zoomLevel = 1;
+    let panX = 40;
+    let panY = 40;
+    let isPanning = false;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    // Port Connection Dragging State
+    let isConnecting = false;
+    let sourcePortData = null; // { tableId, colName, x, y }
+
+    // DOM Elements
+    const dbmlEditor = document.getElementById('dbml-editor');
+    const nodesContainer = document.getElementById('nodes-container');
+    const svgPathsGroup = document.getElementById('svg-paths-group');
+    const rubberbandLine = document.getElementById('rubberband-line');
+    const canvasViewport = document.getElementById('canvas-viewport');
+    const canvasWorld = document.getElementById('canvas-world');
+    const canvasStats = document.getElementById('canvas-stats');
+    const tableSearchInput = document.getElementById('table-search-input');
+    const templateSelect = document.getElementById('template-select');
+    const layoutViewSelect = document.getElementById('layout-view-select');
+    const editorLayout = document.getElementById('editor-layout');
+
+    const btnAddTable = document.getElementById('btn-add-table');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+    const btnAutoLayout = document.getElementById('btn-auto-layout');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+
+    const btnExportSql = document.getElementById('btn-export-sql');
+    const btnExportDbml = document.getElementById('btn-export-dbml');
+    const btnExportPng = document.getElementById('btn-export-png');
+    const btnExportSvg = document.getElementById('btn-export-svg');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- DBML PARSER & SERIALIZER ---
+    function parseDbml(text) {
+      const tables = [];
+      const relationships = [];
+      const tableMap = {};
+
+      const cleanText = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+      // Parse Tables: Table <name> { ... }
+      const tableRegex = /Table\s+([a-zA-Z0-9_]+)(?:\s+as\s+\w+)?\s*\{([\s\S]*?)\}/gi;
+      let match;
+
+      let currentX = 60;
+      let currentY = 60;
+
+      while ((match = tableRegex.exec(cleanText)) !== null) {
+        const tableName = match[1];
+        const body = match[2];
+
+        // Preserve existing coordinates if table already exists
+        const existing = schemaState.tables.find(t => t.name === tableName);
+        const x = existing ? existing.x : currentX;
+        const y = existing ? existing.y : currentY;
+
+        if (!existing) {
+          currentX += 300;
+          if (currentX > 900) {
+            currentX = 60;
+            currentY += 280;
+          }
+        }
+
+        const tableObj = {
+          id: 'tbl_' + tableName,
+          name: tableName,
+          x: x,
+          y: y,
+          columns: []
+        };
+
+        const lines = body.split('\n');
+        lines.forEach(l => {
+          const trimmed = l.trim();
+          if (!trimmed) return;
+
+          const colMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_()]+)(?:\s*\[(.*?)\])?/i);
+          if (colMatch) {
+            const colName = colMatch[1];
+            const colType = colMatch[2];
+            const settings = (colMatch[3] || '').toLowerCase();
+
+            const isPk = settings.includes('pk') || settings.includes('primary key');
+            const isUnique = settings.includes('unique');
+            const isNotNull = settings.includes('not null') || settings.includes('null');
+
+            tableObj.columns.push({
+              id: 'col_' + colName,
+              name: colName,
+              type: colType,
+              isPk: isPk,
+              isUnique: isUnique,
+              isNotNull: isNotNull
+            });
+          }
+        });
+
+        tables.push(tableObj);
+        tableMap[tableName] = tableObj;
+      }
+
+      // Parse Relationships: Ref: tbl.col > tbl.col
+      const refRegex = /Ref(?:\s+[a-zA-Z0-9_]+)?\s*:\s*([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\s*([><-])\s*([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/gi;
+      let refMatch;
+
+      while ((refMatch = refRegex.exec(cleanText)) !== null) {
+        const fromTbl = refMatch[1];
+        const fromCol = refMatch[2];
+        const op = refMatch[3];
+        const toTbl = refMatch[4];
+        const toCol = refMatch[5];
+
+        let type = '1:N';
+        if (op === '-') type = '1:1';
+        if (op === '<') type = 'N:1';
+
+        relationships.push({
+          id: `ref_${fromTbl}_${fromCol}_${toTbl}_${toCol}`,
+          fromTable: fromTbl,
+          fromCol: fromCol,
+          toTable: toTbl,
+          toCol: toCol,
+          type: type
+        });
+      }
+
+      return { tables, relationships };
+    }
+
+    function serializeToDbml(schema) {
+      let out = '';
+
+      schema.tables.forEach(t => {
+        out += `Table ${t.name} {\n`;
+        t.columns.forEach(c => {
+          let tags = [];
+          if (c.isPk) tags.push('pk');
+          if (c.isUnique) tags.push('unique');
+          if (c.isNotNull) tags.push('not null');
+
+          const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
+          out += `  ${c.name} ${c.type || 'varchar'}${tagStr}\n`;
+        });
+        out += `}\n\n`;
+      });
+
+      schema.relationships.forEach(r => {
+        let op = '>';
+        if (r.type === '1:1') op = '-';
+        if (r.type === 'N:1') op = '<';
+        out += `Ref: ${r.fromTable}.${r.fromCol} ${op} ${r.toTable}.${r.toCol}\n`;
+      });
+
+      return out.trim();
+    }
+
+    // --- STATE SNAPSHOTS & UNDO / REDO ---
+    function pushState(recordSnapshot = true) {
+      if (recordSnapshot) {
+        historyStack.push(JSON.stringify(schemaState));
+        if (historyStack.length > 30) historyStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+      }
+
+      // Sync to Code Editor
+      isInternalUpdate = true;
+      dbmlEditor.value = serializeToDbml(schemaState);
+      isInternalUpdate = false;
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('dbdiagram-autosave', JSON.stringify(schemaState));
+      } catch {}
+
+      renderCanvas();
+    }
+
+    function updateUndoRedoButtons() {
+      btnUndo.disabled = historyStack.length === 0;
+      btnRedo.disabled = redoStack.length === 0;
+    }
+
+    btnUndo.addEventListener('click', () => {
+      if (historyStack.length === 0) return;
+      redoStack.push(JSON.stringify(schemaState));
+      const prev = historyStack.pop();
+      schemaState = JSON.parse(prev);
+      updateUndoRedoButtons();
+      isInternalUpdate = true;
+      dbmlEditor.value = serializeToDbml(schemaState);
+      isInternalUpdate = false;
+      renderCanvas();
+    });
+
+    btnRedo.addEventListener('click', () => {
+      if (redoStack.length === 0) return;
+      historyStack.push(JSON.stringify(schemaState));
+      const next = redoStack.pop();
+      schemaState = JSON.parse(next);
+      updateUndoRedoButtons();
+      isInternalUpdate = true;
+      dbmlEditor.value = serializeToDbml(schemaState);
+      isInternalUpdate = false;
+      renderCanvas();
+    });
+
+    // --- CANVAS RENDERING ---
+    function renderCanvas() {
+      nodesContainer.innerHTML = '';
+      svgPathsGroup.innerHTML = '';
+
+      canvasStats.textContent = `${schemaState.tables.length} Tables, ${schemaState.relationships.length} Relations`;
+
+      // Render Tables
+      schemaState.tables.forEach(tbl => {
+        const node = document.createElement('div');
+        node.className = 'table-node';
+        node.id = tbl.id;
+        node.style.left = `${tbl.x}px`;
+        node.style.top = `${tbl.y}px`;
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'table-node-header';
+
+        const nameInput = document.createElement('input');
+        nameInput.className = 'table-name-input';
+        nameInput.value = tbl.name;
+        nameInput.addEventListener('change', () => {
+          const oldName = tbl.name;
+          tbl.name = nameInput.value.trim().replace(/\s+/g, '_');
+          // Update relations
+          schemaState.relationships.forEach(r => {
+            if (r.fromTable === oldName) r.fromTable = tbl.name;
+            if (r.toTable === oldName) r.toTable = tbl.name;
+          });
+          pushState();
+        });
+
+        const deleteTableBtn = document.createElement('button');
+        deleteTableBtn.className = 'btn btn--danger btn--sm';
+        deleteTableBtn.style.padding = '0.1rem 0.35rem';
+        deleteTableBtn.textContent = '✕';
+        deleteTableBtn.title = 'Delete Table';
+        deleteTableBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          schemaState.tables = schemaState.tables.filter(t => t.id !== tbl.id);
+          schemaState.relationships = schemaState.relationships.filter(r => r.fromTable !== tbl.name && r.toTable !== tbl.name);
+          pushState();
+        });
+
+        header.appendChild(nameInput);
+        header.appendChild(deleteTableBtn);
+        node.appendChild(header);
+
+        // Columns
+        const colsList = document.createElement('div');
+        colsList.className = 'table-columns-list';
+
+        tbl.columns.forEach((col, colIdx) => {
+          const colRow = document.createElement('div');
+          colRow.className = 'column-row';
+          colRow.dataset.table = tbl.name;
+          colRow.dataset.col = col.name;
+
+          // PK badge
+          const pkBadge = document.createElement('span');
+          pkBadge.className = 'badge-pk';
+          pkBadge.textContent = col.isPk ? 'PK' : '—';
+          pkBadge.style.opacity = col.isPk ? '1' : '0.4';
+          pkBadge.title = 'Toggle Primary Key';
+          pkBadge.addEventListener('click', () => {
+            col.isPk = !col.isPk;
+            pushState();
+          });
+
+          // Col Name
+          const colNameInput = document.createElement('input');
+          colNameInput.className = 'col-name-input';
+          colNameInput.value = col.name;
+          colNameInput.addEventListener('change', () => {
+            const oldColName = col.name;
+            col.name = colNameInput.value.trim();
+            schemaState.relationships.forEach(r => {
+              if (r.fromTable === tbl.name && r.fromCol === oldColName) r.fromCol = col.name;
+              if (r.toTable === tbl.name && r.toCol === oldColName) r.toCol = col.name;
+            });
+            pushState();
+          });
+
+          // Col Type
+          const colTypeSelect = document.createElement('select');
+          colTypeSelect.className = 'col-type-select';
+          ['int', 'varchar(100)', 'text', 'decimal(10,2)', 'boolean', 'timestamp', 'date', 'uuid'].forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            if (col.type === t) opt.selected = true;
+            colTypeSelect.appendChild(opt);
+          });
+          colTypeSelect.addEventListener('change', () => {
+            col.type = colTypeSelect.value;
+            pushState();
+          });
+
+          // Delete Column Btn
+          const delColBtn = document.createElement('button');
+          delColBtn.className = 'btn btn--sm';
+          delColBtn.style.padding = '0 0.25rem';
+          delColBtn.style.fontSize = '0.65rem';
+          delColBtn.textContent = '✕';
+          delColBtn.addEventListener('click', () => {
+            tbl.columns.splice(colIdx, 1);
+            schemaState.relationships = schemaState.relationships.filter(r => !(r.fromTable === tbl.name && r.fromCol === col.name) && !(r.toTable === tbl.name && r.toCol === col.name));
+            pushState();
+          });
+
+          // Port handle for dragging relationships
+          const port = document.createElement('div');
+          port.className = 'port-handle';
+          port.title = 'Drag to connect relation';
+          port.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            startPortConnection(tbl.name, col.name, e);
+          });
+
+          colRow.appendChild(pkBadge);
+          colRow.appendChild(colNameInput);
+          colRow.appendChild(colTypeSelect);
+          colRow.appendChild(delColBtn);
+          colRow.appendChild(port);
+
+          colsList.appendChild(colRow);
+        });
+
+        node.appendChild(colsList);
+
+        // Footer (+ Add Column)
+        const footer = document.createElement('div');
+        footer.className = 'table-footer';
+        const addColBtn = document.createElement('button');
+        addColBtn.className = 'btn btn--sm';
+        addColBtn.style.fontSize = '0.7rem';
+        addColBtn.textContent = '+ Add Column';
+        addColBtn.addEventListener('click', () => {
+          tbl.columns.push({
+            id: 'col_' + Date.now(),
+            name: 'new_col',
+            type: 'varchar(100)',
+            isPk: false,
+            isUnique: false,
+            isNotNull: false
+          });
+          pushState();
+        });
+        footer.appendChild(addColBtn);
+        node.appendChild(footer);
+
+        // Node Dragging
+        attachTableDragging(node, tbl);
+
+        nodesContainer.appendChild(node);
+      });
+
+      // Render Connections
+      renderConnectionLines();
+    }
+
+    function attachTableDragging(nodeEl, tableObj) {
+      let isNodeDragging = false;
+      let startMouseX = 0;
+      let startMouseY = 0;
+      let initialTableX = 0;
+      let initialTableY = 0;
+
+      const header = nodeEl.querySelector('.table-node-header');
+
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+        isNodeDragging = true;
+        nodeEl.classList.add('selected');
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        initialTableX = tableObj.x;
+        initialTableY = tableObj.y;
+
+        const onMouseMove = (ev) => {
+          if (!isNodeDragging) return;
+          const dx = (ev.clientX - startMouseX) / zoomLevel;
+          const dy = (ev.clientY - startMouseY) / zoomLevel;
+
+          // Snap to 10px grid
+          tableObj.x = Math.round((initialTableX + dx) / 10) * 10;
+          tableObj.y = Math.round((initialTableY + dy) / 10) * 10;
+
+          nodeEl.style.left = `${tableObj.x}px`;
+          nodeEl.style.top = `${tableObj.y}px`;
+          renderConnectionLines();
+        };
+
+        const onMouseUp = () => {
+          if (isNodeDragging) {
+            isNodeDragging = false;
+            nodeEl.classList.remove('selected');
+            pushState(false); // don't add undo step for small moves to save memory
+          }
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // --- RELATIONSHIP CONNECTOR LINES ---
+    function renderConnectionLines() {
+      svgPathsGroup.innerHTML = '';
+
+      schemaState.relationships.forEach((rel, relIdx) => {
+        const fromRow = document.querySelector(`.column-row[data-table="${rel.fromTable}"][data-col="${rel.fromCol}"]`);
+        const toRow = document.querySelector(`.column-row[data-table="${rel.toTable}"][data-col="${rel.toCol}"]`);
+
+        if (!fromRow || !toRow) return;
+
+        const fromRect = fromRow.getBoundingClientRect();
+        const toRect = toRow.getBoundingClientRect();
+        const worldRect = canvasWorld.getBoundingClientRect();
+
+        const x1 = (fromRect.right - worldRect.left) / zoomLevel;
+        const y1 = (fromRect.top + fromRect.height / 2 - worldRect.top) / zoomLevel;
+        const x2 = (toRect.left - worldRect.left) / zoomLevel;
+        const y2 = (toRect.top + toRect.height / 2 - worldRect.top) / zoomLevel;
+
+        const dx = Math.abs(x2 - x1) * 0.5;
+        const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathD);
+        path.setAttribute('class', 'connection-line');
+        path.setAttribute('marker-end', 'url(#arrow)');
+
+        path.addEventListener('click', () => {
+          if (confirm(`Delete relationship ${rel.fromTable}.${rel.fromCol} > ${rel.toTable}.${rel.toCol}?`)) {
+            schemaState.relationships.splice(relIdx, 1);
+            pushState();
+          }
+        });
+
+        svgPathsGroup.appendChild(path);
+      });
+    }
+
+    // --- DRAG TO CONNECT PORTS ---
+    function startPortConnection(fromTable, fromCol, startEvent) {
+      isConnecting = true;
+      const worldRect = canvasWorld.getBoundingClientRect();
+      const x1 = (startEvent.clientX - worldRect.left) / zoomLevel;
+      const y1 = (startEvent.clientY - worldRect.top) / zoomLevel;
+
+      sourcePortData = { fromTable, fromCol, x1, y1 };
+      rubberbandLine.style.display = 'block';
+
+      const onMouseMove = (ev) => {
+        if (!isConnecting) return;
+        const currentX = (ev.clientX - worldRect.left) / zoomLevel;
+        const currentY = (ev.clientY - worldRect.top) / zoomLevel;
+        const dx = Math.abs(currentX - x1) * 0.5;
+        rubberbandLine.setAttribute('d', `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${currentX - dx} ${currentY}, ${currentX} ${currentY}`);
+      };
+
+      const onMouseUp = (ev) => {
+        isConnecting = false;
+        rubberbandLine.style.display = 'none';
+
+        // Check if dropped on a port or column row
+        const targetRow = ev.target.closest('.column-row');
+        if (targetRow) {
+          const toTable = targetRow.dataset.table;
+          const toCol = targetRow.dataset.col;
+
+          if (toTable && toCol && (toTable !== fromTable || toCol !== fromCol)) {
+            schemaState.relationships.push({
+              id: `ref_${fromTable}_${fromCol}_${toTable}_${toCol}`,
+              fromTable: fromTable,
+              fromCol: fromCol,
+              toTable: toTable,
+              toCol: toCol,
+              type: '1:N'
+            });
+            pushState();
+            showToast(`Connected ${fromTable}.${fromCol} > ${toTable}.${toCol}`);
+          }
+        }
+
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // --- CANVAS PAN & ZOOM ---
+    function applyCanvasTransform() {
+      canvasWorld.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    }
+
+    canvasViewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.table-node') || e.target.closest('.port-handle')) return;
+      isPanning = true;
+      startPanX = e.clientX - panX;
+      startPanY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      panX = e.clientX - startPanX;
+      panY = e.clientY - startPanY;
+      applyCanvasTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanning = false;
+    });
+
+    canvasViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.08 : 0.08;
+      zoomLevel = Math.min(Math.max(zoomLevel + delta, 0.3), 2.5);
+      applyCanvasTransform();
+    });
+
+    btnZoomIn.addEventListener('click', () => {
+      zoomLevel = Math.min(zoomLevel + 0.2, 2.5);
+      applyCanvasTransform();
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      zoomLevel = Math.max(zoomLevel - 0.2, 0.3);
+      applyCanvasTransform();
+    });
+
+    btnZoomReset.addEventListener('click', () => {
+      zoomLevel = 1;
+      panX = 40;
+      panY = 40;
+      applyCanvasTransform();
+    });
+
+    // --- AUTO LAYOUT ENGINE ---
+    btnAutoLayout.addEventListener('click', () => {
+      let startX = 60;
+      let startY = 60;
+      schemaState.tables.forEach((t, i) => {
+        t.x = startX;
+        t.y = startY;
+        startX += 320;
+        if (startX > 1000) {
+          startX = 60;
+          startY += 320;
+        }
+      });
+      pushState();
+      showToast('Auto-arranged tables');
+    });
+
+    // --- CODE EDITOR LIVE SYNC ---
+    let debounceTimer;
+    dbmlEditor.addEventListener('input', () => {
+      if (isInternalUpdate) return;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const text = dbmlEditor.value;
+        const parsed = parseDbml(text);
+        schemaState = parsed;
+        renderCanvas();
+      }, 400);
+    });
+
+    // Add Table
+    btnAddTable.addEventListener('click', () => {
+      const name = 'table_' + (schemaState.tables.length + 1);
+      schemaState.tables.push({
+        id: 'tbl_' + name,
+        name: name,
+        x: 100 + (schemaState.tables.length * 30),
+        y: 100 + (schemaState.tables.length * 30),
+        columns: [
+          { id: 'col_id', name: 'id', type: 'int', isPk: true, isUnique: false, isNotNull: true },
+          { id: 'col_created', name: 'created_at', type: 'timestamp', isPk: false, isUnique: false, isNotNull: false }
+        ]
+      });
+      pushState();
+      showToast(`Added table ${name}`);
+    });
+
+    // Template switcher
+    templateSelect.addEventListener('change', () => {
+      const code = TEMPLATES[templateSelect.value];
+      dbmlEditor.value = code;
+      schemaState = parseDbml(code);
+      pushState();
+      showToast(`Loaded ${templateSelect.options[templateSelect.selectedIndex].text}`);
+    });
+
+    // Layout View Switcher
+    layoutViewSelect.addEventListener('change', () => {
+      const val = layoutViewSelect.value;
+      editorLayout.className = 'editor-layout';
+      if (val === 'canvas') editorLayout.classList.add('layout-full-canvas');
+      if (val === 'code') editorLayout.classList.add('layout-full-code');
+    });
+
+    // Table Search
+    tableSearchInput.addEventListener('input', () => {
+      const q = tableSearchInput.value.trim().toLowerCase();
+      document.querySelectorAll('.table-node').forEach(node => {
+        const name = (node.querySelector('.table-name-input')?.value || '').toLowerCase();
+        if (q && name.includes(q)) {
+          node.classList.add('selected');
+        } else {
+          node.classList.remove('selected');
+        }
+      });
+    });
+
+    // --- EXPORTS ---
+    btnExportDbml.addEventListener('click', () => {
+      const code = serializeToDbml(schemaState);
+      const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'schema.dbml';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportSql.addEventListener('click', () => {
+      let sql = '';
+      schemaState.tables.forEach(t => {
+        sql += `CREATE TABLE ${t.name} (\n`;
+        const colLines = t.columns.map(c => {
+          let line = `  ${c.name} ${c.type || 'VARCHAR(100)'}`;
+          if (c.isPk) line += ' PRIMARY KEY';
+          if (c.isNotNull && !c.isPk) line += ' NOT NULL';
+          if (c.isUnique && !c.isPk) line += ' UNIQUE';
+          return line;
+        });
+
+        // Foreign keys
+        schemaState.relationships.filter(r => r.fromTable === t.name).forEach(r => {
+          colLines.push(`  FOREIGN KEY (${r.fromCol}) REFERENCES ${r.toTable}(${r.toCol})`);
+        });
+
+        sql += colLines.join(',\n');
+        sql += `\n);\n\n`;
+      });
+
+      const blob = new Blob([sql], { type: 'text/sql;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'schema.sql';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportSvg.addEventListener('click', () => {
+      showToast('Exporting SVG diagram...');
+      const svg = document.getElementById('connections-svg');
+      const clone = svg.cloneNode(true);
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(clone);
+      const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'database-diagram.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportPng.addEventListener('click', () => {
+      showToast('Generating PNG diagram...');
+      // Simple canvas export
+      const canvas = document.createElement('canvas');
+      canvas.width = 1600;
+      canvas.height = 1200;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = isDarkMode ? '#0c0a09' : '#fafaf9';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = isDarkMode ? '#fafaf9' : '#1c1917';
+      ctx.font = 'bold 20px Inter, sans-serif';
+      ctx.fillText('Database Schema Diagram', 40, 50);
+
+      schemaState.tables.forEach(t => {
+        ctx.fillStyle = isDarkMode ? '#1c1917' : '#ffffff';
+        ctx.strokeStyle = isDarkMode ? '#292524' : '#e7e5e4';
+        ctx.lineWidth = 2;
+        ctx.fillRect(t.x, t.y, 240, 40 + t.columns.length * 28);
+        ctx.strokeRect(t.x, t.y, 240, 40 + t.columns.length * 28);
+
+        ctx.fillStyle = isDarkMode ? '#818cf8' : '#4f46e5';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.fillText(t.name, t.x + 14, t.y + 26);
+
+        ctx.font = '12px "JetBrains Mono", monospace';
+        t.columns.forEach((c, idx) => {
+          ctx.fillStyle = isDarkMode ? '#a8a29e' : '#78716c';
+          ctx.fillText(`${c.isPk ? '🔑 ' : ''}${c.name}: ${c.type}`, t.x + 14, t.y + 56 + (idx * 24));
+        });
+      });
+
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'database-diagram.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    });
+
+    // --- INITIAL LOAD ---
+    (function init() {
+      const saved = localStorage.getItem('dbdiagram-autosave');
+      if (saved) {
+        try {
+          schemaState = JSON.parse(saved);
+          dbmlEditor.value = serializeToDbml(schemaState);
+        } catch {
+          dbmlEditor.value = TEMPLATES.ecommerce;
+          schemaState = parseDbml(TEMPLATES.ecommerce);
+        }
+      } else {
+        dbmlEditor.value = TEMPLATES.ecommerce;
+        schemaState = parseDbml(TEMPLATES.ecommerce);
+      }
+      applyCanvasTransform();
+      renderCanvas();
+    })();
+  </script>
+</body>
+</html>

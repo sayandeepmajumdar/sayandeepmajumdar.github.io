@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL Formatter &amp; Beautifier — Multi-Dialect SQL Pretty Printer | sayandeep.dev</title>
+  <meta name="description" content="Free online SQL formatter and beautifier. Multi-dialect support for PostgreSQL, MySQL, T-SQL, SQLite, BigQuery, Snowflake, and Oracle. Customizable keyword casing, comma position, indentation, and minify mode." />
+  <meta name="keywords" content="sql formatter, sql beautifier, format sql, sql pretty print, postgresql formatter, mysql formatter, t-sql formatter, sqlite formatter, bigquery formatter, minify sql" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/sql-formatter/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗄️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- sql-formatter CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql-formatter/15.4.4/sql-formatter.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Toolbar */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.2rem;
+      border-radius: var(--radius-sm);
+      gap: 0.2rem;
+    }
+
+    .pill-btn {
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all var(--transition);
+    }
+
+    .pill-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Stats Banner */
+    .stats-banner {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .badge-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+    }
+
+    /* Split Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: stretch;
+      min-height: 520px;
+    }
+
+    @media (max-width: 900px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .output-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .output-tab {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .output-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--surface);
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      padding: 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+    }
+
+    /* Diff View */
+    .diff-view-wrap {
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      max-height: 480px;
+    }
+
+    .diff-line {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 2px;
+    }
+
+    .diff-line.added { background: var(--success-bg); color: var(--success); }
+    .diff-line.removed { background: var(--error-bg); color: var(--error); }
+    .diff-line.unchanged { color: var(--muted); }
+
+    /* Cheatsheet Table */
+    .cheatsheet-wrap {
+      padding: 1rem;
+      font-size: 0.8125rem;
+      overflow-x: auto;
+    }
+
+    .cheat-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .cheat-table th, .cheat-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--line);
+    }
+
+    .cheat-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    .cheat-table code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--surface-alt);
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+    }
+
+    /* Diagnostics Warnings */
+    .warnings-list {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      font-size: 0.8125rem;
+    }
+
+    .warning-item {
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    /* Options Drawer */
+    .options-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-top: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 0.85rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="SQL Formatter">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">SQL Formatter &amp; Beautifier</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-left">
+          <div class="pill-group" id="mode-pill-group">
+            <button class="pill-btn active" data-mode="beautify">✨ Beautify / Format</button>
+            <button class="pill-btn" data-mode="minify">⚡ Minify / Single-Line</button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="dialect-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Dialect:</label>
+            <select id="dialect-select" class="form-select">
+              <option value="postgresql" selected>PostgreSQL</option>
+              <option value="mysql">MySQL / MariaDB</option>
+              <option value="sql">Standard SQL (ANSI)</option>
+              <option value="tsql">SQL Server (T-SQL)</option>
+              <option value="sqlite">SQLite</option>
+              <option value="bigquery">Google BigQuery</option>
+              <option value="snowflake">Snowflake</option>
+              <option value="plsql">Oracle PL/SQL</option>
+            </select>
+          </div>
+
+          <label class="btn btn--sm" style="cursor:pointer;">
+            📁 Upload .sql
+            <input type="file" id="file-upload" accept=".sql,.txt" style="display:none;" />
+          </label>
+          <button id="btn-sample" class="btn btn--sm">Load Sample</button>
+          <button id="btn-clear" class="btn btn--sm">Clear</button>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="btn-copy-output" class="btn btn--primary btn--sm">📋 Copy Output</button>
+          <button id="btn-download" class="btn btn--sm">💾 Download .sql</button>
+        </div>
+      </div>
+
+      <!-- Compression & Metrics Banner -->
+      <div class="stats-banner" id="stats-banner">
+        <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+          <div class="stat-item">
+            <span class="stat-label">Statements:</span>
+            <span class="stat-value" id="stat-statements">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Lines:</span>
+            <span class="stat-value" id="stat-lines">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Chars:</span>
+            <span class="stat-value" id="stat-chars">0</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span id="dialect-badge" class="badge-pill">PostgreSQL</span>
+          <span id="diag-badge" style="font-size:0.75rem; font-weight:600; color:var(--success);">✓ Valid Tokens</span>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Left: Input Pane -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span>Raw SQL Query Input</span>
+            <span style="font-size:0.75rem; color:var(--muted); font-weight:500;">Live auto-format</span>
+          </div>
+          <div class="panel-body">
+            <textarea id="raw-sql-input" class="code-textarea" placeholder="Paste or type your SQL queries here (multiple queries supported with ;)..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Right: Tabbed Output Pane -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="output-tabs" id="output-tabs">
+              <button class="output-tab active" data-tab="code">✨ Formatted SQL</button>
+              <button class="output-tab" data-tab="diff">🔍 Diff View</button>
+              <button class="output-tab" data-tab="diag">⚠️ Diagnostics (<span id="diag-count">0</span>)</button>
+              <button class="output-tab" data-tab="cheat">📚 Dialect Cheatsheet</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <!-- View 1: Formatted Output -->
+            <div id="view-code" style="height:100%; display:flex; flex-direction:column;">
+              <textarea id="formatted-sql-output" class="code-textarea" readonly placeholder="Formatted SQL will appear here..." spellcheck="false"></textarea>
+            </div>
+
+            <!-- View 2: Visual Diff Viewer -->
+            <div id="view-diff" class="diff-view-wrap" style="display:none;">
+              <div id="diff-content"></div>
+            </div>
+
+            <!-- View 3: Diagnostics & Token Warnings -->
+            <div id="view-diag" class="warnings-list" style="display:none;">
+              <div id="diag-content"></div>
+            </div>
+
+            <!-- View 4: Dialect Cheatsheet -->
+            <div id="view-cheat" class="cheatsheet-wrap" style="display:none;">
+              <table class="cheat-table">
+                <thead>
+                  <tr>
+                    <th>Dialect</th>
+                    <th>Identifier Quotes</th>
+                    <th>String Concat</th>
+                    <th>Pagination</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>PostgreSQL</strong></td>
+                    <td><code>"table"</code></td>
+                    <td><code>'a' || 'b'</code></td>
+                    <td><code>LIMIT 10 OFFSET 20</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>MySQL / MariaDB</strong></td>
+                    <td><code>`table`</code></td>
+                    <td><code>CONCAT('a', 'b')</code></td>
+                    <td><code>LIMIT 20, 10</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>SQL Server (T-SQL)</strong></td>
+                    <td><code>[table]</code></td>
+                    <td><code>'a' + 'b'</code></td>
+                    <td><code>OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>SQLite</strong></td>
+                    <td><code>"table"</code> or <code>`table`</code></td>
+                    <td><code>'a' || 'b'</code></td>
+                    <td><code>LIMIT 10 OFFSET 20</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>BigQuery</strong></td>
+                    <td><code>`dataset.table`</code></td>
+                    <td><code>CONCAT('a', 'b')</code></td>
+                    <td><code>LIMIT 10 OFFSET 20</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Snowflake</strong></td>
+                    <td><code>"table"</code></td>
+                    <td><code>'a' || 'b'</code></td>
+                    <td><code>LIMIT 10 OFFSET 20</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Oracle PL/SQL</strong></td>
+                    <td><code>"table"</code></td>
+                    <td><code>'a' || 'b'</code></td>
+                    <td><code>FETCH FIRST 10 ROWS ONLY</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configurable Options Panel -->
+      <div class="options-card">
+        <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.25rem;">Formatting Options</div>
+        <div class="options-grid">
+          <div>
+            <label for="opt-case" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Keyword Casing:</label>
+            <select id="opt-case" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="upper" selected>UPPERCASE (Standard)</option>
+              <option value="lower">lowercase</option>
+              <option value="preserve">Preserve as typed</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="opt-comma" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Comma Position:</label>
+            <select id="opt-comma" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="trailing" selected>Trailing (col1, col2)</option>
+              <option value="leading">Leading (, col1, col2)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="opt-indent" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Indentation Size:</label>
+            <select id="opt-indent" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="2" selected>2 Spaces</option>
+              <option value="4">4 Spaces</option>
+              <option value="tab">1 Tab</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="opt-lines-between" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Lines Between Queries:</label>
+            <select id="opt-lines-between" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="2" selected>2 Blank Lines</option>
+              <option value="1">1 Blank Line</option>
+            </select>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center;">
+            <label class="checkbox-label" title="Preserve -- and /* */ comments">
+              <input type="checkbox" id="opt-comments" checked />
+              <span>Preserve SQL Comments</span>
+            </label>
+            <label class="checkbox-label" title="Break AND / OR conditions in WHERE onto separate lines">
+              <input type="checkbox" id="opt-break-conditions" checked />
+              <span>Break AND / OR onto new lines</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+        <a href="../json-to-csv/">JSON ⮂ CSV</a>
+        <a href="../csv-to-pdf/">CSV to PDF</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // DOM Elements
+    const rawSqlInput = document.getElementById('raw-sql-input');
+    const formattedSqlOutput = document.getElementById('formatted-sql-output');
+    const dialectSelect = document.getElementById('dialect-select');
+    const modePillGroup = document.getElementById('mode-pill-group');
+
+    const statStatements = document.getElementById('stat-statements');
+    const statLines = document.getElementById('stat-lines');
+    const statChars = document.getElementById('stat-chars');
+    const dialectBadge = document.getElementById('dialect-badge');
+    const diagBadge = document.getElementById('diag-badge');
+    const diagCount = document.getElementById('diag-count');
+
+    const outputTabs = document.getElementById('output-tabs');
+    const viewCode = document.getElementById('view-code');
+    const viewDiff = document.getElementById('view-diff');
+    const viewDiag = document.getElementById('view-diag');
+    const viewCheat = document.getElementById('view-cheat');
+    const diffContent = document.getElementById('diff-content');
+    const diagContent = document.getElementById('diag-content');
+
+    const fileUpload = document.getElementById('file-upload');
+    const btnSample = document.getElementById('btn-sample');
+    const btnClear = document.getElementById('btn-clear');
+    const btnCopyOutput = document.getElementById('btn-copy-output');
+    const btnDownload = document.getElementById('btn-download');
+
+    // Options
+    const optCase = document.getElementById('opt-case');
+    const optComma = document.getElementById('opt-comma');
+    const optIndent = document.getElementById('opt-indent');
+    const optLinesBetween = document.getElementById('opt-lines-between');
+    const optComments = document.getElementById('opt-comments');
+    const optBreakConditions = document.getElementById('opt-break-conditions');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let currentMode = 'beautify'; // 'beautify' | 'minify'
+    let currentTab = 'code';
+    let debounceTimer = null;
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Sample SQL with CTE, Window function, JOIN, and aggregate
+    const SAMPLE_SQL = `-- Monthly Revenue Summary & Customer Tier Analysis
+WITH MonthlySales AS (
+  SELECT 
+    DATE_TRUNC('month', o.order_date) AS order_month,
+    c.customer_id,
+    c.full_name,
+    SUM(oi.quantity * oi.unit_price) AS total_spent,
+    COUNT(DISTINCT o.order_id) AS total_orders
+  FROM orders o
+  INNER JOIN customers c ON o.customer_id = c.customer_id
+  LEFT JOIN order_items oi ON o.order_id = oi.order_id
+  WHERE o.status IN ('completed', 'shipped') 
+    AND o.order_date >= '2025-01-01'
+    AND (c.country = 'US' OR c.country = 'CA')
+  GROUP BY 1, 2, 3
+  HAVING SUM(oi.quantity * oi.unit_price) > 500
+)
+SELECT 
+  order_month,
+  customer_id,
+  full_name,
+  total_spent,
+  total_orders,
+  RANK() OVER (PARTITION BY order_month ORDER BY total_spent DESC) AS revenue_rank,
+  CASE 
+    WHEN total_spent >= 5000 THEN 'VIP Diamond'
+    WHEN total_spent >= 2000 THEN 'Platinum'
+    ELSE 'Gold'
+  END AS tier_status
+FROM MonthlySales
+ORDER BY order_month DESC, total_spent DESC
+LIMIT 100;
+
+-- Simple Inventory Status Check
+SELECT p.product_id, p.sku, p.name, inv.quantity_on_hand, inv.reorder_level
+FROM products p
+JOIN inventory inv ON p.product_id = inv.product_id
+WHERE inv.quantity_on_hand <= inv.reorder_level;
+`;
+
+    // Mode Switcher
+    modePillGroup.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modePillGroup.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        formatSql();
+      });
+    });
+
+    // Tab Switcher
+    outputTabs.querySelectorAll('.output-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        outputTabs.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+
+        viewCode.style.display = currentTab === 'code' ? 'flex' : 'none';
+        viewDiff.style.display = currentTab === 'diff' ? 'block' : 'none';
+        viewDiag.style.display = currentTab === 'diag' ? 'flex' : 'none';
+        viewCheat.style.display = currentTab === 'cheat' ? 'block' : 'none';
+
+        if (currentTab === 'diff') renderDiffView();
+      });
+    });
+
+    // Event Listeners
+    rawSqlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(formatSql, 150);
+    });
+
+    dialectSelect.addEventListener('change', () => {
+      dialectBadge.textContent = dialectSelect.options[dialectSelect.selectedIndex].text.split(' ')[0];
+      formatSql();
+    });
+
+    [optCase, optComma, optIndent, optLinesBetween, optComments, optBreakConditions].forEach(el => {
+      el.addEventListener('change', formatSql);
+    });
+
+    btnSample.addEventListener('click', () => {
+      rawSqlInput.value = SAMPLE_SQL;
+      formatSql();
+      showToast('Loaded sample SQL queries');
+    });
+
+    btnClear.addEventListener('click', () => {
+      rawSqlInput.value = '';
+      formattedSqlOutput.value = '';
+      statStatements.textContent = '0';
+      statLines.textContent = '0';
+      statChars.textContent = '0';
+      diagCount.textContent = '0';
+      diagBadge.textContent = '✓ Ready';
+      diagContent.innerHTML = '';
+    });
+
+    btnCopyOutput.addEventListener('click', () => {
+      const val = formattedSqlOutput.value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => showToast('Formatted SQL copied to clipboard!'));
+    });
+
+    btnDownload.addEventListener('click', () => {
+      const val = formattedSqlOutput.value;
+      if (!val) return;
+      const blob = new Blob([val], { type: 'text/sql;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentMode === 'minify' ? 'query.min.sql' : 'query.formatted.sql';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        rawSqlInput.value = ev.target.result;
+        formatSql();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+    });
+
+    // --- MAIN SQL FORMATTING ENGINE ---
+    function formatSql() {
+      const raw = rawSqlInput.value;
+      if (!raw.trim()) {
+        formattedSqlOutput.value = '';
+        statStatements.textContent = '0';
+        statLines.textContent = '0';
+        statChars.textContent = '0';
+        diagCount.textContent = '0';
+        diagBadge.textContent = '✓ Ready';
+        diagContent.innerHTML = '';
+        return;
+      }
+
+      let result = '';
+      const dialect = dialectSelect.value;
+      const keywordCase = optCase.value;
+      const commaPosition = optComma.value;
+      const indentVal = optIndent.value;
+      const tabWidth = indentVal === 'tab' ? 2 : parseInt(indentVal, 10);
+      const useTabs = indentVal === 'tab';
+      const linesBetweenQueries = parseInt(optLinesBetween.value, 10);
+
+      // Split multiple statements by ; while preserving quoted strings
+      const statements = splitStatements(raw);
+      statStatements.textContent = statements.length;
+
+      if (currentMode === 'minify') {
+        result = minifySqlEngine(raw);
+      } else {
+        if (window.sqlFormatter && typeof window.sqlFormatter.format === 'function') {
+          try {
+            const formattedList = statements.map(stmt => {
+              return window.sqlFormatter.format(stmt, {
+                language: dialect,
+                tabWidth: tabWidth,
+                useTabs: useTabs,
+                keywordCase: keywordCase,
+                commaPosition: commaPosition,
+                linesBetweenQueries: linesBetweenQueries
+              });
+            });
+            result = formattedList.join('\n\n');
+          } catch (err) {
+            result = fallbackFormatEngine(raw);
+          }
+        } else {
+          result = fallbackFormatEngine(raw);
+        }
+      }
+
+      formattedSqlOutput.value = result;
+      statLines.textContent = result.split('\n').length;
+      statChars.textContent = result.length;
+
+      runDiagnostics(raw);
+
+      if (currentTab === 'diff') renderDiffView();
+    }
+
+    // Statement splitter aware of strings and comments
+    function splitStatements(sql) {
+      const stmts = [];
+      let current = '';
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inBlockComment = false;
+      let inLineComment = false;
+
+      for (let i = 0; i < sql.length; i++) {
+        const char = sql[i];
+        const next = sql[i + 1];
+
+        // Comments
+        if (!inSingleQuote && !inDoubleQuote) {
+          if (!inBlockComment && !inLineComment && char === '-' && next === '-') {
+            inLineComment = true;
+          } else if (inLineComment && (char === '\n' || char === '\r')) {
+            inLineComment = false;
+          } else if (!inBlockComment && !inLineComment && char === '/' && next === '*') {
+            inBlockComment = true;
+          } else if (inBlockComment && char === '*' && next === '/') {
+            inBlockComment = false;
+            current += '*/';
+            i++;
+            continue;
+          }
+        }
+
+        // Strings
+        if (!inBlockComment && !inLineComment) {
+          if (char === "'" && sql[i - 1] !== '\\') inSingleQuote = !inSingleQuote;
+          if (char === '"' && sql[i - 1] !== '\\') inDoubleQuote = !inDoubleQuote;
+        }
+
+        if (char === ';' && !inSingleQuote && !inDoubleQuote && !inBlockComment && !inLineComment) {
+          current += ';';
+          if (current.trim()) stmts.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+
+      if (current.trim()) stmts.push(current.trim());
+      return stmts.length > 0 ? stmts : [sql];
+    }
+
+    // Minify Engine
+    function minifySqlEngine(sql) {
+      let min = sql;
+      // Strip comments if requested
+      if (!optComments.checked) {
+        min = min.replace(/\/\*[\s\S]*?\*\/|--.*$/gm, '');
+      }
+      return min
+        .replace(/\s+/g, ' ')
+        .replace(/\s*([,;()=><+])\s*/g, '$1')
+        .trim();
+    }
+
+    // Fallback rule-based formatter
+    function fallbackFormatEngine(sql) {
+      const keywords = [
+        'SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'FULL JOIN', 'CROSS JOIN',
+        'ON', 'GROUP BY', 'HAVING', 'ORDER BY', 'LIMIT', 'OFFSET', 'UNION', 'UNION ALL', 'VALUES',
+        'INSERT INTO', 'UPDATE', 'SET', 'DELETE FROM', 'CREATE TABLE', 'ALTER TABLE', 'DROP TABLE',
+        'WITH', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'AND', 'OR', 'IN', 'IS NULL', 'IS NOT NULL'
+      ];
+
+      let formatted = sql;
+      if (optCase.value === 'upper') {
+        keywords.forEach(kw => {
+          const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+          formatted = formatted.replace(regex, kw);
+        });
+      }
+
+      return formatted;
+    }
+
+    // Diagnostics Engine
+    function runDiagnostics(sql) {
+      const warnings = [];
+
+      let parenCount = 0;
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inBlockComment = false;
+
+      for (let i = 0; i < sql.length; i++) {
+        const char = sql[i];
+        const next = sql[i + 1];
+
+        if (!inSingleQuote && !inDoubleQuote) {
+          if (!inBlockComment && char === '/' && next === '*') {
+            inBlockComment = true;
+            i++;
+            continue;
+          }
+          if (inBlockComment && char === '*' && next === '/') {
+            inBlockComment = false;
+            i++;
+            continue;
+          }
+        }
+        if (inBlockComment) continue;
+
+        if (char === "'" && sql[i - 1] !== '\\') inSingleQuote = !inSingleQuote;
+        if (char === '"' && sql[i - 1] !== '\\') inDoubleQuote = !inDoubleQuote;
+        if (inSingleQuote || inDoubleQuote) continue;
+
+        if (char === '(') parenCount++;
+        if (char === ')') parenCount--;
+      }
+
+      if (inSingleQuote) warnings.push("Unclosed single quote literal (') detected");
+      if (inDoubleQuote) warnings.push('Unclosed double quote identifier (") detected');
+      if (inBlockComment) warnings.push('Unclosed block comment (/*) detected');
+      if (parenCount > 0) warnings.push(`Missing ${parenCount} closing parenthesis ')'`);
+      if (parenCount < 0) warnings.push(`Extra ${Math.abs(parenCount)} closing parenthesis ')' without opening '('`);
+
+      diagCount.textContent = warnings.length;
+      if (warnings.length === 0) {
+        diagBadge.textContent = '✓ Valid Tokens';
+        diagBadge.style.color = 'var(--success)';
+        diagContent.innerHTML = '<div style="color:var(--success); font-weight:600;">✓ No unclosed quotes, comments, or mismatched parentheses found!</div>';
+      } else {
+        diagBadge.textContent = `⚠️ ${warnings.length} Warnings`;
+        diagBadge.style.color = 'var(--warning)';
+        diagContent.innerHTML = warnings.map(w => `<div class="warning-item"><span>⚠️</span><div>${w}</div></div>`).join('');
+      }
+    }
+
+    // Visual Diff Viewer
+    function renderDiffView() {
+      const rawLines = rawSqlInput.value.split('\n');
+      const outLines = formattedSqlOutput.value.split('\n');
+
+      let html = '';
+      const max = Math.max(rawLines.length, outLines.length);
+
+      for (let i = 0; i < Math.min(max, 100); i++) {
+        const r = rawLines[i] || '';
+        const o = outLines[i] || '';
+        if (r === o) {
+          html += `<div class="diff-line unchanged"><span style="width:30px; opacity:0.5;">${i+1}</span> <span>${escapeHtml(r)}</span></div>`;
+        } else {
+          if (r) html += `<div class="diff-line removed"><span style="width:30px;">-</span> <span>${escapeHtml(r)}</span></div>`;
+          if (o) html += `<div class="diff-line added"><span style="width:30px;">+</span> <span>${escapeHtml(o)}</span></div>`;
+        }
+      }
+
+      if (max > 100) {
+        html += `<div style="padding:0.5rem; color:var(--muted); font-size:0.75rem;">... showing first 100 lines</div>`;
+      }
+
+      diffContent.innerHTML = html || '<div style="color:var(--muted);">No differences found.</div>';
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize with sample
+    rawSqlInput.value = SAMPLE_SQL;
+    formatSql();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Editor — Live GFM Preview, Math &amp; Diagrams | sayandeep.dev</title>
+  <meta name="description" content="Free online Markdown editor with live split-pane preview, GitHub Flavored Markdown (GFM), syntax highlighting, KaTeX LaTeX math, Mermaid diagrams, table helper, and HTML/PDF export." />
+  <meta name="keywords" content="markdown editor, live markdown preview, gfm editor, markdown to html, katex math markdown, mermaid diagram markdown, online markdown editor" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/markdown-editor/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Marked.js, DOMPurify, Highlight.js, KaTeX, Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Workspace */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px - 44px);
+      padding: 0.75rem 1.25rem 0;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    /* Top Action Bar & Formatting Toolbar */
+    .toolbar-container {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.45rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--tool {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.45rem;
+      min-width: 28px;
+      justify-content: center;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    /* Split Workspace */
+    .workspace-split {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      min-height: 0;
+      position: relative;
+    }
+
+    .workspace-split.layout-editor-only {
+      grid-template-columns: 1fr;
+    }
+    .workspace-split.layout-editor-only .preview-panel {
+      display: none;
+    }
+
+    .workspace-split.layout-preview-only {
+      grid-template-columns: 1fr;
+    }
+    .workspace-split.layout-preview-only .editor-panel {
+      display: none;
+    }
+
+    /* Editor Panel */
+    .editor-panel, .preview-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-header {
+      padding: 0.45rem 0.85rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .markdown-textarea {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.845rem;
+      line-height: 1.6;
+      background: var(--surface);
+      color: var(--text);
+      tab-size: 2;
+    }
+
+    /* Rendered Markdown Preview Area */
+    .preview-content {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      overflow-y: auto;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9375rem;
+      line-height: 1.7;
+    }
+
+    /* Markdown Typography Styles */
+    .preview-content h1, .preview-content h2, .preview-content h3, .preview-content h4, .preview-content h5, .preview-content h6 {
+      color: var(--text);
+      font-weight: 700;
+      margin-top: 1.25rem;
+      margin-bottom: 0.6rem;
+      line-height: 1.3;
+    }
+
+    .preview-content h1 { font-size: 1.75rem; border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; }
+    .preview-content h2 { font-size: 1.35rem; border-bottom: 1px solid var(--line); padding-bottom: 0.25rem; }
+    .preview-content h3 { font-size: 1.15rem; }
+    .preview-content p { margin-bottom: 0.85rem; }
+    .preview-content strong { font-weight: 700; color: var(--text); }
+    .preview-content em { font-style: italic; }
+
+    .preview-content ul, .preview-content ol {
+      margin-bottom: 0.85rem;
+      padding-left: 1.5rem;
+    }
+
+    .preview-content li { margin-bottom: 0.25rem; }
+    .preview-content blockquote {
+      border-left: 3.5px solid var(--accent);
+      padding: 0.4rem 1rem;
+      background: var(--surface-alt);
+      color: var(--muted);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 0.85rem;
+    }
+
+    .preview-content hr {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 1.25rem 0;
+    }
+
+    .preview-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .preview-content th, .preview-content td {
+      border: 1px solid var(--line);
+      padding: 0.5rem 0.85rem;
+      text-align: left;
+    }
+
+    .preview-content th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    .preview-content tr:nth-child(even) td {
+      background: rgba(var(--surface-rgb), 0.5);
+    }
+
+    .preview-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .preview-content pre {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    .preview-content pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: 0.825rem;
+    }
+
+    .preview-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius-sm);
+      margin: 0.5rem 0;
+    }
+
+    .preview-content input[type="checkbox"] {
+      margin-right: 0.4rem;
+      cursor: pointer;
+    }
+
+    .preview-content .mermaid {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+      background: var(--surface-alt);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.725rem;
+      color: var(--muted);
+      padding: 0.35rem 0.5rem;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 0.75rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Print Stylesheet */
+    @media print {
+      header, .toolbar-container, .editor-panel, .status-bar, footer, .modal-backdrop, .toast {
+        display: none !important;
+      }
+      main {
+        height: auto !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .workspace-split {
+        display: block !important;
+      }
+      .preview-panel {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .preview-content {
+        padding: 0 !important;
+        color: #000000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="Markdown Editor">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Markdown Editor</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Toolbar -->
+    <div class="toolbar-container">
+      <div class="toolbar-row">
+        <!-- Document Management -->
+        <div class="toolbar-group">
+          <label for="template-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Template:</label>
+          <select id="template-select" class="form-select">
+            <option value="tour" selected>⚡ Architecture &amp; API Guide</option>
+            <option value="readme">📄 Technical README</option>
+            <option value="meeting">📝 Meeting Notes</option>
+          </select>
+          <button id="btn-new-doc" class="btn btn--primary">📄 New Doc</button>
+        </div>
+
+        <!-- View Controls -->
+        <div class="toolbar-group">
+          <div style="display:flex; align-items:center; gap:0.3rem;">
+            <label for="view-mode-select" style="font-size:0.75rem; font-weight:600; color:var(--muted);">View:</label>
+            <select id="view-mode-select" class="form-select">
+              <option value="split" selected>Split (Editor + Preview)</option>
+              <option value="editor">Editor Only</option>
+              <option value="preview">Preview Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Exports -->
+        <div class="toolbar-group">
+          <button id="btn-copy-html" class="btn">📋 Copy HTML</button>
+          <button id="btn-download-md" class="btn">💾 .md</button>
+          <button id="btn-download-html" class="btn">📄 .html</button>
+          <button id="btn-print" class="btn">🖨️ PDF</button>
+        </div>
+      </div>
+
+      <!-- Formatting Row -->
+      <div class="toolbar-row" style="border-top:1px solid var(--line); padding-top:0.35rem;">
+        <div class="toolbar-group">
+          <button class="btn btn--tool" data-action="bold" title="Bold (**text**)"><b>B</b></button>
+          <button class="btn btn--tool" data-action="italic" title="Italic (*text*)"><i>I</i></button>
+          <button class="btn btn--tool" data-action="strike" title="Strikethrough (~~text~~)"><s>S</s></button>
+          <button class="btn btn--tool" data-action="h1" title="Heading 1">H1</button>
+          <button class="btn btn--tool" data-action="h2" title="Heading 2">H2</button>
+          <button class="btn btn--tool" data-action="h3" title="Heading 3">H3</button>
+          <button class="btn btn--tool" data-action="quote" title="Blockquote">❝</button>
+          <button class="btn btn--tool" data-action="code" title="Inline Code (`code`)">&lt;&gt;</button>
+          <button class="btn btn--tool" data-action="codeblock" title="Code Block (```)">```{ }</button>
+          <button class="btn btn--tool" data-action="link" title="Insert Link">🔗</button>
+          <button class="btn btn--tool" data-action="image" title="Insert Image">🖼️</button>
+          <button class="btn btn--tool" data-action="ul" title="Bullet List">• List</button>
+          <button class="btn btn--tool" data-action="ol" title="Numbered List">1. List</button>
+          <button class="btn btn--tool" data-action="task" title="Task List">☑️ Task</button>
+          <button class="btn btn--tool" id="btn-open-table-modal" title="Insert Table">📊 Table</button>
+          <button class="btn btn--tool" data-action="hr" title="Horizontal Rule">― HR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Split -->
+    <div class="workspace-split" id="workspace-split">
+      <!-- Left: Editor Pane -->
+      <div class="editor-panel">
+        <div class="panel-header">
+          <span>Markdown Source</span>
+          <span style="font-size:0.7rem; color:var(--muted);">GFM Enabled</span>
+        </div>
+        <textarea id="markdown-input" class="markdown-textarea" placeholder="Type Markdown here..." spellcheck="false"></textarea>
+      </div>
+
+      <!-- Right: Live Preview Pane -->
+      <div class="preview-panel">
+        <div class="panel-header">
+          <span>Live HTML Preview</span>
+          <span style="font-size:0.7rem; color:var(--muted);" id="render-status">Ready</span>
+        </div>
+        <div id="preview-content" class="preview-content"></div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div id="doc-stats">0 words | 0 characters | 0 lines</div>
+
+      <div style="display:flex; align-items:center; gap:0.85rem;">
+        <label class="toggle-label" title="Enable LaTeX Math rendering">
+          <input type="checkbox" id="chk-math" checked />
+          <span>Math ($)</span>
+        </label>
+
+        <label class="toggle-label" title="Enable Mermaid diagram rendering">
+          <input type="checkbox" id="chk-mermaid" checked />
+          <span>Mermaid</span>
+        </label>
+
+        <label class="toggle-label" title="Synchronized scrolling between editor & preview">
+          <input type="checkbox" id="chk-sync-scroll" checked />
+          <span>Sync Scroll</span>
+        </label>
+      </div>
+
+      <div id="reading-time">~0 min read</div>
+    </div>
+  </main>
+
+  <!-- Table Insert Modal -->
+  <div class="modal-backdrop" id="table-modal">
+    <div class="modal-dialog">
+      <h3 style="font-size:1rem; font-weight:700;">📊 Insert Markdown Table</h3>
+      <div style="display:flex; gap:1rem;">
+        <div style="flex:1;">
+          <label for="tbl-rows" style="font-size:0.75rem; font-weight:600; color:var(--muted);">Rows:</label>
+          <input type="number" id="tbl-rows" class="form-select" style="width:100%; margin-top:0.25rem;" value="3" min="1" max="20" />
+        </div>
+        <div style="flex:1;">
+          <label for="tbl-cols" style="font-size:0.75rem; font-weight:600; color:var(--muted);">Columns:</label>
+          <input type="number" id="tbl-cols" class="form-select" style="width:100%; margin-top:0.25rem;" value="3" min="1" max="10" />
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem;">
+        <button id="btn-cancel-table" class="btn">Cancel</button>
+        <button id="btn-insert-table-confirm" class="btn btn--primary">Insert Table</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../db-diagram/">DB Diagram</a>
+        <a href="../sql-visualizer/">SQL Visualizer</a>
+        <a href="../html-formatter/">HTML Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Management
+    let isDarkMode = false;
+    const hljsLight = document.getElementById('hljs-light');
+    const hljsDark = document.getElementById('hljs-dark');
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        hljsLight.disabled = true;
+        hljsDark.disabled = false;
+      }
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+          hljsLight.disabled = isDarkMode;
+          hljsDark.disabled = !isDarkMode;
+          renderMarkdown();
+        });
+      }
+    })();
+
+    // TEMPLATES
+    const TEMPLATES = {
+      tour: `# ⚡ Full-Stack Developer Architecture & API Guide
+
+A comprehensive, production-ready developer blueprint covering **system architecture**, **database schemas**, **REST/GraphQL API endpoints**, and **algorithmic metrics**.
+
+---
+
+## 🏗️ 1. System Architecture Overview
+
+\`\`\`mermaid
+graph TD
+    Client[Web & Mobile Clients] --> CDN[Global CDN / Edge Cache]
+    CDN --> Gateway[API Gateway & Auth Proxy]
+    Gateway --> ServiceA[Auth & User Service]
+    Gateway --> ServiceB[Data Processing Pipeline]
+    ServiceA --> DB[(Primary PostgreSQL DB)]
+    ServiceB --> Redis[(Redis Cache & Queue)]
+    ServiceB --> DB
+\`\`\`
+
+> **Architecture Note:** All microservice traffic is encrypted via TLS 1.3 with JWT authentication signatures validated at the API Gateway.
+
+---
+
+## 📊 2. Service Level Objectives (SLOs)
+
+| Service Name | Uptime Target | Latency (p99) | Error Budget | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Authentication API** | 99.99% | \`< 45ms\` | 0.01% | 🟢 Healthy |
+| **Data Ingestion Stream** | 99.95% | \`< 120ms\` | 0.05% | 🟢 Healthy |
+| **Search & Query Engine** | 99.90% | \`< 85ms\` | 0.10% | 🟡 Degraded |
+
+---
+
+## 💻 3. Implementation Code Sample
+
+\`\`\`typescript
+interface DataRecord {
+  id: string;
+  name: string;
+  value: number;
+  status: 'active' | 'archived';
+  timestamp: Date;
+}
+
+export async function processBatch(records: DataRecord[]): Promise<number> {
+  const activeItems = records.filter(r => r.status === 'active');
+  const totalScore = activeItems.reduce((acc, curr) => acc + curr.value, 0);
+
+  console.log(\`Processed \${activeItems.length} active records.\`);
+  return totalScore / (activeItems.length || 1);
+}
+\`\`\`
+
+---
+
+## 📐 4. Mathematical Performance Modeling
+
+Information Entropy calculation for token compression:
+
+$$H(X) = - \\sum_{i=1}^{n} P(x_i) \\log_2 P(x_i)$$
+
+Given a Gaussian distribution $\\mathcal{N}(\\mu, \\sigma^2)$, the probability density function is:
+
+$$f(x) = \\frac{1}{\\sigma \\sqrt{2\\pi}} \\exp\\left( -\\frac{(x - \\mu)^2}{2\\sigma^2} \\right)$$
+
+---
+
+## 🚀 5. Sprint Action Checklist
+
+- [x] Integrate client-side GFM parser & sanitizer
+- [x] Configure KaTeX mathematical rendering engine
+- [x] Render real-time Mermaid architecture diagrams
+- [ ] Implement multi-region failover cluster
+- [ ] Run end-to-end security penetration audit
+`,
+
+      readme: `# Project Title
+
+A clean, modern technical library built with zero dependencies.
+
+## Installation
+
+\`\`\`bash
+npm install awesome-package
+\`\`\`
+
+## Quick Start
+
+\`\`\`typescript
+import { initialize } from 'awesome-package';
+
+const client = initialize({ apiKey: 'YOUR_API_KEY' });
+await client.start();
+\`\`\`
+
+## Features
+- ⚡ **Zero-runtime overhead**
+- 🔒 **100% Client-Side Privacy**
+- 📦 **Tree-shakeable ESM bundle**
+`,
+
+      meeting: `# 📝 Meeting Notes — Architecture Sync
+**Date:** 2026-08-19  
+**Participants:** Sayandeep Majumdar, Engineering Team
+
+## Agenda
+1. Review Q3 Technical Roadmap
+2. Database Schema Visualizer Integration
+3. Performance Benchmarks
+
+## Key Decisions
+- Adopt **client-side in-memory DBML compiler** for instant ER diagrams.
+- Standardize all tool headers to \`← Back\` and brand logo to \`./\`.
+
+## Action Items
+- [x] Finalize SQL DDL tokenizer
+- [ ] Benchmark KaTeX formula rendering on 10,000+ line documents
+- [ ] Deploy v1.4 release
+`
+    };
+
+    // DOM Elements
+    const markdownInput = document.getElementById('markdown-input');
+    const previewContent = document.getElementById('preview-content');
+    const templateSelect = document.getElementById('template-select');
+    const viewModeSelect = document.getElementById('view-mode-select');
+    const workspaceSplit = document.getElementById('workspace-split');
+
+    const chkMath = document.getElementById('chk-math');
+    const chkMermaid = document.getElementById('chk-mermaid');
+    const chkSyncScroll = document.getElementById('chk-sync-scroll');
+
+    const docStats = document.getElementById('doc-stats');
+    const readingTime = document.getElementById('reading-time');
+    const renderStatus = document.getElementById('render-status');
+
+    const btnNewDoc = document.getElementById('btn-new-doc');
+    const btnCopyHtml = document.getElementById('btn-copy-html');
+    const btnDownloadMd = document.getElementById('btn-download-md');
+    const btnDownloadHtml = document.getElementById('btn-download-html');
+    const btnPrint = document.getElementById('btn-print');
+
+    const tableModal = document.getElementById('table-modal');
+    const btnOpenTableModal = document.getElementById('btn-open-table-modal');
+    const btnCancelTable = document.getElementById('btn-cancel-table');
+    const btnInsertTableConfirm = document.getElementById('btn-insert-table-confirm');
+    const tblRows = document.getElementById('tbl-rows');
+    const tblCols = document.getElementById('tbl-cols');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Configure Marked
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+      highlight: function(code, lang) {
+        if (lang === 'mermaid') {
+          return `<div class="mermaid">${code}</div>`;
+        }
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        return hljs.highlight(code, { language }).value;
+      }
+    });
+
+    // --- MARKDOWN RENDER ENGINE ---
+    let renderDebounce;
+
+    function renderMarkdown() {
+      renderStatus.textContent = 'Rendering...';
+      const rawMarkdown = markdownInput.value;
+
+      // 1. Process LaTeX Math (if enabled)
+      let processed = rawMarkdown;
+      const mathBlocks = [];
+
+      if (chkMath.checked) {
+        // Display Math: $$ ... $$
+        processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+          try {
+            const html = katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+            mathBlocks.push(html);
+            return `<!--MATH_BLOCK_${mathBlocks.length - 1}-->`;
+          } catch {
+            return match;
+          }
+        });
+
+        // Inline Math: $ ... $
+        processed = processed.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
+          try {
+            const html = katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
+            mathBlocks.push(html);
+            return `<!--MATH_BLOCK_${mathBlocks.length - 1}-->`;
+          } catch {
+            return match;
+          }
+        });
+      }
+
+      // 2. Parse Markdown to HTML
+      let html = marked.parse(processed);
+
+      // 3. Restore Math Blocks
+      mathBlocks.forEach((mHtml, idx) => {
+        html = html.replace(`<!--MATH_BLOCK_${idx}-->`, mHtml);
+      });
+
+      // 4. Sanitize with DOMPurify
+      const cleanHtml = DOMPurify.sanitize(html, {
+        ADD_TAGS: ['semantics', 'annotation', 'mspace', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'mover', 'munder', 'munderover', 'svg', 'g', 'path', 'marker', 'rect', 'circle', 'text', 'defs'],
+        ADD_ATTR: ['display', 'viewBox', 'd', 'fill', 'stroke', 'marker-end', 'transform', 'orient', 'refX', 'refY', 'markerWidth', 'markerHeight']
+      });
+
+      previewContent.innerHTML = cleanHtml;
+
+      // 5. Render Mermaid Diagrams (if enabled)
+      if (chkMermaid.checked) {
+        const mermaidEls = previewContent.querySelectorAll('.mermaid');
+        if (mermaidEls.length > 0) {
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: isDarkMode ? 'dark' : 'default',
+            securityLevel: 'loose'
+          });
+          mermaid.run({
+            nodes: mermaidEls
+          }).catch(() => {});
+        }
+      }
+
+      // 6. Update Stats
+      updateDocStats(rawMarkdown);
+
+      // Autosave to localStorage
+      try {
+        localStorage.setItem('markdown-autosave', rawMarkdown);
+      } catch {}
+
+      renderStatus.textContent = 'Ready';
+    }
+
+    function updateDocStats(text) {
+      const trimmed = text.trim();
+      const words = trimmed ? trimmed.split(/\s+/).length : 0;
+      const chars = text.length;
+      const lines = text.split('\n').length;
+      const minutes = Math.ceil(words / 200);
+
+      docStats.textContent = `${words.toLocaleString()} words | ${chars.toLocaleString()} characters | ${lines.toLocaleString()} lines`;
+      readingTime.textContent = `~${minutes} min read`;
+    }
+
+    markdownInput.addEventListener('input', () => {
+      clearTimeout(renderDebounce);
+      renderDebounce = setTimeout(renderMarkdown, 200);
+    });
+
+    chkMath.addEventListener('change', renderMarkdown);
+    chkMermaid.addEventListener('change', renderMarkdown);
+
+    // --- SYNCHRONIZED SCROLLING ---
+    let isSyncingLeftScroll = false;
+    let isSyncingRightScroll = false;
+
+    markdownInput.addEventListener('scroll', () => {
+      if (!chkSyncScroll.checked || isSyncingLeftScroll) return;
+      isSyncingRightScroll = true;
+      const percent = markdownInput.scrollTop / (markdownInput.scrollHeight - markdownInput.clientHeight);
+      previewContent.scrollTop = percent * (previewContent.scrollHeight - previewContent.clientHeight);
+      setTimeout(() => { isSyncingRightScroll = false; }, 50);
+    });
+
+    previewContent.addEventListener('scroll', () => {
+      if (!chkSyncScroll.checked || isSyncingRightScroll) return;
+      isSyncingLeftScroll = true;
+      const percent = previewContent.scrollTop / (previewContent.scrollHeight - previewContent.clientHeight);
+      markdownInput.scrollTop = percent * (markdownInput.scrollHeight - markdownInput.clientHeight);
+      setTimeout(() => { isSyncingLeftScroll = false; }, 50);
+    });
+
+    // --- TOOLBAR FORMATTING ACTIONS ---
+    document.querySelectorAll('.btn--tool[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        applyFormatAction(action);
+      });
+    });
+
+    function applyFormatAction(action) {
+      const textarea = markdownInput;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selected = textarea.value.substring(start, end);
+      let replace = '';
+      let cursorOffset = 0;
+
+      switch (action) {
+        case 'bold':
+          replace = `**${selected || 'bold text'}**`;
+          cursorOffset = 2;
+          break;
+        case 'italic':
+          replace = `*${selected || 'italic text'}*`;
+          cursorOffset = 1;
+          break;
+        case 'strike':
+          replace = `~~${selected || 'strikethrough text'}~~`;
+          cursorOffset = 2;
+          break;
+        case 'h1':
+          replace = `# ${selected || 'Heading 1'}`;
+          break;
+        case 'h2':
+          replace = `## ${selected || 'Heading 2'}`;
+          break;
+        case 'h3':
+          replace = `### ${selected || 'Heading 3'}`;
+          break;
+        case 'quote':
+          replace = `> ${selected || 'Blockquote'}`;
+          break;
+        case 'code':
+          replace = `\`${selected || 'code'}\``;
+          cursorOffset = 1;
+          break;
+        case 'codeblock':
+          replace = `\`\`\`javascript\n${selected || '// code here'}\n\`\`\``;
+          break;
+        case 'link':
+          replace = `[${selected || 'link text'}](https://example.com)`;
+          break;
+        case 'image':
+          replace = `![${selected || 'alt text'}](https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800)`;
+          break;
+        case 'ul':
+          replace = `- ${selected || 'List item'}`;
+          break;
+        case 'ol':
+          replace = `1. ${selected || 'List item'}`;
+          break;
+        case 'task':
+          replace = `- [ ] ${selected || 'Task item'}`;
+          break;
+        case 'hr':
+          replace = `\n---\n`;
+          break;
+      }
+
+      textarea.setRangeText(replace, start, end, 'end');
+      textarea.focus();
+      renderMarkdown();
+    }
+
+    // --- TABLE HELPER MODAL ---
+    btnOpenTableModal.addEventListener('click', () => {
+      tableModal.classList.add('open');
+    });
+
+    btnCancelTable.addEventListener('click', () => {
+      tableModal.classList.remove('open');
+    });
+
+    btnInsertTableConfirm.addEventListener('click', () => {
+      const rows = parseInt(tblRows.value, 10) || 3;
+      const cols = parseInt(tblCols.value, 10) || 3;
+
+      let md = '\n';
+      // Header
+      const headerCols = [];
+      const alignCols = [];
+      for (let c = 1; c <= cols; c++) {
+        headerCols.push(`Header ${c}`);
+        alignCols.push('---');
+      }
+      md += `| ${headerCols.join(' | ')} |\n`;
+      md += `| ${alignCols.join(' | ')} |\n`;
+
+      // Data Rows
+      for (let r = 1; r <= rows; r++) {
+        const rowCols = [];
+        for (let c = 1; c <= cols; c++) {
+          rowCols.push(`Cell ${r},${c}`);
+        }
+        md += `| ${rowCols.join(' | ')} |\n`;
+      }
+      md += '\n';
+
+      const start = markdownInput.selectionStart;
+      const end = markdownInput.selectionEnd;
+      markdownInput.setRangeText(md, start, end, 'end');
+      tableModal.classList.remove('open');
+      markdownInput.focus();
+      renderMarkdown();
+    });
+
+    // --- TEMPLATES & VIEWS ---
+    templateSelect.addEventListener('change', () => {
+      const t = TEMPLATES[templateSelect.value];
+      if (t) {
+        markdownInput.value = t;
+        renderMarkdown();
+        showToast(`Loaded ${templateSelect.options[templateSelect.selectedIndex].text}`);
+      }
+    });
+
+    btnNewDoc.addEventListener('click', () => {
+      if (confirm('Create new empty document? Any unsaved changes will be cleared.')) {
+        markdownInput.value = '# Untitled Document\n\nStart writing here...';
+        renderMarkdown();
+        showToast('Created new document');
+      }
+    });
+
+    viewModeSelect.addEventListener('change', () => {
+      const v = viewModeSelect.value;
+      workspaceSplit.className = 'workspace-split';
+      if (v === 'editor') workspaceSplit.classList.add('layout-editor-only');
+      if (v === 'preview') workspaceSplit.classList.add('layout-preview-only');
+    });
+
+    // --- EXPORTS ---
+    btnCopyHtml.addEventListener('click', () => {
+      navigator.clipboard.writeText(previewContent.innerHTML).then(() => {
+        showToast('Rendered HTML copied to clipboard!');
+      });
+    });
+
+    btnDownloadMd.addEventListener('click', () => {
+      const val = markdownInput.value;
+      const blob = new Blob([val], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'document.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnDownloadHtml.addEventListener('click', () => {
+      const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rendered Document</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #1c1917; }
+    h1, h2, h3 { color: #111827; }
+    pre { background: #f3f4f6; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+    code { font-family: monospace; background: #f3f4f6; padding: 0.15rem 0.3rem; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    blockquote { border-left: 4px solid #4f46e5; margin: 0; padding-left: 1rem; color: #6b7280; }
+  </style>
+</head>
+<body>
+  ${previewContent.innerHTML}
+</body>
+</html>`;
+      const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'document.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+
+    // INITIAL LOAD
+    (function init() {
+      const saved = localStorage.getItem('markdown-autosave');
+      markdownInput.value = saved || TEMPLATES.tour;
+      renderMarkdown();
+    })();
+  </script>
+</body>
+</html>

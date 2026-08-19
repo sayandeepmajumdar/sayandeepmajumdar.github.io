@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV & Excel to PDF Converter — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Convert CSV and Excel (.xlsx, .xls) files into beautifully styled, downloadable PDF documents directly in your browser. 100% private, no server uploads." />
+  <meta name="keywords" content="csv to pdf, excel to pdf, convert xlsx to pdf, client side csv to pdf, spreadsheet to pdf converter, table to pdf" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/csv-to-pdf/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📑</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- CDN Dependencies -->
+  <!-- SheetJS (xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF-AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --error: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun {
+      display: none;
+    }
+
+    .icon-moon {
+      display: block;
+    }
+
+    html.dark .icon-sun {
+      display: block;
+    }
+
+    html.dark .icon-moon {
+      display: none;
+    }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 2.5rem 0 4rem;
+    }
+
+    .hero-banner {
+      text-align: center;
+      margin-bottom: 2.25rem;
+    }
+
+    .privacy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.3rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .privacy-pill svg {
+      color: var(--success);
+    }
+
+    .page-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-desc {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Drop Zone */
+    .dropzone-card {
+      background: var(--surface);
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-lg);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .dropzone-card:hover,
+    .dropzone-card.drag-active {
+      border-color: var(--accent);
+      background-color: var(--accent-light);
+    }
+
+    .dropzone-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--surface-alt);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: var(--accent);
+      transition: transform var(--transition);
+    }
+
+    .dropzone-card:hover .dropzone-icon {
+      transform: scale(1.08);
+    }
+
+    .dropzone-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .dropzone-hint {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .file-formats-tags {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .format-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--surface-alt);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .sample-btn-wrap {
+      margin-top: 1.25rem;
+    }
+
+    .btn-sample {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Workspace Section */
+    .workspace {
+      display: none;
+      margin-top: 2rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .workspace.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Control Panel */
+    .controls-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-input,
+    .form-select {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.55rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition);
+      width: 100%;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-export {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color var(--transition), transform var(--transition);
+      height: 40px;
+    }
+
+    .btn-export:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      height: 40px;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Meta Bar */
+    .table-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .meta-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .meta-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+    }
+
+    .meta-badge strong {
+      color: var(--text);
+    }
+
+    .search-filter {
+      max-width: 240px;
+      position: relative;
+    }
+
+    .search-filter input {
+      padding: 0.4rem 0.75rem 0.4rem 2rem;
+      font-size: 0.8125rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+    }
+
+    .search-filter svg {
+      position: absolute;
+      left: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* Table Preview */
+    .preview-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-scroll-container {
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    .data-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--line);
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .data-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+      white-space: nowrap;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .data-table tr:nth-child(even) {
+      background-color: rgba(120, 113, 108, 0.03);
+    }
+
+    .data-table tr:hover {
+      background-color: var(--accent-light);
+    }
+
+    /* Alert Boxes */
+    .alert-box {
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .alert-box.active {
+      display: flex;
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #d97706;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 2rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .table-meta-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .search-filter {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">CSV & Excel to PDF</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Hero -->
+      <div class="hero-banner">
+        <div class="privacy-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. Files never leave your browser.</span>
+        </div>
+        <h1 class="page-title">Convert CSV & Excel to PDF</h1>
+        <p class="page-desc">Instant client-side spreadsheet conversion with live table preview, automatic pagination, and customizable document formatting.</p>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alert-box" class="alert-box" role="alert">
+        <span id="alert-icon">⚠️</span>
+        <span id="alert-msg">Message</span>
+      </div>
+
+      <!-- Dropzone -->
+      <div id="dropzone" class="dropzone-card" tabindex="0" role="button" aria-label="Upload CSV or Excel file">
+        <input type="file" id="file-input" accept=".csv, .tsv, .xlsx, .xls" style="display:none;" />
+        <div class="dropzone-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </div>
+        <div class="dropzone-title">Drop your CSV or Excel file here</div>
+        <div class="dropzone-hint">or click to browse from your computer</div>
+        <div class="file-formats-tags">
+          <span class="format-tag">.CSV</span>
+          <span class="format-tag">.XLSX</span>
+          <span class="format-tag">.XLS</span>
+          <span class="format-tag">.TSV</span>
+        </div>
+        <div class="sample-btn-wrap">
+          <button type="button" id="load-sample-btn" class="btn-sample">Try with sample sales dataset</button>
+        </div>
+      </div>
+
+      <!-- Workspace (Controls & Preview) -->
+      <div id="workspace" class="workspace">
+        <!-- Controls -->
+        <div class="controls-panel">
+          <div class="controls-grid">
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="pdf-title">PDF Document Title</label>
+              <input type="text" id="pdf-title" class="form-input" placeholder="Document Title" />
+            </div>
+
+            <div id="sheet-select-group" class="form-group" style="display:none;">
+              <label class="form-label" for="sheet-select">Active Sheet</label>
+              <select id="sheet-select" class="form-select"></select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="pdf-orientation">Page Orientation</label>
+              <select id="pdf-orientation" class="form-select">
+                <option value="auto">Auto-Detect</option>
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="pdf-theme">Table Theme</label>
+              <select id="pdf-theme" class="form-select">
+                <option value="striped">Striped Indigo</option>
+                <option value="grid">Clean Grid</option>
+                <option value="plain">Minimalist</option>
+                <option value="dark">Slate Contrast</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="pdf-pagesize">Paper Size</label>
+              <select id="pdf-pagesize" class="form-select">
+                <option value="a4">A4 Standard</option>
+                <option value="letter">US Letter</option>
+                <option value="legal">Legal</option>
+              </select>
+            </div>
+
+            <div style="display:flex; gap:0.5rem;">
+              <button id="export-pdf-btn" class="btn-export" style="flex:1;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+              <button id="reset-btn" class="btn-secondary" title="Upload another file">Change File</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meta Bar & Filter -->
+        <div class="table-meta-bar">
+          <div class="meta-badges">
+            <span class="meta-badge" id="badge-rows">Rows: <strong>0</strong></span>
+            <span class="meta-badge" id="badge-cols">Columns: <strong>0</strong></span>
+            <span class="meta-badge" id="badge-file">File: <strong>data.csv</strong></span>
+          </div>
+          <div class="search-filter">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="table-search" placeholder="Filter preview rows..." />
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="preview-card">
+          <div class="table-scroll-container">
+            <table class="data-table" id="preview-table">
+              <thead id="table-head"></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../mathlify/">Mathlify Calculators</a>
+        <a href="../resume/">Resume</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Management
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Application State
+    let currentWorkbook = null;
+    let currentSheetName = '';
+    let parsedData = []; // 2D array of strings
+    let activeFileName = '';
+
+    // DOM Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const workspace = document.getElementById('workspace');
+    const pdfTitleInput = document.getElementById('pdf-title');
+    const sheetSelectGroup = document.getElementById('sheet-select-group');
+    const sheetSelect = document.getElementById('sheet-select');
+    const pdfOrientationSelect = document.getElementById('pdf-orientation');
+    const pdfThemeSelect = document.getElementById('pdf-theme');
+    const pdfPageSizeSelect = document.getElementById('pdf-pagesize');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const loadSampleBtn = document.getElementById('load-sample-btn');
+    const tableHead = document.getElementById('table-head');
+    const tableBody = document.getElementById('table-body');
+    const tableSearch = document.getElementById('table-search');
+    const badgeRows = document.getElementById('badge-rows');
+    const badgeCols = document.getElementById('badge-cols');
+    const badgeFile = document.getElementById('badge-file');
+    const alertBox = document.getElementById('alert-box');
+    const alertMsg = document.getElementById('alert-msg');
+    const alertIcon = document.getElementById('alert-icon');
+
+    // UI Helper: Show alert message
+    function showAlert(message, type = 'warning') {
+      alertMsg.textContent = message;
+      alertBox.className = `alert-box active alert-${type}`;
+      alertIcon.textContent = type === 'error' ? '❌' : '⚠️';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideAlert() {
+      alertBox.className = 'alert-box';
+    }
+
+    // Drag & Drop Handlers
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('drag-active');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    // Reset button
+    resetBtn.addEventListener('click', () => {
+      workspace.classList.remove('active');
+      dropzone.style.display = 'block';
+      fileInput.value = '';
+      hideAlert();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Load Sample Data
+    loadSampleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sampleCsv = `Employee ID,Full Name,Department,Role,Salary (₹),Performance Rating,Joining Date
+EMP-1001,Aarav Sharma,Engineering,Senior Full Stack Engineer,"₹1,850,000",Exceeds Expectations,2021-04-15
+EMP-1002,Priya Patel,Product,Senior Product Manager,"₹1,950,000",Outstanding,2020-08-10
+EMP-1003,Rohan Verma,Design,Lead UI/UX Designer,"₹1,450,000",Meets Expectations,2022-01-20
+EMP-1004,Ananya Sen,Marketing,Growth Marketing Lead,"₹1,300,000",Exceeds Expectations,2021-11-05
+EMP-1005,Vikram Malhotra,DevOps,Principal Cloud Architect,"₹2,200,000",Outstanding,2019-06-01
+EMP-1006,Neha Gupta,Finance,Senior Financial Analyst,"₹1,400,000",Meets Expectations,2022-03-14
+EMP-1007,Kabir Mehta,Engineering,Backend Engineer (Go/Laravel),"₹1,350,000",Exceeds Expectations,2023-02-01
+EMP-1008,Sneha Banerjee,Human Resources,HR Operations Manager,"₹1,150,000",Meets Expectations,2020-10-18`;
+
+      const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
+      const file = new File([blob], 'Q1_Company_Roster.csv', { type: 'text/csv' });
+      handleFile(file);
+    });
+
+    // File Processing (SheetJS)
+    function handleFile(file) {
+      hideAlert();
+      activeFileName = file.name;
+      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      pdfTitleInput.value = baseName.replace(/[-_]/g, ' ');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: true });
+          currentWorkbook = workbook;
+
+          // Check for empty workbook
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            showAlert('The uploaded file contains no readable sheets.', 'error');
+            return;
+          }
+
+          // Setup sheet dropdown
+          if (workbook.SheetNames.length > 1) {
+            sheetSelectGroup.style.display = 'flex';
+            sheetSelect.innerHTML = workbook.SheetNames.map(name => 
+              `<option value="${name}">${name}</option>`
+            ).join('');
+            currentSheetName = workbook.SheetNames[0];
+          } else {
+            sheetSelectGroup.style.display = 'none';
+            currentSheetName = workbook.SheetNames[0];
+          }
+
+          loadActiveSheet();
+          dropzone.style.display = 'none';
+          workspace.classList.add('active');
+        } catch (err) {
+          console.error('File parsing error:', err);
+          showAlert('Failed to parse file. Please ensure it is a valid .csv, .tsv, or .xlsx file.', 'error');
+        }
+      };
+
+      reader.onerror = () => {
+        showAlert('Error reading file from disk.', 'error');
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Switch Sheet
+    sheetSelect.addEventListener('change', (e) => {
+      currentSheetName = e.target.value;
+      loadActiveSheet();
+    });
+
+    function loadActiveSheet() {
+      if (!currentWorkbook || !currentSheetName) return;
+      const worksheet = currentWorkbook.Sheets[currentSheetName];
+
+      // Convert sheet to 2D array of string values
+      const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', blankrows: false });
+
+      if (!rawRows || rawRows.length === 0) {
+        showAlert(`The sheet "${currentSheetName}" is empty.`, 'warning');
+        parsedData = [];
+        renderTable([], []);
+        return;
+      }
+
+      // Filter out completely blank lines
+      const cleanRows = rawRows.filter(row => Array.isArray(row) && row.some(cell => String(cell).trim() !== ''));
+
+      if (cleanRows.length === 0) {
+        showAlert(`The sheet "${currentSheetName}" has no non-empty rows.`, 'warning');
+        parsedData = [];
+        renderTable([], []);
+        return;
+      }
+
+      if (cleanRows.length === 1) {
+        showAlert('This file contains only a header row with no data rows.', 'warning');
+      }
+
+      parsedData = cleanRows.map(row => row.map(cell => (cell === null || cell === undefined ? '' : String(cell).trim())));
+      
+      const headers = parsedData[0] || [];
+      const bodyRows = parsedData.slice(1);
+
+      // Update Badges
+      badgeRows.innerHTML = `Rows: <strong>${bodyRows.length}</strong>`;
+      badgeCols.innerHTML = `Columns: <strong>${headers.length}</strong>`;
+      badgeFile.innerHTML = `File: <strong>${activeFileName}</strong>`;
+
+      // Auto-Detect Orientation
+      if (pdfOrientationSelect.value === 'auto') {
+        if (headers.length > 7) {
+          pdfOrientationSelect.title = 'Auto-detected Landscape for wide table';
+        }
+      }
+
+      renderTable(headers, bodyRows);
+    }
+
+    // Render Table Preview
+    function renderTable(headers, rows) {
+      if (headers.length === 0) {
+        tableHead.innerHTML = '';
+        tableBody.innerHTML = '<tr><td colspan="100%" style="text-align:center;padding:2rem;color:var(--muted)">No data to display</td></tr>';
+        return;
+      }
+
+      tableHead.innerHTML = `
+        <tr>
+          <th style="width:40px;text-align:center;color:var(--muted)">#</th>
+          ${headers.map(h => `<th>${escapeHtml(h || 'Column')}</th>`).join('')}
+        </tr>
+      `;
+
+      renderTableBody(rows);
+    }
+
+    function renderTableBody(rows) {
+      if (rows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="100%" style="text-align:center;padding:2rem;color:var(--muted)">No data rows</td></tr>';
+        return;
+      }
+
+      // Render first 200 rows for preview performance
+      const previewRows = rows.slice(0, 200);
+      tableBody.innerHTML = previewRows.map((row, idx) => `
+        <tr>
+          <td style="text-align:center;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:0.7rem">${idx + 1}</td>
+          ${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}
+        </tr>
+      `).join('');
+
+      if (rows.length > 200) {
+        tableBody.innerHTML += `
+          <tr>
+            <td colspan="100%" style="text-align:center;padding:1rem;color:var(--muted);background:var(--surface-alt)">
+              … and ${rows.length - 200} more rows (all rows will be included in the exported PDF)
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Search / Filter table
+    tableSearch.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!parsedData || parsedData.length <= 1) return;
+
+      const bodyRows = parsedData.slice(1);
+      if (!q) {
+        renderTableBody(bodyRows);
+        badgeRows.innerHTML = `Rows: <strong>${bodyRows.length}</strong>`;
+        return;
+      }
+
+      const filtered = bodyRows.filter(row => 
+        row.some(cell => String(cell).toLowerCase().includes(q))
+      );
+      renderTableBody(filtered);
+      badgeRows.innerHTML = `Showing: <strong>${filtered.length} / ${bodyRows.length}</strong>`;
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // PDF Generation & Export (jsPDF + jsPDF-AutoTable)
+    exportPdfBtn.addEventListener('click', async () => {
+      if (!parsedData || parsedData.length === 0) {
+        showAlert('No table data to export.', 'error');
+        return;
+      }
+
+      const originalBtnHtml = exportPdfBtn.innerHTML;
+      exportPdfBtn.innerHTML = `<span>Generating PDF…</span>`;
+      exportPdfBtn.style.pointerEvents = 'none';
+
+      try {
+        await new Promise(r => setTimeout(r, 50)); // Allow UI to update
+
+        const headers = parsedData[0] || [];
+        const bodyRows = parsedData.slice(1);
+        const colCount = headers.length;
+
+        // Determine orientation
+        let orientation = pdfOrientationSelect.value;
+        if (orientation === 'auto') {
+          orientation = colCount > 6 ? 'landscape' : 'portrait';
+        }
+
+        const pageSize = pdfPageSizeSelect.value || 'a4';
+        const docTitle = pdfTitleInput.value.trim() || 'Data Export';
+
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: orientation,
+          unit: 'pt',
+          format: pageSize
+        });
+
+        // Theme colors mapping
+        const selectedTheme = pdfThemeSelect.value;
+        let headStyles = { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' }; // Default Indigo
+        let alternateRowStyles = { fillColor: [248, 250, 252] };
+        let tableTheme = 'striped';
+
+        if (selectedTheme === 'dark') {
+          headStyles = { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' };
+          alternateRowStyles = { fillColor: [241, 245, 249] };
+        } else if (selectedTheme === 'grid') {
+          headStyles = { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' };
+          tableTheme = 'grid';
+          alternateRowStyles = { fillColor: [255, 255, 255] };
+        } else if (selectedTheme === 'plain') {
+          headStyles = { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' };
+          tableTheme = 'plain';
+          alternateRowStyles = { fillColor: [255, 255, 255] };
+        }
+
+        // Dynamic font sizing based on column density
+        let fontSize = 9;
+        let cellPadding = 5;
+        if (colCount > 14) {
+          fontSize = 6;
+          cellPadding = 2.5;
+        } else if (colCount > 9) {
+          fontSize = 7.5;
+          cellPadding = 3.5;
+        }
+
+        // Header Title Banner
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(30, 41, 59);
+        doc.text(docTitle, 40, 40);
+
+        // Subtitle Info
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        const metaText = `Generated on ${new Date().toLocaleDateString()} · Total Records: ${bodyRows.length} · Source: ${activeFileName}`;
+        doc.text(metaText, 40, 54);
+
+        // Render AutoTable with pagination & column wrapping
+        doc.autoTable({
+          head: [headers],
+          body: bodyRows,
+          startY: 65,
+          margin: { top: 65, bottom: 40, left: 35, right: 35 },
+          theme: tableTheme,
+          headStyles: headStyles,
+          alternateRowStyles: alternateRowStyles,
+          styles: {
+            fontSize: fontSize,
+            cellPadding: cellPadding,
+            overflow: 'linebreak',
+            font: 'helvetica',
+            valign: 'middle'
+          },
+          didDrawPage: (data) => {
+            // Footer: Page Number
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(148, 163, 184);
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            
+            doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageWidth - 40, pageHeight - 20, { align: 'right' });
+            doc.text('Created with DevelopersLab101 & sayandeep.dev', 40, pageHeight - 20);
+          }
+        });
+
+        // Trigger Download
+        const sanitizedFilename = (docTitle.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'export') + '.pdf';
+        doc.save(sanitizedFilename);
+      } catch (err) {
+        console.error('PDF Generation failed:', err);
+        showAlert('Failed to export PDF. ' + err.message, 'error');
+      } finally {
+        exportPdfBtn.innerHTML = originalBtnHtml;
+        exportPdfBtn.style.pointerEvents = 'auto';
+      }
+    });
+  </script>
+</body>
+</html>

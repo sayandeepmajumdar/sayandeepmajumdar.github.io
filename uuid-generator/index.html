@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UUID Generator &amp; Validator (v4, v7, v1) — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Generate and validate UUIDs in your browser. Supports UUID v4 (random), v7 (time-ordered sortable RFC 9562), v1 (timestamp), and Nil UUIDs. Bulk generation, custom formats, and timestamp decoding. 100% private." />
+  <meta name="keywords" content="uuid generator, uuid v7 generator, uuid v4, uuid validator, sortable uuid, guid generator, rfc 9562, bulk uuid, client side uuid" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/uuid-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔢</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode Tabs & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Configuration Panel */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .config-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input {
+      width: 75px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.95rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Output Card */
+    .output-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-header {
+      padding: 0.65rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .output-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    /* UUID List Container */
+    .uuid-list {
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .uuid-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.65rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      transition: all var(--transition);
+    }
+
+    .uuid-row:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .uuid-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      word-break: break-all;
+      user-select: all;
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-left: 0.5rem;
+    }
+
+    .btn-row {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      transition: all var(--transition);
+    }
+
+    .btn-row:hover {
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Specs Reference Footer */
+    .specs-footer {
+      padding: 0.6rem 1.15rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--line);
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Validator View */
+    .validator-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 1.25rem;
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .val-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .val-textarea {
+      width: 100%;
+      min-height: 80px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+    }
+
+    .val-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Validation Results Grid */
+    .val-result-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: none;
+    }
+
+    .val-status-header {
+      padding: 0.75rem 1.15rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .val-status-header.valid {
+      background: var(--success-bg);
+      color: var(--success);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .val-status-header.invalid {
+      background: var(--error-bg);
+      color: var(--error);
+      border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .val-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+      padding: 1rem 1.15rem;
+      background: var(--surface);
+    }
+
+    .val-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+    }
+
+    .val-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+
+    .val-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">UUID Generator &amp; Validator</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Mode Tabs & Privacy -->
+      <div class="top-bar">
+        <div class="mode-tabs">
+          <button id="tab-gen" class="mode-tab active">
+            <span>⚡ Bulk UUID Generator</span>
+          </button>
+          <button id="tab-val" class="mode-tab">
+            <span>🔍 UUID Validator &amp; Inspector</span>
+          </button>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% In-Browser. Uses native Web Crypto.</span>
+        </div>
+      </div>
+
+      <!-- Generator Mode View -->
+      <div id="view-generator">
+        <!-- Configuration Card -->
+        <div class="config-card">
+          <div class="config-row">
+            <div class="config-group">
+              <div class="config-item">
+                <label for="uuid-version">Version:</label>
+                <select id="uuid-version" class="form-select">
+                  <option value="v4" selected>Version 4 (Cryptographically Random)</option>
+                  <option value="v7">Version 7 (Unix Epoch Sortable - RFC 9562)</option>
+                  <option value="v1">Version 1 (Gregorian Time + Random Node)</option>
+                  <option value="nil">Nil UUID (All Zeros Reference)</option>
+                </select>
+              </div>
+
+              <div class="config-item">
+                <label for="uuid-qty">Quantity:</label>
+                <input type="number" id="uuid-qty" class="form-input" value="5" min="1" max="5000" />
+              </div>
+            </div>
+
+            <div class="config-group">
+              <button id="btn-generate" class="btn btn--primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Generate New</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Formatting Toggles -->
+          <div class="config-row" style="border-top:1px solid var(--line); padding-top:0.75rem;">
+            <div class="config-group">
+              <label class="toggle-label" title="Convert to uppercase characters">
+                <input type="checkbox" id="toggle-upper" />
+                <span>UPPERCASE</span>
+              </label>
+
+              <label class="toggle-label" title="Remove hyphens (compact 32-char hex)">
+                <input type="checkbox" id="toggle-nohyphen" />
+                <span>No Hyphens</span>
+              </label>
+
+              <label class="toggle-label" title="Wrap in braces {guid}">
+                <input type="checkbox" id="toggle-braces" />
+                <span>Braces { }</span>
+              </label>
+
+              <label class="toggle-label" title="Wrap in quotes with trailing comma for code/JSON arrays">
+                <input type="checkbox" id="toggle-quotes" />
+                <span>Code Quotes ("uuid",)</span>
+              </label>
+            </div>
+
+            <div class="config-group">
+              <span id="version-desc" style="font-size:0.75rem; color:var(--muted);">Default standard for general identifiers.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Output Card -->
+        <div class="output-card">
+          <div class="output-header">
+            <span id="output-count-label">Generated UUIDs (5 items)</span>
+            <div class="output-actions">
+              <button id="btn-copy-all" class="btn" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Copy All</button>
+              <button id="btn-download-txt" class="btn" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Download .txt</button>
+              <button id="btn-download-csv" class="btn" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Download .csv</button>
+              <button id="btn-download-json" class="btn" style="padding:0.25rem 0.65rem; font-size:0.75rem;">Download .json</button>
+            </div>
+          </div>
+
+          <div class="uuid-list" id="uuid-list">
+            <!-- Dynamically populated list -->
+          </div>
+
+          <div class="specs-footer">
+            <span id="spec-len-info">Length: 36 characters (128 bits)</span>
+            <span id="spec-variant-info">Variant: RFC 4122 / RFC 9562</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validator Mode View -->
+      <div id="view-validator" class="validator-card">
+        <div class="val-input-group">
+          <label style="font-size:0.8125rem; font-weight:700; color:var(--text);">Paste UUID to Validate &amp; Inspect:</label>
+          <textarea id="val-input" class="val-textarea" placeholder="e.g. 018db5f2-9c3f-7e82-9905-1a892e85a6f2 or c4a760a8-dbcf-5254-a0d9-6a4474bd1b62" spellcheck="false"></textarea>
+        </div>
+
+        <div id="val-result-box" class="val-result-box">
+          <div id="val-status-header" class="val-status-header valid">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span id="val-status-title">Valid UUID Detected</span>
+          </div>
+
+          <div class="val-details-grid">
+            <div class="val-item">
+              <div class="val-label">UUID Version</div>
+              <div class="val-value" id="res-version">Version 4 (Random)</div>
+            </div>
+
+            <div class="val-item">
+              <div class="val-label">Variant</div>
+              <div class="val-value" id="res-variant">RFC 4122 / RFC 9562</div>
+            </div>
+
+            <div class="val-item">
+              <div class="val-label">Embedded Timestamp</div>
+              <div class="val-value" id="res-timestamp">—</div>
+            </div>
+
+            <div class="val-item">
+              <div class="val-label">Format / Structure</div>
+              <div class="val-value" id="res-format">Standard 8-4-4-4-12 Hex</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../jwt-decoder/">JWT Decoder</a>
+        <a href="../url-encoder/">URL Encoder</a>
+        <a href="../base64-tool/">Base64 Tool</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let generatedRawList = []; // raw canonical lowercase 8-4-4-4-12
+
+    // DOM Elements
+    const tabGen = document.getElementById('tab-gen');
+    const tabVal = document.getElementById('tab-val');
+    const viewGenerator = document.getElementById('view-generator');
+    const viewValidator = document.getElementById('view-validator');
+
+    const uuidVersion = document.getElementById('uuid-version');
+    const uuidQty = document.getElementById('uuid-qty');
+    const toggleUpper = document.getElementById('toggle-upper');
+    const toggleNoHyphen = document.getElementById('toggle-nohyphen');
+    const toggleBraces = document.getElementById('toggle-braces');
+    const toggleQuotes = document.getElementById('toggle-quotes');
+    const versionDesc = document.getElementById('version-desc');
+    const btnGenerate = document.getElementById('btn-generate');
+    const uuidList = document.getElementById('uuid-list');
+    const outputCountLabel = document.getElementById('output-count-label');
+    const specLenInfo = document.getElementById('spec-len-info');
+    const specVariantInfo = document.getElementById('spec-variant-info');
+
+    const btnCopyAll = document.getElementById('btn-copy-all');
+    const btnDownloadTxt = document.getElementById('btn-download-txt');
+    const btnDownloadCsv = document.getElementById('btn-download-csv');
+    const btnDownloadJson = document.getElementById('btn-download-json');
+
+    const valInput = document.getElementById('val-input');
+    const valResultBox = document.getElementById('val-result-box');
+    const valStatusHeader = document.getElementById('val-status-header');
+    const valStatusTitle = document.getElementById('val-status-title');
+    const resVersion = document.getElementById('res-version');
+    const resVariant = document.getElementById('res-variant');
+    const resTimestamp = document.getElementById('res-timestamp');
+    const resFormat = document.getElementById('res-format');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Tabs
+    tabGen.addEventListener('click', () => switchTab('gen'));
+    tabVal.addEventListener('click', () => switchTab('val'));
+
+    function switchTab(tab) {
+      if (tab === 'gen') {
+        tabGen.classList.add('active');
+        tabVal.classList.remove('active');
+        viewGenerator.style.display = 'block';
+        viewValidator.style.display = 'none';
+      } else {
+        tabVal.classList.add('active');
+        tabGen.classList.remove('active');
+        viewGenerator.style.display = 'none';
+        viewValidator.style.display = 'flex';
+        valInput.focus();
+      }
+    }
+
+    // Byte to UUID helper
+    function bytesToUuid(b) {
+      const hex = [];
+      for (let i = 0; i < 16; i++) {
+        hex.push((b[i] < 16 ? '0' : '') + b[i].toString(16));
+      }
+      return `${hex[0]}${hex[1]}${hex[2]}${hex[3]}-${hex[4]}${hex[5]}-${hex[6]}${hex[7]}-${hex[8]}${hex[9]}-${hex[10]}${hex[11]}${hex[12]}${hex[13]}${hex[14]}${hex[15]}`;
+    }
+
+    // UUID v4
+    function generateV4() {
+      if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      const b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40; // v4
+      b[8] = (b[8] & 0x3f) | 0x80; // variant
+      return bytesToUuid(b);
+    }
+
+    // UUID v7 (RFC 9562)
+    function generateV7() {
+      const b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      const now = Date.now();
+
+      b[0] = Math.floor(now / 0x10000000000) & 0xff;
+      b[1] = Math.floor(now / 0x100000000) & 0xff;
+      b[2] = Math.floor(now / 0x1000000) & 0xff;
+      b[3] = Math.floor(now / 0x10000) & 0xff;
+      b[4] = Math.floor(now / 0x100) & 0xff;
+      b[5] = now & 0xff;
+
+      b[6] = (b[6] & 0x0f) | 0x70; // version 7
+      b[8] = (b[8] & 0x3f) | 0x80; // RFC 4122 variant
+      return bytesToUuid(b);
+    }
+
+    // UUID v1 (Gregorian timestamp + random node)
+    let lastV1Time = 0;
+    let v1ClockSeq = Math.floor(Math.random() * 0x3fff);
+    const v1Node = new Uint8Array(6);
+    crypto.getRandomValues(v1Node);
+    v1Node[0] |= 0x01; // multicast bit set (privacy-safe random node)
+
+    function generateV1() {
+      let now = Date.now();
+      if (now <= lastV1Time) {
+        v1ClockSeq = (v1ClockSeq + 1) & 0x3fff;
+      }
+      lastV1Time = now;
+
+      // Gregorian offset: 12219292800000 ms between 1582-10-15 and 1970-01-01
+      const gregorianMs = now + 12219292800000;
+      const count100ns = BigInt(gregorianMs) * 10000n;
+
+      const timeLow = Number(count100ns & 0xffffffffn);
+      const timeMid = Number((count100ns >> 32n) & 0xffffn);
+      const timeHi = Number((count100ns >> 48n) & 0x0fffn) | 0x1000; // v1
+
+      const b = new Uint8Array(16);
+      b[0] = (timeLow >>> 24) & 0xff;
+      b[1] = (timeLow >>> 16) & 0xff;
+      b[2] = (timeLow >>> 8) & 0xff;
+      b[3] = timeLow & 0xff;
+
+      b[4] = (timeMid >>> 8) & 0xff;
+      b[5] = timeMid & 0xff;
+
+      b[6] = (timeHi >>> 8) & 0xff;
+      b[7] = timeHi & 0xff;
+
+      b[8] = (v1ClockSeq >>> 8) | 0x80; // variant
+      b[9] = v1ClockSeq & 0xff;
+
+      b.set(v1Node, 10);
+      return bytesToUuid(b);
+    }
+
+    // Single Generator Dispatcher
+    function generateSingle(version) {
+      if (version === 'v7') return generateV7();
+      if (version === 'v1') return generateV1();
+      if (version === 'nil') return '00000000-0000-0000-0000-000000000000';
+      return generateV4();
+    }
+
+    // Format single UUID string
+    function formatSingle(rawUuid) {
+      let res = rawUuid.toLowerCase();
+      if (toggleNoHyphen.checked) {
+        res = res.replace(/-/g, '');
+      }
+      if (toggleUpper.checked) {
+        res = res.toUpperCase();
+      }
+      if (toggleBraces.checked) {
+        res = `{${res}}`;
+      }
+      if (toggleQuotes.checked) {
+        res = `"${res}",`;
+      }
+      return res;
+    }
+
+    // Generate Batch
+    function generateBatch() {
+      const ver = uuidVersion.value;
+      const qty = Math.max(1, Math.min(5000, parseInt(uuidQty.value, 10) || 1));
+      uuidQty.value = qty;
+
+      generatedRawList = [];
+      for (let i = 0; i < qty; i++) {
+        generatedRawList.push(generateSingle(ver));
+      }
+
+      renderList();
+      updateSpecs();
+    }
+
+    // Render List
+    function renderList() {
+      uuidList.innerHTML = '';
+      outputCountLabel.textContent = `Generated UUIDs (${generatedRawList.length} item${generatedRawList.length !== 1 ? 's' : ''})`;
+
+      // Render items (cap DOM render at 200 for smooth scrolling if batch is huge)
+      const renderCount = Math.min(generatedRawList.length, 300);
+
+      for (let i = 0; i < renderCount; i++) {
+        const raw = generatedRawList[i];
+        const formatted = formatSingle(raw);
+
+        const row = document.createElement('div');
+        row.className = 'uuid-row';
+        row.innerHTML = `
+          <span class="uuid-text">${escapeHtml(formatted)}</span>
+          <div class="row-actions">
+            <button class="btn-row btn-copy-row" title="Copy to clipboard" data-idx="${i}">Copy</button>
+            <button class="btn-row btn-refresh-row" title="Regenerate this item" data-idx="${i}">↻</button>
+          </div>
+        `;
+        uuidList.appendChild(row);
+      }
+
+      if (generatedRawList.length > 300) {
+        const notice = document.createElement('div');
+        notice.style.padding = '0.75rem';
+        notice.style.color = 'var(--muted)';
+        notice.style.fontSize = '0.75rem';
+        notice.style.textAlign = 'center';
+        notice.textContent = `Showing first 300 of ${generatedRawList.length} items. Use 'Copy All' or 'Download' for the full batch.`;
+        uuidList.appendChild(notice);
+      }
+
+      // Bind row events
+      uuidList.querySelectorAll('.btn-copy-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          const val = formatSingle(generatedRawList[idx]);
+          navigator.clipboard.writeText(val).then(() => showToast(`Copied: ${val}`));
+        });
+      });
+
+      uuidList.querySelectorAll('.btn-refresh-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          generatedRawList[idx] = generateSingle(uuidVersion.value);
+          renderList();
+          showToast('Regenerated single UUID');
+        });
+      });
+    }
+
+    function updateSpecs() {
+      const isNoHyphen = toggleNoHyphen.checked;
+      const isBraces = toggleBraces.checked;
+      let len = isNoHyphen ? 32 : 36;
+      if (isBraces) len += 2;
+      specLenInfo.textContent = `Length: ${len} chars (128 bits)`;
+
+      const ver = uuidVersion.value;
+      if (ver === 'v7') {
+        versionDesc.textContent = 'RFC 9562 Unix-epoch sortable: ideal for database primary keys & indexes.';
+      } else if (ver === 'v1') {
+        versionDesc.textContent = 'RFC 4122 timestamp-based with privacy-safe random multicast node ID.';
+      } else if (ver === 'nil') {
+        versionDesc.textContent = 'Nil UUID: special 128-bit all-zeros constant value.';
+      } else {
+        versionDesc.textContent = 'Default cryptographic random identifier (RFC 4122 v4).';
+      }
+    }
+
+    // Change listeners
+    [toggleUpper, toggleNoHyphen, toggleBraces, toggleQuotes].forEach(el => {
+      el.addEventListener('change', () => {
+        renderList();
+        updateSpecs();
+      });
+    });
+
+    uuidVersion.addEventListener('change', generateBatch);
+    btnGenerate.addEventListener('click', generateBatch);
+
+    // Copy All
+    btnCopyAll.addEventListener('click', () => {
+      if (generatedRawList.length === 0) return;
+      const formattedAll = generatedRawList.map(formatSingle).join('\n');
+      navigator.clipboard.writeText(formattedAll).then(() => {
+        showToast(`Copied all ${generatedRawList.length} UUIDs!`);
+      });
+    });
+
+    // Download Files
+    function downloadFile(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    }
+
+    btnDownloadTxt.addEventListener('click', () => {
+      const text = generatedRawList.map(formatSingle).join('\n');
+      downloadFile(text, `uuids-${uuidVersion.value}.txt`, 'text/plain');
+    });
+
+    btnDownloadCsv.addEventListener('click', () => {
+      const csv = 'uuid\n' + generatedRawList.map(u => `"${formatSingle(u)}"`).join('\n');
+      downloadFile(csv, `uuids-${uuidVersion.value}.csv`, 'text/csv');
+    });
+
+    btnDownloadJson.addEventListener('click', () => {
+      const json = JSON.stringify(generatedRawList.map(formatSingle), null, 2);
+      downloadFile(json, `uuids-${uuidVersion.value}.json`, 'application/json');
+    });
+
+    // UUID Validator
+    valInput.addEventListener('input', validateInput);
+
+    function validateInput() {
+      const raw = valInput.value.trim();
+      if (!raw) {
+        valResultBox.style.display = 'none';
+        return;
+      }
+
+      valResultBox.style.display = 'block';
+
+      // Normalize: strip braces and quotes
+      let clean = raw.replace(/^[{"]|[}",]$/g, '').trim();
+
+      // Check format
+      const hasHyphens = clean.includes('-');
+      const hexOnly = clean.replace(/-/g, '');
+
+      if (!/^[0-9a-fA-F]{32}$/.test(hexOnly)) {
+        valStatusHeader.className = 'val-status-header invalid';
+        valStatusTitle.textContent = 'Invalid UUID: Must contain exactly 32 hexadecimal characters.';
+        resVersion.textContent = 'Invalid';
+        resVariant.textContent = 'Invalid';
+        resTimestamp.textContent = '—';
+        resFormat.textContent = 'Non-hex characters or invalid character count';
+        return;
+      }
+
+      if (hasHyphens && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(clean)) {
+        valStatusHeader.className = 'val-status-header invalid';
+        valStatusTitle.textContent = 'Invalid Hyphenation: Standard UUID format requires 8-4-4-4-12 segments.';
+        resVersion.textContent = 'Invalid';
+        resVariant.textContent = 'Invalid';
+        resTimestamp.textContent = '—';
+        resFormat.textContent = 'Malformed hyphen positioning';
+        return;
+      }
+
+      // Valid UUID
+      valStatusHeader.className = 'val-status-header valid';
+      valStatusTitle.textContent = 'Valid UUID';
+      resFormat.textContent = hasHyphens ? 'Standard 8-4-4-4-12 Canonical' : 'Compact 32-char Hex';
+
+      // Check Nil / Max
+      if (/^0+$/.test(hexOnly)) {
+        resVersion.textContent = 'Nil UUID (All Zeros)';
+        resVariant.textContent = 'N/A (Special Constant)';
+        resTimestamp.textContent = '—';
+        return;
+      }
+      if (/^[fF]+$/.test(hexOnly)) {
+        resVersion.textContent = 'Max UUID (All 0xFF)';
+        resVariant.textContent = 'N/A (Special Constant)';
+        resTimestamp.textContent = '—';
+        return;
+      }
+
+      // Canonical reconstruction to read nibbles
+      const c = `${hexOnly.substring(0,8)}-${hexOnly.substring(8,12)}-${hexOnly.substring(12,16)}-${hexOnly.substring(16,20)}-${hexOnly.substring(20,32)}`.toLowerCase();
+
+      // Version nibble (char 14 in canonical, index 12 in hexOnly)
+      const verNibble = hexOnly.charAt(12).toLowerCase();
+      let verName = `Version ${verNibble} (Unknown)`;
+
+      if (verNibble === '4') verName = 'Version 4 (Cryptographically Random)';
+      else if (verNibble === '7') verName = 'Version 7 (Unix Epoch Sortable - RFC 9562)';
+      else if (verNibble === '1') verName = 'Version 1 (Gregorian Timestamp & Node)';
+      else if (verNibble === '3') verName = 'Version 3 (MD5 Name-based)';
+      else if (verNibble === '5') verName = 'Version 5 (SHA-1 Name-based)';
+      else if (verNibble === '2') verName = 'Version 2 (DCE Security)';
+
+      resVersion.textContent = verName;
+
+      // Variant (char 19 in canonical, index 16 in hexOnly)
+      const varChar = parseInt(hexOnly.charAt(16), 16);
+      if ((varChar & 0x8) === 0) {
+        resVariant.textContent = 'NCS Backward Compatible (0xxx)';
+      } else if ((varChar & 0xc) === 0x8) {
+        resVariant.textContent = 'RFC 4122 / RFC 9562 Standard (10xx)';
+      } else if ((varChar & 0xe) === 0xc) {
+        resVariant.textContent = 'Microsoft GUID Legacy (110x)';
+      } else {
+        resVariant.textContent = 'Reserved / Future (111x)';
+      }
+
+      // Timestamp extraction
+      if (verNibble === '7') {
+        const timeHex = hexOnly.substring(0, 12);
+        const ms = parseInt(timeHex, 16);
+        const date = new Date(ms);
+        resTimestamp.textContent = `${date.toISOString()} (${date.toLocaleString()})`;
+      } else if (verNibble === '1') {
+        const timeLow = hexOnly.substring(0, 8);
+        const timeMid = hexOnly.substring(8, 12);
+        const timeHi = hexOnly.substring(13, 16);
+        const timeHex = timeHi + timeMid + timeLow;
+        const count100ns = BigInt('0x' + timeHex);
+        const gregorianMs = Number(count100ns / 10000n);
+        const unixMs = gregorianMs - 12219292800000;
+        const date = new Date(unixMs);
+        resTimestamp.textContent = `${date.toISOString()} (${date.toLocaleString()})`;
+      } else {
+        resTimestamp.textContent = 'None (Random or Name-based)';
+      }
+    }
+
+    // Initialize
+    generateBatch();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JWT Decoder &amp; Inspector — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Decode, inspect, validate, verify, and encode JSON Web Tokens (JWT) directly in your browser. Features relative expiration timers, registered claims inspector, alg:none security alerts, and HMAC signature verification. 100% private." />
+  <meta name="keywords" content="jwt decoder, jwt inspector, jwt signature verifier, jwt debugger, json web token, jwt expired check, hs256 verifier, jwt generator, client side jwt" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/jwt-decoder/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --jwt-header: #db2777;
+      --jwt-header-bg: rgba(219, 39, 119, 0.1);
+      --jwt-payload: #7c3aed;
+      --jwt-payload-bg: rgba(124, 58, 237, 0.1);
+      --jwt-sig: #0891b2;
+      --jwt-sig-bg: rgba(8, 145, 178, 0.1);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --jwt-header: #f472b6;
+      --jwt-header-bg: rgba(244, 114, 182, 0.15);
+      --jwt-payload: #a78bfa;
+      --jwt-payload-bg: rgba(167, 139, 250, 0.15);
+      --jwt-sig: #22d3ee;
+      --jwt-sig-bg: rgba(34, 211, 238, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode Tabs & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Action Toolbar */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .sample-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      flex-wrap: wrap;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.warning {
+      background: var(--warning-bg);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--warning);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Raw Token Display with Colored Segments */
+    .token-input-wrapper {
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .raw-jwt-textarea {
+      width: 100%;
+      min-height: 140px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825rem;
+      line-height: 1.55;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      word-break: break-all;
+    }
+
+    .raw-jwt-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .colored-token-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      word-break: break-all;
+      padding: 0.75rem;
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      display: none;
+    }
+
+    .tok-header { color: var(--jwt-header); font-weight: 600; }
+    .tok-payload { color: var(--jwt-payload); font-weight: 600; }
+    .tok-sig { color: var(--jwt-sig); font-weight: 600; }
+    .tok-dot { color: var(--muted); font-weight: 700; }
+
+    /* Signature Verification Box */
+    .sig-verify-box {
+      border-top: 1px solid var(--line);
+      padding: 0.85rem 1rem;
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .sig-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sig-secret-input {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.4rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+
+    .sig-secret-input:focus {
+      border-color: var(--accent);
+    }
+
+    .sig-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+    }
+
+    .sig-badge.verified {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .sig-badge.invalid {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .sig-badge.unverified {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    /* Decoded Right Panels */
+    .decoded-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Registered Claims Summary Card */
+    .claims-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .claims-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.6rem;
+      padding: 0.85rem 1rem;
+    }
+
+    .claim-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+    }
+
+    .claim-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.25rem;
+    }
+
+    .claim-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .claim-badge.active { background: var(--success-bg); color: var(--success); }
+    .claim-badge.expired { background: var(--error-bg); color: var(--error); }
+    .claim-badge.future { background: var(--warning-bg); color: var(--warning); }
+
+    .claim-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .claim-rel-time {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Header & Payload Code Blocks */
+    .code-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825rem;
+      line-height: 1.55;
+      padding: 0.85rem 1rem;
+      background: var(--surface);
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+      max-height: 320px;
+    }
+
+    /* Syntax Highlighting */
+    .json-key { color: var(--accent); font-weight: 600; }
+    .json-string { color: #059669; }
+    html.dark .json-string { color: #34d399; }
+    .json-number { color: #d97706; }
+    html.dark .json-number { color: #fbbf24; }
+    .json-boolean { color: #db2777; font-weight: 600; }
+    html.dark .json-boolean { color: #f472b6; font-weight: 600; }
+    .json-null { color: #78716c; font-style: italic; }
+
+    /* Security Warning Banner */
+    .sec-warning {
+      background: var(--error-bg);
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      margin: 0.75rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Builder View */
+    .builder-view {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .builder-view {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .builder-textarea {
+      width: 100%;
+      min-height: 160px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825rem;
+      line-height: 1.55;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+    }
+
+    .builder-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">JWT Decoder &amp; Inspector</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Mode Tabs & Privacy -->
+      <div class="top-bar">
+        <div class="mode-tabs">
+          <button id="tab-decode" class="mode-tab active">
+            <span>🔍 Decode &amp; Inspect JWT</span>
+          </button>
+          <button id="tab-build" class="mode-tab">
+            <span>⚡ Build &amp; Sign JWT</span>
+          </button>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. Tokens &amp; secrets never leave your browser.</span>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="config-card">
+        <div class="config-group">
+          <span style="font-size:0.8125rem; font-weight:600; color:var(--muted);">Samples:</span>
+          <div class="sample-btn-group">
+            <button id="btn-sample-valid" class="btn" title="Load active HS256 token">Valid HS256</button>
+            <button id="btn-sample-expired" class="btn" title="Load expired token">Expired Token</button>
+            <button id="btn-sample-none" class="btn" title="Load unsecured alg:none token">Unsecured (none)</button>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <button id="btn-copy-token" class="btn" title="Copy raw token string">Copy Token</button>
+          <button id="btn-clear" class="btn btn--danger" title="Clear token">Clear</button>
+        </div>
+      </div>
+
+      <!-- Status Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span id="status-text">Ready. Paste a JSON Web Token to decode.</span>
+        <span id="token-parts-stat" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;"></span>
+      </div>
+
+      <!-- Decode View -->
+      <div id="decode-view" class="split-grid">
+        <!-- Left Panel: Raw Token & Signature Verifier -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span>Encoded JWT Token</span>
+            <div class="panel-actions">
+              <span id="segment-legend" style="font-size:0.7rem; font-family:'JetBrains Mono',monospace;">
+                <span class="tok-header">HEADER</span>.<span class="tok-payload">PAYLOAD</span>.<span class="tok-sig">SIGNATURE</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="token-input-wrapper">
+            <textarea id="raw-jwt" class="raw-jwt-textarea" placeholder="Paste your JWT token here (header.payload.signature)..." spellcheck="false"></textarea>
+            <div id="colored-token" class="colored-token-display"></div>
+          </div>
+
+          <!-- Signature Verification -->
+          <div class="sig-verify-box">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:0.8125rem; font-weight:700;">Signature Verification</span>
+              <span id="sig-badge" class="sig-badge unverified">Decoded (Unverified)</span>
+            </div>
+
+            <div class="sig-input-row">
+              <input type="text" id="sig-secret" class="sig-secret-input" placeholder="Enter HMAC secret or public key (e.g. 'secret-key-123')..." spellcheck="false" />
+              <button id="btn-verify" class="btn btn--primary" style="padding:0.4rem 0.75rem;">Verify</button>
+            </div>
+            <span style="font-size:0.7rem; color:var(--muted);">HMAC verification uses Web Crypto SubtleCrypto in-browser.</span>
+          </div>
+        </div>
+
+        <!-- Right Panels: Claims & JSON Views -->
+        <div class="decoded-stack">
+          <!-- Security Alert Box for alg:none -->
+          <div id="sec-alert" class="sec-warning">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>SECURITY WARNING: Token algorithm is set to "none". This token is completely unsigned and insecure!</span>
+          </div>
+
+          <!-- Claims Summary Panel -->
+          <div class="claims-card" id="claims-card">
+            <div class="panel-header">
+              <span>Standard Claims Inspector</span>
+              <span id="claims-count" style="font-size:0.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace;">0 claims</span>
+            </div>
+            <div class="claims-grid" id="claims-grid">
+              <div style="grid-column:1/-1; color:var(--muted); font-size:0.8125rem; text-align:center; padding:0.5rem;">Paste a valid token to inspect claims.</div>
+            </div>
+          </div>
+
+          <!-- Header JSON Card -->
+          <div class="panel-card">
+            <div class="panel-header" style="border-left: 4px solid var(--jwt-header);">
+              <span class="tok-header">HEADER: Algorithm &amp; Token Type</span>
+              <button id="btn-copy-header" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy JSON</button>
+            </div>
+            <pre class="code-box" id="header-code">// Header JSON will appear here</pre>
+          </div>
+
+          <!-- Payload JSON Card -->
+          <div class="panel-card">
+            <div class="panel-header" style="border-left: 4px solid var(--jwt-payload);">
+              <span class="tok-payload">PAYLOAD: Data Claims</span>
+              <button id="btn-copy-payload" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy JSON</button>
+            </div>
+            <pre class="code-box" id="payload-code">// Payload JSON will appear here</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Builder View (Reverse Mode) -->
+      <div id="builder-view" class="builder-view">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span>1. Configure Header &amp; Payload JSON</span>
+            <button id="btn-gen-sample" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Reset Template</button>
+          </div>
+
+          <div style="padding:1rem; display:flex; flex-direction:column; gap:1rem;">
+            <div>
+              <label style="font-size:0.75rem; font-weight:700; color:var(--jwt-header); margin-bottom:0.3rem; display:block;">HEADER JSON</label>
+              <textarea id="build-header" class="builder-textarea" spellcheck="false"></textarea>
+            </div>
+
+            <div>
+              <label style="font-size:0.75rem; font-weight:700; color:var(--jwt-payload); margin-bottom:0.3rem; display:block;">PAYLOAD JSON</label>
+              <textarea id="build-payload" class="builder-textarea" spellcheck="false" style="min-height:220px;"></textarea>
+            </div>
+
+            <div>
+              <label style="font-size:0.75rem; font-weight:700; color:var(--jwt-sig); margin-bottom:0.3rem; display:block;">HMAC SHA-256 SECRET</label>
+              <input type="text" id="build-secret" class="sig-secret-input" value="your-256-bit-secret" spellcheck="false" style="width:100%;" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <span>2. Generated Signed JWT Token</span>
+            <button id="btn-copy-gen" class="btn btn--primary" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy Signed Token</button>
+          </div>
+
+          <div style="padding:1rem; display:flex; flex-direction:column; gap:1rem;">
+            <textarea id="build-output" class="raw-jwt-textarea" readonly style="min-height:240px;" placeholder="Generated token..."></textarea>
+            <div id="build-colored-preview" class="colored-token-display" style="display:block;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../url-encoder/">URL Encoder</a>
+        <a href="../base64-tool/">Base64 Tool</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+        <a href="../xml-formatter/">XML Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let currentTab = 'decode'; // 'decode' | 'build'
+    let debounceTimer = null;
+    let decodedHeaderObj = null;
+    let decodedPayloadObj = null;
+    let rawTokenParts = [];
+
+    // DOM Elements
+    const tabDecode = document.getElementById('tab-decode');
+    const tabBuild = document.getElementById('tab-build');
+    const decodeView = document.getElementById('decode-view');
+    const builderView = document.getElementById('builder-view');
+    const rawJwt = document.getElementById('raw-jwt');
+    const coloredToken = document.getElementById('colored-token');
+    const headerCode = document.getElementById('header-code');
+    const payloadCode = document.getElementById('payload-code');
+    const claimsGrid = document.getElementById('claims-grid');
+    const claimsCount = document.getElementById('claims-count');
+    const secAlert = document.getElementById('sec-alert');
+    const sigSecret = document.getElementById('sig-secret');
+    const sigBadge = document.getElementById('sig-badge');
+    const btnVerify = document.getElementById('btn-verify');
+    const statusBanner = document.getElementById('status-banner');
+    const statusText = document.getElementById('status-text');
+    const tokenPartsStat = document.getElementById('token-parts-stat');
+    const btnClear = document.getElementById('btn-clear');
+    const btnCopyToken = document.getElementById('btn-copy-token');
+    const btnCopyHeader = document.getElementById('btn-copy-header');
+    const btnCopyPayload = document.getElementById('btn-copy-payload');
+    const btnSampleValid = document.getElementById('btn-sample-valid');
+    const btnSampleExpired = document.getElementById('btn-sample-expired');
+    const btnSampleNone = document.getElementById('btn-sample-none');
+
+    // Builder Elements
+    const buildHeader = document.getElementById('build-header');
+    const buildPayload = document.getElementById('build-payload');
+    const buildSecret = document.getElementById('build-secret');
+    const buildOutput = document.getElementById('build-output');
+    const buildColoredPreview = document.getElementById('build-colored-preview');
+    const btnGenSample = document.getElementById('btn-gen-sample');
+    const btnCopyGen = document.getElementById('btn-copy-gen');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Tabs
+    tabDecode.addEventListener('click', () => switchTab('decode'));
+    tabBuild.addEventListener('click', () => switchTab('build'));
+
+    function switchTab(tab) {
+      currentTab = tab;
+      if (tab === 'decode') {
+        tabDecode.classList.add('active');
+        tabBuild.classList.remove('active');
+        decodeView.style.display = 'grid';
+        builderView.style.display = 'none';
+      } else {
+        tabBuild.classList.add('active');
+        tabDecode.classList.remove('active');
+        decodeView.style.display = 'none';
+        builderView.style.display = 'grid';
+        initBuilderDefaults();
+        generateSignedJwt();
+      }
+    }
+
+    // Base64URL Decoding with UTF-8
+    function base64UrlDecode(str) {
+      let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4 !== 0) b64 += '=';
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+
+    // Base64URL Encoding
+    function base64UrlEncode(bytesOrStr) {
+      let binary = '';
+      if (typeof bytesOrStr === 'string') {
+        const bytes = new TextEncoder().encode(bytesOrStr);
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      } else {
+        const bytes = new Uint8Array(bytesOrStr);
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function base64UrlToBytes(str) {
+      let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4 !== 0) b64 += '=';
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    // Relative Time Helper
+    function formatRelativeTime(epochSec) {
+      const now = Math.floor(Date.now() / 1000);
+      const diff = epochSec - now;
+      const absDiff = Math.abs(diff);
+
+      const mins = Math.floor(absDiff / 60);
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+
+      let unitStr = '';
+      if (days > 0) unitStr = `${days} day${days > 1 ? 's' : ''}`;
+      else if (hours > 0) unitStr = `${hours} hour${hours > 1 ? 's' : ''}`;
+      else if (mins > 0) unitStr = `${mins} min${mins > 1 ? 's' : ''}`;
+      else unitStr = `${absDiff} sec${absDiff > 1 ? 's' : ''}`;
+
+      if (diff > 0) {
+        return { text: `in ${unitStr}`, isExpired: false, isFuture: true };
+      } else {
+        return { text: `${unitStr} ago`, isExpired: true, isFuture: false };
+      }
+    }
+
+    // Syntax Highlighting for JSON
+    function syntaxHighlightJson(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      return escapeHtml(json).replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    // Process Token
+    async function processJwt() {
+      const token = rawJwt.value.trim();
+
+      if (!token) {
+        statusBanner.className = 'status-banner empty';
+        statusText.textContent = 'Ready. Paste a JSON Web Token to decode.';
+        tokenPartsStat.textContent = '';
+        coloredToken.style.display = 'none';
+        rawJwt.style.display = 'block';
+        headerCode.innerHTML = '// Header JSON will appear here';
+        payloadCode.innerHTML = '// Payload JSON will appear here';
+        claimsGrid.innerHTML = '<div style="grid-column:1/-1; color:var(--muted); font-size:0.8125rem; text-align:center; padding:0.5rem;">Paste a valid token to inspect claims.</div>';
+        claimsCount.textContent = '0 claims';
+        secAlert.style.display = 'none';
+        sigBadge.className = 'sig-badge unverified';
+        sigBadge.textContent = 'Decoded (Unverified)';
+        return;
+      }
+
+      rawTokenParts = token.split('.');
+
+      if (rawTokenParts.length !== 3) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `<span>Malformed JWT: A valid JSON Web Token must contain exactly 3 segments separated by dots (found ${rawTokenParts.length}).</span>`;
+        tokenPartsStat.textContent = '';
+        coloredToken.style.display = 'none';
+        return;
+      }
+
+      const [headerB64, payloadB64, sigB64] = rawTokenParts;
+
+      // Render colored token
+      coloredToken.innerHTML = `
+        <span class="tok-header">${escapeHtml(headerB64)}</span><span class="tok-dot">.</span><span class="tok-payload">${escapeHtml(payloadB64)}</span><span class="tok-dot">.</span><span class="tok-sig">${escapeHtml(sigB64)}</span>
+      `;
+      coloredToken.style.display = 'block';
+
+      // 1. Decode Header
+      try {
+        const headerJson = base64UrlDecode(headerB64);
+        decodedHeaderObj = JSON.parse(headerJson);
+        headerCode.innerHTML = syntaxHighlightJson(decodedHeaderObj);
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `<span>Invalid Header: Failed to decode Base64URL or parse JSON (${escapeHtml(err.message)}).</span>`;
+        return;
+      }
+
+      // Check alg:none vulnerability
+      const alg = (decodedHeaderObj.alg || '').toLowerCase();
+      if (alg === 'none') {
+        secAlert.style.display = 'flex';
+      } else {
+        secAlert.style.display = 'none';
+      }
+
+      // 2. Decode Payload
+      try {
+        const payloadJson = base64UrlDecode(payloadB64);
+        decodedPayloadObj = JSON.parse(payloadJson);
+        payloadCode.innerHTML = syntaxHighlightJson(decodedPayloadObj);
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `<span>Invalid Payload: Failed to decode Base64URL or parse JSON (${escapeHtml(err.message)}).</span>`;
+        return;
+      }
+
+      // 3. Render Claims Inspector
+      renderClaims(decodedPayloadObj);
+
+      // Status
+      statusBanner.className = alg === 'none' ? 'status-banner warning' : 'status-banner valid';
+      statusText.innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Valid JWT Format — Algorithm: ${escapeHtml(decodedHeaderObj.alg || 'unknown')}
+        </span>
+      `;
+      tokenPartsStat.textContent = `Type: ${decodedHeaderObj.typ || 'JWT'}`;
+
+      // Run Verification if secret is entered
+      verifySignature();
+    }
+
+    // Render Registered Claims
+    function renderClaims(payload) {
+      claimsGrid.innerHTML = '';
+      const keys = Object.keys(payload);
+      claimsCount.textContent = `${keys.length} claim${keys.length !== 1 ? 's' : ''}`;
+
+      const registeredClaims = [
+        { key: 'exp', name: 'Expiration Time (exp)', isTime: true },
+        { key: 'iat', name: 'Issued At (iat)', isTime: true },
+        { key: 'nbf', name: 'Not Before (nbf)', isTime: true },
+        { key: 'iss', name: 'Issuer (iss)' },
+        { key: 'sub', name: 'Subject (sub)' },
+        { key: 'aud', name: 'Audience (aud)' },
+        { key: 'jti', name: 'JWT ID (jti)' }
+      ];
+
+      registeredClaims.forEach(def => {
+        if (payload[def.key] !== undefined) {
+          const val = payload[def.key];
+          const div = document.createElement('div');
+          div.className = 'claim-item';
+
+          if (def.isTime && typeof val === 'number') {
+            const date = new Date(val * 1000);
+            const rel = formatRelativeTime(val);
+            let badgeHtml = '';
+
+            if (def.key === 'exp') {
+              badgeHtml = rel.isExpired ? '<span class="claim-badge expired">EXPIRED</span>' : '<span class="claim-badge active">VALID</span>';
+            } else if (def.key === 'nbf') {
+              badgeHtml = rel.isFuture ? '<span class="claim-badge future">NOT ACTIVE YET</span>' : '<span class="claim-badge active">ACTIVE</span>';
+            }
+
+            div.innerHTML = `
+              <div class="claim-label">
+                <span>${def.name}</span>
+                ${badgeHtml}
+              </div>
+              <div class="claim-val">${date.toLocaleString()}</div>
+              <div class="claim-rel-time">${rel.isExpired ? 'Expired' : 'Expires'} ${rel.text} (${val})</div>
+            `;
+          } else {
+            div.innerHTML = `
+              <div class="claim-label"><span>${def.name}</span></div>
+              <div class="claim-val">${escapeHtml(typeof val === 'object' ? JSON.stringify(val) : String(val))}</div>
+            `;
+          }
+          claimsGrid.appendChild(div);
+        }
+      });
+
+      if (claimsGrid.children.length === 0) {
+        claimsGrid.innerHTML = '<div style="grid-column:1/-1; color:var(--muted); font-size:0.8125rem; text-align:center; padding:0.5rem;">No standard registered claims (exp, iat, iss, sub) found in payload.</div>';
+      }
+    }
+
+    // Verify Signature via SubtleCrypto
+    async function verifySignature() {
+      const secret = sigSecret.value.trim();
+
+      if (!secret || rawTokenParts.length !== 3) {
+        sigBadge.className = 'sig-badge unverified';
+        sigBadge.textContent = 'Decoded (Signature Not Verified)';
+        return;
+      }
+
+      const [headerB64, payloadB64, sigB64] = rawTokenParts;
+      const alg = (decodedHeaderObj?.alg || 'HS256').toUpperCase();
+
+      if (alg.startsWith('HS')) {
+        try {
+          const hashAlg = alg === 'HS384' ? 'SHA-384' : (alg === 'HS512' ? 'SHA-512' : 'SHA-256');
+          const enc = new TextEncoder();
+          const keyBytes = enc.encode(secret);
+
+          const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            keyBytes,
+            { name: 'HMAC', hash: hashAlg },
+            false,
+            ['verify']
+          );
+
+          const sigBytes = base64UrlToBytes(sigB64);
+          const dataBytes = enc.encode(`${headerB64}.${payloadB64}`);
+
+          const isValid = await crypto.subtle.verify('HMAC', cryptoKey, sigBytes, dataBytes);
+
+          if (isValid) {
+            sigBadge.className = 'sig-badge verified';
+            sigBadge.innerHTML = '✓ Signature Verified';
+          } else {
+            sigBadge.className = 'sig-badge invalid';
+            sigBadge.innerHTML = '✕ Invalid Signature';
+          }
+        } catch (err) {
+          sigBadge.className = 'sig-badge invalid';
+          sigBadge.textContent = `Verification Error: ${err.message}`;
+        }
+      } else {
+        sigBadge.className = 'sig-badge unverified';
+        sigBadge.textContent = `Algorithm ${alg} signature verification requires public key`;
+      }
+    }
+
+    btnVerify.addEventListener('click', verifySignature);
+    sigSecret.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(verifySignature, 200);
+    });
+
+    // Builder Mode: Defaults & Generator
+    function initBuilderDefaults() {
+      if (!buildHeader.value) {
+        buildHeader.value = JSON.stringify({ alg: "HS256", typ: "JWT" }, null, 2);
+      }
+      if (!buildPayload.value) {
+        const now = Math.floor(Date.now() / 1000);
+        buildPayload.value = JSON.stringify({
+          sub: "1234567890",
+          name: "Sayandeep Majumdar",
+          admin: true,
+          iat: now,
+          exp: now + 3600
+        }, null, 2);
+      }
+    }
+
+    async function generateSignedJwt() {
+      try {
+        const headerJson = buildHeader.value.trim();
+        const payloadJson = buildPayload.value.trim();
+        const secret = buildSecret.value.trim();
+
+        const headerObj = JSON.parse(headerJson);
+        const payloadObj = JSON.parse(payloadJson);
+
+        const headerB64 = base64UrlEncode(JSON.stringify(headerObj));
+        const payloadB64 = base64UrlEncode(JSON.stringify(payloadObj));
+        const dataToSign = `${headerB64}.${payloadB64}`;
+
+        const alg = (headerObj.alg || 'HS256').toUpperCase();
+
+        let sigB64 = '';
+        if (alg === 'NONE') {
+          sigB64 = '';
+        } else if (alg.startsWith('HS')) {
+          const hashAlg = alg === 'HS384' ? 'SHA-384' : (alg === 'HS512' ? 'SHA-512' : 'SHA-256');
+          const enc = new TextEncoder();
+          const keyBytes = enc.encode(secret);
+          const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: hashAlg }, false, ['sign']);
+          const sigBuffer = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(dataToSign));
+          sigB64 = base64UrlEncode(sigBuffer);
+        }
+
+        const fullToken = `${dataToSign}.${sigB64}`;
+        buildOutput.value = fullToken;
+        buildColoredPreview.innerHTML = `
+          <span class="tok-header">${headerB64}</span><span class="tok-dot">.</span><span class="tok-payload">${payloadB64}</span><span class="tok-dot">.</span><span class="tok-sig">${sigB64}</span>
+        `;
+      } catch (err) {
+        buildOutput.value = `Error generating token: ${err.message}`;
+      }
+    }
+
+    [buildHeader, buildPayload, buildSecret].forEach(el => {
+      el.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(generateSignedJwt, 150);
+      });
+    });
+
+    btnGenSample.addEventListener('click', () => {
+      buildHeader.value = '';
+      buildPayload.value = '';
+      initBuilderDefaults();
+      generateSignedJwt();
+      showToast('Reset builder template');
+    });
+
+    // Copy Actions
+    btnCopyToken.addEventListener('click', () => {
+      if (!rawJwt.value) return;
+      navigator.clipboard.writeText(rawJwt.value).then(() => showToast('Copied full token!'));
+    });
+
+    btnCopyHeader.addEventListener('click', () => {
+      if (!decodedHeaderObj) return;
+      navigator.clipboard.writeText(JSON.stringify(decodedHeaderObj, null, 2)).then(() => showToast('Copied header JSON!'));
+    });
+
+    btnCopyPayload.addEventListener('click', () => {
+      if (!decodedPayloadObj) return;
+      navigator.clipboard.writeText(JSON.stringify(decodedPayloadObj, null, 2)).then(() => showToast('Copied payload JSON!'));
+    });
+
+    btnCopyGen.addEventListener('click', () => {
+      if (!buildOutput.value) return;
+      navigator.clipboard.writeText(buildOutput.value).then(() => showToast('Copied generated token!'));
+    });
+
+    // Clear
+    btnClear.addEventListener('click', () => {
+      rawJwt.value = '';
+      sigSecret.value = '';
+      processJwt();
+      rawJwt.focus();
+    });
+
+    // Input Events
+    rawJwt.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processJwt, 100);
+    });
+
+    // Samples
+    btnSampleValid.addEventListener('click', async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const h = { alg: "HS256", typ: "JWT" };
+      const p = { sub: "usr_9981", name: "Sayandeep Majumdar", role: "developer", iat: now - 300, exp: now + 7200, iss: "https://sayandeep.dev" };
+      const hB64 = base64UrlEncode(JSON.stringify(h));
+      const pB64 = base64UrlEncode(JSON.stringify(p));
+      const enc = new TextEncoder();
+      const key = await crypto.subtle.importKey('raw', enc.encode('secret-key-123'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${hB64}.${pB64}`));
+      rawJwt.value = `${hB64}.${pB64}.${base64UrlEncode(sig)}`;
+      sigSecret.value = 'secret-key-123';
+      processJwt();
+      showToast('Loaded valid HS256 token');
+    });
+
+    btnSampleExpired.addEventListener('click', async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const h = { alg: "HS256", typ: "JWT" };
+      const p = { sub: "usr_expired", name: "Session Token", iat: now - 86400 * 5, exp: now - 86400 * 2, iss: "auth.system" };
+      const hB64 = base64UrlEncode(JSON.stringify(h));
+      const pB64 = base64UrlEncode(JSON.stringify(p));
+      const enc = new TextEncoder();
+      const key = await crypto.subtle.importKey('raw', enc.encode('secret-key-123'), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const sig = await crypto.subtle.sign('HMAC', key, enc.encode(`${hB64}.${pB64}`));
+      rawJwt.value = `${hB64}.${pB64}.${base64UrlEncode(sig)}`;
+      sigSecret.value = 'secret-key-123';
+      processJwt();
+      showToast('Loaded expired token');
+    });
+
+    btnSampleNone.addEventListener('click', () => {
+      const h = { alg: "none", typ: "JWT" };
+      const p = { sub: "admin_user", role: "superuser", iat: Math.floor(Date.now() / 1000) };
+      const hB64 = base64UrlEncode(JSON.stringify(h));
+      const pB64 = base64UrlEncode(JSON.stringify(p));
+      rawJwt.value = `${hB64}.${pB64}.`;
+      sigSecret.value = '';
+      processJwt();
+      showToast('Loaded unsecured alg:none token');
+    });
+
+    // Auto-load valid sample on first open
+    btnSampleValid.click();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Snippet Manager — Store &amp; Search Code Snippets Locally | sayandeep.dev</title>
+  <meta name="description" content="Free offline code snippet manager. Store, organize in folders, tag, search full-text, and export your personal code snippets locally in IndexedDB." />
+  <meta name="keywords" content="code snippet manager, snippet storage, dev snippets, organize code, indexeddb snippet manager, offline code storage, snippet keeper" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/snippet-manager/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Highlight.js CSS & JS -->
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 54px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+    .btn--danger:hover {
+      background: var(--error-bg);
+      border-color: var(--error);
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* 3-Pane Workspace */
+    .workspace-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 340px 1fr;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Pane 1: Left Sidebar */
+    .sidebar-pane {
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+
+    .nav-section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(var(--surface-rgb), 0.6);
+    }
+
+    .nav-item.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-item-count {
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .tag-pill {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .tag-pill:hover, .tag-pill.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .backup-box {
+      margin-top: auto;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px dashed var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    /* Pane 2: Middle Snippet List */
+    .list-pane {
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: var(--surface);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.4rem 0.6rem 0.4rem 2rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.8125rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.6rem;
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 0.8rem;
+    }
+
+    .filters-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      font-size: 0.725rem;
+      color: var(--muted);
+    }
+
+    .snippets-scroll {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .snippet-card {
+      padding: 0.75rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .snippet-card:hover {
+      background: var(--surface-alt);
+    }
+
+    .snippet-card.active {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+    }
+
+    .snippet-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .snippet-card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lang-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .snippet-card-preview {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
+      color: var(--muted);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+      background: rgba(var(--surface-rgb), 0.5);
+      padding: 0.25rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .snippet-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* Pane 3: Right Editor & Viewer */
+    .editor-pane {
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .editor-header {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: var(--surface);
+    }
+
+    .snippet-title-input {
+      flex: 1;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .editor-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-editor-textarea {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 1rem 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      background: var(--surface);
+      color: var(--text);
+      tab-size: 2;
+    }
+
+    .editor-footer {
+      border-top: 1px solid var(--line);
+      padding: 0.6rem 1rem;
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .editor-footer-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .tags-input {
+      flex: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.75rem;
+      outline: none;
+    }
+
+    .notes-input {
+      width: 100%;
+      height: 48px;
+      padding: 0.35rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.75rem;
+      resize: none;
+      outline: none;
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    /* Command Palette Modal */
+    .palette-modal {
+      max-width: 580px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .palette-search {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      font-size: 1rem;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+
+    .palette-results {
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .palette-item {
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .palette-item:hover, .palette-item.active {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 0.5rem 0;
+      font-size: 0.775rem;
+      color: var(--muted);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="Code Snippet Manager">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Snippet Manager</span>
+      </a>
+
+      <div class="header-actions">
+        <button id="btn-quick-open" class="btn" title="Quick Open (Cmd+K)">🔍 Quick Open <kbd style="font-family:inherit; opacity:0.6;">⌘K</kbd></button>
+        <button id="btn-new-snippet" class="btn btn--primary">✨ New Snippet</button>
+        <button id="btn-open-backup-modal" class="btn">💾 Backup / Import</button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3-Pane Layout -->
+  <div class="workspace-layout">
+    <!-- Pane 1: Sidebar -->
+    <aside class="sidebar-pane">
+      <div>
+        <div class="nav-section-title">Navigation</div>
+        <ul class="nav-list">
+          <li class="nav-item active" data-view="all">
+            <span>📚 All Snippets</span>
+            <span class="nav-item-count" id="count-all">0</span>
+          </li>
+          <li class="nav-item" data-view="favorites">
+            <span>⭐ Favorites</span>
+            <span class="nav-item-count" id="count-fav">0</span>
+          </li>
+          <li class="nav-item" data-view="trash">
+            <span>🗑️ Trash</span>
+            <span class="nav-item-count" id="count-trash">0</span>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="nav-section-title">
+          <span>Folders</span>
+          <button id="btn-add-folder" class="btn btn--sm" style="padding:0.1rem 0.35rem; font-size:0.65rem;">+ Add</button>
+        </div>
+        <ul class="nav-list" id="folders-list">
+          <!-- Dynamically injected folders -->
+        </ul>
+      </div>
+
+      <div>
+        <div class="nav-section-title">Tags</div>
+        <div class="tag-cloud" id="tags-cloud">
+          <!-- Dynamically injected tags -->
+        </div>
+      </div>
+
+      <div class="backup-box">
+        <div style="font-weight:600;">🔒 Local Storage</div>
+        <div style="color:var(--muted);">Snippets are stored locally in IndexedDB. Remember to export backups regularly.</div>
+        <button id="btn-quick-export" class="btn btn--sm" style="margin-top:0.25rem;">💾 Download JSON Backup</button>
+      </div>
+    </aside>
+
+    <!-- Pane 2: Snippet List -->
+    <section class="list-pane">
+      <div class="list-header">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search title, code, tags, notes..." />
+        </div>
+
+        <div class="filters-bar">
+          <span id="list-status-text">Showing all snippets</span>
+          <select id="sort-select" class="form-select" style="font-size:0.7rem; padding:0.15rem 0.4rem;">
+            <option value="modified" selected>Recently Modified</option>
+            <option value="created">Recently Created</option>
+            <option value="title">Title A-Z</option>
+            <option value="language">Language</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="snippets-scroll" id="snippets-list">
+        <!-- Injected snippet cards -->
+      </div>
+    </section>
+
+    <!-- Pane 3: Detail & Code Editor -->
+    <main class="editor-pane" id="editor-pane">
+      <div class="editor-header">
+        <input type="text" id="snippet-title" class="snippet-title-input" placeholder="Untitled Snippet" />
+
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+          <select id="snippet-lang" class="form-select">
+            <option value="typescript">TypeScript</option>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="sql">SQL</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+            <option value="go">Go</option>
+            <option value="rust">Rust</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+            <option value="bash">Bash</option>
+            <option value="markdown">Markdown</option>
+          </select>
+
+          <select id="snippet-folder" class="form-select">
+            <option value="">No Folder</option>
+          </select>
+
+          <button id="btn-star" class="btn" title="Toggle Favorite">⭐</button>
+          <button id="btn-copy-code" class="btn">📋 Copy</button>
+          <button id="btn-duplicate" class="btn">📄 Duplicate</button>
+          <button id="btn-download-file" class="btn">💾 Export</button>
+          <button id="btn-trash" class="btn btn--danger">🗑️</button>
+        </div>
+      </div>
+
+      <div class="editor-body">
+        <textarea id="snippet-code" class="code-editor-textarea" placeholder="Paste or type code snippet here..." spellcheck="false"></textarea>
+      </div>
+
+      <div class="editor-footer">
+        <div class="editor-footer-row">
+          <label style="font-weight:600; color:var(--muted); min-width:40px;">Tags:</label>
+          <input type="text" id="snippet-tags" class="tags-input" placeholder="react, hooks, async (comma-separated)" />
+        </div>
+        <div class="editor-footer-row" style="align-items:flex-start;">
+          <label style="font-weight:600; color:var(--muted); min-width:40px; margin-top:0.3rem;">Notes:</label>
+          <textarea id="snippet-notes" class="notes-input" placeholder="Optional usage notes, instructions, or documentation..."></textarea>
+        </div>
+        <div class="editor-footer-row" style="justify-content:space-between; color:var(--muted); font-size:0.7rem;">
+          <span id="timestamp-info">Created: -- | Modified: --</span>
+          <span id="save-status" style="color:var(--success);">Saved locally</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Command Palette Modal -->
+  <div class="modal-backdrop" id="palette-modal">
+    <div class="modal-card palette-modal">
+      <input type="text" id="palette-input" class="palette-search" placeholder="Type to jump to any snippet..." />
+      <div class="palette-results" id="palette-results"></div>
+    </div>
+  </div>
+
+  <!-- Backup & Import Modal -->
+  <div class="modal-backdrop" id="backup-modal">
+    <div class="modal-card">
+      <h3 style="font-size:1.05rem; font-weight:700;">💾 Backup &amp; Restore Snippets</h3>
+      <p style="font-size:0.8rem; color:var(--muted);">All snippets are stored in this browser's IndexedDB storage. Back up your library regularly to prevent data loss.</p>
+
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <button id="btn-export-json" class="btn btn--primary">📥 Download Full JSON Backup</button>
+        <hr style="border:none; border-top:1px solid var(--line);" />
+        <label class="btn" style="cursor:pointer; justify-content:center;">
+          📤 Restore from JSON Backup
+          <input type="file" id="import-json-file" accept=".json" style="display:none;" />
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem;">
+        <button id="btn-close-backup" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Action completed!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../code-diff/">Code Diff Viewer</a>
+        <a href="../js-formatter/">JS Formatter</a>
+        <a href="../markdown-editor/">Markdown Editor</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+    const hljsLight = document.getElementById('hljs-light');
+    const hljsDark = document.getElementById('hljs-dark');
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        hljsLight.disabled = true;
+        hljsDark.disabled = false;
+      }
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+          hljsLight.disabled = isDarkMode;
+          hljsDark.disabled = !isDarkMode;
+        });
+      }
+    })();
+
+    // IndexedDB Database Wrapper
+    class SnippetDatabase {
+      constructor() {
+        this.dbName = 'SnippetManagerDB';
+        this.version = 1;
+        this.db = null;
+      }
+
+      async open() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, this.version);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('snippets')) {
+              const snipStore = db.createObjectStore('snippets', { keyPath: 'id' });
+              snipStore.createIndex('folderId', 'folderId', { unique: false });
+              snipStore.createIndex('isFavorite', 'isFavorite', { unique: false });
+              snipStore.createIndex('isDeleted', 'isDeleted', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('folders')) {
+              db.createObjectStore('folders', { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = (e) => {
+            this.db = e.target.result;
+            resolve(this.db);
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async getAllSnippets() {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('snippets', 'readonly');
+          const req = tx.objectStore('snippets').getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async saveSnippet(snippet) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('snippets', 'readwrite');
+          const req = tx.objectStore('snippets').put(snippet);
+          req.onsuccess = () => resolve(snippet);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async deleteSnippet(id) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('snippets', 'readwrite');
+          const req = tx.objectStore('snippets').delete(id);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async getAllFolders() {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('folders', 'readonly');
+          const req = tx.objectStore('folders').getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async saveFolder(folder) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('folders', 'readwrite');
+          const req = tx.objectStore('folders').put(folder);
+          req.onsuccess = () => resolve(folder);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async deleteFolder(id) {
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction('folders', 'readwrite');
+          const req = tx.objectStore('folders').delete(id);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      }
+    }
+
+    const db = new SnippetDatabase();
+
+    // Application State
+    let snippets = [];
+    let folders = [];
+    let currentView = 'all'; // 'all', 'favorites', 'trash', or folderId
+    let selectedTag = null;
+    let currentSnippetId = null;
+    let saveTimeout;
+
+    // Toast
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Starter Presets
+    const STARTER_SNIPPETS = [
+      {
+        id: 'seed-1',
+        title: 'useDebounce Hook',
+        code: `import { useState, useEffect } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}`,
+        language: 'typescript',
+        folderId: 'f-react',
+        tags: ['react', 'hooks', 'typescript'],
+        description: 'Delays updating a state value until the user stops typing for N milliseconds.',
+        isFavorite: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'seed-2',
+        title: 'Async HTTP Fetch Client',
+        code: `import httpx
+
+async def fetch_api(endpoint: str, api_key: str) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(
+            f"https://api.example.com/{endpoint}",
+            headers={"Authorization": f"Bearer {api_key}"}
+        )
+        response.raise_for_status()
+        return response.json()`,
+        language: 'python',
+        folderId: 'f-python',
+        tags: ['python', 'async', 'httpx', 'api'],
+        description: 'Asynchronous HTTP GET request wrapper using HTTPX client.',
+        isFavorite: false,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: 'seed-3',
+        title: 'PostgreSQL Running Total Window Function',
+        code: `SELECT
+    transaction_date,
+    customer_id,
+    amount,
+    SUM(amount) OVER (
+        PARTITION BY customer_id
+        ORDER BY transaction_date
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS running_total
+FROM customer_transactions
+ORDER BY customer_id, transaction_date;`,
+        language: 'sql',
+        folderId: 'f-sql',
+        tags: ['sql', 'postgres', 'analytics', 'window-function'],
+        description: 'Calculates cumulative running totals partitioned per customer.',
+        isFavorite: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    ];
+
+    const STARTER_FOLDERS = [
+      { id: 'f-react', name: 'React Hooks' },
+      { id: 'f-python', name: 'Python Utilities' },
+      { id: 'f-sql', name: 'SQL Queries' }
+    ];
+
+    // Language Extensions
+    const LANG_EXTS = {
+      typescript: 'ts',
+      javascript: 'js',
+      python: 'py',
+      sql: 'sql',
+      html: 'html',
+      css: 'css',
+      json: 'json',
+      yaml: 'yaml',
+      go: 'go',
+      rust: 'rs',
+      java: 'java',
+      cpp: 'cpp',
+      bash: 'sh',
+      markdown: 'md'
+    };
+
+    // DOM Elements
+    const countAll = document.getElementById('count-all');
+    const countFav = document.getElementById('count-fav');
+    const countTrash = document.getElementById('count-trash');
+    const foldersList = document.getElementById('folders-list');
+    const tagsCloud = document.getElementById('tags-cloud');
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.getElementById('sort-select');
+    const listStatusText = document.getElementById('list-status-text');
+    const snippetsList = document.getElementById('snippets-list');
+
+    const snippetTitle = document.getElementById('snippet-title');
+    const snippetLang = document.getElementById('snippet-lang');
+    const snippetFolder = document.getElementById('snippet-folder');
+    const snippetCode = document.getElementById('snippet-code');
+    const snippetTags = document.getElementById('snippet-tags');
+    const snippetNotes = document.getElementById('snippet-notes');
+    const timestampInfo = document.getElementById('timestamp-info');
+    const saveStatus = document.getElementById('save-status');
+
+    const btnNewSnippet = document.getElementById('btn-new-snippet');
+    const btnAddFolder = document.getElementById('btn-add-folder');
+    const btnStar = document.getElementById('btn-star');
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const btnDuplicate = document.getElementById('btn-duplicate');
+    const btnDownloadFile = document.getElementById('btn-download-file');
+    const btnTrash = document.getElementById('btn-trash');
+
+    const btnQuickOpen = document.getElementById('btn-quick-open');
+    const paletteModal = document.getElementById('palette-modal');
+    const paletteInput = document.getElementById('palette-input');
+    const paletteResults = document.getElementById('palette-results');
+
+    const btnOpenBackupModal = document.getElementById('btn-open-backup-modal');
+    const btnQuickExport = document.getElementById('btn-quick-export');
+    const backupModal = document.getElementById('backup-modal');
+    const btnExportJson = document.getElementById('btn-export-json');
+    const importJsonFile = document.getElementById('import-json-file');
+    const btnCloseBackup = document.getElementById('btn-close-backup');
+
+    // --- INITIALIZATION ---
+    async function initApp() {
+      await db.open();
+      snippets = await db.getAllSnippets();
+      folders = await db.getAllFolders();
+
+      if (snippets.length === 0 && folders.length === 0) {
+        for (const f of STARTER_FOLDERS) await db.saveFolder(f);
+        for (const s of STARTER_SNIPPETS) await db.saveSnippet(s);
+        snippets = await db.getAllSnippets();
+        folders = await db.getAllFolders();
+      }
+
+      renderFolders();
+      renderTags();
+      renderSnippetFolderDropdown();
+      renderSnippetList();
+
+      if (snippets.length > 0) {
+        selectSnippet(snippets[0].id);
+      }
+    }
+
+    // --- RENDER SIDEBAR & COUNTS ---
+    function updateCounts() {
+      const activeSnips = snippets.filter(s => !s.isDeleted);
+      countAll.textContent = activeSnips.length;
+      countFav.textContent = activeSnips.filter(s => s.isFavorite).length;
+      countTrash.textContent = snippets.filter(s => s.isDeleted).length;
+    }
+
+    function renderFolders() {
+      updateCounts();
+      let html = '';
+      folders.forEach(f => {
+        const count = snippets.filter(s => !s.isDeleted && s.folderId === f.id).length;
+        const isActive = currentView === f.id;
+        html += `
+          <li class="nav-item ${isActive ? 'active' : ''}" data-view="${f.id}">
+            <span>📁 ${f.name}</span>
+            <div style="display:flex; align-items:center; gap:0.3rem;">
+              <span class="nav-item-count">${count}</span>
+              <span onclick="deleteFolderPrompt('${f.id}', event)" style="font-size:0.65rem; color:var(--muted); opacity:0.6;" title="Delete folder">✕</span>
+            </div>
+          </li>
+        `;
+      });
+      foldersList.innerHTML = html;
+    }
+
+    function renderTags() {
+      const allTags = new Set();
+      snippets.filter(s => !s.isDeleted).forEach(s => {
+        if (Array.isArray(s.tags)) s.tags.forEach(t => allTags.add(t.trim()));
+      });
+
+      let html = '';
+      allTags.forEach(t => {
+        if (!t) return;
+        const isActive = selectedTag === t;
+        html += `<span class="tag-pill ${isActive ? 'active' : ''}" onclick="toggleTagFilter('${t}')">#${t}</span>`;
+      });
+      tagsCloud.innerHTML = html || '<span style="font-size:0.7rem; color:var(--muted);">No tags yet</span>';
+    }
+
+    function renderSnippetFolderDropdown() {
+      let html = '<option value="">No Folder</option>';
+      folders.forEach(f => {
+        html += `<option value="${f.id}">📁 ${f.name}</option>`;
+      });
+      snippetFolder.innerHTML = html;
+    }
+
+    // --- RENDER SNIPPET LIST ---
+    function renderSnippetList() {
+      const q = searchInput.value.toLowerCase().trim();
+      const sort = sortSelect.value;
+
+      let filtered = snippets.filter(s => {
+        if (currentView === 'trash') return s.isDeleted;
+        if (s.isDeleted) return false;
+        if (currentView === 'favorites') return s.isFavorite;
+        if (currentView !== 'all') return s.folderId === currentView;
+        return true;
+      });
+
+      if (selectedTag) {
+        filtered = filtered.filter(s => Array.isArray(s.tags) && s.tags.includes(selectedTag));
+      }
+
+      if (q) {
+        filtered = filtered.filter(s => {
+          const matchTitle = (s.title || '').toLowerCase().includes(q);
+          const matchCode = (s.code || '').toLowerCase().includes(q);
+          const matchDesc = (s.description || '').toLowerCase().includes(q);
+          const matchTags = (s.tags || []).some(t => t.toLowerCase().includes(q));
+          return matchTitle || matchCode || matchDesc || matchTags;
+        });
+      }
+
+      // Sorting
+      filtered.sort((a, b) => {
+        if (sort === 'modified') return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+        if (sort === 'created') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
+        if (sort === 'language') return (a.language || '').localeCompare(b.language || '');
+        return 0;
+      });
+
+      listStatusText.textContent = `${filtered.length} ${filtered.length === 1 ? 'snippet' : 'snippets'}`;
+
+      let html = '';
+      filtered.forEach(s => {
+        const isSelected = s.id === currentSnippetId;
+        const previewCode = (s.code || '').split('\n').slice(0, 3).join('\n');
+        html += `
+          <div class="snippet-card ${isSelected ? 'active' : ''}" onclick="selectSnippet('${s.id}')">
+            <div class="snippet-card-top">
+              <span class="snippet-card-title">${escapeHtml(s.title || 'Untitled')}</span>
+              <span class="lang-badge">${s.language || 'text'}</span>
+            </div>
+            <pre class="snippet-card-preview"><code>${escapeHtml(previewCode)}</code></pre>
+            <div class="snippet-card-meta">
+              <span>${(s.tags || []).map(t => `#${t}`).join(' ')}</span>
+              <span>${s.isFavorite ? '⭐' : ''}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      snippetsList.innerHTML = html || '<div style="text-align:center; padding:2rem; color:var(--muted); font-size:0.8rem;">No snippets match criteria.</div>';
+    }
+
+    // --- SELECT & LOAD SNIPPET ---
+    function selectSnippet(id) {
+      currentSnippetId = id;
+      const s = snippets.find(x => x.id === id);
+      if (!s) return;
+
+      snippetTitle.value = s.title || '';
+      snippetLang.value = s.language || 'typescript';
+      snippetFolder.value = s.folderId || '';
+      snippetCode.value = s.code || '';
+      snippetTags.value = (s.tags || []).join(', ');
+      snippetNotes.value = s.description || '';
+      btnStar.textContent = s.isFavorite ? '⭐' : '☆';
+
+      btnTrash.textContent = s.isDeleted ? '♻️ Restore' : '🗑️';
+      btnTrash.title = s.isDeleted ? 'Restore from trash' : 'Move to trash';
+
+      const created = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '--';
+      const modified = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString() : '--';
+      timestampInfo.textContent = `Created: ${created} | Modified: ${modified}`;
+
+      renderSnippetList();
+    }
+
+    // --- AUTO-SAVE ---
+    function triggerAutoSave() {
+      if (!currentSnippetId) return;
+      saveStatus.textContent = 'Saving...';
+      clearTimeout(saveTimeout);
+
+      saveTimeout = setTimeout(async () => {
+        const s = snippets.find(x => x.id === currentSnippetId);
+        if (!s) return;
+
+        s.title = snippetTitle.value.trim() || 'Untitled';
+        s.language = snippetLang.value;
+        s.folderId = snippetFolder.value;
+        s.code = snippetCode.value;
+        s.tags = snippetTags.value.split(',').map(t => t.trim()).filter(Boolean);
+        s.description = snippetNotes.value;
+        s.updatedAt = new Date().toISOString();
+
+        await db.saveSnippet(s);
+        saveStatus.textContent = 'Saved locally';
+        renderSnippetList();
+        renderTags();
+      }, 300);
+    }
+
+    // --- EVENT LISTENERS ---
+    [snippetTitle, snippetLang, snippetFolder, snippetCode, snippetTags, snippetNotes].forEach(el => {
+      el.addEventListener('input', triggerAutoSave);
+      el.addEventListener('change', triggerAutoSave);
+    });
+
+    // Tab key indentation support in Code Editor
+    snippetCode.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = snippetCode.selectionStart;
+        const end = snippetCode.selectionEnd;
+        snippetCode.value = snippetCode.value.substring(0, start) + '  ' + snippetCode.value.substring(end);
+        snippetCode.selectionStart = snippetCode.selectionEnd = start + 2;
+        triggerAutoSave();
+      }
+    });
+
+    btnNewSnippet.addEventListener('click', async () => {
+      const newSnip = {
+        id: 'snip-' + Date.now(),
+        title: 'New Snippet',
+        code: '',
+        language: 'typescript',
+        folderId: currentView.startsWith('f-') ? currentView : '',
+        tags: [],
+        description: '',
+        isFavorite: false,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      snippets.unshift(newSnip);
+      await db.saveSnippet(newSnip);
+      renderSnippetList();
+      selectSnippet(newSnip.id);
+      showToast('Created new snippet');
+      snippetTitle.focus();
+    });
+
+    btnStar.addEventListener('click', async () => {
+      const s = snippets.find(x => x.id === currentSnippetId);
+      if (!s) return;
+      s.isFavorite = !s.isFavorite;
+      btnStar.textContent = s.isFavorite ? '⭐' : '☆';
+      await db.saveSnippet(s);
+      renderFolders();
+      renderSnippetList();
+    });
+
+    btnCopyCode.addEventListener('click', () => {
+      navigator.clipboard.writeText(snippetCode.value).then(() => {
+        showToast('Code copied to clipboard!');
+      });
+    });
+
+    btnDuplicate.addEventListener('click', async () => {
+      const s = snippets.find(x => x.id === currentSnippetId);
+      if (!s) return;
+      const dup = {
+        ...s,
+        id: 'snip-' + Date.now(),
+        title: s.title + ' (Copy)',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      snippets.unshift(dup);
+      await db.saveSnippet(dup);
+      renderSnippetList();
+      selectSnippet(dup.id);
+      showToast('Duplicated snippet');
+    });
+
+    btnDownloadFile.addEventListener('click', () => {
+      const s = snippets.find(x => x.id === currentSnippetId);
+      if (!s) return;
+      const ext = LANG_EXTS[s.language] || 'txt';
+      const blob = new Blob([s.code || ''], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(s.title || 'snippet').toLowerCase().replace(/\s+/g, '_')}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnTrash.addEventListener('click', async () => {
+      const s = snippets.find(x => x.id === currentSnippetId);
+      if (!s) return;
+      if (s.isDeleted) {
+        s.isDeleted = false;
+        showToast('Restored snippet from trash');
+      } else {
+        s.isDeleted = true;
+        showToast('Moved snippet to trash');
+      }
+      await db.saveSnippet(s);
+      renderFolders();
+      renderSnippetList();
+      const remaining = snippets.filter(x => !x.isDeleted);
+      if (remaining.length > 0) selectSnippet(remaining[0].id);
+    });
+
+    // Navigation Switching
+    document.querySelectorAll('.sidebar-pane .nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-pane .nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        currentView = item.dataset.view;
+        selectedTag = null;
+        renderTags();
+        renderSnippetList();
+      });
+    });
+
+    window.toggleTagFilter = function(tag) {
+      selectedTag = selectedTag === tag ? null : tag;
+      renderTags();
+      renderSnippetList();
+    };
+
+    window.deleteFolderPrompt = async function(fId, e) {
+      e.stopPropagation();
+      if (confirm('Delete this folder? (Snippets in this folder will remain preserved without a folder)')) {
+        folders = folders.filter(f => f.id !== fId);
+        await db.deleteFolder(fId);
+        snippets.forEach(s => { if (s.folderId === fId) s.folderId = ''; });
+        renderFolders();
+        renderSnippetFolderDropdown();
+        renderSnippetList();
+        showToast('Folder deleted');
+      }
+    };
+
+    btnAddFolder.addEventListener('click', async () => {
+      const name = prompt('Folder name:');
+      if (name && name.trim()) {
+        const newFolder = { id: 'f-' + Date.now(), name: name.trim() };
+        folders.push(newFolder);
+        await db.saveFolder(newFolder);
+        renderFolders();
+        renderSnippetFolderDropdown();
+        showToast(`Created folder "${name}"`);
+      }
+    });
+
+    searchInput.addEventListener('input', renderSnippetList);
+    sortSelect.addEventListener('change', renderSnippetList);
+
+    // --- COMMAND PALETTE (CMD+K) ---
+    btnQuickOpen.addEventListener('click', openPalette);
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openPalette();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        btnNewSnippet.click();
+      }
+    });
+
+    function openPalette() {
+      paletteModal.classList.add('open');
+      paletteInput.value = '';
+      renderPaletteResults('');
+      paletteInput.focus();
+    }
+
+    paletteInput.addEventListener('input', () => {
+      renderPaletteResults(paletteInput.value.toLowerCase().trim());
+    });
+
+    paletteModal.addEventListener('click', (e) => {
+      if (e.target === paletteModal) paletteModal.classList.remove('open');
+    });
+
+    function renderPaletteResults(q) {
+      const active = snippets.filter(s => !s.isDeleted);
+      const filtered = q ? active.filter(s => (s.title || '').toLowerCase().includes(q) || (s.code || '').toLowerCase().includes(q)) : active;
+
+      let html = '';
+      filtered.slice(0, 10).forEach(s => {
+        html += `
+          <div class="palette-item" onclick="jumpToSnippet('${s.id}')">
+            <span>📄 ${escapeHtml(s.title)}</span>
+            <span class="lang-badge">${s.language}</span>
+          </div>
+        `;
+      });
+      paletteResults.innerHTML = html || '<div style="padding:1rem; color:var(--muted); text-align:center;">No matching snippets</div>';
+    }
+
+    window.jumpToSnippet = function(id) {
+      paletteModal.classList.remove('open');
+      selectSnippet(id);
+    };
+
+    // --- BACKUP & EXPORT MODAL ---
+    btnOpenBackupModal.addEventListener('click', () => backupModal.classList.add('open'));
+    btnQuickExport.addEventListener('click', exportFullBackup);
+    btnCloseBackup.addEventListener('click', () => backupModal.classList.remove('open'));
+    backupModal.addEventListener('click', (e) => { if (e.target === backupModal) backupModal.classList.remove('open'); });
+    btnExportJson.addEventListener('click', exportFullBackup);
+
+    function exportFullBackup() {
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        folders,
+        snippets
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snippets-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Backup downloaded');
+    }
+
+    importJsonFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = async (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (Array.isArray(data.folders)) {
+            for (const f of data.folders) {
+              if (!folders.some(x => x.id === f.id)) {
+                folders.push(f);
+                await db.saveFolder(f);
+              }
+            }
+          }
+          if (Array.isArray(data.snippets)) {
+            for (const s of data.snippets) {
+              if (!snippets.some(x => x.id === s.id)) {
+                snippets.push(s);
+                await db.saveSnippet(s);
+              }
+            }
+          }
+          renderFolders();
+          renderTags();
+          renderSnippetFolderDropdown();
+          renderSnippetList();
+          backupModal.classList.remove('open');
+          showToast('Import completed successfully!');
+        } catch {
+          alert('Invalid backup JSON file.');
+        }
+      };
+      r.readAsText(file);
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Run init
+    initApp();
+  </script>
+</body>
+</html>

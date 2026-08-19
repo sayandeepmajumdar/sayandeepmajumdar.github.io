@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual SQL Query Builder — Interactive SQL Generator &amp; Sandbox | sayandeep.dev</title>
+  <meta name="description" content="Build SQL SELECT queries visually without hand-writing code. Interactive visual builder for JOINs, WHERE, GROUP BY, HAVING, and ORDER BY with live multi-dialect SQL formatting, schema management, and in-browser execution." />
+  <meta name="keywords" content="sql query builder, visual sql builder, generate sql online, sql generator, sql join builder, no code sql, interactive sql sandbox" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/sql-builder/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- sql-formatter library for clean SQL output -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql-formatter/15.4.4/sql-formatter.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Toolbar */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .btn--danger {
+      color: var(--error);
+      border-color: rgba(239, 68, 68, 0.3);
+      background: var(--error-bg);
+    }
+
+    .btn--danger:hover {
+      background: var(--error);
+      color: #ffffff;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 1.25rem;
+      align-items: stretch;
+      min-height: 600px;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Clause Accordion Cards */
+    .clause-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .clause-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: border-color var(--transition);
+    }
+
+    .clause-card:hover {
+      border-color: var(--line);
+    }
+
+    .clause-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .clause-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.845rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .clause-keyword {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-size: 0.875rem;
+    }
+
+    .clause-summary {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .clause-body {
+      padding: 1rem;
+      background: var(--surface);
+    }
+
+    /* Right Output Panel */
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .output-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .output-tab {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .output-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--surface);
+      overflow: auto;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      padding: 1.25rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+    }
+
+    /* Table Column Selector Grid */
+    .column-select-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.5rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .column-select-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.65rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      gap: 0.4rem;
+    }
+
+    /* Condition Row */
+    .condition-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+      background: var(--surface-alt);
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+
+    /* Execution Results Table */
+    .results-table-wrap {
+      padding: 1rem;
+      overflow: auto;
+      max-height: 480px;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    .results-table th, .results-table td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--line);
+    }
+
+    .results-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    /* Explain Panel */
+    .explain-wrap {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .explain-step-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.9rem 1.1rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+    }
+
+    .explain-step-card:hover {
+      border-color: var(--accent);
+    }
+
+    .explain-step-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .explain-step-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .explain-step-title {
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .explain-step-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: var(--accent-light);
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .explain-step-desc {
+      color: var(--text);
+      font-size: 0.845rem;
+      line-height: 1.6;
+    }
+
+    .explain-step-desc strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .explain-step-desc code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      color: var(--accent);
+      word-break: break-word;
+    }
+
+    /* Guardrail Alert */
+    .guardrail-alert {
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="SQL Query Builder">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">SQL Query Builder</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-left">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="dialect-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Dialect:</label>
+            <select id="dialect-select" class="form-select">
+              <option value="postgresql" selected>PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+              <option value="tsql">SQL Server (T-SQL)</option>
+              <option value="sqlite">SQLite</option>
+              <option value="sql">Standard SQL</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="schema-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Schema:</label>
+            <select id="schema-select" class="form-select">
+              <option value="ecommerce" selected>🛍️ E-Commerce Store</option>
+              <option value="hr">🏢 HR &amp; Employees</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="preset-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Preset Query:</label>
+            <select id="preset-select" class="form-select">
+              <option value="none">-- Pick a sample --</option>
+              <option value="top_customers">Top Spending Customers</option>
+              <option value="category_sales">Sales Revenue by Category</option>
+              <option value="recent_orders">Recent Completed Orders</option>
+            </select>
+          </div>
+
+          <button id="btn-reset" class="btn btn--sm">🔄 Reset</button>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="btn-run-query" class="btn btn--primary btn--sm">▶️ Run Query</button>
+          <button id="btn-copy-sql" class="btn btn--sm">📋 Copy SQL</button>
+          <button id="btn-download-sql" class="btn btn--sm">💾 Download .sql</button>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Left: Clause Stack Builder -->
+        <div class="clause-stack">
+          <!-- 1. FROM CLAUSE -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="from">
+              <div class="clause-title">
+                <span class="clause-keyword">FROM</span>
+                <span>Primary Table</span>
+              </div>
+              <span class="clause-summary" id="sum-from">customers</span>
+            </div>
+            <div class="clause-body" id="body-from">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <label for="from-table-select" style="font-size:0.8125rem; font-weight:600;">Main Table:</label>
+                <select id="from-table-select" class="form-select" style="flex:1;">
+                  <!-- Injected by schema -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. JOIN CLAUSE -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="join">
+              <div class="clause-title">
+                <span class="clause-keyword">JOIN</span>
+                <span>Related Tables</span>
+              </div>
+              <span class="clause-summary" id="sum-join">0 Joins</span>
+            </div>
+            <div class="clause-body" id="body-join">
+              <div id="join-list" style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.75rem;">
+                <!-- Join rows injected here -->
+              </div>
+              <button id="btn-add-join" class="btn btn--sm">+ Add JOIN</button>
+            </div>
+          </div>
+
+          <!-- 3. SELECT CLAUSE -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="select">
+              <div class="clause-title">
+                <span class="clause-keyword">SELECT</span>
+                <span>Columns &amp; Aggregations</span>
+              </div>
+              <span class="clause-summary" id="sum-select">All columns (*)</span>
+            </div>
+            <div class="clause-body" id="body-select">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <div style="font-size:0.75rem; color:var(--muted); font-weight:600;">Pick columns and optional aggregates:</div>
+                <div style="display:flex; gap:0.4rem;">
+                  <button id="btn-select-all" class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.7rem;">Select All</button>
+                  <button id="btn-deselect-all" class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.7rem;">Deselect All</button>
+                </div>
+              </div>
+              <div id="column-selector-grid" class="column-select-grid">
+                <!-- Checkboxes injected by active tables -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. WHERE CLAUSE -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="where">
+              <div class="clause-title">
+                <span class="clause-keyword">WHERE</span>
+                <span>Filters &amp; Conditions</span>
+              </div>
+              <span class="clause-summary" id="sum-where">No filters</span>
+            </div>
+            <div class="clause-body" id="body-where">
+              <div id="where-conditions-list" style="margin-bottom:0.75rem;">
+                <!-- Condition rows injected here -->
+              </div>
+              <button id="btn-add-where" class="btn btn--sm">+ Add Condition</button>
+            </div>
+          </div>
+
+          <!-- 5. GROUP BY & HAVING -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="group">
+              <div class="clause-title">
+                <span class="clause-keyword">GROUP BY &amp; HAVING</span>
+                <span>Aggregations</span>
+              </div>
+              <span class="clause-summary" id="sum-group">None</span>
+            </div>
+            <div class="clause-body" id="body-group">
+              <div id="groupby-alert" class="guardrail-alert" style="display:none;">
+                <span>⚠️</span>
+                <span>You have selected aggregate functions (SUM/COUNT/etc). Group by non-aggregated columns to ensure valid SQL.</span>
+              </div>
+              <div style="margin-bottom:0.85rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); margin-bottom:0.4rem;">GROUP BY Columns:</div>
+                <div id="groupby-checkboxes" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                  <!-- Checkboxes injected here -->
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); margin-bottom:0.4rem;">HAVING Aggregate Filter:</div>
+                <div id="having-conditions-list">
+                  <!-- Having conditions injected here -->
+                </div>
+                <button id="btn-add-having" class="btn btn--sm" style="margin-top:0.4rem;">+ Add HAVING Condition</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. ORDER BY & LIMIT -->
+          <div class="clause-card">
+            <div class="clause-header" data-clause="order">
+              <div class="clause-title">
+                <span class="clause-keyword">ORDER BY &amp; LIMIT</span>
+                <span>Sorting &amp; Pagination</span>
+              </div>
+              <span class="clause-summary" id="sum-order">Default</span>
+            </div>
+            <div class="clause-body" id="body-order">
+              <div id="order-list" style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.75rem;">
+                <!-- Order rows injected here -->
+              </div>
+              <button id="btn-add-order" class="btn btn--sm" style="margin-bottom:0.85rem;">+ Add Sort Column</button>
+
+              <div style="display:flex; gap:1rem; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:0.75rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <label for="limit-input" style="font-size:0.8125rem; font-weight:600;">LIMIT:</label>
+                  <input type="number" id="limit-input" class="form-input" style="width:80px;" value="100" min="1" max="10000" />
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <label for="offset-input" style="font-size:0.8125rem; font-weight:600;">OFFSET:</label>
+                  <input type="number" id="offset-input" class="form-input" style="width:80px;" value="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live SQL Preview & Interactive Results Panel -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="output-tabs" id="output-tabs">
+              <button class="output-tab active" data-tab="sql">✨ Generated SQL</button>
+              <button class="output-tab" data-tab="results">📊 Execution Results (<span id="results-count">0</span>)</button>
+              <button class="output-tab" data-tab="explain">💡 Explain Query</button>
+              <button class="output-tab" data-tab="schema">🗄️ Schema Explorer</button>
+            </div>
+            <div style="font-size:0.75rem; color:var(--muted); font-weight:600;" id="dialect-indicator">PostgreSQL</div>
+          </div>
+
+          <div class="panel-body">
+            <!-- View 1: Generated SQL -->
+            <div id="view-sql" style="height:100%; display:flex; flex-direction:column;">
+              <textarea id="generated-sql-output" class="code-textarea" readonly spellcheck="false"></textarea>
+            </div>
+
+            <!-- View 2: Execution Results Table -->
+            <div id="view-results" class="results-table-wrap" style="display:none;">
+              <div id="results-table-container">
+                <div style="color:var(--muted); text-align:center; padding:2rem;">Click <strong>"▶️ Run Query"</strong> in the toolbar to execute this query against the in-memory sample database.</div>
+              </div>
+            </div>
+
+            <!-- View 3: Plain-English Query Explainer -->
+            <div id="view-explain" class="explain-wrap" style="display:none;">
+              <div id="explain-content">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+            <!-- View 4: Schema Explorer -->
+            <div id="view-schema" style="padding:1rem; display:none;">
+              <div id="schema-tree-container" style="display:flex; flex-direction:column; gap:0.75rem;">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../sql-formatter/">SQL Formatter</a>
+        <a href="../json-to-csv/">JSON ⮂ CSV</a>
+        <a href="../csv-to-pdf/">CSV to PDF</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // SCHEMAS DEFINITION
+    const SCHEMAS = {
+      ecommerce: {
+        name: "E-Commerce Store",
+        tables: {
+          customers: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "name", type: "VARCHAR" },
+            { name: "email", type: "VARCHAR" },
+            { name: "country", type: "VARCHAR" },
+            { name: "created_at", type: "DATE" }
+          ],
+          orders: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "customer_id", type: "INT", isFk: "customers.id" },
+            { name: "order_date", type: "DATE" },
+            { name: "status", type: "VARCHAR" },
+            { name: "total_amount", type: "DECIMAL" }
+          ],
+          order_items: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "order_id", type: "INT", isFk: "orders.id" },
+            { name: "product_id", type: "INT", isFk: "products.id" },
+            { name: "quantity", type: "INT" },
+            { name: "unit_price", type: "DECIMAL" }
+          ],
+          products: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "category_id", type: "INT", isFk: "categories.id" },
+            { name: "sku", type: "VARCHAR" },
+            { name: "name", type: "VARCHAR" },
+            { name: "price", type: "DECIMAL" },
+            { name: "stock_qty", type: "INT" }
+          ],
+          categories: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "name", type: "VARCHAR" },
+            { name: "slug", type: "VARCHAR" }
+          ]
+        },
+        sampleData: {
+          customers: [
+            { id: 1, name: "Alice Smith", email: "alice@acme.com", country: "US", created_at: "2024-01-15" },
+            { id: 2, name: "Bob Jones", email: "bob@corp.co.uk", country: "UK", created_at: "2024-02-20" },
+            { id: 3, name: "Chloe Dupont", email: "chloe@tech.fr", country: "FR", created_at: "2024-03-05" },
+            { id: 4, name: "David Kim", email: "david@seoul.kr", country: "KR", created_at: "2024-04-12" },
+            { id: 5, name: "Elena Rossi", email: "elena@milan.it", country: "IT", created_at: "2024-05-18" }
+          ],
+          orders: [
+            { id: 101, customer_id: 1, order_date: "2025-01-10", status: "completed", total_amount: 1250.00 },
+            { id: 102, customer_id: 1, order_date: "2025-01-22", status: "completed", total_amount: 450.50 },
+            { id: 103, customer_id: 2, order_date: "2025-02-04", status: "shipped", total_amount: 2100.00 },
+            { id: 104, customer_id: 3, order_date: "2025-02-15", status: "completed", total_amount: 890.00 },
+            { id: 105, customer_id: 4, order_date: "2025-02-28", status: "cancelled", total_amount: 320.00 },
+            { id: 106, customer_id: 5, order_date: "2025-03-01", status: "completed", total_amount: 5400.00 }
+          ],
+          order_items: [
+            { id: 1, order_id: 101, product_id: 1, quantity: 1, unit_price: 1250.00 },
+            { id: 2, order_id: 102, product_id: 3, quantity: 2, unit_price: 225.25 },
+            { id: 3, order_id: 103, product_id: 2, quantity: 1, unit_price: 2100.00 },
+            { id: 4, order_id: 104, product_id: 4, quantity: 4, unit_price: 222.50 },
+            { id: 5, order_id: 106, product_id: 2, quantity: 2, unit_price: 2100.00 },
+            { id: 6, order_id: 106, product_id: 1, quantity: 1, unit_price: 1200.00 }
+          ],
+          products: [
+            { id: 1, category_id: 1, sku: "LAP-001", name: "Pro Laptop 16-inch", price: 1250.00, stock_qty: 45 },
+            { id: 2, category_id: 1, sku: "WKS-002", name: "Ultra Desktop Workstation", price: 2100.00, stock_qty: 12 },
+            { id: 3, category_id: 2, sku: "MON-003", name: "4K Curved Monitor 32-inch", price: 450.00, stock_qty: 8 },
+            { id: 4, category_id: 3, sku: "ACC-004", name: "Wireless Mechanical Keyboard", price: 150.00, stock_qty: 120 }
+          ],
+          categories: [
+            { id: 1, name: "Computers", slug: "computers" },
+            { id: 2, name: "Displays", slug: "displays" },
+            { id: 3, name: "Accessories", slug: "accessories" }
+          ]
+        }
+      },
+      hr: {
+        name: "HR & Employees",
+        tables: {
+          employees: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "department_id", type: "INT", isFk: "departments.id" },
+            { name: "first_name", type: "VARCHAR" },
+            { name: "last_name", type: "VARCHAR" },
+            { name: "salary", type: "DECIMAL" },
+            { name: "hire_date", type: "DATE" }
+          ],
+          departments: [
+            { name: "id", type: "INT", isPk: true },
+            { name: "name", type: "VARCHAR" },
+            { name: "location", type: "VARCHAR" }
+          ]
+        },
+        sampleData: {
+          employees: [
+            { id: 1, department_id: 1, first_name: "Sarah", last_name: "Connor", salary: 115000, hire_date: "2021-06-01" },
+            { id: 2, department_id: 1, first_name: "John", last_name: "Doe", salary: 98000, hire_date: "2022-03-15" },
+            { id: 3, department_id: 2, first_name: "Emily", last_name: "Watson", salary: 125000, hire_date: "2020-01-10" },
+            { id: 4, department_id: 3, first_name: "Michael", last_name: "Chang", salary: 88000, hire_date: "2023-08-20" }
+          ],
+          departments: [
+            { id: 1, name: "Engineering", location: "San Francisco" },
+            { id: 2, name: "Product & Design", location: "New York" },
+            { id: 3, name: "Marketing", location: "London" }
+          ]
+        }
+      }
+    };
+
+    // CURRENT STATE
+    let currentSchemaKey = "ecommerce";
+    let queryState = {
+      fromTable: "customers",
+      joins: [], // [{ type: "INNER", table: "orders", leftCol: "customers.id", rightCol: "orders.customer_id" }]
+      selectCols: [], // [{ table: "customers", col: "name", agg: "NONE", alias: "" }]
+      whereGroups: [], // [{ col: "customers.country", op: "=", val: "US", logic: "AND" }]
+      groupByCols: [], // ["customers.country"]
+      havingGroups: [], // [{ agg: "SUM(orders.total_amount)", op: ">", val: "1000" }]
+      orderByCols: [], // [{ col: "customers.name", dir: "ASC" }]
+      limit: 100,
+      offset: 0
+    };
+
+    // DOM Elements
+    const fromTableSelect = document.getElementById("from-table-select");
+    const schemaSelect = document.getElementById("schema-select");
+    const presetSelect = document.getElementById("preset-select");
+    const dialectSelect = document.getElementById("dialect-select");
+    const dialectIndicator = document.getElementById("dialect-indicator");
+
+    const columnSelectorGrid = document.getElementById("column-selector-grid");
+    const joinList = document.getElementById("join-list");
+    const btnAddJoin = document.getElementById("btn-add-join");
+    const whereConditionsList = document.getElementById("where-conditions-list");
+    const btnAddWhere = document.getElementById("btn-add-where");
+    const groupbyCheckboxes = document.getElementById("groupby-checkboxes");
+    const groupbyAlert = document.getElementById("groupby-alert");
+    const havingConditionsList = document.getElementById("having-conditions-list");
+    const btnAddHaving = document.getElementById("btn-add-having");
+    const orderList = document.getElementById("order-list");
+    const btnAddOrder = document.getElementById("btn-add-order");
+    const limitInput = document.getElementById("limit-input");
+    const offsetInput = document.getElementById("offset-input");
+
+    const btnSelectAll = document.getElementById("btn-select-all");
+    const btnDeselectAll = document.getElementById("btn-deselect-all");
+
+    const generatedSqlOutput = document.getElementById("generated-sql-output");
+    const btnCopySql = document.getElementById("btn-copy-sql");
+    const btnDownloadSql = document.getElementById("btn-download-sql");
+    const btnRunQuery = document.getElementById("btn-run-query");
+    const btnReset = document.getElementById("btn-reset");
+
+    const outputTabs = document.getElementById("output-tabs");
+    const viewSql = document.getElementById("view-sql");
+    const viewResults = document.getElementById("view-results");
+    const viewExplain = document.getElementById("view-explain");
+    const viewSchema = document.getElementById("view-schema");
+    const resultsCount = document.getElementById("results-count");
+    const resultsTableContainer = document.getElementById("results-table-container");
+    const explainContent = document.getElementById("explain-content");
+    const schemaTreeContainer = document.getElementById("schema-tree-container");
+
+    const toast = document.getElementById("toast");
+    const toastMsg = document.getElementById("toast-msg");
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+
+    // INITIALIZATION
+    function initSchema() {
+      const schema = SCHEMAS[currentSchemaKey];
+      fromTableSelect.innerHTML = "";
+      Object.keys(schema.tables).forEach(tbl => {
+        const opt = document.createElement("option");
+        opt.value = tbl;
+        opt.textContent = `${tbl} (${schema.tables[tbl].length} cols)`;
+        fromTableSelect.appendChild(opt);
+      });
+
+      queryState.fromTable = Object.keys(schema.tables)[0];
+      queryState.joins = [];
+      queryState.selectCols = [];
+      queryState.whereGroups = [];
+      queryState.groupByCols = [];
+      queryState.havingGroups = [];
+      queryState.orderByCols = [];
+
+      renderAllClausePanels();
+      renderSchemaExplorer();
+      generateSQL();
+    }
+
+    // RENDER ALL CLAUSE CONTROLS
+    function renderAllClausePanels() {
+      renderSelectColumns();
+      renderJoinList();
+      renderWhereList();
+      renderGroupBy();
+      renderHavingList();
+      renderOrderList();
+    }
+
+    function getActiveTables() {
+      const tables = [queryState.fromTable];
+      queryState.joins.forEach(j => {
+        if (j.table && !tables.includes(j.table)) tables.push(j.table);
+      });
+      return tables;
+    }
+
+    // SELECT Columns UI
+    function renderSelectColumns() {
+      columnSelectorGrid.innerHTML = "";
+      const schema = SCHEMAS[currentSchemaKey];
+      const activeTables = getActiveTables();
+
+      activeTables.forEach(tbl => {
+        const cols = schema.tables[tbl] || [];
+        cols.forEach(col => {
+          const colId = `${tbl}.${col.name}`;
+          const isSelected = queryState.selectCols.some(s => s.colId === colId);
+          const currentItem = queryState.selectCols.find(s => s.colId === colId) || { agg: "NONE", alias: "" };
+
+          const itemDiv = document.createElement("div");
+          itemDiv.className = "column-select-item";
+          itemDiv.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <input type="checkbox" id="chk-${colId}" ${isSelected ? "checked" : ""} />
+              <label for="chk-${colId}" style="cursor:pointer; font-weight:600;">${tbl}.${col.name}</label>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.25rem;">
+              <select class="form-select agg-select" style="font-size:0.7rem; padding:0.15rem 0.35rem;" ${!isSelected ? "disabled" : ""}>
+                <option value="NONE" ${currentItem.agg === "NONE" ? "selected" : ""}>-</option>
+                <option value="COUNT" ${currentItem.agg === "COUNT" ? "selected" : ""}>COUNT</option>
+                <option value="SUM" ${currentItem.agg === "SUM" ? "selected" : ""}>SUM</option>
+                <option value="AVG" ${currentItem.agg === "AVG" ? "selected" : ""}>AVG</option>
+                <option value="MIN" ${currentItem.agg === "MIN" ? "selected" : ""}>MIN</option>
+                <option value="MAX" ${currentItem.agg === "MAX" ? "selected" : ""}>MAX</option>
+                <option value="DISTINCT" ${currentItem.agg === "DISTINCT" ? "selected" : ""}>DISTINCT</option>
+              </select>
+              <input type="text" class="form-input alias-input" placeholder="alias" value="${currentItem.alias}" style="width:55px; font-size:0.7rem; padding:0.15rem 0.35rem;" ${!isSelected ? "disabled" : ""} />
+            </div>
+          `;
+
+          const chk = itemDiv.querySelector(`input[type="checkbox"]`);
+          const aggSel = itemDiv.querySelector(".agg-select");
+          const aliasInp = itemDiv.querySelector(".alias-input");
+
+          chk.addEventListener("change", () => {
+            aggSel.disabled = !chk.checked;
+            aliasInp.disabled = !chk.checked;
+            if (chk.checked) {
+              if (!queryState.selectCols.some(s => s.colId === colId)) {
+                queryState.selectCols.push({ colId, table: tbl, col: col.name, agg: aggSel.value, alias: aliasInp.value.trim() });
+              }
+            } else {
+              queryState.selectCols = queryState.selectCols.filter(s => s.colId !== colId);
+            }
+            generateSQL();
+          });
+
+          aggSel.addEventListener("change", () => {
+            const found = queryState.selectCols.find(s => s.colId === colId);
+            if (found) found.agg = aggSel.value;
+            generateSQL();
+          });
+
+          aliasInp.addEventListener("input", () => {
+            const found = queryState.selectCols.find(s => s.colId === colId);
+            if (found) found.alias = aliasInp.value.trim();
+            generateSQL();
+          });
+
+          columnSelectorGrid.appendChild(itemDiv);
+        });
+      });
+    }
+
+    // JOIN UI
+    function renderJoinList() {
+      joinList.innerHTML = "";
+      const schema = SCHEMAS[currentSchemaKey];
+      const allTables = Object.keys(schema.tables);
+
+      document.getElementById("sum-join").textContent = `${queryState.joins.length} Join(s)`;
+
+      queryState.joins.forEach((join, idx) => {
+        const row = document.createElement("div");
+        row.className = "condition-row";
+
+        // Join Type
+        const typeSel = document.createElement("select");
+        typeSel.className = "form-select";
+        ["INNER", "LEFT", "RIGHT", "FULL"].forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = `${t} JOIN`;
+          if (join.type === t) opt.selected = true;
+          typeSel.appendChild(opt);
+        });
+
+        // Join Target Table
+        const targetTableSel = document.createElement("select");
+        targetTableSel.className = "form-select";
+        allTables.forEach(tbl => {
+          const opt = document.createElement("option");
+          opt.value = tbl;
+          opt.textContent = tbl;
+          if (join.table === tbl) opt.selected = true;
+          targetTableSel.appendChild(opt);
+        });
+
+        // Left Column (from already active tables)
+        const leftColSel = document.createElement("select");
+        leftColSel.className = "form-select";
+        const primaryCols = schema.tables[queryState.fromTable] || [];
+        primaryCols.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = `${queryState.fromTable}.${c.name}`;
+          opt.textContent = `${queryState.fromTable}.${c.name}`;
+          if (join.leftCol === opt.value) opt.selected = true;
+          leftColSel.appendChild(opt);
+        });
+
+        // Right Column (from target join table)
+        const rightColSel = document.createElement("select");
+        rightColSel.className = "form-select";
+        const targetCols = schema.tables[join.table] || [];
+        targetCols.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = `${join.table}.${c.name}`;
+          opt.textContent = `${join.table}.${c.name}`;
+          if (join.rightCol === opt.value) opt.selected = true;
+          rightColSel.appendChild(opt);
+        });
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn btn--danger btn--sm";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          queryState.joins.splice(idx, 1);
+          renderAllClausePanels();
+          generateSQL();
+        });
+
+        typeSel.addEventListener("change", () => { join.type = typeSel.value; generateSQL(); });
+        targetTableSel.addEventListener("change", () => {
+          join.table = targetTableSel.value;
+          // Auto-suggest matching FK
+          autoSuggestJoinCondition(join);
+          renderAllClausePanels();
+          generateSQL();
+        });
+        leftColSel.addEventListener("change", () => { join.leftCol = leftColSel.value; generateSQL(); });
+        rightColSel.addEventListener("change", () => { join.rightCol = rightColSel.value; generateSQL(); });
+
+        row.appendChild(typeSel);
+        row.appendChild(targetTableSel);
+        row.appendChild(document.createTextNode(" ON "));
+        row.appendChild(leftColSel);
+        row.appendChild(document.createTextNode(" = "));
+        row.appendChild(rightColSel);
+        row.appendChild(removeBtn);
+
+        joinList.appendChild(row);
+      });
+    }
+
+    function autoSuggestJoinCondition(join) {
+      const schema = SCHEMAS[currentSchemaKey];
+      const targetCols = schema.tables[join.table] || [];
+      const fromCols = schema.tables[queryState.fromTable] || [];
+
+      // Check if target table has customer_id and from table is customers
+      const matchInTarget = targetCols.find(c => c.name === `${queryState.fromTable.slice(0, -1)}_id` || c.name === `${queryState.fromTable}_id`);
+      if (matchInTarget) {
+        join.leftCol = `${queryState.fromTable}.id`;
+        join.rightCol = `${join.table}.${matchInTarget.name}`;
+        return;
+      }
+
+      // Check if from table has foreign key to target
+      const matchInFrom = fromCols.find(c => c.name === `${join.table.slice(0, -1)}_id` || c.name === `${join.table}_id`);
+      if (matchInFrom) {
+        join.leftCol = `${queryState.fromTable}.${matchInFrom.name}`;
+        join.rightCol = `${join.table}.id`;
+        return;
+      }
+
+      join.leftCol = `${queryState.fromTable}.id`;
+      join.rightCol = `${join.table}.id`;
+    }
+
+    btnAddJoin.addEventListener("click", () => {
+      const schema = SCHEMAS[currentSchemaKey];
+      const allTables = Object.keys(schema.tables);
+      const remaining = allTables.filter(t => t !== queryState.fromTable && !queryState.joins.some(j => j.table === t));
+      const targetTable = remaining.length > 0 ? remaining[0] : allTables[0];
+
+      const newJoin = { type: "INNER", table: targetTable, leftCol: "", rightCol: "" };
+      autoSuggestJoinCondition(newJoin);
+      queryState.joins.push(newJoin);
+
+      renderAllClausePanels();
+      generateSQL();
+    });
+
+    // WHERE Conditions UI
+    function renderWhereList() {
+      whereConditionsList.innerHTML = "";
+      const activeTables = getActiveTables();
+      const schema = SCHEMAS[currentSchemaKey];
+
+      document.getElementById("sum-where").textContent = queryState.whereGroups.length > 0 ? `${queryState.whereGroups.length} Condition(s)` : "No filters";
+
+      queryState.whereGroups.forEach((cond, idx) => {
+        const row = document.createElement("div");
+        row.className = "condition-row";
+
+        // Logic (AND / OR) if not first
+        if (idx > 0) {
+          const logicSel = document.createElement("select");
+          logicSel.className = "form-select";
+          ["AND", "OR"].forEach(l => {
+            const opt = document.createElement("option");
+            opt.value = l;
+            opt.textContent = l;
+            if (cond.logic === l) opt.selected = true;
+            logicSel.appendChild(opt);
+          });
+          logicSel.addEventListener("change", () => { cond.logic = logicSel.value; generateSQL(); });
+          row.appendChild(logicSel);
+        }
+
+        // Column select
+        const colSel = document.createElement("select");
+        colSel.className = "form-select";
+        activeTables.forEach(tbl => {
+          (schema.tables[tbl] || []).forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = `${tbl}.${c.name}`;
+            opt.textContent = `${tbl}.${c.name}`;
+            if (cond.col === opt.value) opt.selected = true;
+            colSel.appendChild(opt);
+          });
+        });
+
+        // Operator
+        const opSel = document.createElement("select");
+        opSel.className = "form-select";
+        ["=", "!=", ">", "<", ">=", "<=", "LIKE", "IN", "IS NULL", "IS NOT NULL"].forEach(op => {
+          const opt = document.createElement("option");
+          opt.value = op;
+          opt.textContent = op;
+          if (cond.op === op) opt.selected = true;
+          opSel.appendChild(opt);
+        });
+
+        // Value Input
+        const valInput = document.createElement("input");
+        valInput.type = "text";
+        valInput.className = "form-input";
+        valInput.placeholder = "value...";
+        valInput.value = cond.val || "";
+        valInput.style.flex = "1";
+        if (cond.op === "IS NULL" || cond.op === "IS NOT NULL") valInput.style.display = "none";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn btn--danger btn--sm";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          queryState.whereGroups.splice(idx, 1);
+          renderWhereList();
+          generateSQL();
+        });
+
+        colSel.addEventListener("change", () => { cond.col = colSel.value; generateSQL(); });
+        opSel.addEventListener("change", () => {
+          cond.op = opSel.value;
+          valInput.style.display = (cond.op === "IS NULL" || cond.op === "IS NOT NULL") ? "none" : "block";
+          generateSQL();
+        });
+        valInput.addEventListener("input", () => { cond.val = valInput.value; generateSQL(); });
+
+        row.appendChild(colSel);
+        row.appendChild(opSel);
+        row.appendChild(valInput);
+        row.appendChild(removeBtn);
+
+        whereConditionsList.appendChild(row);
+      });
+    }
+
+    btnAddWhere.addEventListener("click", () => {
+      const activeTables = getActiveTables();
+      const schema = SCHEMAS[currentSchemaKey];
+      const defaultCol = activeTables.length > 0 ? `${activeTables[0]}.${schema.tables[activeTables[0]][0].name}` : "";
+
+      queryState.whereGroups.push({ col: defaultCol, op: "=", val: "", logic: "AND" });
+      renderWhereList();
+      generateSQL();
+    });
+
+    // GROUP BY UI
+    function renderGroupBy() {
+      groupbyCheckboxes.innerHTML = "";
+      const activeTables = getActiveTables();
+      const schema = SCHEMAS[currentSchemaKey];
+
+      activeTables.forEach(tbl => {
+        (schema.tables[tbl] || []).forEach(c => {
+          const colId = `${tbl}.${c.name}`;
+          const isChecked = queryState.groupByCols.includes(colId);
+
+          const lbl = document.createElement("label");
+          lbl.style.display = "inline-flex";
+          lbl.style.alignItems = "center";
+          lbl.style.gap = "0.3rem";
+          lbl.style.fontSize = "0.75rem";
+          lbl.style.background = "var(--surface-alt)";
+          lbl.style.padding = "0.2rem 0.5rem";
+          lbl.style.borderRadius = "4px";
+          lbl.style.border = "1px solid var(--line)";
+          lbl.style.cursor = "pointer";
+
+          lbl.innerHTML = `<input type="checkbox" ${isChecked ? "checked" : ""} /> <span>${colId}</span>`;
+          const chk = lbl.querySelector("input");
+          chk.addEventListener("change", () => {
+            if (chk.checked) {
+              if (!queryState.groupByCols.includes(colId)) queryState.groupByCols.push(colId);
+            } else {
+              queryState.groupByCols = queryState.groupByCols.filter(g => g !== colId);
+            }
+            generateSQL();
+          });
+
+          groupbyCheckboxes.appendChild(lbl);
+        });
+      });
+
+      document.getElementById("sum-group").textContent = queryState.groupByCols.length > 0 ? `${queryState.groupByCols.length} Group(s)` : "None";
+    }
+
+    // HAVING UI
+    function renderHavingList() {
+      havingConditionsList.innerHTML = "";
+      queryState.havingGroups.forEach((cond, idx) => {
+        const row = document.createElement("div");
+        row.className = "condition-row";
+
+        const colInput = document.createElement("input");
+        colInput.type = "text";
+        colInput.className = "form-input";
+        colInput.value = cond.agg || "COUNT(*)";
+        colInput.style.width = "140px";
+
+        const opSel = document.createElement("select");
+        opSel.className = "form-select";
+        [">", "<", ">=", "<=", "=", "!="].forEach(op => {
+          const opt = document.createElement("option");
+          opt.value = op;
+          opt.textContent = op;
+          if (cond.op === op) opt.selected = true;
+          opSel.appendChild(opt);
+        });
+
+        const valInput = document.createElement("input");
+        valInput.type = "text";
+        valInput.className = "form-input";
+        valInput.value = cond.val || "0";
+        valInput.style.width = "80px";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn btn--danger btn--sm";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          queryState.havingGroups.splice(idx, 1);
+          renderHavingList();
+          generateSQL();
+        });
+
+        colInput.addEventListener("input", () => { cond.agg = colInput.value; generateSQL(); });
+        opSel.addEventListener("change", () => { cond.op = opSel.value; generateSQL(); });
+        valInput.addEventListener("input", () => { cond.val = valInput.value; generateSQL(); });
+
+        row.appendChild(colInput);
+        row.appendChild(opSel);
+        row.appendChild(valInput);
+        row.appendChild(removeBtn);
+
+        havingConditionsList.appendChild(row);
+      });
+    }
+
+    btnAddHaving.addEventListener("click", () => {
+      queryState.havingGroups.push({ agg: "COUNT(*)", op: ">", val: "5" });
+      renderHavingList();
+      generateSQL();
+    });
+
+    // ORDER BY UI
+    function renderOrderList() {
+      orderList.innerHTML = "";
+      const activeTables = getActiveTables();
+      const schema = SCHEMAS[currentSchemaKey];
+
+      document.getElementById("sum-order").textContent = queryState.orderByCols.length > 0 ? `${queryState.orderByCols.length} Column(s)` : "Default";
+
+      queryState.orderByCols.forEach((ord, idx) => {
+        const row = document.createElement("div");
+        row.className = "condition-row";
+
+        const colSel = document.createElement("select");
+        colSel.className = "form-select";
+        activeTables.forEach(tbl => {
+          (schema.tables[tbl] || []).forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = `${tbl}.${c.name}`;
+            opt.textContent = `${tbl}.${c.name}`;
+            if (ord.col === opt.value) opt.selected = true;
+            colSel.appendChild(opt);
+          });
+        });
+
+        const dirSel = document.createElement("select");
+        dirSel.className = "form-select";
+        ["ASC", "DESC"].forEach(d => {
+          const opt = document.createElement("option");
+          opt.value = d;
+          opt.textContent = d;
+          if (ord.dir === d) opt.selected = true;
+          dirSel.appendChild(opt);
+        });
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn btn--danger btn--sm";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          queryState.orderByCols.splice(idx, 1);
+          renderOrderList();
+          generateSQL();
+        });
+
+        colSel.addEventListener("change", () => { ord.col = colSel.value; generateSQL(); });
+        dirSel.addEventListener("change", () => { ord.dir = dirSel.value; generateSQL(); });
+
+        row.appendChild(colSel);
+        row.appendChild(dirSel);
+        row.appendChild(removeBtn);
+
+        orderList.appendChild(row);
+      });
+    }
+
+    btnAddOrder.addEventListener("click", () => {
+      const activeTables = getActiveTables();
+      const schema = SCHEMAS[currentSchemaKey];
+      const defaultCol = activeTables.length > 0 ? `${activeTables[0]}.${schema.tables[activeTables[0]][0].name}` : "";
+
+      queryState.orderByCols.push({ col: defaultCol, dir: "ASC" });
+      renderOrderList();
+      generateSQL();
+    });
+
+    // SELECT ALL / DESELECT ALL
+    btnSelectAll.addEventListener("click", () => {
+      const schema = SCHEMAS[currentSchemaKey];
+      const activeTables = getActiveTables();
+      queryState.selectCols = [];
+      activeTables.forEach(tbl => {
+        (schema.tables[tbl] || []).forEach(c => {
+          queryState.selectCols.push({ colId: `${tbl}.${c.name}`, table: tbl, col: c.name, agg: "NONE", alias: "" });
+        });
+      });
+      renderSelectColumns();
+      generateSQL();
+    });
+
+    btnDeselectAll.addEventListener("click", () => {
+      queryState.selectCols = [];
+      renderSelectColumns();
+      generateSQL();
+    });
+
+    // TABLE SELECT CHANGE
+    fromTableSelect.addEventListener("change", () => {
+      queryState.fromTable = fromTableSelect.value;
+      document.getElementById("sum-from").textContent = queryState.fromTable;
+      renderAllClausePanels();
+      generateSQL();
+    });
+
+    // LIMIT & OFFSET
+    limitInput.addEventListener("input", () => {
+      queryState.limit = parseInt(limitInput.value, 10) || 100;
+      generateSQL();
+    });
+    offsetInput.addEventListener("input", () => {
+      queryState.offset = parseInt(offsetInput.value, 10) || 0;
+      generateSQL();
+    });
+
+    dialectSelect.addEventListener("change", () => {
+      dialectIndicator.textContent = dialectSelect.options[dialectSelect.selectedIndex].text;
+      generateSQL();
+    });
+
+    // PRESET QUERIES
+    presetSelect.addEventListener("change", () => {
+      const val = presetSelect.value;
+      if (val === "top_customers") {
+        currentSchemaKey = "ecommerce";
+        schemaSelect.value = "ecommerce";
+        initSchema();
+        queryState.fromTable = "customers";
+        queryState.joins = [{ type: "INNER", table: "orders", leftCol: "customers.id", rightCol: "orders.customer_id" }];
+        queryState.selectCols = [
+          { colId: "customers.name", table: "customers", col: "name", agg: "NONE", alias: "customer_name" },
+          { colId: "customers.country", table: "customers", col: "country", agg: "NONE", alias: "" },
+          { colId: "orders.id", table: "orders", col: "id", agg: "COUNT", alias: "order_count" },
+          { colId: "orders.total_amount", table: "orders", col: "total_amount", agg: "SUM", alias: "total_revenue" }
+        ];
+        queryState.whereGroups = [{ col: "orders.status", op: "=", val: "completed", logic: "AND" }];
+        queryState.groupByCols = ["customers.name", "customers.country"];
+        queryState.havingGroups = [{ agg: "SUM(orders.total_amount)", op: ">", val: "500" }];
+        queryState.orderByCols = [{ col: "total_revenue", dir: "DESC" }];
+        queryState.limit = 50;
+      } else if (val === "category_sales") {
+        currentSchemaKey = "ecommerce";
+        schemaSelect.value = "ecommerce";
+        initSchema();
+        queryState.fromTable = "categories";
+        queryState.joins = [
+          { type: "INNER", table: "products", leftCol: "categories.id", rightCol: "products.category_id" },
+          { type: "INNER", table: "order_items", leftCol: "products.id", rightCol: "order_items.product_id" }
+        ];
+        queryState.selectCols = [
+          { colId: "categories.name", table: "categories", col: "name", agg: "NONE", alias: "category" },
+          { colId: "products.name", table: "products", col: "name", agg: "COUNT", alias: "items_sold_count" },
+          { colId: "order_items.unit_price", table: "order_items", col: "unit_price", agg: "SUM", alias: "category_revenue" }
+        ];
+        queryState.groupByCols = ["categories.name"];
+        queryState.orderByCols = [{ col: "category_revenue", dir: "DESC" }];
+      } else if (val === "recent_orders") {
+        currentSchemaKey = "ecommerce";
+        schemaSelect.value = "ecommerce";
+        initSchema();
+        queryState.fromTable = "orders";
+        queryState.joins = [{ type: "INNER", table: "customers", leftCol: "orders.customer_id", rightCol: "customers.id" }];
+        queryState.selectCols = [
+          { colId: "orders.id", table: "orders", col: "id", agg: "NONE", alias: "order_id" },
+          { colId: "customers.name", table: "customers", col: "name", agg: "NONE", alias: "customer" },
+          { colId: "orders.order_date", table: "orders", col: "order_date", agg: "NONE", alias: "" },
+          { colId: "orders.total_amount", table: "orders", col: "total_amount", agg: "NONE", alias: "" }
+        ];
+        queryState.whereGroups = [{ col: "orders.status", op: "=", val: "completed", logic: "AND" }];
+        queryState.orderByCols = [{ col: "orders.order_date", dir: "DESC" }];
+      }
+
+      fromTableSelect.value = queryState.fromTable;
+      renderAllClausePanels();
+      generateSQL();
+      showToast("Loaded preset query");
+    });
+
+    schemaSelect.addEventListener("change", () => {
+      currentSchemaKey = schemaSelect.value;
+      initSchema();
+    });
+
+    btnReset.addEventListener("click", () => {
+      initSchema();
+      showToast("Reset query builder");
+    });
+
+    // --- CORE SQL GENERATOR FUNCTION ---
+    function buildSqlString() {
+      const dialect = dialectSelect.value;
+      let sql = "SELECT ";
+
+      // T-SQL TOP
+      if (dialect === "tsql" && queryState.limit > 0 && queryState.offset === 0) {
+        sql += `TOP ${queryState.limit} `;
+      }
+
+      // SELECT Columns
+      if (queryState.selectCols.length === 0) {
+        sql += "*";
+      } else {
+        const colClauses = queryState.selectCols.map(s => {
+          let expr = `${s.table}.${s.col}`;
+          if (s.agg && s.agg !== "NONE") {
+            if (s.agg === "DISTINCT") expr = `DISTINCT ${expr}`;
+            else expr = `${s.agg}(${expr})`;
+          }
+          if (s.alias) {
+            expr += ` AS ${s.alias}`;
+          }
+          return expr;
+        });
+        sql += colClauses.join(", ");
+      }
+
+      // FROM
+      sql += ` FROM ${queryState.fromTable}`;
+
+      // JOINs
+      queryState.joins.forEach(j => {
+        sql += ` ${j.type} JOIN ${j.table} ON ${j.leftCol} = ${j.rightCol}`;
+      });
+
+      // WHERE
+      if (queryState.whereGroups.length > 0) {
+        sql += " WHERE ";
+        const whereClauses = queryState.whereGroups.map((w, idx) => {
+          let clause = idx > 0 ? ` ${w.logic} ` : "";
+          if (w.op === "IS NULL" || w.op === "IS NOT NULL") {
+            clause += `${w.col} ${w.op}`;
+          } else if (w.op === "IN") {
+            clause += `${w.col} IN (${w.val})`;
+          } else if (w.op === "LIKE") {
+            clause += `${w.col} LIKE '${w.val}'`;
+          } else {
+            const isNum = !isNaN(w.val) && w.val !== "";
+            const formattedVal = isNum ? w.val : `'${w.val}'`;
+            clause += `${w.col} ${w.op} ${formattedVal}`;
+          }
+          return clause;
+        });
+        sql += whereClauses.join("");
+      }
+
+      // GROUP BY
+      if (queryState.groupByCols.length > 0) {
+        sql += ` GROUP BY ${queryState.groupByCols.join(", ")}`;
+      }
+
+      // HAVING
+      if (queryState.havingGroups.length > 0 && queryState.groupByCols.length > 0) {
+        sql += " HAVING ";
+        const havingClauses = queryState.havingGroups.map(h => `${h.agg} ${h.op} ${h.val}`);
+        sql += havingClauses.join(" AND ");
+      }
+
+      // ORDER BY
+      if (queryState.orderByCols.length > 0) {
+        const orderClauses = queryState.orderByCols.map(o => `${o.col} ${o.dir}`);
+        sql += ` ORDER BY ${orderClauses.join(", ")}`;
+      }
+
+      // LIMIT & OFFSET (Non T-SQL)
+      if (dialect !== "tsql") {
+        if (queryState.limit > 0) sql += ` LIMIT ${queryState.limit}`;
+        if (queryState.offset > 0) sql += ` OFFSET ${queryState.offset}`;
+      } else if (queryState.offset > 0) {
+        sql += ` OFFSET ${queryState.offset} ROWS FETCH NEXT ${queryState.limit} ROWS ONLY`;
+      }
+
+      sql += ";";
+      return sql;
+    }
+
+    function generateSQL() {
+      const rawSql = buildSqlString();
+      let formattedSql = rawSql;
+
+      // Validate Guardrail
+      const hasAggs = queryState.selectCols.some(s => s.agg && s.agg !== "NONE" && s.agg !== "DISTINCT");
+      const hasNonAggs = queryState.selectCols.some(s => (!s.agg || s.agg === "NONE" || s.agg === "DISTINCT"));
+      if (hasAggs && hasNonAggs && queryState.groupByCols.length === 0) {
+        groupbyAlert.style.display = "flex";
+      } else {
+        groupbyAlert.style.display = "none";
+      }
+
+      // Format using sql-formatter
+      if (window.sqlFormatter && typeof window.sqlFormatter.format === 'function') {
+        try {
+          formattedSql = window.sqlFormatter.format(rawSql, {
+            language: dialectSelect.value === 'tsql' ? 'tsql' : (dialectSelect.value === 'mysql' ? 'mysql' : 'postgresql'),
+            tabWidth: 2,
+            keywordCase: 'upper'
+          });
+        } catch {
+          formattedSql = rawSql;
+        }
+      }
+
+      generatedSqlOutput.value = formattedSql;
+      updateExplanation();
+    }
+
+    // EXPLAIN QUERY ENGINE
+    function updateExplanation() {
+      const steps = [];
+      let stepNum = 1;
+
+      // Step 1: Base table & joins
+      let desc1 = `Starts by reading from the base table <code>${queryState.fromTable}</code>.`;
+      if (queryState.joins.length > 0) {
+        desc1 += ` Links related table(s): ${queryState.joins.map(j => `<code>${j.table}</code> (${j.type} JOIN on <code>${j.leftCol} = ${j.rightCol}</code>)`).join(", ")}.`;
+      }
+      steps.push({
+        num: stepNum++,
+        tag: "FROM / JOIN",
+        title: "Data Source & Relationships",
+        desc: desc1
+      });
+
+      // Step 2: Filtering
+      if (queryState.whereGroups.length > 0) {
+        const filters = queryState.whereGroups.map((w, idx) => {
+          let prefix = idx > 0 ? ` <strong>${w.logic}</strong> ` : "";
+          if (w.op === "IS NULL" || w.op === "IS NOT NULL") {
+            return `${prefix}<code>${w.col} ${w.op}</code>`;
+          }
+          return `${prefix}<code>${w.col} ${w.op} ${w.val}</code>`;
+        }).join("");
+
+        steps.push({
+          num: stepNum++,
+          tag: "WHERE",
+          title: "Row Filtering Conditions",
+          desc: `Filters rows matching: ${filters}.`
+        });
+      }
+
+      // Step 3: Grouping & Having
+      if (queryState.groupByCols.length > 0) {
+        let desc3 = `Groups output rows by <code>${queryState.groupByCols.join(", ")}</code>.`;
+        if (queryState.havingGroups.length > 0) {
+          desc3 += ` Filters aggregate buckets where ${queryState.havingGroups.map(h => `<code>${h.agg} ${h.op} ${h.val}</code>`).join(" AND ")}.`;
+        }
+        steps.push({
+          num: stepNum++,
+          tag: "GROUP BY",
+          title: "Aggregation & Grouping",
+          desc: desc3
+        });
+      }
+
+      // Step 4: Projections (SELECT)
+      let desc4 = "";
+      if (queryState.selectCols.length > 0) {
+        const cols = queryState.selectCols.map(s => {
+          let str = s.colId;
+          if (s.agg && s.agg !== "NONE") str = `${s.agg}(${str})`;
+          if (s.alias) str += ` (as "${s.alias}")`;
+          return `<code>${str}</code>`;
+        }).join(", ");
+        desc4 = `Extracts and projects columns: ${cols}.`;
+      } else {
+        desc4 = "Extracts all columns (<code>*</code>) from the active dataset.";
+      }
+      steps.push({
+        num: stepNum++,
+        tag: "SELECT",
+        title: "Selected Columns & Metrics",
+        desc: desc4
+      });
+
+      // Step 5: Ordering & Pagination
+      if (queryState.orderByCols.length > 0 || queryState.limit > 0) {
+        let desc5 = "";
+        if (queryState.orderByCols.length > 0) {
+          desc5 += `Sorts records by ${queryState.orderByCols.map(o => `<code>${o.col} ${o.dir}</code>`).join(", ")}. `;
+        }
+        if (queryState.limit > 0) {
+          desc5 += `Limits output to maximum <strong>${queryState.limit}</strong> rows (offset: ${queryState.offset}).`;
+        }
+        steps.push({
+          num: stepNum++,
+          tag: "ORDER / LIMIT",
+          title: "Sorting & Pagination",
+          desc: desc5
+        });
+      }
+
+      explainContent.innerHTML = steps.map(s => `
+        <div class="explain-step-card">
+          <div class="explain-step-badge">${s.num}</div>
+          <div class="explain-step-content">
+            <div class="explain-step-title">
+              <span>${s.title}</span>
+              <span class="explain-step-tag">${s.tag}</span>
+            </div>
+            <div class="explain-step-desc">${s.desc}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // IN-MEMORY QUERY RUNNER (Local Execution Sandbox)
+    btnRunQuery.addEventListener("click", executeQueryLocally);
+
+    function executeQueryLocally() {
+      const schema = SCHEMAS[currentSchemaKey];
+      const sample = schema.sampleData;
+      if (!sample) return;
+
+      // Switch to Results Tab
+      outputTabs.querySelectorAll(".output-tab").forEach(t => t.classList.remove("active"));
+      outputTabs.querySelector(`[data-tab="results"]`).classList.add("active");
+      viewSql.style.display = "none";
+      viewResults.style.display = "block";
+      viewExplain.style.display = "none";
+      viewSchema.style.display = "none";
+
+      try {
+        let dataset = JSON.parse(JSON.stringify(sample[queryState.fromTable] || []));
+
+        // Perform Joins
+        queryState.joins.forEach(j => {
+          const targetData = sample[j.table] || [];
+          const leftField = j.leftCol.split(".")[1];
+          const rightField = j.rightCol.split(".")[1];
+
+          dataset = dataset.map(row => {
+            const match = targetData.find(tRow => String(tRow[rightField]) === String(row[leftField]));
+            if (match) {
+              const joinedRow = { ...row };
+              Object.keys(match).forEach(k => joinedRow[`${j.table}_${k}`] = match[k]);
+              return joinedRow;
+            }
+            return j.type === "INNER" ? null : row;
+          }).filter(Boolean);
+        });
+
+        // Apply WHERE filter
+        if (queryState.whereGroups.length > 0) {
+          dataset = dataset.filter(row => {
+            return queryState.whereGroups.every(w => {
+              const colKey = w.col.includes(".") ? (w.col.startsWith(queryState.fromTable) ? w.col.split(".")[1] : w.col.replace(".", "_")) : w.col;
+              const val = row[colKey];
+              if (w.op === "=") return String(val).toLowerCase() === String(w.val).toLowerCase();
+              if (w.op === ">") return Number(val) > Number(w.val);
+              if (w.op === "<") return Number(val) < Number(w.val);
+              return true;
+            });
+          });
+        }
+
+        // Render Results Table
+        renderResultsTable(dataset);
+        resultsCount.textContent = dataset.length;
+        showToast(`Query returned ${dataset.length} row(s)`);
+      } catch (err) {
+        resultsTableContainer.innerHTML = `<div style="color:var(--error); padding:1rem;">Execution Error: ${err.message}</div>`;
+      }
+    }
+
+    function renderResultsTable(rows) {
+      if (!rows || rows.length === 0) {
+        resultsTableContainer.innerHTML = `<div style="color:var(--muted); text-align:center; padding:2rem;">0 rows returned for this query condition.</div>`;
+        return;
+      }
+
+      const cols = Object.keys(rows[0]);
+      let html = `<table class="results-table"><thead><tr>`;
+      cols.forEach(c => html += `<th>${c}</th>`);
+      html += `</tr></thead><tbody>`;
+
+      rows.forEach(r => {
+        html += `<tr>`;
+        cols.forEach(c => html += `<td>${r[c] !== undefined ? r[c] : ''}</td>`);
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      resultsTableContainer.innerHTML = html;
+    }
+
+    // SCHEMA EXPLORER
+    function renderSchemaExplorer() {
+      const schema = SCHEMAS[currentSchemaKey];
+      schemaTreeContainer.innerHTML = "";
+
+      Object.keys(schema.tables).forEach(tbl => {
+        const card = document.createElement("div");
+        card.style.background = "var(--surface-alt)";
+        card.style.padding = "0.75rem";
+        card.style.borderRadius = "var(--radius-sm)";
+        card.style.border = "1px solid var(--line)";
+
+        let colsHtml = (schema.tables[tbl] || []).map(c => `
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; padding:0.2rem 0; border-bottom:1px solid var(--line);">
+            <span><strong>${c.name}</strong> ${c.isPk ? '<span style="color:var(--accent); font-weight:700;">[PK]</span>' : ''} ${c.isFk ? `<span style="color:var(--muted);">[FK → ${c.isFk}]</span>` : ''}</span>
+            <span style="font-family:'JetBrains Mono',monospace; color:var(--muted);">${c.type}</span>
+          </div>
+        `).join("");
+
+        card.innerHTML = `
+          <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.4rem; color:var(--accent);">📋 ${tbl}</div>
+          <div style="display:flex; flex-direction:column;">${colsHtml}</div>
+        `;
+        schemaTreeContainer.appendChild(card);
+      });
+    }
+
+    // TAB SWITCHER
+    outputTabs.querySelectorAll(".output-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        outputTabs.querySelectorAll(".output-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const activeTab = tab.dataset.tab;
+
+        viewSql.style.display = activeTab === "sql" ? "flex" : "none";
+        viewResults.style.display = activeTab === "results" ? "block" : "none";
+        viewExplain.style.display = activeTab === "explain" ? "flex" : "none";
+        viewSchema.style.display = activeTab === "schema" ? "block" : "none";
+      });
+    });
+
+    // COPY & DOWNLOAD
+    btnCopySql.addEventListener("click", () => {
+      const val = generatedSqlOutput.value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => showToast("Generated SQL copied to clipboard!"));
+    });
+
+    btnDownloadSql.addEventListener("click", () => {
+      const val = generatedSqlOutput.value;
+      if (!val) return;
+      const blob = new Blob([val], { type: "text/sql;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "query.sql";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // INITIAL LAUNCH
+    initSchema();
+  </script>
+</body>
+</html>

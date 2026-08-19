@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTML to Markdown Converter — Clean GFM &amp; Rich Text Parser | sayandeep.dev</title>
+  <meta name="description" content="Free online HTML to Markdown converter. Convert raw HTML or pasted rich text into clean GitHub Flavored Markdown (GFM) with tables, code blocks, task lists, and live preview." />
+  <meta name="keywords" content="html to markdown, convert html to markdown, rich text to markdown, html to md, turndown online, gfm converter, web content to markdown" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/html-to-markdown/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Turndown, GFM plugin, Marked, DOMPurify -->
+  <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.3/dist/turndown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Workspace */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px - 44px);
+      padding: 0.75rem 1.25rem 0;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    /* Top Action Bar */
+    .top-toolbar {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.3rem 0.55rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Split Workspace */
+    .workspace-split {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* Panels */
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-header {
+      padding: 0.45rem 0.85rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .panel-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .panel-tab {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .panel-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--surface);
+      overflow: auto;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      background: var(--surface);
+      color: var(--text);
+      tab-size: 2;
+    }
+
+    /* Rich-Text Contenteditable Surface */
+    .rich-paste-area {
+      flex: 1;
+      padding: 1.25rem;
+      outline: none;
+      overflow-y: auto;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      border: none;
+    }
+
+    .rich-paste-area:empty:before {
+      content: "Paste formatted rich-text directly from Word, Google Docs, Notion, or Webpages here...";
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* Settings Panel */
+    .settings-grid {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.8125rem;
+    }
+
+    .setting-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .setting-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .setting-desc {
+      font-size: 0.725rem;
+      color: var(--muted);
+    }
+
+    /* Rendered Markdown Preview Area */
+    .preview-content {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      overflow-y: auto;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9375rem;
+      line-height: 1.7;
+    }
+
+    .preview-content h1, .preview-content h2, .preview-content h3 {
+      color: var(--text);
+      font-weight: 700;
+      margin-top: 1.25rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .preview-content h1 { font-size: 1.75rem; border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; }
+    .preview-content h2 { font-size: 1.35rem; border-bottom: 1px solid var(--line); padding-bottom: 0.25rem; }
+    .preview-content p { margin-bottom: 0.85rem; }
+    .preview-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.875rem; }
+    .preview-content th, .preview-content td { border: 1px solid var(--line); padding: 0.5rem 0.85rem; text-align: left; }
+    .preview-content th { background: var(--surface-alt); font-weight: 700; }
+    .preview-content code { font-family: 'JetBrains Mono', monospace; font-size: 0.825rem; background: var(--surface-alt); border: 1px solid var(--line); padding: 0.15rem 0.35rem; border-radius: 4px; color: var(--accent); }
+    .preview-content pre { background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; }
+    .preview-content blockquote { border-left: 3.5px solid var(--accent); padding: 0.4rem 1rem; background: var(--surface-alt); color: var(--muted); margin-bottom: 0.85rem; }
+
+    /* Diagnostics Table */
+    .diagnostics-wrap {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .diag-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.725rem;
+      color: var(--muted);
+      padding: 0.35rem 0.5rem;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 0.75rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="HTML to Markdown Converter">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">HTML to Markdown</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Toolbar -->
+    <div class="top-toolbar">
+      <div class="toolbar-group">
+        <label for="template-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Sample:</label>
+        <select id="template-select" class="form-select">
+          <option value="article" selected>📰 Article with Code &amp; Tables</option>
+          <option value="tasks">📋 Tasks, Lists &amp; Blockquotes</option>
+          <option value="messy">🧹 Messy Webpage with Inline Styles</option>
+        </select>
+
+        <label class="btn btn--sm" style="cursor:pointer;">
+          📁 Upload .html
+          <input type="file" id="file-upload" accept=".html,.htm,.txt" style="display:none;" />
+        </label>
+        <button id="btn-convert-now" class="btn btn--primary">⚡ Convert</button>
+      </div>
+
+      <div class="toolbar-group">
+        <button id="btn-copy-md" class="btn">📋 Copy Markdown</button>
+        <button id="btn-download-md" class="btn">💾 Download .md</button>
+        <button id="btn-clear" class="btn">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <!-- Split Workspace -->
+    <div class="workspace-split">
+      <!-- Left Panel: Input -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-tabs" id="input-tabs">
+            <button class="panel-tab active" data-tab="raw">Raw HTML</button>
+            <button class="panel-tab" data-tab="rich">Rich Text Paste</button>
+            <button class="panel-tab" data-tab="settings">⚙️ Settings</button>
+          </div>
+          <span style="font-size:0.7rem; color:var(--muted);" id="input-mode-badge">Raw Mode</span>
+        </div>
+
+        <div class="panel-body">
+          <!-- View 1: Raw HTML Textarea -->
+          <div id="view-raw" style="height:100%; display:flex; flex-direction:column;">
+            <textarea id="raw-html-input" class="code-textarea" placeholder="Paste or type raw HTML code here..." spellcheck="false"></textarea>
+          </div>
+
+          <!-- View 2: Rich Text Contenteditable Surface -->
+          <div id="view-rich" style="height:100%; display:none; flex-direction:column;">
+            <div id="rich-paste-input" class="rich-paste-area" contenteditable="true"></div>
+          </div>
+
+          <!-- View 3: Settings Panel -->
+          <div id="view-settings" style="display:none; flex-direction:column;">
+            <div class="settings-grid">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">GitHub Flavored Markdown (GFM)</span>
+                  <span class="setting-desc">Enables tables, strikethrough (~~), and task list checkboxes</span>
+                </div>
+                <input type="checkbox" id="cfg-gfm" checked />
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">Heading Style</span>
+                  <span class="setting-desc">ATX (# Heading) vs Setext (Heading\n===)</span>
+                </div>
+                <select id="cfg-heading-style" class="form-select">
+                  <option value="atx" selected>ATX (#)</option>
+                  <option value="setext">Setext (===)</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">Bullet List Marker</span>
+                  <span class="setting-desc">Marker symbol for unordered list items</span>
+                </div>
+                <select id="cfg-bullet-marker" class="form-select">
+                  <option value="-" selected>- Hyphen</option>
+                  <option value="*">* Asterisk</option>
+                  <option value="+">+ Plus</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">Code Block Style</span>
+                  <span class="setting-desc">Fenced (```) vs Indented (4 spaces)</span>
+                </div>
+                <select id="cfg-code-style" class="form-select">
+                  <option value="fenced" selected>Fenced (```)</option>
+                  <option value="indented">Indented (4 spaces)</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">Strip Script &amp; Style Tags</span>
+                  <span class="setting-desc">Remove inline javascript and CSS style blocks</span>
+                </div>
+                <input type="checkbox" id="cfg-strip-scripts" checked />
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <span class="setting-title">Unsupported Elements</span>
+                  <span class="setting-desc">How to handle iframes, audio, video tags</span>
+                </div>
+                <select id="cfg-unsupported-mode" class="form-select">
+                  <option value="passthrough" selected>Inline HTML Passthrough</option>
+                  <option value="drop">Drop with Placeholder Note</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Output -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-tabs" id="output-tabs">
+            <button class="panel-tab active" data-tab="markdown">📝 Markdown</button>
+            <button class="panel-tab" data-tab="preview">👁️ Round-Trip Preview</button>
+            <button class="panel-tab" data-tab="diag">🔍 Diagnostics</button>
+          </div>
+          <span style="font-size:0.7rem; color:var(--muted);" id="render-status">Converted</span>
+        </div>
+
+        <div class="panel-body">
+          <!-- View 1: Markdown Output Textarea -->
+          <div id="view-markdown" style="height:100%; display:flex; flex-direction:column;">
+            <textarea id="markdown-output" class="code-textarea" readonly spellcheck="false"></textarea>
+          </div>
+
+          <!-- View 2: Live HTML Round-Trip Preview -->
+          <div id="view-preview" style="height:100%; display:none; flex-direction:column;">
+            <div id="roundtrip-preview" class="preview-content"></div>
+          </div>
+
+          <!-- View 3: Diagnostics Panel -->
+          <div id="view-diag" style="display:none; flex-direction:column;">
+            <div class="diagnostics-wrap" id="diagnostics-content">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div id="input-stats">Input: 0 chars | 0 bytes</div>
+      <div id="compression-stats" style="font-weight:700; color:var(--accent);">Compression: 0%</div>
+      <div id="output-stats">Output: 0 chars | 0 bytes</div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../markdown-editor/">Markdown Editor</a>
+        <a href="../html-formatter/">HTML Formatter</a>
+        <a href="../css-formatter/">CSS Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // SAMPLE TEMPLATES
+    const TEMPLATES = {
+      article: `<h1>Getting Started with Modern Web Architecture</h1>
+<p>Modern web engineering emphasizes <strong>client-side performance</strong>, <em>edge computing</em>, and zero-runtime overhead.</p>
+
+<h2>Key Benchmarks</h2>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Framework</th>
+      <th>Bundle Size</th>
+      <th>Lighthouse Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Vanilla JS</td>
+      <td>0 KB</td>
+      <td>100 / 100</td>
+    </tr>
+    <tr>
+      <td>React + Next.js</td>
+      <td>85 KB</td>
+      <td>96 / 100</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Code Sample</h3>
+<pre><code class="language-javascript">function initializePipeline(config) {
+  console.log("Starting serverless worker on region: " + config.region);
+  return { status: "ready", uptime: Date.now() };
+}</code></pre>
+
+<blockquote>
+  <p>Always measure real-user metrics before undertaking complex refactors.</p>
+</blockquote>
+<p>Visit the official documentation at <a href="https://developer.mozilla.org">MDN Web Docs</a> for further details.</p>`,
+
+      tasks: `<h2>Sprint Engineering Backlog</h2>
+<p>Action items for the upcoming product cycle:</p>
+
+<ul>
+  <li><input type="checkbox" checked> Finalize client-side HTML to Markdown converter</li>
+  <li><input type="checkbox"> Benchmark parsing speeds across 5MB HTML payloads</li>
+  <li><input type="checkbox"> Add automated end-to-end integration tests</li>
+</ul>
+
+<hr>
+
+<h3>Supported Elements</h3>
+<p>We support <del>strikethrough text</del>, <code>inline code snippets</code>, and multi-level nested lists:</p>
+<ol>
+  <li>Initialize repository</li>
+  <li>Deploy to staging:
+    <ul>
+      <li>US-East Edge</li>
+      <li>EU-Central Edge</li>
+    </ul>
+  </li>
+  <li>Monitor telemetry</li>
+</ol>`,
+
+      messy: `<div class="content-wrapper" style="margin: 20px; padding: 15px; background: #fafafa;">
+  <span style="font-size: 24px; font-weight: bold; color: #333;">Messy Webpage Content Extractor</span>
+  <div class="nested-div" style="margin-top: 10px;">
+    <p style="line-height: 1.6;">When extracting text copied from blogs, there are often <span style="color: red; font-style: italic;">excessive styling wrappers</span> that should be cleaned up automatically.</p>
+    <script type="text/javascript">
+      console.log("This script block should be stripped!");
+    <\/script>
+    <style>
+      .hidden { display: none; }
+    </style>
+    <p>Clean Markdown output focuses strictly on semantics!</p>
+  </div>
+</div>`
+    };
+
+    // DOM Elements
+    const rawHtmlInput = document.getElementById('raw-html-input');
+    const richPasteInput = document.getElementById('rich-paste-input');
+    const markdownOutput = document.getElementById('markdown-output');
+    const roundtripPreview = document.getElementById('roundtrip-preview');
+    const diagnosticsContent = document.getElementById('diagnostics-content');
+    const templateSelect = document.getElementById('template-select');
+    const fileUpload = document.getElementById('file-upload');
+
+    const inputTabs = document.getElementById('input-tabs');
+    const outputTabs = document.getElementById('output-tabs');
+    const viewRaw = document.getElementById('view-raw');
+    const viewRich = document.getElementById('view-rich');
+    const viewSettings = document.getElementById('view-settings');
+    const viewMarkdown = document.getElementById('view-markdown');
+    const viewPreview = document.getElementById('view-preview');
+    const viewDiag = document.getElementById('view-diag');
+
+    const cfgGfm = document.getElementById('cfg-gfm');
+    const cfgHeadingStyle = document.getElementById('cfg-heading-style');
+    const cfgBulletMarker = document.getElementById('cfg-bullet-marker');
+    const cfgCodeStyle = document.getElementById('cfg-code-style');
+    const cfgStripScripts = document.getElementById('cfg-strip-scripts');
+    const cfgUnsupportedMode = document.getElementById('cfg-unsupported-mode');
+
+    const inputStats = document.getElementById('input-stats');
+    const outputStats = document.getElementById('output-stats');
+    const compressionStats = document.getElementById('compression-stats');
+    const renderStatus = document.getElementById('render-status');
+    const inputModeBadge = document.getElementById('input-mode-badge');
+
+    const btnConvertNow = document.getElementById('btn-convert-now');
+    const btnCopyMd = document.getElementById('btn-copy-md');
+    const btnDownloadMd = document.getElementById('btn-download-md');
+    const btnClear = document.getElementById('btn-clear');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let activeInputTab = 'raw';
+    let convertDebounce;
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- CONVERSION ENGINE ---
+    function convertHtmlToMarkdown() {
+      renderStatus.textContent = 'Converting...';
+
+      let inputHtml = '';
+      if (activeInputTab === 'raw') {
+        inputHtml = rawHtmlInput.value;
+      } else if (activeInputTab === 'rich') {
+        inputHtml = richPasteInput.innerHTML;
+      } else {
+        inputHtml = rawHtmlInput.value;
+      }
+
+      if (!inputHtml.trim()) {
+        markdownOutput.value = '';
+        roundtripPreview.innerHTML = '<p style="color:var(--muted); text-align:center; padding:2rem;">No output to preview</p>';
+        diagnosticsContent.innerHTML = '<div class="diag-card">No HTML input detected.</div>';
+        updateStats('', '');
+        renderStatus.textContent = 'Ready';
+        return;
+      }
+
+      // Pre-process HTML if strip scripts/styles enabled
+      let cleanInput = inputHtml;
+      if (cfgStripScripts.checked) {
+        cleanInput = cleanInput
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+          .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '');
+      }
+
+      // Initialize Turndown Service
+      const turndownService = new TurndownService({
+        headingStyle: cfgHeadingStyle.value,
+        bulletListMarker: cfgBulletMarker.value,
+        codeBlockStyle: cfgCodeStyle.value,
+        emDelimiter: '*',
+        strongDelimiter: '**'
+      });
+
+      // Apply GFM Plugin
+      if (cfgGfm.checked && typeof turndownPluginGfm !== 'undefined') {
+        const gfm = turndownPluginGfm.gfm;
+        turndownService.use(gfm);
+      }
+
+      // Handle Unsupported Elements
+      const unsupportedMode = cfgUnsupportedMode.value;
+      turndownService.addRule('unsupportedElements', {
+        filter: ['iframe', 'video', 'audio', 'canvas', 'object', 'embed'],
+        replacement: function (content, node) {
+          if (unsupportedMode === 'passthrough') {
+            return node.outerHTML;
+          } else {
+            return `\n<!-- [Unsupported ${node.tagName.toLowerCase()} element removed] -->\n`;
+          }
+        }
+      });
+
+      let mdResult = '';
+      try {
+        mdResult = turndownService.turndown(cleanInput);
+      } catch (err) {
+        mdResult = `<!-- Conversion Error: ${err.message} -->\n\n` + inputHtml;
+      }
+
+      markdownOutput.value = mdResult;
+
+      // Re-render Round-Trip Preview via Marked + DOMPurify
+      try {
+        const roundtripHtml = DOMPurify.sanitize(marked.parse(mdResult));
+        roundtripPreview.innerHTML = roundtripHtml;
+      } catch {
+        roundtripPreview.innerHTML = '<p>Failed to generate round-trip preview</p>';
+      }
+
+      // Diagnostics & Stats
+      runDiagnostics(cleanInput, mdResult);
+      updateStats(cleanInput, mdResult);
+
+      renderStatus.textContent = 'Converted';
+    }
+
+    function runDiagnostics(html, md) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      const allElements = doc.body.querySelectorAll('*');
+      const tagCounts = {};
+      const unsupportedTags = [];
+
+      allElements.forEach(el => {
+        const tag = el.tagName.toLowerCase();
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+
+        if (['iframe', 'video', 'audio', 'canvas', 'svg', 'object', 'embed', 'button', 'form', 'select'].includes(tag)) {
+          if (!unsupportedTags.includes(tag)) unsupportedTags.push(tag);
+        }
+      });
+
+      let diagHtml = `
+        <div class="diag-card">
+          <div style="font-weight:700; margin-bottom:0.4rem;">📊 Document Structure</div>
+          <div>Total HTML Elements: <strong>${allElements.length}</strong> across <strong>${Object.keys(tagCounts).length}</strong> unique tags.</div>
+        </div>
+      `;
+
+      if (unsupportedTags.length > 0) {
+        diagHtml += `
+          <div class="diag-card" style="border-left:3px solid var(--warning);">
+            <div style="font-weight:700; color:var(--warning); margin-bottom:0.4rem;">⚠️ Non-Standard Elements Detected</div>
+            <div>The following elements have no direct Markdown equivalent and were handled according to settings (${cfgUnsupportedMode.value}):</div>
+            <div style="margin-top:0.3rem; font-family:'JetBrains Mono',monospace; font-size:0.75rem;">
+              ${unsupportedTags.map(t => `<span style="background:var(--surface); border:1px solid var(--line); padding:0.1rem 0.35rem; border-radius:3px; margin-right:0.3rem;">&lt;${t}&gt;</span>`).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        diagHtml += `
+          <div class="diag-card" style="border-left:3px solid var(--success);">
+            <div style="font-weight:700; color:var(--success);">✓ Clean Semantics</div>
+            <div>All detected tags mapped cleanly to standard Markdown syntax.</div>
+          </div>
+        `;
+      }
+
+      diagnosticsContent.innerHTML = diagHtml;
+    }
+
+    function updateStats(inText, outText) {
+      const inBytes = new Blob([inText]).size;
+      const outBytes = new Blob([outText]).size;
+      const inChars = inText.length;
+      const outChars = outText.length;
+
+      inputStats.textContent = `Input: ${inChars.toLocaleString()} chars | ${formatBytes(inBytes)}`;
+      outputStats.textContent = `Output: ${outChars.toLocaleString()} chars | ${formatBytes(outBytes)}`;
+
+      if (inBytes > 0) {
+        const ratio = Math.round(((inBytes - outBytes) / inBytes) * 100);
+        compressionStats.textContent = ratio >= 0 ? `Size Saved: ${ratio}%` : `Size Increase: ${Math.abs(ratio)}%`;
+      } else {
+        compressionStats.textContent = `Compression: 0%`;
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // --- INPUT TAB SWITCHER ---
+    inputTabs.querySelectorAll('.panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        inputTabs.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        activeInputTab = tab.dataset.tab;
+
+        viewRaw.style.display = activeInputTab === 'raw' ? 'flex' : 'none';
+        viewRich.style.display = activeInputTab === 'rich' ? 'flex' : 'none';
+        viewSettings.style.display = activeInputTab === 'settings' ? 'flex' : 'none';
+
+        if (activeInputTab === 'raw') inputModeBadge.textContent = 'Raw Mode';
+        if (activeInputTab === 'rich') inputModeBadge.textContent = 'Rich Text Paste';
+        if (activeInputTab === 'settings') inputModeBadge.textContent = 'Settings';
+
+        convertHtmlToMarkdown();
+      });
+    });
+
+    // --- OUTPUT TAB SWITCHER ---
+    outputTabs.querySelectorAll('.panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        outputTabs.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const activeTab = tab.dataset.tab;
+
+        viewMarkdown.style.display = activeTab === 'markdown' ? 'flex' : 'none';
+        viewPreview.style.display = activeTab === 'preview' ? 'flex' : 'none';
+        viewDiag.style.display = activeTab === 'diag' ? 'flex' : 'none';
+      });
+    });
+
+    // --- EVENT LISTENERS ---
+    rawHtmlInput.addEventListener('input', () => {
+      clearTimeout(convertDebounce);
+      convertDebounce = setTimeout(convertHtmlToMarkdown, 250);
+    });
+
+    richPasteInput.addEventListener('input', () => {
+      clearTimeout(convertDebounce);
+      convertDebounce = setTimeout(convertHtmlToMarkdown, 250);
+    });
+
+    // Settings changes
+    [cfgGfm, cfgHeadingStyle, cfgBulletMarker, cfgCodeStyle, cfgStripScripts, cfgUnsupportedMode].forEach(el => {
+      el.addEventListener('change', convertHtmlToMarkdown);
+    });
+
+    btnConvertNow.addEventListener('click', () => {
+      convertHtmlToMarkdown();
+      showToast('Conversion updated');
+    });
+
+    // Template switcher
+    templateSelect.addEventListener('change', () => {
+      const t = TEMPLATES[templateSelect.value];
+      if (t) {
+        rawHtmlInput.value = t;
+        richPasteInput.innerHTML = t;
+        convertHtmlToMarkdown();
+        showToast(`Loaded ${templateSelect.options[templateSelect.selectedIndex].text}`);
+      }
+    });
+
+    // File Upload
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        rawHtmlInput.value = text;
+        richPasteInput.innerHTML = text;
+        convertHtmlToMarkdown();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+    });
+
+    btnClear.addEventListener('click', () => {
+      rawHtmlInput.value = '';
+      richPasteInput.innerHTML = '';
+      convertHtmlToMarkdown();
+      showToast('Cleared input');
+    });
+
+    btnCopyMd.addEventListener('click', () => {
+      navigator.clipboard.writeText(markdownOutput.value).then(() => {
+        showToast('Markdown copied to clipboard!');
+      });
+    });
+
+    btnDownloadMd.addEventListener('click', () => {
+      const val = markdownOutput.value;
+      const blob = new Blob([val], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'converted.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // INITIAL LOAD
+    rawHtmlInput.value = TEMPLATES.article;
+    richPasteInput.innerHTML = TEMPLATES.article;
+    convertHtmlToMarkdown();
+  </script>
+</body>
+</html>

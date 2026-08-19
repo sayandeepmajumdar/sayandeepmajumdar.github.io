@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XML Formatter, Validator & Tree Explorer — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Format, validate, explore, and convert XML in your browser. Features live DOMParser syntax validation with error pinpointing, collapsible DOM tree view, attribute sorting, and XML to JSON preview. 100% private." />
+  <meta name="keywords" content="xml formatter, xml validator, xml beautifier, xml to json, xml tree explorer, xpath copy, domparser xml validator, client side xml tool" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/xml-formatter/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --tag-name: #2563eb;
+      --attr-name: #d97706;
+      --attr-val: #16a34a;
+      --comment: #64748b;
+      --cdata: #7c3aed;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --tag-name: #60a5fa;
+      --attr-name: #fbbf24;
+      --attr-val: #4ade80;
+      --comment: #94a3b8;
+      --cdata: #a78bfa;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode & Info Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .tool-heading-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Toolbar Panel */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    .select-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-input:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      flex-wrap: wrap;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-container {
+      display: flex;
+      flex: 1;
+      min-height: 580px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Resizer Divider */
+    .resizer {
+      width: 8px;
+      background: var(--line);
+      cursor: col-resize;
+      user-select: none;
+      transition: background var(--transition);
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent);
+    }
+
+    /* Editor View */
+    .editor-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .gutter {
+      padding: 0.75rem 0.5rem;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      text-align: right;
+      user-select: none;
+      min-width: 48px;
+      font-size: 0.75rem;
+      overflow: hidden;
+    }
+
+    .gutter-num {
+      height: 1.55em;
+    }
+
+    .gutter-num.error-line {
+      color: var(--error);
+      font-weight: 700;
+      background: var(--error-bg);
+      border-radius: 2px;
+    }
+
+    .code-textarea {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 2;
+    }
+
+    /* Output View Options */
+    .output-tab-group {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.15rem;
+      gap: 0.15rem;
+    }
+
+    .output-tab-btn {
+      background: transparent;
+      border: none;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .output-tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Tree View */
+    .tree-wrapper {
+      flex: 1;
+      overflow: auto;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .tree-search-bar {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      width: 170px;
+    }
+
+    .tree-search-bar:focus {
+      border-color: var(--accent);
+    }
+
+    .tree-node {
+      margin-left: 1.15rem;
+      position: relative;
+    }
+
+    .tree-node.root {
+      margin-left: 0;
+    }
+
+    .tree-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.1rem 0.3rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      position: relative;
+      flex-wrap: nowrap;
+    }
+
+    .tree-row:hover {
+      background: var(--surface-alt);
+    }
+
+    .tree-row.highlight {
+      background: rgba(245, 158, 11, 0.25);
+      border-radius: 3px;
+    }
+
+    .tree-toggle {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--muted);
+      user-select: none;
+      transition: transform 0.15s ease;
+    }
+
+    .tree-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .tag-open, .tag-close {
+      color: var(--tag-name);
+      font-weight: 600;
+    }
+
+    .tag-prefix {
+      color: var(--accent);
+    }
+
+    .tree-attr-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+    }
+
+    .attr-k { color: var(--attr-name); font-weight: 500; }
+    .attr-v { color: var(--attr-val); }
+
+    .node-text { color: var(--text); font-weight: 400; }
+    .node-comment { color: var(--comment); font-style: italic; }
+    .node-cdata { color: var(--cdata); }
+
+    .tree-type-badge {
+      font-size: 0.685rem;
+      color: var(--muted);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0 0.35rem;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .tree-copy-path-btn {
+      opacity: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      font-size: 0.65rem;
+      padding: 0.05rem 0.3rem;
+      color: var(--muted);
+      margin-left: auto;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .tree-row:hover .tree-copy-path-btn {
+      opacity: 1;
+    }
+
+    .tree-copy-path-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Raw Code Output */
+    .raw-output-pre {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: var(--text);
+      overflow: auto;
+      white-space: pre;
+      background: var(--surface);
+      display: none;
+    }
+
+    /* Drag Overlay */
+    .drag-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--accent-light);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--accent);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .drag-overlay.active {
+      display: flex;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        min-height: 800px;
+      }
+      .resizer {
+        width: 100%;
+        height: 8px;
+        cursor: row-resize;
+      }
+      .pane {
+        min-height: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">XML Formatter & Validator</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Info & Privacy -->
+      <div class="top-bar">
+        <div class="tool-heading-badge">
+          <span>Validation scope: Native W3C XML Well-Formedness (DOMParser)</span>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. No data leaves your machine.</span>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-group">
+          <button id="btn-format" class="btn btn--primary" title="Format and pretty-print XML">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>Format / Beautify</span>
+          </button>
+
+          <button id="btn-minify" class="btn" title="Minify XML to single line">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline></svg>
+            <span>Minify</span>
+          </button>
+
+          <select id="indent-select" class="select-input" title="Indentation width">
+            <option value="2">2 Spaces</option>
+            <option value="4">4 Spaces</option>
+            <option value="tab">Tab Indent</option>
+          </select>
+
+          <label class="toggle-label" title="Sort attributes alphabetically within each tag">
+            <input type="checkbox" id="sort-attrs-toggle" />
+            <span>Sort Attributes</span>
+          </label>
+
+          <label class="toggle-label" title="Collapse empty tags to self-closing (&lt;tag/&gt;)">
+            <input type="checkbox" id="self-closing-toggle" checked />
+            <span>Self-Closing (&lt;tag/&gt;)</span>
+          </label>
+        </div>
+
+        <div class="toolbar-group">
+          <button id="btn-sample-feed" class="btn" title="Load sample RSS / Sitemap XML">Sample RSS</button>
+          <button id="btn-sample-svg" class="btn" title="Load sample SVG vector XML">Sample SVG</button>
+
+          <input type="file" id="file-upload" accept=".xml, .svg, .rss, .atom, .txt" style="display:none;" />
+          <button id="btn-upload" class="btn" title="Upload an XML file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload</span>
+          </button>
+
+          <button id="btn-copy" class="btn" title="Copy formatted XML to clipboard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copy</span>
+          </button>
+
+          <button id="btn-download" class="btn" title="Download XML file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download</span>
+          </button>
+
+          <button id="btn-clear" class="btn btn--danger" title="Clear editor">Clear</button>
+        </div>
+      </div>
+
+      <!-- Live Status Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span id="status-text">Ready. Paste or type XML data above.</span>
+      </div>
+
+      <!-- Split Workspace -->
+      <div class="split-container" id="split-box">
+        <div class="drag-overlay" id="drag-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Drop XML file here</span>
+        </div>
+
+        <!-- Left Pane: Code Editor -->
+        <div class="pane" id="pane-left">
+          <div class="pane-header">
+            <span class="pane-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              <span>Raw XML Input</span>
+            </span>
+            <span id="editor-stats" style="color:var(--muted); font-size:0.75rem; font-family:'JetBrains Mono',monospace;">0 lines · 0 chars</span>
+          </div>
+          <div class="editor-wrapper" id="editor-wrap">
+            <div class="gutter" id="editor-gutter">
+              <div class="gutter-num">1</div>
+            </div>
+            <textarea id="xml-input" class="code-textarea" placeholder="Paste or type XML data here (e.g. <root><item id=&quot;1&quot;>Value</item></root>)..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Draggable Resizer Divider -->
+        <div class="resizer" id="split-resizer"></div>
+
+        <!-- Right Pane: DOM Tree & Formatted Output -->
+        <div class="pane" id="pane-right">
+          <div class="pane-header">
+            <div class="output-tab-group">
+              <button id="tab-view-tree" class="output-tab-btn active">DOM Tree Explorer</button>
+              <button id="tab-view-formatted" class="output-tab-btn">Formatted XML</button>
+              <button id="tab-view-json" class="output-tab-btn">XML ➔ JSON</button>
+            </div>
+
+            <div id="tree-search-controls" style="display:flex; align-items:center; gap:0.35rem;">
+              <input type="text" id="tree-search" class="tree-search-bar" placeholder="Filter tags, attrs, text..." />
+              <button id="btn-expand-all" class="btn" style="padding:0.2rem 0.45rem; font-size:0.7rem;">Expand</button>
+              <button id="btn-collapse-all" class="btn" style="padding:0.2rem 0.45rem; font-size:0.7rem;">Collapse</button>
+            </div>
+          </div>
+
+          <!-- Tree View -->
+          <div class="tree-wrapper" id="tree-container">
+            <div style="color:var(--muted); text-align:center; padding:3rem 1rem;">
+              Parsed DOM tree structure will appear here interactively.
+            </div>
+          </div>
+
+          <!-- Raw Code Output Pre -->
+          <pre class="raw-output-pre" id="raw-output-view"></pre>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../yaml-formatter/">YAML Formatter</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+        <a href="../json-to-csv/">JSON ⮂ CSV</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let parsedXmlDoc = null;
+    let currentRightTab = 'tree'; // 'tree' | 'formatted' | 'json'
+    let formattedXmlString = '';
+    let jsonString = '';
+    let debounceTimer = null;
+
+    // DOM Elements
+    const xmlInput = document.getElementById('xml-input');
+    const editorGutter = document.getElementById('editor-gutter');
+    const editorStats = document.getElementById('editor-stats');
+    const statusBanner = document.getElementById('status-banner');
+    const statusText = document.getElementById('status-text');
+    const treeContainer = document.getElementById('tree-container');
+    const rawOutputView = document.getElementById('raw-output-view');
+    const tabViewTree = document.getElementById('tab-view-tree');
+    const tabViewFormatted = document.getElementById('tab-view-formatted');
+    const tabViewJson = document.getElementById('tab-view-json');
+    const treeSearchControls = document.getElementById('tree-search-controls');
+    const treeSearch = document.getElementById('tree-search');
+    const indentSelect = document.getElementById('indent-select');
+    const sortAttrsToggle = document.getElementById('sort-attrs-toggle');
+    const selfClosingToggle = document.getElementById('self-closing-toggle');
+    const btnFormat = document.getElementById('btn-format');
+    const btnMinify = document.getElementById('btn-minify');
+    const btnSampleFeed = document.getElementById('btn-sample-feed');
+    const btnSampleSvg = document.getElementById('btn-sample-svg');
+    const btnClear = document.getElementById('btn-clear');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnDownload = document.getElementById('btn-download');
+    const btnUpload = document.getElementById('btn-upload');
+    const fileUpload = document.getElementById('file-upload');
+    const btnExpandAll = document.getElementById('btn-expand-all');
+    const btnCollapseAll = document.getElementById('btn-collapse-all');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const splitBox = document.getElementById('split-box');
+    const dragOverlay = document.getElementById('drag-overlay');
+
+    // Toast
+    function showToast(message) {
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Gutter & Stats
+    function updateGutter(errorLineNum = null) {
+      const lines = xmlInput.value.split('\n');
+      const lineCount = Math.max(lines.length, 1);
+      let html = '';
+      for (let i = 1; i <= lineCount; i++) {
+        const isError = errorLineNum === i;
+        html += `<div class="gutter-num ${isError ? 'error-line' : ''}">${i}</div>`;
+      }
+      editorGutter.innerHTML = html;
+
+      const bytes = new Blob([xmlInput.value]).size;
+      let sizeStr = bytes + ' B';
+      if (bytes > 1024 * 1024) sizeStr = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      else if (bytes > 1024) sizeStr = (bytes / 1024).toFixed(1) + ' KB';
+
+      editorStats.textContent = `${lineCount} lines · ${xmlInput.value.length} chars · ${sizeStr}`;
+    }
+
+    xmlInput.addEventListener('scroll', () => {
+      editorGutter.scrollTop = xmlInput.scrollTop;
+    });
+
+    // Tab key support in textarea
+    xmlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = xmlInput.selectionStart;
+        const end = xmlInput.selectionEnd;
+        const indentStr = indentSelect.value === 'tab' ? '\t' : ' '.repeat(Number(indentSelect.value));
+        xmlInput.value = xmlInput.value.substring(0, start) + indentStr + xmlInput.value.substring(end);
+        xmlInput.selectionStart = xmlInput.selectionEnd = start + indentStr.length;
+        triggerValidation();
+      }
+    });
+
+    // Input event
+    xmlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(validateAndProcess, 180);
+      updateGutter();
+    });
+
+    function triggerValidation() {
+      clearTimeout(debounceTimer);
+      validateAndProcess();
+      updateGutter();
+    }
+
+    // Switch Right Tabs
+    tabViewTree.addEventListener('click', () => setRightTab('tree'));
+    tabViewFormatted.addEventListener('click', () => setRightTab('formatted'));
+    tabViewJson.addEventListener('click', () => setRightTab('json'));
+
+    function setRightTab(tab) {
+      currentRightTab = tab;
+      tabViewTree.classList.toggle('active', tab === 'tree');
+      tabViewFormatted.classList.toggle('active', tab === 'formatted');
+      tabViewJson.classList.toggle('active', tab === 'json');
+
+      if (tab === 'tree') {
+        treeContainer.style.display = 'block';
+        rawOutputView.style.display = 'none';
+        treeSearchControls.style.display = 'flex';
+      } else {
+        treeContainer.style.display = 'none';
+        rawOutputView.style.display = 'block';
+        treeSearchControls.style.display = 'none';
+      }
+
+      updateOutputs();
+    }
+
+    // DOMParser Validation & Processing
+    function validateAndProcess() {
+      const text = xmlInput.value.trim();
+      if (!text) {
+        statusBanner.className = 'status-banner empty';
+        statusText.textContent = 'Ready. Paste or type XML data above.';
+        parsedXmlDoc = null;
+        treeContainer.innerHTML = '<div style="color:var(--muted); text-align:center; padding:3rem 1rem;">Parsed DOM tree structure will appear here interactively.</div>';
+        rawOutputView.textContent = '';
+        updateGutter();
+        return;
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/xml');
+      const parserErrors = doc.getElementsByTagName('parsererror');
+
+      if (parserErrors.length > 0) {
+        parsedXmlDoc = null;
+        const errText = parserErrors[0].textContent || parserErrors[0].innerText || 'XML Parse Error';
+
+        // Extract line and column numbers
+        let line = 1;
+        let col = 1;
+        const lineMatch = errText.match(/(?:line|line number)\s*:?\s*(\d+)/i);
+        const colMatch = errText.match(/(?:column|column number)\s*:?\s*(\d+)/i);
+        if (lineMatch) line = parseInt(lineMatch[1], 10);
+        if (colMatch) col = parseInt(colMatch[1], 10);
+
+        // Clean up message
+        let cleanReason = errText.split('\n')[0].replace(/Location:.*$/i, '').trim();
+        if (cleanReason.length > 150) cleanReason = cleanReason.substring(0, 150) + '…';
+
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            XML Parse Error at Line ${line}, Column ${col}: ${escapeHtml(cleanReason)}
+          </span>
+        `;
+        updateGutter(line);
+
+        treeContainer.innerHTML = `
+          <div style="color:var(--error); padding:2.5rem 1rem; text-align:center;">
+            <strong>XML Syntax / Well-Formedness Error:</strong>
+            <p style="margin-top:0.4rem; font-size:0.8125rem;">${escapeHtml(cleanReason)} (Line ${line}, Column ${col})</p>
+          </div>
+        `;
+        rawOutputView.textContent = '';
+        return;
+      }
+
+      parsedXmlDoc = doc;
+      statusBanner.className = 'status-banner valid';
+      const rootTag = doc.documentElement ? doc.documentElement.tagName : 'document';
+      statusText.innerHTML = `
+        <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Valid Well-Formed XML — Root &lt;${escapeHtml(rootTag)}&gt; parsed successfully.
+        </span>
+      `;
+      updateGutter(null);
+
+      updateOutputs();
+    }
+
+    // Format XML DOM to Indented String
+    function formatXmlNode(node, indentStr, level = 0, options = {}) {
+      const { sortAttrs = false, collapseSelfClose = true } = options;
+      const indent = indentStr.repeat(level);
+
+      if (node.nodeType === Node.DOCUMENT_NODE) {
+        let res = '';
+        for (let child of node.childNodes) {
+          res += formatXmlNode(child, indentStr, 0, options);
+        }
+        return res.trim();
+      }
+
+      if (node.nodeType === Node.PROCESSING_INSTRUCTION_NODE) {
+        return `${indent}<?${node.target} ${node.data}?>\n`;
+      }
+
+      if (node.nodeType === Node.COMMENT_NODE) {
+        return `${indent}<!--${node.nodeValue}-->\n`;
+      }
+
+      if (node.nodeType === Node.CDATA_SECTION_NODE) {
+        return `${indent}<![CDATA[${node.nodeValue}]]>\n`;
+      }
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.nodeValue.trim();
+        return text ? text : '';
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const tagName = node.tagName;
+        let attrs = Array.from(node.attributes);
+        if (sortAttrs) {
+          attrs.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        const attrStr = attrs.length > 0 ? ' ' + attrs.map(a => `${a.name}="${escapeXmlAttr(a.value)}"`).join(' ') : '';
+
+        // Meaningful child nodes
+        const childNodes = Array.from(node.childNodes).filter(c => {
+          if (c.nodeType === Node.TEXT_NODE) return c.nodeValue.trim().length > 0;
+          return true;
+        });
+
+        if (childNodes.length === 0) {
+          return collapseSelfClose ? `${indent}<${tagName}${attrStr}/>\n` : `${indent}<${tagName}${attrStr}></${tagName}>\n`;
+        }
+
+        // Single text child inline
+        if (childNodes.length === 1 && childNodes[0].nodeType === Node.TEXT_NODE) {
+          return `${indent}<${tagName}${attrStr}>${escapeXmlText(childNodes[0].nodeValue.trim())}</${tagName}>\n`;
+        }
+
+        let inner = '';
+        for (let child of childNodes) {
+          inner += formatXmlNode(child, indentStr, level + 1, options);
+        }
+        return `${indent}<${tagName}${attrStr}>\n${inner}${indent}</${tagName}>\n`;
+      }
+
+      return '';
+    }
+
+    // Convert XML DOM to JSON Object
+    function xmlToJson(node) {
+      if (node.nodeType === Node.DOCUMENT_NODE) {
+        const root = node.documentElement;
+        return root ? { [root.tagName]: xmlToJson(root) } : {};
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const obj = {};
+
+        // Attributes
+        if (node.attributes.length > 0) {
+          obj['@attributes'] = {};
+          for (let attr of node.attributes) {
+            obj['@attributes'][attr.name] = attr.value;
+          }
+        }
+
+        // Children
+        const childNodes = Array.from(node.childNodes).filter(c => {
+          if (c.nodeType === Node.TEXT_NODE) return c.nodeValue.trim().length > 0;
+          return c.nodeType === Node.ELEMENT_NODE || c.nodeType === Node.CDATA_SECTION_NODE;
+        });
+
+        if (childNodes.length === 1 && childNodes[0].nodeType === Node.TEXT_NODE) {
+          const val = childNodes[0].nodeValue.trim();
+          if (Object.keys(obj).length === 0) return val;
+          obj['#text'] = val;
+          return obj;
+        }
+
+        childNodes.forEach(child => {
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            const childName = child.tagName;
+            const childVal = xmlToJson(child);
+            if (!obj[childName]) {
+              obj[childName] = childVal;
+            } else if (Array.isArray(obj[childName])) {
+              obj[childName].push(childVal);
+            } else {
+              obj[childName] = [obj[childName], childVal];
+            }
+          } else if (child.nodeType === Node.CDATA_SECTION_NODE) {
+            obj['#cdata'] = child.nodeValue;
+          }
+        });
+
+        return obj;
+      }
+
+      return null;
+    }
+
+    // Update Output Views
+    function updateOutputs() {
+      if (!parsedXmlDoc) return;
+
+      const indentVal = indentSelect.value === 'tab' ? '\t' : ' '.repeat(Number(indentSelect.value));
+      const sortAttrs = sortAttrsToggle.checked;
+      const collapseSelfClose = selfClosingToggle.checked;
+
+      // 1. Format XML
+      formattedXmlString = formatXmlNode(parsedXmlDoc, indentVal, 0, {
+        sortAttrs: sortAttrs,
+        collapseSelfClose: collapseSelfClose
+      });
+
+      // 2. Format JSON
+      const jsonParsed = xmlToJson(parsedXmlDoc);
+      const jsonIndent = indentSelect.value === 'tab' ? '\t' : Number(indentSelect.value);
+      jsonString = JSON.stringify(jsonParsed, null, jsonIndent);
+
+      // 3. Render Tree or Raw
+      if (currentRightTab === 'tree') {
+        renderTree(parsedXmlDoc);
+      } else if (currentRightTab === 'formatted') {
+        rawOutputView.textContent = formattedXmlString;
+      } else if (currentRightTab === 'json') {
+        rawOutputView.textContent = jsonString;
+      }
+    }
+
+    // Format Action
+    btnFormat.addEventListener('click', () => {
+      if (!parsedXmlDoc) {
+        validateAndProcess();
+        if (!parsedXmlDoc) return;
+      }
+      xmlInput.value = formattedXmlString;
+      triggerValidation();
+      showToast('XML Formatted & Beautified!');
+    });
+
+    // Minify Action
+    btnMinify.addEventListener('click', () => {
+      if (!parsedXmlDoc) {
+        validateAndProcess();
+        if (!parsedXmlDoc) return;
+      }
+      const minified = xmlInput.value
+        .replace(/\n/g, ' ')
+        .replace(/>\s+</g, '><')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      xmlInput.value = minified;
+      triggerValidation();
+      showToast('XML Minified to Single Line!');
+    });
+
+    [indentSelect, sortAttrsToggle, selfClosingToggle].forEach(el => {
+      el.addEventListener('change', updateOutputs);
+    });
+
+    // Tree Explorer Builder
+    function renderTree(doc) {
+      treeContainer.innerHTML = '';
+      const rootNode = doc.documentElement;
+      if (!rootNode) return;
+      const treeElem = createDomTreeNode(rootNode, '/' + rootNode.tagName);
+      treeElem.classList.add('root');
+      treeContainer.appendChild(treeElem);
+    }
+
+    function createDomTreeNode(node, xpath = '') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tree-node';
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const tagName = node.tagName;
+        const attrs = Array.from(node.attributes);
+        const childNodes = Array.from(node.childNodes).filter(c => {
+          if (c.nodeType === Node.TEXT_NODE) return c.nodeValue.trim().length > 0;
+          return true;
+        });
+
+        const hasChildren = childNodes.length > 0;
+
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+        row.dataset.path = xpath;
+
+        // Toggle icon
+        if (hasChildren) {
+          const toggle = document.createElement('span');
+          toggle.className = 'tree-toggle';
+          toggle.textContent = '▼';
+          row.appendChild(toggle);
+        } else {
+          const spacer = document.createElement('span');
+          spacer.style.width = '14px';
+          spacer.style.display = 'inline-block';
+          row.appendChild(spacer);
+        }
+
+        // Tag display with namespace prefix highlight
+        const tagSpan = document.createElement('span');
+        tagSpan.className = 'tag-open';
+        if (tagName.includes(':')) {
+          const [prefix, local] = tagName.split(':');
+          tagSpan.innerHTML = `&lt;<span class="tag-prefix">${escapeHtml(prefix)}</span>:${escapeHtml(local)}`;
+        } else {
+          tagSpan.innerHTML = `&lt;${escapeHtml(tagName)}`;
+        }
+        row.appendChild(tagSpan);
+
+        // Attributes
+        if (attrs.length > 0) {
+          const attrWrap = document.createElement('span');
+          attrWrap.className = 'tree-attr-wrap';
+          attrs.forEach(a => {
+            attrWrap.innerHTML += ` <span class="attr-k">${escapeHtml(a.name)}</span>=<span class="attr-v">"${escapeHtml(a.value)}"</span>`;
+          });
+          row.appendChild(attrWrap);
+        }
+
+        // Closing bracket
+        const closeSpan = document.createElement('span');
+        closeSpan.className = 'tag-open';
+        closeSpan.textContent = hasChildren ? '>' : '/>';
+        row.appendChild(closeSpan);
+
+        // Child count badge
+        if (hasChildren) {
+          const elemChildren = childNodes.filter(c => c.nodeType === Node.ELEMENT_NODE);
+          const badge = document.createElement('span');
+          badge.className = 'tree-type-badge';
+          badge.textContent = elemChildren.length > 0 ? `${elemChildren.length} elements` : `${childNodes.length} nodes`;
+          row.appendChild(badge);
+        }
+
+        // Copy XPath Button
+        const copyXpathBtn = document.createElement('button');
+        copyXpathBtn.className = 'tree-copy-path-btn';
+        copyXpathBtn.textContent = 'Copy XPath';
+        copyXpathBtn.title = `Copy XPath: ${xpath}`;
+        copyXpathBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(xpath).then(() => showToast(`Copied XPath: ${xpath}`));
+        });
+        row.appendChild(copyXpathBtn);
+
+        wrapper.appendChild(row);
+
+        // Children Container
+        if (hasChildren) {
+          const childrenBox = document.createElement('div');
+          childrenBox.className = 'tree-children';
+
+          const tagCounts = {};
+          childNodes.forEach(child => {
+            if (child.nodeType === Node.ELEMENT_NODE) {
+              tagCounts[child.tagName] = (tagCounts[child.tagName] || 0) + 1;
+              const childXpath = `${xpath}/${child.tagName}[${tagCounts[child.tagName]}]`;
+              childrenBox.appendChild(createDomTreeNode(child, childXpath));
+            } else {
+              childrenBox.appendChild(createDomTreeNode(child, xpath));
+            }
+          });
+
+          wrapper.appendChild(childrenBox);
+
+          // Click to collapse
+          row.addEventListener('click', () => {
+            const isCollapsed = childrenBox.style.display === 'none';
+            childrenBox.style.display = isCollapsed ? 'block' : 'none';
+            const toggle = row.querySelector('.tree-toggle');
+            if (toggle) toggle.classList.toggle('collapsed', !isCollapsed);
+          });
+        }
+      } else if (node.nodeType === Node.TEXT_NODE) {
+        const row = document.createElement('div');
+        row.className = 'tree-row node-text';
+        row.innerHTML = `<span style="width:14px;display:inline-block;"></span><span>"${escapeHtml(node.nodeValue.trim())}"</span>`;
+        wrapper.appendChild(row);
+      } else if (node.nodeType === Node.COMMENT_NODE) {
+        const row = document.createElement('div');
+        row.className = 'tree-row node-comment';
+        row.innerHTML = `<span style="width:14px;display:inline-block;"></span><span>&lt;!-- ${escapeHtml(node.nodeValue.trim())} --&gt;</span>`;
+        wrapper.appendChild(row);
+      } else if (node.nodeType === Node.CDATA_SECTION_NODE) {
+        const row = document.createElement('div');
+        row.className = 'tree-row node-cdata';
+        row.innerHTML = `<span style="width:14px;display:inline-block;"></span><span>&lt;![CDATA[ ${escapeHtml(node.nodeValue)} ]]&gt;</span>`;
+        wrapper.appendChild(row);
+      }
+
+      return wrapper;
+    }
+
+    // Expand All / Collapse All
+    btnExpandAll.addEventListener('click', () => {
+      document.querySelectorAll('.tree-children').forEach(el => el.style.display = 'block');
+      document.querySelectorAll('.tree-toggle').forEach(el => el.classList.remove('collapsed'));
+    });
+
+    btnCollapseAll.addEventListener('click', () => {
+      document.querySelectorAll('.tree-children').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tree-toggle').forEach(el => el.classList.add('collapsed'));
+    });
+
+    // Tree Search Filter
+    treeSearch.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('.tree-row');
+      rows.forEach(r => r.classList.remove('highlight'));
+
+      if (!q) return;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(q)) {
+          row.classList.add('highlight');
+          let parent = row.parentElement;
+          while (parent && parent !== treeContainer) {
+            if (parent.classList.contains('tree-children')) {
+              parent.style.display = 'block';
+              const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
+              if (toggle) toggle.classList.remove('collapsed');
+            }
+            parent = parent.parentElement;
+          }
+        }
+      });
+    });
+
+    // Copy Action
+    btnCopy.addEventListener('click', () => {
+      const textToCopy = currentRightTab === 'json' ? jsonString : (formattedXmlString || xmlInput.value);
+      if (!textToCopy) return;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast(currentRightTab === 'json' ? 'JSON copied to clipboard!' : 'XML copied to clipboard!');
+      });
+    });
+
+    // Download Action
+    btnDownload.addEventListener('click', () => {
+      const isJson = currentRightTab === 'json';
+      const textToDownload = isJson ? jsonString : (formattedXmlString || xmlInput.value);
+      if (!textToDownload) return;
+
+      const mime = isJson ? 'application/json;charset=utf-8;' : 'application/xml;charset=utf-8;';
+      const filename = isJson ? 'export.json' : 'document.xml';
+      const blob = new Blob([textToDownload], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    });
+
+    // Clear
+    btnClear.addEventListener('click', () => {
+      xmlInput.value = '';
+      triggerValidation();
+      xmlInput.focus();
+    });
+
+    // Sample RSS XML
+    btnSampleFeed.addEventListener('click', () => {
+      const sample = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Sayandeep Majumdar — Software Engineer &amp; Architect</title>
+    <link>https://sayandeepmajumdar.github.io/</link>
+    <description>Engineering web applications, scalable APIs, and client-side developer tools.</description>
+    <language>en-us</language>
+    <item>
+      <title>Building Zero-Server Client-Side Developer Tools</title>
+      <link>https://sayandeepmajumdar.github.io/tools/</link>
+      <dc:creator>Sayandeep Majumdar</dc:creator>
+      <pubDate>Wed, 19 Aug 2026 12:00:00 GMT</pubDate>
+      <description><![CDATA[An exploration of high-performance web tooling running entirely in-browser.]]></description>
+      <category>Web Development</category>
+    </item>
+  </channel>
+</rss>`;
+      xmlInput.value = sample;
+      triggerValidation();
+      showToast('Loaded RSS Feed XML sample');
+    });
+
+    // Sample SVG XML
+    btnSampleSvg.addEventListener('click', () => {
+      const sample = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="16" fill="url(#primaryGrad)" />
+  <circle cx="200" cy="150" r="60" fill="#ffffff" fill-opacity="0.2" />
+  <text x="200" y="155" font-family="Inter, sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">XML Engine</text>
+</svg>`;
+      xmlInput.value = sample;
+      triggerValidation();
+      showToast('Loaded SVG Vector XML sample');
+    });
+
+    // Upload File
+    btnUpload.addEventListener('click', () => fileUpload.click());
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        xmlInput.value = evt.target.result;
+        triggerValidation();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+      fileUpload.value = '';
+    });
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.add('active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.remove('active');
+      });
+    });
+
+    splitBox.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          xmlInput.value = evt.target.result;
+          triggerValidation();
+          showToast(`Loaded ${file.name}`);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Resizable Split Divider
+    (function initResizer() {
+      const resizer = document.getElementById('split-resizer');
+      const leftPane = document.getElementById('pane-left');
+      const container = document.getElementById('split-box');
+
+      let isDragging = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const offset = e.clientX - rect.left;
+        const percent = (offset / rect.width) * 100;
+        if (percent > 15 && percent < 85) {
+          leftPane.style.flex = 'none';
+          leftPane.style.width = percent + '%';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeXmlAttr(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeXmlText(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

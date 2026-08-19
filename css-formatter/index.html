@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS Formatter &amp; Minifier — Beautify, Compress &amp; Preview CSS | sayandeep.dev</title>
+  <meta name="description" content="Free online CSS formatter, beautifier and minifier. Configurable indents, brace styles, alphabetical sorting, modern nesting and at-rules, compression stats, structural validation, and live preview." />
+  <meta name="keywords" content="css formatter, css beautifier, css minifier, compress css, clean css, css validator, format css online, css diff" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/css-formatter/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- js-beautify CSS beautifier library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-css.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Toolbar */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons & Form Controls */
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .pill-group {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.2rem;
+      border-radius: var(--radius-sm);
+      gap: 0.2rem;
+    }
+
+    .pill-btn {
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all var(--transition);
+    }
+
+    .pill-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Stats Metric Banner */
+    .stats-banner {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .savings-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Workspace Split Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: stretch;
+      min-height: 520px;
+    }
+
+    @media (max-width: 900px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .output-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .output-tab {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .output-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--surface);
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      padding: 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+    }
+
+    /* Options Drawer */
+    .options-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-top: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 0.85rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+    }
+
+    /* Live Preview Container */
+    .preview-container {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+
+    .preview-toolbar {
+      padding: 0.4rem 0.75rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+    }
+
+    .preview-iframe {
+      width: 100%;
+      flex: 1;
+      min-height: 440px;
+      border: none;
+      background: #ffffff;
+    }
+
+    /* Diff View */
+    .diff-view-wrap {
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      max-height: 480px;
+    }
+
+    .diff-line {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 2px;
+    }
+
+    .diff-line.added { background: var(--success-bg); color: var(--success); }
+    .diff-line.removed { background: var(--error-bg); color: var(--error); }
+    .diff-line.unchanged { color: var(--muted); }
+
+    /* Diagnostic Warnings */
+    .warnings-list {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      font-size: 0.8125rem;
+    }
+
+    .warning-item {
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="CSS Formatter">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">CSS Formatter &amp; Minifier</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-left">
+          <div class="pill-group" id="mode-pill-group">
+            <button class="pill-btn active" data-mode="beautify">✨ Beautify / Format</button>
+            <button class="pill-btn" data-mode="minify">⚡ Minify / Compress</button>
+          </div>
+
+          <label class="btn btn--sm" style="cursor:pointer;">
+            📁 Upload CSS
+            <input type="file" id="file-upload" accept=".css,.txt" style="display:none;" />
+          </label>
+          <button id="btn-sample" class="btn btn--sm">Load Sample</button>
+          <button id="btn-clear" class="btn btn--sm">Clear</button>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="btn-copy-output" class="btn btn--primary btn--sm">📋 Copy Output</button>
+          <button id="btn-download" class="btn btn--sm">💾 Download .css</button>
+        </div>
+      </div>
+
+      <!-- Compression Stats Banner -->
+      <div class="stats-banner" id="stats-banner">
+        <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+          <div class="stat-item">
+            <span class="stat-label">Original:</span>
+            <span class="stat-value" id="stat-orig-size">0 B</span>
+            <span style="font-size:0.75rem; color:var(--muted);">(<span id="stat-orig-chars">0</span> chars)</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Output:</span>
+            <span class="stat-value" id="stat-out-size">0 B</span>
+            <span style="font-size:0.75rem; color:var(--muted);">(<span id="stat-out-chars">0</span> chars)</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span id="savings-badge" class="savings-badge">0% Saved</span>
+          <span id="diag-badge" style="font-size:0.75rem; font-weight:600; color:var(--success);">✓ Valid Syntax</span>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Left: Input Pane -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span>Raw CSS Input</span>
+            <span style="font-size:0.75rem; color:var(--muted); font-weight:500;">Live auto-format</span>
+          </div>
+          <div class="panel-body">
+            <textarea id="raw-css-input" class="code-textarea" placeholder="Paste or type your raw CSS here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Right: Tabbed Output Pane -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="output-tabs" id="output-tabs">
+              <button class="output-tab active" data-tab="code">✨ Processed CSS</button>
+              <button class="output-tab" data-tab="preview">🖥️ Live Preview</button>
+              <button class="output-tab" data-tab="diff">🔍 Diff View</button>
+              <button class="output-tab" data-tab="diag">⚠️ Diagnostics (<span id="diag-count">0</span>)</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <!-- View 1: Code Output -->
+            <div id="view-code" style="height:100%; display:flex; flex-direction:column;">
+              <textarea id="processed-css-output" class="code-textarea" readonly placeholder="Processed CSS will appear here..." spellcheck="false"></textarea>
+            </div>
+
+            <!-- View 2: Live Sandboxed Preview -->
+            <div id="view-preview" class="preview-container" style="display:none;">
+              <div class="preview-toolbar">
+                <span style="color:var(--muted); font-weight:600;">HTML Sample Elements Styled by Your CSS</span>
+                <span style="font-size:0.75rem; color:var(--muted);">Generic Sandbox Preview</span>
+              </div>
+              <div style="flex:1; display:flex; justify-content:center; background:#ffffff; overflow:auto;">
+                <iframe id="preview-iframe" class="preview-iframe" sandbox="allow-same-origin" title="Live CSS Preview"></iframe>
+              </div>
+            </div>
+
+            <!-- View 3: Visual Diff Viewer -->
+            <div id="view-diff" class="diff-view-wrap" style="display:none;">
+              <div id="diff-content"></div>
+            </div>
+
+            <!-- View 4: Diagnostics & Structural Warnings -->
+            <div id="view-diag" class="warnings-list" style="display:none;">
+              <div id="diag-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configurable Options Panel -->
+      <div class="options-card">
+        <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.25rem;">Formatting &amp; Minification Settings</div>
+        <div class="options-grid">
+          <div>
+            <label for="opt-indent" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Indentation Size:</label>
+            <select id="opt-indent" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="2" selected>2 Spaces</option>
+              <option value="4">4 Spaces</option>
+              <option value="tab">1 Tab</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="opt-brace-style" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Brace Style:</label>
+            <select id="opt-brace-style" class="form-select" style="width:100%; margin-top:0.25rem;">
+              <option value="collapse" selected>Same Line (.btn {)</option>
+              <option value="expand">New Line (.btn\n{)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-sort-props" />
+              <span>Sort properties alphabetically</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-normalize-colors" checked />
+              <span>Normalize / Shorten hex colors (#ffffff → #fff)</span>
+            </label>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-strip-comments" checked />
+              <span>Strip comments in minify mode</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="opt-strip-zero-units" checked />
+              <span>Remove units on zero values (0px → 0)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../html-formatter/">HTML Formatter</a>
+        <a href="../http-status-codes/">HTTP Status Codes</a>
+        <a href="../timestamp-converter/">Timestamp Converter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // DOM Elements
+    const rawCssInput = document.getElementById('raw-css-input');
+    const processedCssOutput = document.getElementById('processed-css-output');
+    const previewIframe = document.getElementById('preview-iframe');
+    const modePillGroup = document.getElementById('mode-pill-group');
+
+    const statOrigSize = document.getElementById('stat-orig-size');
+    const statOrigChars = document.getElementById('stat-orig-chars');
+    const statOutSize = document.getElementById('stat-out-size');
+    const statOutChars = document.getElementById('stat-out-chars');
+    const savingsBadge = document.getElementById('savings-badge');
+    const diagBadge = document.getElementById('diag-badge');
+    const diagCount = document.getElementById('diag-count');
+
+    const outputTabs = document.getElementById('output-tabs');
+    const viewCode = document.getElementById('view-code');
+    const viewPreview = document.getElementById('view-preview');
+    const viewDiff = document.getElementById('view-diff');
+    const viewDiag = document.getElementById('view-diag');
+    const diffContent = document.getElementById('diff-content');
+    const diagContent = document.getElementById('diag-content');
+
+    const fileUpload = document.getElementById('file-upload');
+    const btnSample = document.getElementById('btn-sample');
+    const btnClear = document.getElementById('btn-clear');
+    const btnCopyOutput = document.getElementById('btn-copy-output');
+    const btnDownload = document.getElementById('btn-download');
+
+    // Options
+    const optIndent = document.getElementById('opt-indent');
+    const optBraceStyle = document.getElementById('opt-brace-style');
+    const optSortProps = document.getElementById('opt-sort-props');
+    const optNormalizeColors = document.getElementById('opt-normalize-colors');
+    const optStripComments = document.getElementById('opt-strip-comments');
+    const optStripZeroUnits = document.getElementById('opt-strip-zero-units');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let currentMode = 'beautify'; // 'beautify' | 'minify'
+    let currentTab = 'code'; // 'code' | 'preview' | 'diff' | 'diag'
+    let debounceTimer = null;
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // Sample CSS
+    const SAMPLE_CSS = `:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --surface-bg: #ffffff;
+  --text-color: #0f172a;
+  --radius: 8px;
+  --spacing: 1.5rem;
+}
+
+/* Base Body Styles */
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: var(--text-color);
+  margin: 0px;
+  padding: var(--spacing);
+}
+
+.hero-card {
+  background: var(--surface-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+
+  /* Native CSS Nesting */
+  & h1 {
+    font-size: 1.75rem;
+    color: var(--primary-color);
+    margin-top: 0;
+  }
+
+  & p {
+    color: #64748b;
+    line-height: 1.6;
+  }
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: 0px;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .hero-card {
+    padding: 1.25rem;
+    width: 100%;
+  }
+}`;
+
+    // Mode Switcher
+    modePillGroup.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modePillGroup.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        processCss();
+      });
+    });
+
+    // Tab Switcher
+    outputTabs.querySelectorAll('.output-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        outputTabs.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+
+        viewCode.style.display = currentTab === 'code' ? 'flex' : 'none';
+        viewPreview.style.display = currentTab === 'preview' ? 'flex' : 'none';
+        viewDiff.style.display = currentTab === 'diff' ? 'block' : 'none';
+        viewDiag.style.display = currentTab === 'diag' ? 'flex' : 'none';
+
+        if (currentTab === 'preview') updateIframePreview();
+        if (currentTab === 'diff') renderDiffView();
+      });
+    });
+
+    // Event Listeners
+    rawCssInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processCss, 150);
+    });
+
+    [optIndent, optBraceStyle, optSortProps, optNormalizeColors, optStripComments, optStripZeroUnits].forEach(el => {
+      el.addEventListener('change', processCss);
+    });
+
+    btnSample.addEventListener('click', () => {
+      rawCssInput.value = SAMPLE_CSS;
+      processCss();
+      showToast('Loaded sample CSS');
+    });
+
+    btnClear.addEventListener('click', () => {
+      rawCssInput.value = '';
+      processedCssOutput.value = '';
+      previewIframe.srcdoc = '';
+      updateStats(0, 0);
+    });
+
+    btnCopyOutput.addEventListener('click', () => {
+      const val = processedCssOutput.value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => showToast('Output copied to clipboard!'));
+    });
+
+    btnDownload.addEventListener('click', () => {
+      const val = processedCssOutput.value;
+      if (!val) return;
+      const blob = new Blob([val], { type: 'text/css;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentMode === 'minify' ? 'styles.min.css' : 'styles.formatted.css';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        rawCssInput.value = ev.target.result;
+        processCss();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+    });
+
+    // --- MAIN PROCESSING ENGINE ---
+    function processCss() {
+      const raw = rawCssInput.value;
+      if (!raw.trim()) {
+        processedCssOutput.value = '';
+        previewIframe.srcdoc = '';
+        updateStats(0, 0);
+        return;
+      }
+
+      let result = '';
+
+      if (currentMode === 'beautify') {
+        result = beautifyCssEngine(raw);
+      } else {
+        result = minifyCssEngine(raw);
+      }
+
+      processedCssOutput.value = result;
+      updateStats(new Blob([raw]).size, new Blob([result]).size, raw.length, result.length);
+      runDiagnostics(raw);
+
+      if (currentTab === 'preview') updateIframePreview();
+      if (currentTab === 'diff') renderDiffView();
+    }
+
+    // Beautify Engine
+    function beautifyCssEngine(css) {
+      let code = css;
+
+      if (typeof css_beautify === 'function') {
+        const indentVal = optIndent.value;
+        const indentSize = indentVal === 'tab' ? 1 : parseInt(indentVal, 10);
+        const indentChar = indentVal === 'tab' ? '\t' : ' ';
+
+        const options = {
+          indent_size: indentSize,
+          indent_char: indentChar,
+          preserve_newlines: true,
+          newline_between_rules: true,
+          space_around_combinator: true,
+          selector_separator_newline: true,
+          brace_style: optBraceStyle.value === 'expand' ? 'expand' : 'collapse'
+        };
+
+        code = css_beautify(code, options);
+      }
+
+      // Alphabetical sorting of declarations within rule blocks if enabled
+      if (optSortProps.checked) {
+        code = sortProperties(code);
+      }
+
+      // Color normalization
+      if (optNormalizeColors.checked) {
+        code = normalizeHexColors(code);
+      }
+
+      return code;
+    }
+
+    function sortProperties(css) {
+      return css.replace(/\{([^{}]+)\}/g, (match, body) => {
+        const lines = body.split(';').map(l => l.trim()).filter(Boolean);
+        const declarations = [];
+        const comments = [];
+
+        lines.forEach(l => {
+          if (l.startsWith('/*')) comments.push(l);
+          else declarations.push(l);
+        });
+
+        declarations.sort((a, b) => {
+          const propA = a.split(':')[0].trim().toLowerCase();
+          const propB = b.split(':')[0].trim().toLowerCase();
+          return propA.localeCompare(propB);
+        });
+
+        const sortedBody = [...comments, ...declarations].map(d => `  ${d};`).join('\n');
+        return `{\n${sortedBody}\n}`;
+      });
+    }
+
+    function normalizeHexColors(css) {
+      return css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
+    }
+
+    // Minify Engine
+    function minifyCssEngine(css) {
+      let min = css;
+
+      // 1. Comments: Preserve /*! ... */ license comments if present, strip others
+      if (optStripComments.checked) {
+        min = min.replace(/\/\*(?!\![\s\S]*?\*\/)[\s\S]*?\*\//g, '');
+      }
+
+      // 2. Normalize and remove whitespace
+      min = min
+        .replace(/\s+/g, ' ')
+        .replace(/\s*([\{\};:,>+~])\s*/g, '$1')
+        .replace(/;}/g, '}') // strip trailing semicolon before closing brace
+        .trim();
+
+      // 3. Strip units on zero values (e.g. 0px, 0em, 0rem, 0%) except in custom properties or calc
+      if (optStripZeroUnits.checked) {
+        min = min.replace(/(?<![0-9a-zA-Z_])0(?:px|em|rem|%|pt|vh|vw|in|cm|mm)\b/gi, '0');
+      }
+
+      // 4. Shorten hex colors
+      min = normalizeHexColors(min);
+
+      return min;
+    }
+
+    // Stats
+    function updateStats(origBytes, outBytes, origChars = 0, outChars = 0) {
+      statOrigSize.textContent = formatBytes(origBytes);
+      statOrigChars.textContent = origChars;
+      statOutSize.textContent = formatBytes(outBytes);
+      statOutChars.textContent = outChars;
+
+      if (origBytes > 0 && outBytes > 0) {
+        const saved = origBytes - outBytes;
+        const pct = ((saved / origBytes) * 100).toFixed(1);
+        if (saved > 0) {
+          savingsBadge.textContent = `${pct}% Saved (${formatBytes(saved)})`;
+          savingsBadge.style.color = 'var(--success)';
+          savingsBadge.style.background = 'var(--success-bg)';
+        } else {
+          savingsBadge.textContent = `+${Math.abs(pct)}% (Formatted)`;
+          savingsBadge.style.color = 'var(--accent)';
+          savingsBadge.style.background = 'var(--accent-light)';
+        }
+      } else {
+        savingsBadge.textContent = '0% Saved';
+      }
+    }
+
+    // Live Sandboxed Preview
+    function updateIframePreview() {
+      const activeCss = processedCssOutput.value || rawCssInput.value;
+      const previewHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    ${activeCss}
+  </style>
+</head>
+<body>
+  <div class="hero-card">
+    <span class="badge" style="display:inline-block; padding:0.25rem 0.5rem; background:#e0e7ff; color:#4338ca; border-radius:4px; font-weight:600; font-size:0.75rem;">CSS Preview Sandbox</span>
+    <h1>Sample Heading 1</h1>
+    <p>This is a live rendered preview demonstrating your custom CSS rules, styles, typography, buttons, and layouts.</p>
+    <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+      <button class="btn-primary">Primary Action</button>
+      <button class="btn" style="padding:0.6rem 1.25rem; border-radius:6px; border:1px solid #cbd5e1; background:#ffffff; font-weight:600; cursor:pointer;">Secondary</button>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <input type="text" placeholder="Form input field..." style="padding:0.5rem 0.75rem; border:1px solid #cbd5e1; border-radius:6px; width:100%; box-sizing:border-box;" />
+    </div>
+  </div>
+</body>
+</html>`;
+      previewIframe.srcdoc = previewHtml;
+    }
+
+    // Diagnostics Engine
+    function runDiagnostics(css) {
+      const warnings = [];
+
+      // Check unbalanced braces
+      let braceCount = 0;
+      let inComment = false;
+      let inString = false;
+      let stringChar = '';
+
+      for (let i = 0; i < css.length; i++) {
+        const char = css[i];
+        const next = css[i + 1];
+
+        if (!inComment && !inString && char === '/' && next === '*') {
+          inComment = true;
+          i++;
+          continue;
+        }
+        if (inComment && char === '*' && next === '/') {
+          inComment = false;
+          i++;
+          continue;
+        }
+        if (inComment) continue;
+
+        if (!inString && (char === '"' || char === "'")) {
+          inString = true;
+          stringChar = char;
+          continue;
+        }
+        if (inString && char === stringChar && css[i - 1] !== '\\') {
+          inString = false;
+          continue;
+        }
+        if (inString) continue;
+
+        if (char === '{') braceCount++;
+        if (char === '}') braceCount--;
+      }
+
+      if (inComment) warnings.push('Unclosed multi-line comment /* found in CSS');
+      if (inString) warnings.push(`Unclosed string literal (${stringChar}) detected`);
+      if (braceCount > 0) warnings.push(`Missing ${braceCount} closing brace(s) '}'`);
+      if (braceCount < 0) warnings.push(`Extra ${Math.abs(braceCount)} closing brace(s) '}' without opening '{'`);
+
+      // Check unbalanced parentheses in functions
+      const parenMatches = css.match(/\b(calc|var|url|min|max|clamp)\(([^)]*)/g) || [];
+      const openParens = (css.match(/\(/g) || []).length;
+      const closeParens = (css.match(/\)/g) || []).length;
+      if (openParens !== closeParens) {
+        warnings.push(`Unbalanced parentheses detected (${openParens} opening '(' vs ${closeParens} closing ')')`);
+      }
+
+      diagCount.textContent = warnings.length;
+      if (warnings.length === 0) {
+        diagBadge.textContent = '✓ Valid Syntax';
+        diagBadge.style.color = 'var(--success)';
+        diagContent.innerHTML = '<div style="color:var(--success); font-weight:600;">✓ No structural errors or unbalanced braces found!</div>';
+      } else {
+        diagBadge.textContent = `⚠️ ${warnings.length} Warnings`;
+        diagBadge.style.color = 'var(--warning)';
+        diagContent.innerHTML = warnings.map(w => `<div class="warning-item"><span>⚠️</span><div>${w}</div></div>`).join('');
+      }
+    }
+
+    // Visual Diff Viewer
+    function renderDiffView() {
+      const rawLines = rawCssInput.value.split('\n');
+      const outLines = processedCssOutput.value.split('\n');
+
+      let html = '';
+      const max = Math.max(rawLines.length, outLines.length);
+
+      for (let i = 0; i < Math.min(max, 100); i++) {
+        const r = rawLines[i] || '';
+        const o = outLines[i] || '';
+        if (r === o) {
+          html += `<div class="diff-line unchanged"><span style="width:30px; opacity:0.5;">${i+1}</span> <span>${escapeHtml(r)}</span></div>`;
+        } else {
+          if (r) html += `<div class="diff-line removed"><span style="width:30px;">-</span> <span>${escapeHtml(r)}</span></div>`;
+          if (o) html += `<div class="diff-line added"><span style="width:30px;">+</span> <span>${escapeHtml(o)}</span></div>`;
+        }
+      }
+
+      if (max > 100) {
+        html += `<div style="padding:0.5rem; color:var(--muted); font-size:0.75rem;">... showing first 100 lines</div>`;
+      }
+
+      diffContent.innerHTML = html || '<div style="color:var(--muted);">No differences found.</div>';
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize with sample
+    rawCssInput.value = SAMPLE_CSS;
+    processCss();
+  </script>
+</body>
+</html>

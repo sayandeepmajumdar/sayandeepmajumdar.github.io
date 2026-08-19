@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cron Expression Builder &amp; Explainer — Free Visual Cron Generator | sayandeep.dev</title>
+  <meta name="description" content="Build, parse, and explain cron expressions visually with bi-directional editing, natural-language human translation, next run schedule preview with timezone conversion, and code snippets." />
+  <meta name="keywords" content="cron builder, cron expression generator, cron explainer, cron parse, crontab generator, quartz cron, aws eventbridge cron, next cron run, client side cron" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/cron-builder/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏰</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .top-controls-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Main Hero Banner: Raw Expression Bar + Natural Language Explanation */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .raw-expression-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 2px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem 0.5rem;
+      transition: border-color var(--transition);
+    }
+
+    .raw-expression-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .raw-expression-wrap.invalid {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    .raw-cron-input {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.5rem 0.75rem;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .human-explanation-box {
+      background: var(--accent-light);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .human-explanation-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1.4;
+    }
+
+    /* Field Indicators Strip */
+    .field-pills-strip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .field-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .field-pill .pill-label {
+      color: var(--muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+    }
+
+    /* Workspace Grid */
+    .cron-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .cron-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 0.65rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Field Builder Tabs */
+    .field-tabs {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      padding: 0 0.5rem;
+      gap: 0.25rem;
+      overflow-x: auto;
+    }
+
+    .field-tab {
+      padding: 0.65rem 0.95rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .field-tab:hover {
+      color: var(--text);
+    }
+
+    .field-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(var(--surface-rgb), 0.5);
+    }
+
+    /* Sub-mode Radio Group */
+    .submode-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .submode-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      flex-wrap: wrap;
+    }
+
+    .submode-item input[type="radio"] {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Multi-select Button Grid */
+    .selector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 0.25rem 0.1rem;
+    }
+
+    .selector-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.45rem 0.25rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .selector-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .selector-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    /* Next Runs Schedule Card */
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.75rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      gap: 0.5rem;
+    }
+
+    .schedule-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .schedule-countdown {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    /* Code Snippets Section */
+    .snippet-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text);
+      position: relative;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Cron Expression Builder &amp; Explainer</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Preset & Dialect Bar -->
+      <div class="top-bar">
+        <div class="top-controls-left">
+          <label for="preset-select" style="font-size:0.8125rem; font-weight:600;">Presets:</label>
+          <select id="preset-select" class="form-select" style="min-width:180px;">
+            <option value="" selected>Choose schedule...</option>
+            <option value="* * * * *">Every Minute (* * * * *)</option>
+            <option value="*/5 * * * *">Every 5 Minutes (*/5 * * * *)</option>
+            <option value="*/15 * * * *">Every 15 Minutes (*/15 * * * *)</option>
+            <option value="0 * * * *">Every Hour (0 * * * *)</option>
+            <option value="0 0 * * *">Daily at Midnight (0 0 * * *)</option>
+            <option value="0 9 * * 1-5">Every Weekday at 9:00 AM (0 9 * * 1-5)</option>
+            <option value="0 0 * * 0">Every Sunday at Midnight (0 0 * * 0)</option>
+            <option value="0 0 1 * *">1st of Every Month at Midnight (0 0 1 * *)</option>
+            <option value="0 0 1 1,4,7,10 *">Quarterly at Midnight (0 0 1 1,4,7,10 *)</option>
+            <option value="0 0 1 1 *">Annually on Jan 1st (0 0 1 1 *)</option>
+          </select>
+
+          <label for="dialect-select" style="font-size:0.8125rem; font-weight:600; margin-left:0.5rem;">Dialect:</label>
+          <select id="dialect-select" class="form-select">
+            <option value="unix" selected>Standard Unix (5-field)</option>
+            <option value="quartz">Quartz / 6-Field (with Seconds)</option>
+            <option value="aws">AWS EventBridge</option>
+          </select>
+        </div>
+
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>100% In-Browser. Schedules computed locally.</span>
+        </div>
+      </div>
+
+      <!-- Main Hero: Expression Bar & Human Translation -->
+      <div class="hero-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Cron Schedule Expression</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button id="btn-copy-cron" class="btn btn--sm">Copy Cron</button>
+            <button id="btn-reset-cron" class="btn btn--sm">Reset</button>
+          </div>
+        </div>
+
+        <!-- Raw Expression Input -->
+        <div class="raw-expression-wrap" id="raw-expression-wrap">
+          <input type="text" id="raw-cron-input" class="raw-cron-input" value="0 9 * * 1-5" spellcheck="false" />
+        </div>
+
+        <!-- Field Pills Tag Strip -->
+        <div class="field-pills-strip" id="field-pills-strip">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Natural Language Translation Banner -->
+        <div class="human-explanation-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; color:var(--accent);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span id="human-explanation-text" class="human-explanation-text">At 09:00 AM, Monday through Friday</span>
+        </div>
+      </div>
+
+      <!-- Workspace Grid (Builder Tabs vs Next Runs & Snippets) -->
+      <div class="cron-grid">
+        <!-- Left: Field-by-Field Visual Builder -->
+        <div class="card">
+          <div class="field-tabs" id="field-tabs-nav">
+            <button class="field-tab active" data-field="minute"><span>⏱️ Minutes</span></button>
+            <button class="field-tab" data-field="hour"><span>🕒 Hours</span></button>
+            <button class="field-tab" data-field="day"><span>📅 Day of Month</span></button>
+            <button class="field-tab" data-field="month"><span>🗓️ Month</span></button>
+            <button class="field-tab" data-field="weekday"><span>📆 Day of Week</span></button>
+            <button class="field-tab" data-field="second" id="tab-second-nav" style="display:none;"><span>⚡ Seconds</span></button>
+          </div>
+
+          <div class="card-body">
+            <!-- Dynamic Field Builder Container -->
+            <div id="field-builder-content">
+              <!-- Dynamically populated by JS according to active field tab -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Next 10 Execution Runs & Code Snippets -->
+        <div style="display:flex; flex-direction:column; gap:1.25rem;">
+          <!-- Next Runs Card -->
+          <div class="card">
+            <div class="card-header">
+              <span>Next Upcoming Runs</span>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <label for="tz-select" style="font-size:0.7rem; color:var(--muted); font-weight:600;">Timezone:</label>
+                <select id="tz-select" class="form-select" style="font-size:0.75rem; padding:0.2rem 0.4rem;">
+                  <option value="local" selected>Local Time</option>
+                  <option value="UTC">UTC (Universal)</option>
+                  <option value="America/New_York">New York (EST/EDT)</option>
+                  <option value="America/Los_Angeles">Los Angeles (PST/PDT)</option>
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Asia/Kolkata">India (IST)</option>
+                  <option value="Asia/Tokyo">Tokyo (JST)</option>
+                  <option value="Australia/Sydney">Sydney (AEST)</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0.75rem 1.15rem; gap:0.45rem;" id="next-runs-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Code Snippets Generator -->
+          <div class="card">
+            <div class="card-header">
+              <span>Code Snippets</span>
+              <select id="snippet-target-select" class="form-select" style="font-size:0.75rem; padding:0.2rem 0.4rem;">
+                <option value="crontab" selected>Crontab Line</option>
+                <option value="github">GitHub Actions</option>
+                <option value="aws">AWS EventBridge</option>
+                <option value="node">Node.js (node-cron)</option>
+                <option value="python">Python (APScheduler)</option>
+              </select>
+            </div>
+            <div class="card-body" style="padding:0.75rem 1.15rem;">
+              <pre id="snippet-code-box" class="snippet-box">0 9 * * 1-5 /path/to/script.sh</pre>
+              <div style="display:flex; justify-content:flex-end;">
+                <button id="btn-copy-snippet" class="btn btn--sm">Copy Snippet</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../regex-generator/">Regex Generator</a>
+        <a href="../regex-tester/">Regex Tester</a>
+        <a href="../hash-generator/">Hash Generator</a>
+        <a href="../uuid-generator/">UUID Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State Model
+    let currentDialect = 'unix'; // 'unix' | 'quartz' | 'aws'
+    let activeField = 'minute'; // 'second' | 'minute' | 'hour' | 'day' | 'month' | 'weekday'
+
+    const cronState = {
+      second: '*',
+      minute: '0',
+      hour: '9',
+      day: '*',
+      month: '*',
+      weekday: '1-5',
+      year: '*'
+    };
+
+    // DOM Elements
+    const rawCronInput = document.getElementById('raw-cron-input');
+    const rawExpressionWrap = document.getElementById('raw-expression-wrap');
+    const humanExplanationText = document.getElementById('human-explanation-text');
+    const fieldPillsStrip = document.getElementById('field-pills-strip');
+    const fieldTabsNav = document.getElementById('field-tabs-nav');
+    const tabSecondNav = document.getElementById('tab-second-nav');
+    const fieldBuilderContent = document.getElementById('field-builder-content');
+    const presetSelect = document.getElementById('preset-select');
+    const dialectSelect = document.getElementById('dialect-select');
+    const tzSelect = document.getElementById('tz-select');
+    const nextRunsList = document.getElementById('next-runs-list');
+    const snippetTargetSelect = document.getElementById('snippet-target-select');
+    const snippetCodeBox = document.getElementById('snippet-code-box');
+
+    const btnCopyCron = document.getElementById('btn-copy-cron');
+    const btnResetCron = document.getElementById('btn-reset-cron');
+    const btnCopySnippet = document.getElementById('btn-copy-snippet');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Month & Weekday Names
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+    // Dialect Change
+    dialectSelect.addEventListener('change', () => {
+      currentDialect = dialectSelect.value;
+      if (currentDialect === 'quartz' || currentDialect === 'aws') {
+        tabSecondNav.style.display = 'inline-flex';
+      } else {
+        tabSecondNav.style.display = 'none';
+        if (activeField === 'second') switchFieldTab('minute');
+      }
+      buildRawCron();
+    });
+
+    // Field Tabs
+    fieldTabsNav.querySelectorAll('.field-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        switchFieldTab(tab.dataset.field);
+      });
+    });
+
+    function switchFieldTab(field) {
+      activeField = field;
+      fieldTabsNav.querySelectorAll('.field-tab').forEach(t => t.classList.remove('active'));
+      const activeTab = fieldTabsNav.querySelector(`.field-tab[data-field="${field}"]`);
+      if (activeTab) activeTab.classList.add('active');
+      renderFieldBuilder();
+    }
+
+    // --- RENDER FIELD BUILDER ---
+    function renderFieldBuilder() {
+      const field = activeField;
+      const currentVal = cronState[field];
+
+      let min = 0, max = 59, label = 'Minute';
+      if (field === 'second') { min = 0; max = 59; label = 'Second'; }
+      if (field === 'minute') { min = 0; max = 59; label = 'Minute'; }
+      if (field === 'hour') { min = 0; max = 23; label = 'Hour'; }
+      if (field === 'day') { min = 1; max = 31; label = 'Day of Month'; }
+      if (field === 'month') { min = 1; max = 12; label = 'Month'; }
+      if (field === 'weekday') { min = 0; max = 6; label = 'Day of Week'; }
+
+      // Detect submode
+      let submode = 'every';
+      let stepVal = 5;
+      let rangeMin = min, rangeMax = max;
+      let selectedSet = new Set();
+
+      if (currentVal === '*' || currentVal === '?') {
+        submode = 'every';
+      } else if (currentVal.startsWith('*/') || currentVal.includes('/')) {
+        submode = 'step';
+        const parts = currentVal.split('/');
+        stepVal = parseInt(parts[1], 10) || 5;
+      } else if (currentVal.includes('-') && !currentVal.includes(',')) {
+        submode = 'range';
+        const parts = currentVal.split('-');
+        rangeMin = parseInt(parts[0], 10) || min;
+        rangeMax = parseInt(parts[1], 10) || max;
+      } else {
+        submode = 'specific';
+        currentVal.split(',').forEach(v => {
+          const num = parseInt(v, 10);
+          if (!isNaN(num)) selectedSet.add(num);
+        });
+      }
+
+      let gridHtml = '';
+      for (let i = min; i <= max; i++) {
+        let displayLabel = i;
+        if (field === 'month') displayLabel = monthNames[i - 1];
+        if (field === 'weekday') displayLabel = weekdayNames[i];
+        const isSelected = selectedSet.has(i);
+        gridHtml += `<button class="selector-btn ${isSelected ? 'active' : ''}" data-val="${i}">${displayLabel}</button>`;
+      }
+
+      fieldBuilderContent.innerHTML = `
+        <div class="submode-list">
+          <label class="submode-item">
+            <input type="radio" name="submode_${field}" value="every" ${submode === 'every' ? 'checked' : ''} />
+            <span>Every ${label} (<code>*</code>)</span>
+          </label>
+
+          <label class="submode-item">
+            <input type="radio" name="submode_${field}" value="step" ${submode === 'step' ? 'checked' : ''} />
+            <span>Every</span>
+            <input type="number" id="field-step-input" class="form-input" value="${stepVal}" min="1" max="${max}" style="width:65px;" />
+            <span>${label.toLowerCase()}s (<code>*/${stepVal}</code>)</span>
+          </label>
+
+          <label class="submode-item">
+            <input type="radio" name="submode_${field}" value="range" ${submode === 'range' ? 'checked' : ''} />
+            <span>Every ${label.toLowerCase()} between</span>
+            <input type="number" id="field-range-min" class="form-input" value="${rangeMin}" min="${min}" max="${max}" style="width:65px;" />
+            <span>and</span>
+            <input type="number" id="field-range-max" class="form-input" value="${rangeMax}" min="${min}" max="${max}" style="width:65px;" />
+          </label>
+
+          <label class="submode-item">
+            <input type="radio" name="submode_${field}" value="specific" ${submode === 'specific' ? 'checked' : ''} />
+            <span>Specific ${label.toLowerCase()}s (choose from grid below):</span>
+          </label>
+        </div>
+
+        <div style="margin-top:0.75rem; border-top:1px solid var(--line); padding-top:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Select ${label}s:</span>
+            <div style="display:flex; gap:0.3rem;">
+              <button id="btn-grid-all" class="btn btn--sm">All</button>
+              <button id="btn-grid-none" class="btn btn--sm">Clear</button>
+              <button id="btn-grid-even" class="btn btn--sm">Even</button>
+              <button id="btn-grid-odd" class="btn btn--sm">Odd</button>
+            </div>
+          </div>
+          <div class="selector-grid" id="grid-container">
+            ${gridHtml}
+          </div>
+        </div>
+      `;
+
+      attachFieldBuilderListeners(field, min, max);
+    }
+
+    function attachFieldBuilderListeners(field, min, max) {
+      const radios = document.querySelectorAll(`input[name="submode_${field}"]`);
+      const stepInput = document.getElementById('field-step-input');
+      const rangeMinInput = document.getElementById('field-range-min');
+      const rangeMaxInput = document.getElementById('field-range-max');
+      const gridContainer = document.getElementById('grid-container');
+
+      radios.forEach(r => {
+        r.addEventListener('change', () => {
+          applyBuilderMode(field, r.value, stepInput, rangeMinInput, rangeMaxInput, min, max);
+        });
+      });
+
+      if (stepInput) {
+        stepInput.addEventListener('input', () => {
+          document.querySelector(`input[name="submode_${field}"][value="step"]`).checked = true;
+          cronState[field] = `*/${Math.max(1, parseInt(stepInput.value, 10) || 1)}`;
+          buildRawCron();
+        });
+      }
+
+      if (rangeMinInput && rangeMaxInput) {
+        const updateRange = () => {
+          document.querySelector(`input[name="submode_${field}"][value="range"]`).checked = true;
+          const rmin = parseInt(rangeMinInput.value, 10) || min;
+          const rmax = parseInt(rangeMaxInput.value, 10) || max;
+          cronState[field] = `${rmin}-${rmax}`;
+          buildRawCron();
+        };
+        rangeMinInput.addEventListener('input', updateRange);
+        rangeMaxInput.addEventListener('input', updateRange);
+      }
+
+      if (gridContainer) {
+        gridContainer.querySelectorAll('.selector-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelector(`input[name="submode_${field}"][value="specific"]`).checked = true;
+            btn.classList.toggle('active');
+
+            const activeVals = Array.from(gridContainer.querySelectorAll('.selector-btn.active')).map(b => parseInt(b.dataset.val, 10));
+            if (activeVals.length === 0) {
+              cronState[field] = '*';
+            } else if (activeVals.length === (max - min + 1)) {
+              cronState[field] = '*';
+            } else {
+              cronState[field] = activeVals.sort((a, b) => a - b).join(',');
+            }
+            buildRawCron();
+          });
+        });
+      }
+
+      // Quick Grid Helpers
+      document.getElementById('btn-grid-all')?.addEventListener('click', () => {
+        document.querySelector(`input[name="submode_${field}"][value="specific"]`).checked = true;
+        gridContainer.querySelectorAll('.selector-btn').forEach(b => b.classList.add('active'));
+        cronState[field] = '*';
+        buildRawCron();
+      });
+
+      document.getElementById('btn-grid-none')?.addEventListener('click', () => {
+        document.querySelector(`input[name="submode_${field}"][value="specific"]`).checked = true;
+        gridContainer.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+        cronState[field] = '*';
+        buildRawCron();
+      });
+
+      document.getElementById('btn-grid-even')?.addEventListener('click', () => {
+        document.querySelector(`input[name="submode_${field}"][value="specific"]`).checked = true;
+        gridContainer.querySelectorAll('.selector-btn').forEach(b => {
+          const v = parseInt(b.dataset.val, 10);
+          b.classList.toggle('active', v % 2 === 0);
+        });
+        collectGridValues(field, gridContainer);
+      });
+
+      document.getElementById('btn-grid-odd')?.addEventListener('click', () => {
+        document.querySelector(`input[name="submode_${field}"][value="specific"]`).checked = true;
+        gridContainer.querySelectorAll('.selector-btn').forEach(b => {
+          const v = parseInt(b.dataset.val, 10);
+          b.classList.toggle('active', v % 2 !== 0);
+        });
+        collectGridValues(field, gridContainer);
+      });
+    }
+
+    function collectGridValues(field, gridContainer) {
+      const activeVals = Array.from(gridContainer.querySelectorAll('.selector-btn.active')).map(b => parseInt(b.dataset.val, 10));
+      cronState[field] = activeVals.length > 0 ? activeVals.sort((a, b) => a - b).join(',') : '*';
+      buildRawCron();
+    }
+
+    function applyBuilderMode(field, mode, stepInput, rangeMinInput, rangeMaxInput, min, max) {
+      if (mode === 'every') {
+        cronState[field] = '*';
+      } else if (mode === 'step') {
+        const s = parseInt(stepInput.value, 10) || 5;
+        cronState[field] = `*/${s}`;
+      } else if (mode === 'range') {
+        const rmin = parseInt(rangeMinInput.value, 10) || min;
+        const rmax = parseInt(rangeMaxInput.value, 10) || max;
+        cronState[field] = `${rmin}-${rmax}`;
+      }
+      buildRawCron();
+    }
+
+    // --- BI-DIRECTIONAL RAW STRING COMPILATION ---
+    function buildRawCron() {
+      let raw = '';
+      if (currentDialect === 'quartz') {
+        raw = `${cronState.second || '0'} ${cronState.minute} ${cronState.hour} ${cronState.day} ${cronState.month} ${cronState.weekday}`;
+      } else if (currentDialect === 'aws') {
+        const dayVal = cronState.day === '*' ? '?' : cronState.day;
+        const weekdayVal = cronState.weekday === '*' ? '?' : cronState.weekday;
+        raw = `cron(${cronState.minute} ${cronState.hour} ${dayVal} ${cronState.month} ${weekdayVal} *)`;
+      } else {
+        // Standard Unix (5 fields)
+        raw = `${cronState.minute} ${cronState.hour} ${cronState.day} ${cronState.month} ${cronState.weekday}`;
+      }
+
+      rawCronInput.value = raw;
+      rawExpressionWrap.classList.remove('invalid');
+      renderPillsStrip();
+      updateHumanExplanation();
+      computeNextRuns();
+      updateSnippet();
+    }
+
+    // --- RAW EXPRESSION INPUT DECOMPOSER / PARSER ---
+    rawCronInput.addEventListener('input', () => {
+      parseRawCron(rawCronInput.value.trim(), false);
+    });
+
+    function parseRawCron(str, updateInput = true) {
+      if (!str) return;
+
+      if (updateInput && rawCronInput.value !== str) {
+        rawCronInput.value = str;
+      }
+
+      // Check AWS syntax
+      let clean = str;
+      if (clean.startsWith('cron(') && clean.endsWith(')')) {
+        clean = clean.substring(5, clean.length - 1);
+        currentDialect = 'aws';
+        dialectSelect.value = 'aws';
+        tabSecondNav.style.display = 'inline-flex';
+      }
+
+      const parts = clean.split(/\s+/).filter(Boolean);
+
+      if (parts.length === 5) {
+        currentDialect = 'unix';
+        dialectSelect.value = 'unix';
+        tabSecondNav.style.display = 'none';
+
+        cronState.minute = parts[0];
+        cronState.hour = parts[1];
+        cronState.day = parts[2];
+        cronState.month = parts[3];
+        cronState.weekday = parts[4];
+        rawExpressionWrap.classList.remove('invalid');
+      } else if (parts.length === 6 || parts.length === 7) {
+        if (currentDialect !== 'aws') {
+          currentDialect = 'quartz';
+          dialectSelect.value = 'quartz';
+        }
+        tabSecondNav.style.display = 'inline-flex';
+
+        cronState.second = parts[0];
+        cronState.minute = parts[1];
+        cronState.hour = parts[2];
+        cronState.day = parts[3];
+        cronState.month = parts[4];
+        cronState.weekday = parts[5];
+        rawExpressionWrap.classList.remove('invalid');
+      } else {
+        rawExpressionWrap.classList.add('invalid');
+        humanExplanationText.textContent = 'Invalid expression (requires 5 fields for Unix, or 6 fields for Quartz/AWS)';
+        return;
+      }
+
+      renderPillsStrip();
+      renderFieldBuilder();
+      updateHumanExplanation();
+      computeNextRuns();
+      updateSnippet();
+    }
+
+    // Render Tag Pills Strip
+    function renderPillsStrip() {
+      fieldPillsStrip.innerHTML = `
+        ${currentDialect === 'quartz' || currentDialect === 'aws' ? `<span class="field-pill"><span class="pill-label">SEC</span> ${escapeHtml(cronState.second || '0')}</span>` : ''}
+        <span class="field-pill"><span class="pill-label">MIN</span> ${escapeHtml(cronState.minute)}</span>
+        <span class="field-pill"><span class="pill-label">HOUR</span> ${escapeHtml(cronState.hour)}</span>
+        <span class="field-pill"><span class="pill-label">DAY</span> ${escapeHtml(cronState.day)}</span>
+        <span class="field-pill"><span class="pill-label">MONTH</span> ${escapeHtml(cronState.month)}</span>
+        <span class="field-pill"><span class="pill-label">WEEKDAY</span> ${escapeHtml(cronState.weekday)}</span>
+      `;
+    }
+
+    // --- NATURAL LANGUAGE TRANSLATION ENGINE ---
+    function updateHumanExplanation() {
+      const min = cronState.minute;
+      const hr = cronState.hour;
+      const dom = cronState.day;
+      const mon = cronState.month;
+      const dow = cronState.weekday;
+
+      // Common Simple Patterns
+      if (min === '*' && hr === '*' && dom === '*' && mon === '*' && dow === '*') {
+        humanExplanationText.textContent = 'Runs every minute, every day';
+        return;
+      }
+
+      if (min.startsWith('*/') && hr === '*' && dom === '*' && mon === '*' && dow === '*') {
+        humanExplanationText.textContent = `Runs every ${min.substring(2)} minutes, every day`;
+        return;
+      }
+
+      if (min === '0' && hr === '*' && dom === '*' && mon === '*' && dow === '*') {
+        humanExplanationText.textContent = 'Runs every hour at minute 0';
+        return;
+      }
+
+      if (min === '0' && hr.startsWith('*/') && dom === '*' && mon === '*' && dow === '*') {
+        humanExplanationText.textContent = `Runs every ${hr.substring(2)} hours, on the hour`;
+        return;
+      }
+
+      // Format Time portion
+      let timeDesc = '';
+      if (min === '*' && hr === '*') {
+        timeDesc = 'every minute';
+      } else if (min.startsWith('*/')) {
+        timeDesc = `every ${min.substring(2)} minutes`;
+      } else if (hr === '*') {
+        timeDesc = `at minute ${min} of every hour`;
+      } else {
+        // Specific hours/minutes
+        const hrs = hr.split(',');
+        const mins = min.split(',');
+        const times = [];
+        hrs.forEach(h => {
+          const hNum = parseInt(h, 10);
+          mins.forEach(m => {
+            const mNum = parseInt(m, 10);
+            times.push(formatTimeAMPM(hNum, mNum));
+          });
+        });
+        timeDesc = `at ${times.slice(0, 4).join(', ')}${times.length > 4 ? ` (+${times.length - 4} more times)` : ''}`;
+      }
+
+      // Format Day/Weekday portion
+      let dayDesc = '';
+      if (dow === '1-5') {
+        dayDesc = 'Monday through Friday';
+      } else if (dow === '0,6' || dow === '6,0') {
+        dayDesc = 'on Saturday and Sunday';
+      } else if (dow !== '*' && dow !== '?') {
+        const dows = dow.split(',').map(d => weekdayNames[parseInt(d, 10)] || d);
+        dayDesc = `on ${dows.join(', ')}`;
+      } else if (dom !== '*' && dom !== '?') {
+        dayDesc = `on day ${dom} of the month`;
+      } else {
+        dayDesc = 'every day';
+      }
+
+      // Format Month portion
+      let monDesc = '';
+      if (mon !== '*' && mon !== '?') {
+        const mons = mon.split(',').map(m => monthNames[parseInt(m, 10) - 1] || m);
+        monDesc = `in ${mons.join(', ')}`;
+      }
+
+      const fullSentence = `Runs ${timeDesc}, ${dayDesc}${monDesc ? `, ${monDesc}` : ''}.`;
+      humanExplanationText.textContent = fullSentence;
+    }
+
+    function formatTimeAMPM(h, m) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      const mStr = (m < 10 ? '0' : '') + m;
+      return `${h12}:${mStr} ${ampm}`;
+    }
+
+    // --- NEXT 10 UPCOMING RUNS COMPUTATION ---
+    function computeNextRuns() {
+      nextRunsList.innerHTML = '';
+      const tz = tzSelect.value;
+
+      try {
+        const upcomingDates = generateNextExecutionDates(10);
+        if (upcomingDates.length === 0) {
+          nextRunsList.innerHTML = '<div style="color:var(--muted); font-size:0.8125rem;">No upcoming runs found.</div>';
+          return;
+        }
+
+        upcomingDates.forEach(d => {
+          const formatted = formatDateInTZ(d, tz);
+          const relative = getRelativeCountdown(d);
+
+          const div = document.createElement('div');
+          div.className = 'schedule-item';
+          div.innerHTML = `
+            <span class="schedule-time">${escapeHtml(formatted)}</span>
+            <span class="schedule-countdown">${escapeHtml(relative)}</span>
+          `;
+          nextRunsList.appendChild(div);
+        });
+      } catch (err) {
+        nextRunsList.innerHTML = `<div style="color:var(--error); font-size:0.8125rem;">Error calculating next runs: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function generateNextExecutionDates(count = 10) {
+      const results = [];
+      const minArr = parseFieldToValues(cronState.minute, 0, 59);
+      const hrArr = parseFieldToValues(cronState.hour, 0, 23);
+      const domArr = parseFieldToValues(cronState.day, 1, 31);
+      const monArr = parseFieldToValues(cronState.month, 1, 12);
+      const dowArr = parseFieldToValues(cronState.weekday, 0, 6);
+
+      let d = new Date();
+      d.setSeconds(0);
+      d.setMilliseconds(0);
+      d.setMinutes(d.getMinutes() + 1); // Start next minute
+
+      let loops = 0;
+      while (results.length < count && loops < 50000) {
+        loops++;
+        const curMon = d.getMonth() + 1;
+        const curDom = d.getDate();
+        const curDow = d.getDay();
+        const curHr = d.getHours();
+        const curMin = d.getMinutes();
+
+        if (monArr.includes(curMon) &&
+            domArr.includes(curDom) &&
+            dowArr.includes(curDow) &&
+            hrArr.includes(curHr) &&
+            minArr.includes(curMin)) {
+          results.push(new Date(d));
+        }
+
+        d.setMinutes(d.getMinutes() + 1);
+      }
+
+      return results;
+    }
+
+    function parseFieldToValues(fieldStr, minVal, maxVal) {
+      if (fieldStr === '*' || fieldStr === '?') {
+        const arr = [];
+        for (let i = minVal; i <= maxVal; i++) arr.push(i);
+        return arr;
+      }
+
+      if (fieldStr.startsWith('*/')) {
+        const step = parseInt(fieldStr.substring(2), 10) || 1;
+        const arr = [];
+        for (let i = minVal; i <= maxVal; i += step) arr.push(i);
+        return arr;
+      }
+
+      if (fieldStr.includes('-') && !fieldStr.includes(',')) {
+        const parts = fieldStr.split('-');
+        const start = parseInt(parts[0], 10) || minVal;
+        const end = parseInt(parts[1], 10) || maxVal;
+        const arr = [];
+        for (let i = start; i <= end; i++) arr.push(i);
+        return arr;
+      }
+
+      // Specific comma-separated list
+      return fieldStr.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v));
+    }
+
+    function formatDateInTZ(date, tz) {
+      const options = {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      };
+      if (tz !== 'local') options.timeZone = tz;
+      return new Intl.DateTimeFormat('en-US', options).format(date);
+    }
+
+    function getRelativeCountdown(target) {
+      const diffMs = target - new Date();
+      const diffMin = Math.round(diffMs / (60 * 1000));
+      if (diffMin < 1) return 'in less than a minute';
+      if (diffMin < 60) return `in ${diffMin} min${diffMin === 1 ? '' : 's'}`;
+      const diffHrs = Math.floor(diffMin / 60);
+      const remMin = diffMin % 60;
+      if (diffHrs < 24) return `in ${diffHrs}h ${remMin}m`;
+      const diffDays = Math.floor(diffHrs / 24);
+      return `in ${diffDays} day${diffDays === 1 ? '' : 's'}`;
+    }
+
+    tzSelect.addEventListener('change', computeNextRuns);
+
+    // --- CODE SNIPPETS GENERATOR ---
+    snippetTargetSelect.addEventListener('change', updateSnippet);
+
+    function updateSnippet() {
+      const target = snippetTargetSelect.value;
+      const expr = rawCronInput.value.trim();
+
+      let code = '';
+      if (target === 'crontab') {
+        code = `${expr} /usr/local/bin/backup.sh >> /var/log/cron.log 2>&1`;
+      } else if (target === 'github') {
+        code = `name: Scheduled Workflow\non:\n  schedule:\n    - cron: '${expr}'\n\njobs:\n  run-task:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4`;
+      } else if (target === 'aws') {
+        code = `aws events put-rule \\\n  --name "MyScheduledRule" \\\n  --schedule-expression "${expr.startsWith('cron(') ? expr : `cron(${expr})`}"`;
+      } else if (target === 'node') {
+        code = `const cron = require('node-cron');\n\n// Schedule task\ncron.schedule('${expr}', () => {\n  console.log('Running scheduled task: ' + new Date().toISOString());\n});`;
+      } else if (target === 'python') {
+        code = `from apscheduler.schedulers.blocking import BlockingScheduler\n\nscheduler = BlockingScheduler()\n@scheduler.scheduled_job('cron', minute='${cronState.minute}', hour='${cronState.hour}')\ndef scheduled_job():\n    print("Task executed!")\n\nscheduler.start()`;
+      }
+
+      snippetCodeBox.textContent = code;
+    }
+
+    // Preset selection
+    presetSelect.addEventListener('change', () => {
+      if (!presetSelect.value) return;
+      parseRawCron(presetSelect.value);
+      showToast(`Loaded ${presetSelect.options[presetSelect.selectedIndex].text}`);
+    });
+
+    // Copy Buttons
+    btnCopyCron.addEventListener('click', () => {
+      navigator.clipboard.writeText(rawCronInput.value).then(() => showToast('Copied cron expression!'));
+    });
+
+    btnResetCron.addEventListener('click', () => {
+      parseRawCron('0 9 * * 1-5');
+      showToast('Reset to weekday 9 AM default');
+    });
+
+    btnCopySnippet.addEventListener('click', () => {
+      navigator.clipboard.writeText(snippetCodeBox.textContent).then(() => showToast('Copied code snippet!'));
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    parseRawCron('0 9 * * 1-5');
+  </script>
+</body>
+</html>

@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base64 Encoder & Decoder — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Encode and decode Base64 text, files, images, and Data URLs directly in your browser. Features UTF-8 unicode safety, URL-safe Base64, line wrapping, live image preview, and size analytics. 100% private." />
+  <meta name="keywords" content="base64 encoder, base64 decoder, base64 image preview, url safe base64, data url generator, file to base64, utf8 base64, client side base64" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/base64-tool/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode Tabs & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Config / Options Panel */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      flex-wrap: wrap;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-container {
+      display: flex;
+      flex: 1;
+      min-height: 560px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .pane-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Swap Button Divider */
+    .resizer-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: var(--line);
+      width: 14px;
+      user-select: none;
+      cursor: col-resize;
+      transition: background var(--transition);
+    }
+
+    .resizer-wrap:hover, .resizer-wrap.dragging {
+      background: var(--accent);
+    }
+
+    .btn-swap {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      z-index: 10;
+      transition: all var(--transition);
+    }
+
+    .btn-swap:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    /* Editor View */
+    .editor-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .code-textarea {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: auto;
+    }
+
+    /* Output View & Image Preview */
+    .output-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .image-preview-panel {
+      padding: 0.75rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: none;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .image-thumb {
+      max-height: 90px;
+      max-width: 140px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      object-fit: contain;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .image-details {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    /* Drag Overlay */
+    .drag-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--accent-light);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--accent);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .drag-overlay.active {
+      display: flex;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        min-height: 800px;
+      }
+      .resizer-wrap {
+        width: 100%;
+        height: 14px;
+        cursor: row-resize;
+      }
+      .btn-swap {
+        transform: rotate(90deg);
+      }
+      .btn-swap:hover {
+        transform: rotate(90deg) scale(1.1);
+      }
+      .pane {
+        min-height: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Base64 Encoder & Decoder</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Mode Tabs & Privacy -->
+      <div class="top-bar">
+        <div class="mode-tabs">
+          <button id="tab-encode" class="mode-tab active">
+            <span>⚡ Encode to Base64</span>
+          </button>
+          <button id="tab-decode" class="mode-tab">
+            <span>🔓 Decode Base64</span>
+          </button>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. Tokens & files never leave your browser.</span>
+        </div>
+      </div>
+
+      <!-- Config Toolbar -->
+      <div class="config-card">
+        <div class="config-group">
+          <div class="config-item">
+            <label for="charset-select">Charset:</label>
+            <select id="charset-select" class="form-select" title="Text character encoding">
+              <option value="utf-8">UTF-8 (Unicode / Emojis)</option>
+              <option value="ascii">ASCII / Latin-1</option>
+            </select>
+          </div>
+
+          <label class="toggle-label" title="Use URL-safe characters (- and _) and strip padding (=)">
+            <input type="checkbox" id="url-safe-toggle" />
+            <span>URL-Safe (-, _)</span>
+          </label>
+
+          <label class="toggle-label" id="data-url-label" title="Prepend Data URL scheme (data:mime;base64,)">
+            <input type="checkbox" id="data-url-toggle" />
+            <span>Data URL Scheme</span>
+          </label>
+
+          <label class="toggle-label" title="Wrap long Base64 strings every 76 characters (MIME RFC standard)">
+            <input type="checkbox" id="line-wrap-toggle" />
+            <span>Wrap Lines (76 chars)</span>
+          </label>
+        </div>
+
+        <div class="config-group">
+          <button id="btn-sample" class="btn" title="Load sample input">Sample</button>
+          <input type="file" id="file-upload" style="display:none;" />
+          <button id="btn-upload" class="btn" title="Upload any file to encode/decode">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload File</span>
+          </button>
+          <button id="btn-clear" class="btn btn--danger" title="Clear input">Clear</button>
+        </div>
+      </div>
+
+      <!-- Status & Size Ratio Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span id="status-text">Ready. Paste text, Base64 string, or drop any file.</span>
+        <span id="ratio-stats" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;"></span>
+      </div>
+
+      <!-- Split Workspace -->
+      <div class="split-container" id="split-box">
+        <div class="drag-overlay" id="drag-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Drop file here to process</span>
+        </div>
+
+        <!-- Left Pane: Input -->
+        <div class="pane" id="pane-left">
+          <div class="pane-header">
+            <span id="input-title">Plain Text Input</span>
+            <span id="input-stats" style="color:var(--muted); font-size:0.75rem; font-family:'JetBrains Mono',monospace;">0 chars · 0 B</span>
+          </div>
+
+          <div class="editor-wrapper">
+            <textarea id="main-input" class="code-textarea" placeholder="Paste or type text here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Swap Divider -->
+        <div class="resizer-wrap" id="split-resizer">
+          <button id="btn-swap" class="btn-swap" title="Swap input and output (Reverse direction)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          </button>
+        </div>
+
+        <!-- Right Pane: Output -->
+        <div class="pane" id="pane-right">
+          <div class="pane-header">
+            <span id="output-title">Base64 Encoded Output</span>
+            <div class="pane-actions">
+              <button id="btn-copy" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy</button>
+              <button id="btn-download" class="btn btn--primary" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Download</button>
+            </div>
+          </div>
+
+          <div class="output-wrapper">
+            <!-- Live Image Thumbnail Preview -->
+            <div class="image-preview-panel" id="img-preview-box">
+              <img id="img-preview" class="image-thumb" alt="Decoded Base64 Preview" />
+              <div class="image-details">
+                <strong id="img-mime-label" style="color:var(--text); font-weight:600;">Image Preview</strong>
+                <span id="img-dim-label">Dimensions: Calculating…</span>
+              </div>
+            </div>
+
+            <textarea id="main-output" class="code-textarea" readonly placeholder="Output will appear here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+        <a href="../xml-formatter/">XML Formatter</a>
+        <a href="../yaml-formatter/">YAML Formatter</a>
+        <a href="../json-to-csv/">JSON ⮂ CSV</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let currentMode = 'encode'; // 'encode' | 'decode'
+    let rawOutputBytes = null;
+    let detectedMime = null;
+    let uploadedFileName = '';
+    let debounceTimer = null;
+
+    // DOM Elements
+    const tabEncode = document.getElementById('tab-encode');
+    const tabDecode = document.getElementById('tab-decode');
+    const charsetSelect = document.getElementById('charset-select');
+    const urlSafeToggle = document.getElementById('url-safe-toggle');
+    const dataUrlToggle = document.getElementById('data-url-toggle');
+    const dataUrlLabel = document.getElementById('data-url-label');
+    const lineWrapToggle = document.getElementById('line-wrap-toggle');
+    const statusBanner = document.getElementById('status-banner');
+    const statusText = document.getElementById('status-text');
+    const ratioStats = document.getElementById('ratio-stats');
+    const mainInput = document.getElementById('main-input');
+    const mainOutput = document.getElementById('main-output');
+    const inputTitle = document.getElementById('input-title');
+    const inputStats = document.getElementById('input-stats');
+    const outputTitle = document.getElementById('output-title');
+    const btnSwap = document.getElementById('btn-swap');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnDownload = document.getElementById('btn-download');
+    const btnClear = document.getElementById('btn-clear');
+    const btnSample = document.getElementById('btn-sample');
+    const btnUpload = document.getElementById('btn-upload');
+    const fileUpload = document.getElementById('file-upload');
+    const imgPreviewBox = document.getElementById('img-preview-box');
+    const imgPreview = document.getElementById('img-preview');
+    const imgMimeLabel = document.getElementById('img-mime-label');
+    const imgDimLabel = document.getElementById('img-dim-label');
+    const splitBox = document.getElementById('split-box');
+    const dragOverlay = document.getElementById('drag-overlay');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    // Toast
+    function showToast(message) {
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Switch Mode
+    tabEncode.addEventListener('click', () => setMode('encode'));
+    tabDecode.addEventListener('click', () => setMode('decode'));
+
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'encode') {
+        tabEncode.classList.add('active');
+        tabDecode.classList.remove('active');
+        inputTitle.textContent = 'Plain Text Input';
+        outputTitle.textContent = 'Base64 Encoded Output';
+        mainInput.placeholder = 'Paste or type text to encode (supports emojis 🚀, Unicode)...';
+        dataUrlLabel.style.display = 'inline-flex';
+        btnDownload.textContent = 'Download .txt';
+      } else {
+        tabDecode.classList.add('active');
+        tabEncode.classList.remove('active');
+        inputTitle.textContent = 'Base64 String Input';
+        outputTitle.textContent = 'Decoded Plain Text Output';
+        mainInput.placeholder = 'Paste Base64 or Data URL string here to decode...';
+        dataUrlLabel.style.display = 'none';
+        btnDownload.textContent = 'Download File';
+      }
+      processConversion();
+    }
+
+    // Swap Direction
+    btnSwap.addEventListener('click', () => {
+      const prevOutput = mainOutput.value;
+      setMode(currentMode === 'encode' ? 'decode' : 'encode');
+      if (prevOutput) {
+        mainInput.value = prevOutput;
+        processConversion();
+      }
+    });
+
+    // Helper: format byte size
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      if (bytes > 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return bytes + ' B';
+    }
+
+    // Pure UTF-8 Safe Byte-to-Base64
+    function bytesToBase64(bytes, urlSafe = false) {
+      let binary = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      let b64 = btoa(binary);
+      if (urlSafe) {
+        b64 = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+      return b64;
+    }
+
+    // Pure Base64-to-Bytes
+    function base64ToBytes(b64Str) {
+      let clean = b64Str.trim().replace(/\s+/g, '');
+      let mime = null;
+
+      // Extract Data URL scheme if present
+      if (clean.startsWith('data:')) {
+        const commaIdx = clean.indexOf(',');
+        if (commaIdx !== -1) {
+          const prefix = clean.substring(5, commaIdx);
+          const parts = prefix.split(';');
+          mime = parts[0] || 'application/octet-stream';
+          clean = clean.substring(commaIdx + 1);
+        }
+      }
+
+      // URL-safe normalisation
+      clean = clean.replace(/-/g, '+').replace(/_/g, '/');
+      while (clean.length % 4 !== 0) {
+        clean += '=';
+      }
+
+      // Validation
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) {
+        throw new Error('Invalid Base64 format: contains illegal characters or corrupted padding.');
+      }
+
+      const binary = atob(clean);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      return { bytes: bytes, mime: mime };
+    }
+
+    // Detect Image Magic Bytes
+    function detectImage(bytes) {
+      if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'image/png';
+      if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'image/jpeg';
+      if (bytes.length >= 6 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return 'image/gif';
+      if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp';
+      if (bytes.length > 10) {
+        const snippet = new TextDecoder('utf-8', { fatal: false }).decode(bytes.subarray(0, 100)).trim().toLowerCase();
+        if (snippet.includes('<svg')) return 'image/svg+xml';
+      }
+      return null;
+    }
+
+    // Process Conversion
+    function processConversion() {
+      const text = mainInput.value;
+      const inputBytesCount = new Blob([text]).size;
+      inputStats.textContent = `${text.length} chars · ${formatBytes(inputBytesCount)}`;
+
+      imgPreviewBox.style.display = 'none';
+      detectedMime = null;
+      rawOutputBytes = null;
+
+      if (!text.trim()) {
+        statusBanner.className = 'status-banner empty';
+        statusText.textContent = 'Ready. Paste text, Base64 string, or drop any file.';
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+        return;
+      }
+
+      if (currentMode === 'encode') {
+        encodeText(text);
+      } else {
+        decodeText(text);
+      }
+    }
+
+    // Encode
+    function encodeText(text) {
+      try {
+        const charset = charsetSelect.value;
+        const isUrlSafe = urlSafeToggle.checked;
+        const isDataUrl = dataUrlToggle.checked;
+        const isLineWrap = lineWrapToggle.checked;
+
+        let bytes;
+        if (charset === 'utf-8') {
+          bytes = new TextEncoder().encode(text);
+        } else {
+          // ASCII / Latin-1
+          bytes = new Uint8Array(text.length);
+          for (let i = 0; i < text.length; i++) {
+            bytes[i] = text.charCodeAt(i) & 0xFF;
+          }
+        }
+
+        let b64 = bytesToBase64(bytes, isUrlSafe);
+
+        if (isDataUrl) {
+          b64 = `data:text/plain;charset=${charset};base64,${b64}`;
+        } else if (isLineWrap) {
+          b64 = b64.match(/.{1,76}/g)?.join('\n') || b64;
+        }
+
+        mainOutput.value = b64;
+        rawOutputBytes = new TextEncoder().encode(b64);
+
+        const outSize = new Blob([b64]).size;
+        const inSize = bytes.length;
+        const delta = inSize > 0 ? `+${Math.round(((outSize - inSize) / inSize) * 100)}%` : '+0%';
+
+        statusBanner.className = 'status-banner valid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Successfully Encoded to Base64
+          </span>
+        `;
+        ratioStats.textContent = `${formatBytes(inSize)} ➔ ${formatBytes(outSize)} (${delta} size increase)`;
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `<span>Encode Error: ${escapeHtml(err.message)}</span>`;
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+      }
+    }
+
+    // Decode
+    function decodeText(text) {
+      try {
+        const charset = charsetSelect.value;
+        const { bytes, mime } = base64ToBytes(text);
+        rawOutputBytes = bytes;
+
+        // Detect if image
+        const imgMime = mime || detectImage(bytes);
+        if (imgMime && imgMime.startsWith('image/')) {
+          detectedMime = imgMime;
+          const blob = new Blob([bytes], { type: imgMime });
+          const url = URL.createObjectURL(blob);
+          imgPreview.src = url;
+          imgPreviewBox.style.display = 'flex';
+          imgMimeLabel.textContent = `Image Preview (${imgMime})`;
+          imgPreview.onload = () => {
+            imgDimLabel.textContent = `Dimensions: ${imgPreview.naturalWidth} × ${imgPreview.naturalHeight} px · ${formatBytes(bytes.length)}`;
+          };
+        }
+
+        // Decode as text
+        const decoder = new TextDecoder(charset, { fatal: false });
+        const decodedString = decoder.decode(bytes);
+        mainOutput.value = decodedString;
+
+        const inSize = new Blob([text]).size;
+        const outSize = bytes.length;
+        const delta = inSize > 0 ? `-${Math.round(((inSize - outSize) / inSize) * 100)}%` : '-0%';
+
+        statusBanner.className = 'status-banner valid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Valid Base64 — Successfully Decoded
+          </span>
+        `;
+        ratioStats.textContent = `${formatBytes(inSize)} ➔ ${formatBytes(outSize)} (${delta} size decrease)`;
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            ${escapeHtml(err.message)}
+          </span>
+        `;
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+      }
+    }
+
+    // Input Events
+    mainInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processConversion, 120);
+    });
+
+    [charsetSelect, urlSafeToggle, dataUrlToggle, lineWrapToggle].forEach(el => {
+      el.addEventListener('change', processConversion);
+    });
+
+    // Copy Action
+    btnCopy.addEventListener('click', () => {
+      if (!mainOutput.value) return;
+      navigator.clipboard.writeText(mainOutput.value).then(() => {
+        showToast('Copied to clipboard!');
+      });
+    });
+
+    // Download Action
+    btnDownload.addEventListener('click', () => {
+      if (!mainOutput.value && !rawOutputBytes) return;
+      let blob, filename;
+
+      if (currentMode === 'encode') {
+        blob = new Blob([mainOutput.value], { type: 'text/plain;charset=utf-8;' });
+        filename = uploadedFileName ? `${uploadedFileName}.base64.txt` : 'encoded.txt';
+      } else {
+        // Decode mode: export binary bytes
+        const mime = detectedMime || 'application/octet-stream';
+        let ext = 'bin';
+        if (mime === 'image/png') ext = 'png';
+        else if (mime === 'image/jpeg') ext = 'jpg';
+        else if (mime === 'image/gif') ext = 'gif';
+        else if (mime === 'image/webp') ext = 'webp';
+        else if (mime === 'image/svg+xml') ext = 'svg';
+        else if (mime === 'text/plain') ext = 'txt';
+
+        blob = new Blob([rawOutputBytes], { type: mime });
+        filename = uploadedFileName ? uploadedFileName.replace(/\.base64(\.txt)?$/, '') : `decoded.${ext}`;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    });
+
+    // Clear Action
+    btnClear.addEventListener('click', () => {
+      mainInput.value = '';
+      mainOutput.value = '';
+      uploadedFileName = '';
+      processConversion();
+      mainInput.focus();
+    });
+
+    // Sample Data Action
+    btnSample.addEventListener('click', () => {
+      if (currentMode === 'encode') {
+        mainInput.value = '🚀 Hello from Sayandeep Majumdar!\nBase64 Client-Side Tool with UTF-8 Unicode support: 你好世界, Привет мир, ✨🌟💫';
+      } else {
+        // Sample Base64 image (1x1 transparent PNG / miniature badge SVG)
+        mainInput.value = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHJ4PSI4IiBmaWxsPSIjNGY0NmU1Ii8+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZpbGw9IiNmZmYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U0FZQU5ERUVQPC90ZXh0Pjwvc3ZnPg==';
+      }
+      processConversion();
+      showToast('Loaded sample dataset');
+    });
+
+    // File Upload Button
+    btnUpload.addEventListener('click', () => fileUpload.click());
+
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      handleFile(file);
+      fileUpload.value = '';
+    });
+
+    function handleFile(file) {
+      uploadedFileName = file.name;
+      const reader = new FileReader();
+
+      if (currentMode === 'encode') {
+        reader.onload = (evt) => {
+          const arrayBuffer = evt.target.result;
+          const bytes = new Uint8Array(arrayBuffer);
+          const isUrlSafe = urlSafeToggle.checked;
+          const isDataUrl = dataUrlToggle.checked;
+          const isLineWrap = lineWrapToggle.checked;
+
+          let b64 = bytesToBase64(bytes, isUrlSafe);
+          if (isDataUrl) {
+            const mime = file.type || 'application/octet-stream';
+            b64 = `data:${mime};base64,${b64}`;
+          } else if (isLineWrap) {
+            b64 = b64.match(/.{1,76}/g)?.join('\n') || b64;
+          }
+
+          mainInput.value = `[File: ${file.name} · ${formatBytes(file.size)}]`;
+          mainOutput.value = b64;
+          rawOutputBytes = new TextEncoder().encode(b64);
+
+          const outSize = new Blob([b64]).size;
+          statusBanner.className = 'status-banner valid';
+          statusText.innerHTML = `<span>Encoded file: ${escapeHtml(file.name)}</span>`;
+          ratioStats.textContent = `${formatBytes(file.size)} ➔ ${formatBytes(outSize)} (+33%)`;
+          showToast(`Encoded ${file.name}`);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // Decode mode: read file as text to decode
+        reader.onload = (evt) => {
+          mainInput.value = evt.target.result;
+          processConversion();
+          showToast(`Loaded ${file.name}`);
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.add('active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.remove('active');
+      });
+    });
+
+    splitBox.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    // Resizable Split Divider
+    (function initResizer() {
+      const resizer = document.getElementById('split-resizer');
+      const leftPane = document.getElementById('pane-left');
+      const container = document.getElementById('split-box');
+
+      let isDragging = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        if (e.target.closest('#btn-swap')) return;
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const offset = e.clientX - rect.left;
+        const percent = (offset / rect.width) * 100;
+        if (percent > 15 && percent < 85) {
+          leftPane.style.flex = 'none';
+          leftPane.style.width = percent + '%';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Formatter, Validator & Tree Explorer — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Format, beautify, minify, validate, and interactively explore JSON data in your browser. Features live syntax error pinpointing, collapsible tree view, JSON5 support, and key sorting. 100% private." />
+  <meta name="keywords" content="json formatter, json validator, json beautifier, json tree viewer, json minifier, client side json tool, json parser" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/json-formatter/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- JSON5 Fallback Parser CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/json5/2.2.3/index.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --syntax-key: #0284c7;
+      --syntax-str: #16a34a;
+      --syntax-num: #d97706;
+      --syntax-bool: #7c3aed;
+      --syntax-null: #64748b;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --syntax-key: #38bdf8;
+      --syntax-str: #4ade80;
+      --syntax-num: #fbbf24;
+      --syntax-bool: #a78bfa;
+      --syntax-null: #94a3b8;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Workspace */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Privacy Banner */
+    .top-info-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Main Toolbar */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    .select-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-input:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      padding: 0.2rem 0.4rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Validation Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-container {
+      display: flex;
+      flex: 1;
+      min-height: 580px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 280px;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Resizer Divider */
+    .resizer {
+      width: 8px;
+      background: var(--line);
+      cursor: col-resize;
+      user-select: none;
+      transition: background var(--transition);
+      position: relative;
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent);
+    }
+
+    /* Editor View */
+    .editor-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .gutter {
+      padding: 0.75rem 0.5rem;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      text-align: right;
+      user-select: none;
+      min-width: 48px;
+      font-size: 0.75rem;
+      overflow: hidden;
+    }
+
+    .gutter-num {
+      height: 1.55em;
+    }
+
+    .gutter-num.error-line {
+      color: var(--error);
+      font-weight: 700;
+      background: var(--error-bg);
+      border-radius: 2px;
+    }
+
+    .code-textarea {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 2;
+    }
+
+    /* Tree View */
+    .tree-wrapper {
+      flex: 1;
+      overflow: auto;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .tree-search-bar {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      width: 180px;
+    }
+
+    .tree-search-bar:focus {
+      border-color: var(--accent);
+    }
+
+    .tree-node {
+      margin-left: 1.15rem;
+      position: relative;
+    }
+
+    .tree-node.root {
+      margin-left: 0;
+    }
+
+    .tree-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.1rem 0.3rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tree-row:hover {
+      background: var(--surface-alt);
+    }
+
+    .tree-row.highlight {
+      background: rgba(245, 158, 11, 0.25);
+      border-radius: 3px;
+    }
+
+    .tree-toggle {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--muted);
+      user-select: none;
+      transition: transform 0.15s ease;
+    }
+
+    .tree-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .tree-key {
+      color: var(--syntax-key);
+      font-weight: 600;
+    }
+
+    .tree-colon {
+      color: var(--muted);
+      margin-right: 0.2rem;
+    }
+
+    .tree-type-badge {
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0 0.35rem;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .val-string { color: var(--syntax-str); }
+    .val-number { color: var(--syntax-num); font-weight: 600; }
+    .val-boolean { color: var(--syntax-bool); font-weight: 600; }
+    .val-null { color: var(--syntax-null); font-style: italic; }
+
+    .val-link {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .tree-copy-path-btn {
+      opacity: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      font-size: 0.65rem;
+      padding: 0.05rem 0.3rem;
+      color: var(--muted);
+      margin-left: auto;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .tree-row:hover .tree-copy-path-btn {
+      opacity: 1;
+    }
+
+    .tree-copy-path-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        min-height: 800px;
+      }
+      .resizer {
+        width: 100%;
+        height: 8px;
+        cursor: row-resize;
+      }
+      .pane {
+        min-height: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">JSON Formatter & Explorer</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Info -->
+      <div class="top-info-bar">
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. Your JSON data never leaves your machine.</span>
+        </div>
+        <div id="stats-display" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted)">
+          0 lines · 0 chars · 0 B
+        </div>
+      </div>
+
+      <!-- Main Action Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-group">
+          <button id="btn-beautify" class="btn btn--primary" title="Format and pretty-print JSON">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>Format / Beautify</span>
+          </button>
+          
+          <select id="indent-select" class="select-input" title="Indentation style">
+            <option value="2">2 Spaces</option>
+            <option value="4">4 Spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+
+          <button id="btn-minify" class="btn" title="Minify into a single line">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline></svg>
+            <span>Minify</span>
+          </button>
+
+          <button id="btn-sort" class="btn" title="Sort object keys alphabetically">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Sort Keys</span>
+          </button>
+
+          <button id="btn-sample" class="btn" title="Load a realistic sample JSON dataset">
+            <span>Sample Data</span>
+          </button>
+        </div>
+
+        <div class="toolbar-group">
+          <label class="toggle-label" title="Enable JSON5 parsing (allows comments and trailing commas)">
+            <input type="checkbox" id="json5-toggle" />
+            <span>JSON5 Mode</span>
+          </label>
+
+          <label class="toggle-label" title="Automatically beautify on clipboard paste">
+            <input type="checkbox" id="autopaste-toggle" checked />
+            <span>Auto-format on Paste</span>
+          </label>
+
+          <input type="file" id="file-upload" accept=".json, .txt" style="display:none;" />
+          <button id="btn-upload" class="btn" title="Upload a JSON file from disk">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload</span>
+          </button>
+
+          <button id="btn-copy" class="btn" title="Copy formatted JSON to clipboard">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copy</span>
+          </button>
+
+          <button id="btn-download" class="btn" title="Download as .json file">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download</span>
+          </button>
+
+          <button id="btn-clear" class="btn btn--danger" title="Clear editor">Clear</button>
+        </div>
+      </div>
+
+      <!-- Live Status Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span>Ready. Paste or type your JSON code above.</span>
+      </div>
+
+      <!-- Split-Pane Workspace -->
+      <div class="split-container" id="split-box">
+        <!-- Left Pane: Raw Code Editor -->
+        <div class="pane" id="pane-left">
+          <div class="pane-header">
+            <span class="pane-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              <span>Raw JSON Input</span>
+            </span>
+            <span id="editor-hint" style="color:var(--muted);font-size:0.75rem">Press Tab to indent</span>
+          </div>
+          <div class="editor-wrapper" id="editor-wrap">
+            <div class="gutter" id="editor-gutter">
+              <div class="gutter-num">1</div>
+            </div>
+            <textarea id="json-input" class="code-textarea" placeholder="Paste or type raw JSON here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Draggable Resizer Divider -->
+        <div class="resizer" id="split-resizer"></div>
+
+        <!-- Right Pane: Collapsible Tree Explorer -->
+        <div class="pane" id="pane-right">
+          <div class="pane-header">
+            <span class="pane-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              <span>Interactive Tree Explorer</span>
+            </span>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <input type="text" id="tree-search" class="tree-search-bar" placeholder="Filter keys / values..." />
+              <button id="btn-expand-all" class="btn" style="padding:0.25rem 0.5rem; font-size:0.7rem;">Expand All</button>
+              <button id="btn-collapse-all" class="btn" style="padding:0.25rem 0.5rem; font-size:0.7rem;">Collapse All</button>
+            </div>
+          </div>
+          <div class="tree-wrapper" id="tree-container">
+            <div style="color:var(--muted); text-align:center; padding:3rem 1rem;">
+              Valid JSON tree structure will appear here interactively.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../csv-to-pdf/">CSV & Excel to PDF</a>
+        <a href="../mathlify/">Mathlify Calculators</a>
+        <a href="../resume/">Resume</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Application State
+    let parsedObject = null;
+    let debounceTimer = null;
+
+    // DOM Elements
+    const jsonInput = document.getElementById('json-input');
+    const editorGutter = document.getElementById('editor-gutter');
+    const statusBanner = document.getElementById('status-banner');
+    const statsDisplay = document.getElementById('stats-display');
+    const treeContainer = document.getElementById('tree-container');
+    const treeSearch = document.getElementById('tree-search');
+    const indentSelect = document.getElementById('indent-select');
+    const json5Toggle = document.getElementById('json5-toggle');
+    const autopasteToggle = document.getElementById('autopaste-toggle');
+    const btnBeautify = document.getElementById('btn-beautify');
+    const btnMinify = document.getElementById('btn-minify');
+    const btnSort = document.getElementById('btn-sort');
+    const btnSample = document.getElementById('btn-sample');
+    const btnClear = document.getElementById('btn-clear');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnDownload = document.getElementById('btn-download');
+    const btnUpload = document.getElementById('btn-upload');
+    const fileUpload = document.getElementById('file-upload');
+    const btnExpandAll = document.getElementById('btn-expand-all');
+    const btnCollapseAll = document.getElementById('btn-collapse-all');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    // Show Toast
+    function showToast(message) {
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Line Numbers & Gutter Management
+    function updateGutter(errorLineNum = null) {
+      const lines = jsonInput.value.split('\n');
+      const lineCount = Math.max(lines.length, 1);
+      let html = '';
+      for (let i = 1; i <= lineCount; i++) {
+        const isError = errorLineNum === i;
+        html += `<div class="gutter-num ${isError ? 'error-line' : ''}">${i}</div>`;
+      }
+      editorGutter.innerHTML = html;
+
+      // Update Live Stats
+      const bytes = new Blob([jsonInput.value]).size;
+      let sizeStr = bytes + ' B';
+      if (bytes > 1024 * 1024) sizeStr = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      else if (bytes > 1024) sizeStr = (bytes / 1024).toFixed(1) + ' KB';
+
+      statsDisplay.textContent = `${lineCount} line${lineCount !== 1 ? 's' : ''} · ${jsonInput.value.length} chars · ${sizeStr}`;
+    }
+
+    // Synchronize Editor Scrolling with Gutter
+    jsonInput.addEventListener('scroll', () => {
+      editorGutter.scrollTop = jsonInput.scrollTop;
+    });
+
+    // Indentation Helper (Indent with Tab key)
+    jsonInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = jsonInput.selectionStart;
+        const end = jsonInput.selectionEnd;
+        const indentStr = indentSelect.value === 'tab' ? '\t' : ' '.repeat(Number(indentSelect.value));
+        jsonInput.value = jsonInput.value.substring(0, start) + indentStr + jsonInput.value.substring(end);
+        jsonInput.selectionStart = jsonInput.selectionEnd = start + indentStr.length;
+        triggerValidation();
+      }
+    });
+
+    // Auto-Format on Paste
+    jsonInput.addEventListener('paste', (e) => {
+      if (!autopasteToggle.checked) return;
+      setTimeout(() => {
+        beautify();
+      }, 50);
+    });
+
+    // Live Debounced Validation
+    jsonInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(validateJSON, 180);
+      updateGutter();
+    });
+
+    function triggerValidation() {
+      clearTimeout(debounceTimer);
+      validateJSON();
+      updateGutter();
+    }
+
+    // Precise Error Extractor
+    function parseJSONError(err, text) {
+      const msg = err.message || 'Syntax Error';
+      let line = null;
+      let column = null;
+
+      // JSON5 provides lineNumber & columnNumber directly
+      if (err.lineNumber !== undefined) {
+        return { line: err.lineNumber, col: err.columnNumber || 1, msg: err.message };
+      }
+
+      // Regex pattern matching on V8 error messages
+      const posMatch = msg.match(/at position (\d+)/i);
+      const lineColMatch = msg.match(/line (\d+) column (\d+)/i);
+
+      if (lineColMatch) {
+        line = parseInt(lineColMatch[1], 10);
+        column = parseInt(lineColMatch[2], 10);
+      } else if (posMatch) {
+        const pos = parseInt(posMatch[1], 10);
+        const sub = text.substring(0, pos);
+        const splitLines = sub.split('\n');
+        line = splitLines.length;
+        column = splitLines[splitLines.length - 1].length + 1;
+      }
+
+      return { line: line || 1, col: column || 1, msg: msg };
+    }
+
+    // Validate JSON
+    function validateJSON() {
+      const text = jsonInput.value.trim();
+      if (!text) {
+        statusBanner.className = 'status-banner empty';
+        statusBanner.innerHTML = '<span>Ready. Paste or type your JSON code above.</span>';
+        parsedObject = null;
+        treeContainer.innerHTML = '<div style="color:var(--muted); text-align:center; padding:3rem 1rem;">Valid JSON tree structure will appear here interactively.</div>';
+        updateGutter();
+        return;
+      }
+
+      const useJSON5 = json5Toggle.checked;
+
+      try {
+        if (useJSON5 && window.JSON5) {
+          parsedObject = JSON5.parse(text);
+        } else {
+          parsedObject = JSON.parse(text);
+        }
+
+        statusBanner.className = 'status-banner valid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Valid JSON ${useJSON5 ? '(JSON5 mode)' : ''} — Successfully parsed.</span>
+        `;
+        updateGutter(null);
+        renderTree(parsedObject);
+      } catch (err) {
+        parsedObject = null;
+        const errInfo = parseJSONError(err, jsonInput.value);
+        statusBanner.className = 'status-banner invalid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          <span>Error at Line ${errInfo.line}, Column ${errInfo.col}: ${escapeHtml(errInfo.msg)}</span>
+        `;
+        updateGutter(errInfo.line);
+        treeContainer.innerHTML = `
+          <div style="color:var(--error); padding:2rem 1rem; text-align:center;">
+            <strong>Unable to build tree view:</strong>
+            <p style="margin-top:0.5rem; font-size:0.8125rem;">${escapeHtml(errInfo.msg)} (Line ${errInfo.line}, Column ${errInfo.col})</p>
+          </div>
+        `;
+      }
+    }
+
+    // Beautify / Pretty-Print
+    function beautify() {
+      if (!parsedObject) {
+        validateJSON();
+        if (!parsedObject) return;
+      }
+      const indent = indentSelect.value === 'tab' ? '\t' : Number(indentSelect.value);
+      jsonInput.value = JSON.stringify(parsedObject, null, indent);
+      triggerValidation();
+      showToast('JSON Beautified!');
+    }
+
+    // Minify
+    function minify() {
+      if (!parsedObject) {
+        validateJSON();
+        if (!parsedObject) return;
+      }
+      jsonInput.value = JSON.stringify(parsedObject);
+      triggerValidation();
+      showToast('JSON Minified!');
+    }
+
+    // Sort Keys Recursively
+    function sortObjectKeys(obj) {
+      if (Array.isArray(obj)) {
+        return obj.map(sortObjectKeys);
+      } else if (obj !== null && typeof obj === 'object') {
+        const sorted = {};
+        Object.keys(obj).sort().forEach(key => {
+          sorted[key] = sortObjectKeys(obj[key]);
+        });
+        return sorted;
+      }
+      return obj;
+    }
+
+    function sortKeys() {
+      if (!parsedObject) {
+        validateJSON();
+        if (!parsedObject) return;
+      }
+      parsedObject = sortObjectKeys(parsedObject);
+      const indent = indentSelect.value === 'tab' ? '\t' : Number(indentSelect.value);
+      jsonInput.value = JSON.stringify(parsedObject, null, indent);
+      triggerValidation();
+      showToast('Object keys sorted alphabetically!');
+    }
+
+    // Button Listeners
+    btnBeautify.addEventListener('click', beautify);
+    btnMinify.addEventListener('click', minify);
+    btnSort.addEventListener('click', sortKeys);
+    json5Toggle.addEventListener('change', triggerValidation);
+
+    // Clear
+    btnClear.addEventListener('click', () => {
+      jsonInput.value = '';
+      triggerValidation();
+      jsonInput.focus();
+    });
+
+    // Copy formatted JSON
+    btnCopy.addEventListener('click', () => {
+      if (!jsonInput.value.trim()) return;
+      navigator.clipboard.writeText(jsonInput.value).then(() => {
+        showToast('JSON copied to clipboard!');
+      });
+    });
+
+    // Download .json
+    btnDownload.addEventListener('click', () => {
+      const text = jsonInput.value.trim();
+      if (!text) return;
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded data.json');
+    });
+
+    // Upload file
+    btnUpload.addEventListener('click', () => fileUpload.click());
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        jsonInput.value = event.target.result;
+        triggerValidation();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+      fileUpload.value = '';
+    });
+
+    // Sample Data Loader
+    btnSample.addEventListener('click', () => {
+      const sample = {
+        "status": "success",
+        "timestamp": new Date().toISOString(),
+        "query": {
+          "endpoint": "/api/v2/developer/profile",
+          "cached": true,
+          "rateLimitRemaining": 98
+        },
+        "developer": {
+          "id": "dev_9942",
+          "name": "Sayandeep Majumdar",
+          "title": "Senior Software Engineer",
+          "location": {
+            "city": "Kolkata",
+            "country": "India",
+            "remote": true
+          },
+          "skills": [
+            "JavaScript / TypeScript",
+            "Python",
+            "Laravel & PHP",
+            "Cloud Infrastructure",
+            "Full Stack Architecture"
+          ],
+          "socials": {
+            "website": "https://sayandeepmajumdar.github.io",
+            "github": "https://github.com/sayandeepmajumdar",
+            "linkedin": "https://www.linkedin.com/in/connectwithsayandeep/"
+          },
+          "projects": [
+            {
+              "name": "Mathlify",
+              "type": "Calculators Suite",
+              "toolsCount": 23,
+              "active": true
+            },
+            {
+              "name": "CSV to PDF",
+              "type": "In-browser Spreadsheet Converter",
+              "clientSideOnly": true
+            }
+          ]
+        },
+        "meta": {
+          "version": "2.4.0",
+          "serverTimeMs": 14
+        }
+      };
+      const indent = indentSelect.value === 'tab' ? '\t' : Number(indentSelect.value);
+      jsonInput.value = JSON.stringify(sample, null, indent);
+      triggerValidation();
+      showToast('Loaded sample dataset');
+    });
+
+    // Tree Explorer Builder
+    function renderTree(data) {
+      treeContainer.innerHTML = '';
+      const rootNode = createTreeNode(data, '', '', true);
+      rootNode.classList.add('root');
+      treeContainer.appendChild(rootNode);
+    }
+
+    function createTreeNode(value, key = '', path = '', isRoot = false) {
+      const node = document.createElement('div');
+      node.className = 'tree-node';
+
+      const type = Array.isArray(value) ? 'array' : (value === null ? 'null' : typeof value);
+      const isContainer = type === 'object' || type === 'array';
+
+      const row = document.createElement('div');
+      row.className = 'tree-row';
+      row.dataset.path = path;
+
+      // Toggle indicator
+      if (isContainer) {
+        const toggle = document.createElement('span');
+        toggle.className = 'tree-toggle';
+        toggle.textContent = '▼';
+        row.appendChild(toggle);
+      } else {
+        const spacer = document.createElement('span');
+        spacer.style.width = '14px';
+        spacer.style.display = 'inline-block';
+        row.appendChild(spacer);
+      }
+
+      // Key display
+      if (key !== '') {
+        const keySpan = document.createElement('span');
+        keySpan.className = 'tree-key';
+        keySpan.textContent = isNaN(key) ? `"${key}"` : key;
+        row.appendChild(keySpan);
+
+        const colon = document.createElement('span');
+        colon.className = 'tree-colon';
+        colon.textContent = ':';
+        row.appendChild(colon);
+      }
+
+      // Value / Badge display
+      if (isContainer) {
+        const count = Array.isArray(value) ? value.length : Object.keys(value).length;
+        const badge = document.createElement('span');
+        badge.className = 'tree-type-badge';
+        badge.textContent = Array.isArray(value) ? `Array[${count}]` : `Object{${count}}`;
+        row.appendChild(badge);
+      } else {
+        const valSpan = document.createElement('span');
+        if (type === 'string') {
+          valSpan.className = 'val-string';
+          if (value.startsWith('http://') || value.startsWith('https://')) {
+            valSpan.innerHTML = `"<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer" class="val-link">${escapeHtml(value)}</a>"`;
+          } else {
+            valSpan.textContent = `"${value}"`;
+          }
+        } else if (type === 'number') {
+          valSpan.className = 'val-number';
+          valSpan.textContent = value;
+        } else if (type === 'boolean') {
+          valSpan.className = 'val-boolean';
+          valSpan.textContent = value;
+        } else if (type === 'null') {
+          valSpan.className = 'val-null';
+          valSpan.textContent = 'null';
+        }
+        row.appendChild(valSpan);
+      }
+
+      // Copy path button on hover
+      if (path) {
+        const copyPathBtn = document.createElement('button');
+        copyPathBtn.className = 'tree-copy-path-btn';
+        copyPathBtn.textContent = 'Copy Path';
+        copyPathBtn.title = `Copy path: ${path}`;
+        copyPathBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(path).then(() => showToast(`Copied path: ${path}`));
+        });
+        row.appendChild(copyPathBtn);
+      }
+
+      node.appendChild(row);
+
+      // Children container
+      if (isContainer) {
+        const childrenBox = document.createElement('div');
+        childrenBox.className = 'tree-children';
+
+        if (Array.isArray(value)) {
+          value.forEach((item, idx) => {
+            const itemPath = path ? `${path}[${idx}]` : `[${idx}]`;
+            childrenBox.appendChild(createTreeNode(item, String(idx), itemPath));
+          });
+        } else {
+          Object.keys(value).forEach((k) => {
+            const itemPath = path ? `${path}.${k}` : k;
+            childrenBox.appendChild(createTreeNode(value[k], k, itemPath));
+          });
+        }
+
+        node.appendChild(childrenBox);
+
+        // Toggle Expand/Collapse click
+        row.addEventListener('click', () => {
+          const isCollapsed = childrenBox.style.display === 'none';
+          childrenBox.style.display = isCollapsed ? 'block' : 'none';
+          const toggle = row.querySelector('.tree-toggle');
+          if (toggle) toggle.classList.toggle('collapsed', !isCollapsed);
+        });
+      }
+
+      return node;
+    }
+
+    // Expand All / Collapse All
+    btnExpandAll.addEventListener('click', () => {
+      document.querySelectorAll('.tree-children').forEach(el => el.style.display = 'block');
+      document.querySelectorAll('.tree-toggle').forEach(el => el.classList.remove('collapsed'));
+    });
+
+    btnCollapseAll.addEventListener('click', () => {
+      document.querySelectorAll('.tree-children').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tree-toggle').forEach(el => el.classList.add('collapsed'));
+    });
+
+    // Tree Search Filter
+    treeSearch.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('.tree-row');
+      rows.forEach(r => r.classList.remove('highlight'));
+
+      if (!q) return;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(q)) {
+          row.classList.add('highlight');
+          // Open parent tree ancestors so match is visible
+          let parent = row.parentElement;
+          while (parent && parent !== treeContainer) {
+            if (parent.classList.contains('tree-children')) {
+              parent.style.display = 'block';
+              const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
+              if (toggle) toggle.classList.remove('collapsed');
+            }
+            parent = parent.parentElement;
+          }
+        }
+      });
+    });
+
+    // Resizable Split Divider
+    (function initResizer() {
+      const resizer = document.getElementById('split-resizer');
+      const leftPane = document.getElementById('pane-left');
+      const container = document.getElementById('split-box');
+
+      let isDragging = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const offset = e.clientX - rect.left;
+        const percent = (offset / rect.width) * 100;
+        if (percent > 15 && percent < 85) {
+          leftPane.style.flex = 'none';
+          leftPane.style.width = percent + '%';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regex Generator — Visual Builder, Example Inference &amp; AI Generator | sayandeep.dev</title>
+  <meta name="description" content="Generate and build regular expressions visually without hand-writing code. Includes visual block sequence builder, heuristic example-based inference, and optional AI natural-language generation. 100% client-side with live tester." />
+  <meta name="keywords" content="regex generator, regular expression builder, visual regex builder, regex from examples, regex ai generator, client side regex, regex creator" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/regex-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --match-0-bg: rgba(59, 130, 246, 0.28);
+      --match-0-border: rgba(59, 130, 246, 0.6);
+      --match-1-bg: rgba(234, 179, 8, 0.32);
+      --match-1-border: rgba(234, 179, 8, 0.6);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --match-0-bg: rgba(96, 165, 250, 0.35);
+      --match-0-border: rgba(96, 165, 250, 0.7);
+      --match-1-bg: rgba(250, 204, 21, 0.35);
+      --match-1-border: rgba(250, 204, 21, 0.7);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Mode Navigation Tabs */
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .generator-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .gen-tab {
+      padding: 0.5rem 1.15rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .gen-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Workspace Grid */
+    .generator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .generator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 0.65rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Form Controls */
+    .form-select, .form-input, .form-textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .form-textarea {
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    /* Block Builder Item */
+    .blocks-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .block-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      transition: all var(--transition);
+    }
+
+    .block-card:hover {
+      border-color: var(--accent);
+    }
+
+    .block-details {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .block-type-select {
+      min-width: 150px;
+    }
+
+    .block-quantifier-select {
+      min-width: 130px;
+    }
+
+    .block-custom-input {
+      width: 110px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .block-btn-del {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      transition: color var(--transition);
+    }
+
+    .block-btn-del:hover {
+      color: var(--error);
+    }
+
+    /* Example Inference Section */
+    .inference-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 640px) {
+      .inference-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .inference-status-box {
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+    }
+
+    .example-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      margin: 0.2rem;
+    }
+
+    .example-tag.pass { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .example-tag.fail { background: var(--error-bg); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Shared Pattern Bar & Live Tester */
+    .pattern-bar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .pattern-bar-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0 0.75rem;
+      transition: border-color var(--transition);
+    }
+
+    .pattern-bar-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .regex-delimiter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent);
+      user-select: none;
+    }
+
+    .pattern-input {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      padding: 0.65rem 0.5rem;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .flags-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .flag-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .flag-item input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Live Tester Editor (Backdrop + Textarea) */
+    .editor-overlay-container {
+      position: relative;
+      min-height: 180px;
+      height: 220px;
+      width: 100%;
+      background: transparent;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+
+    .highlight-backdrop, .test-string-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0.75rem 1rem;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+      border: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .highlight-backdrop {
+      pointer-events: none;
+      z-index: 1;
+      color: transparent;
+      background: var(--surface-alt);
+    }
+
+    .test-string-input {
+      z-index: 2;
+      background: transparent;
+      color: var(--text);
+      resize: none;
+      caret-color: var(--text);
+    }
+
+    mark.match-0 {
+      background-color: var(--match-0-bg);
+      border-bottom: 2px solid var(--match-0-border);
+      border-radius: 3px;
+      color: transparent;
+    }
+
+    mark.match-1 {
+      background-color: var(--match-1-bg);
+      border-bottom: 2px solid var(--match-1-border);
+      border-radius: 3px;
+      color: transparent;
+    }
+
+    /* Token Explainer */
+    .token-explainer-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-right: 0.25rem;
+    }
+
+    .token-item {
+      padding: 0.55rem 0.75rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+      transition: all var(--transition);
+    }
+
+    .token-item:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .token-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      min-width: 140px;
+    }
+
+    .token-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-size: 0.85rem;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .token-cat-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+    }
+
+    .token-cat-badge.anchor { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .token-cat-badge.char { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .token-cat-badge.quant { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .token-cat-badge.group { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+    .token-cat-badge.literal { background: rgba(120, 113, 108, 0.15); color: var(--muted); }
+
+    .token-desc {
+      color: var(--text);
+      line-height: 1.45;
+      flex: 1;
+      font-size: 0.8125rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Regex Generator &amp; Builder</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Mode Selection Tabs -->
+      <div class="mode-bar">
+        <div class="generator-tabs">
+          <button id="mode-tab-visual" class="gen-tab active" data-mode="visual">
+            <span>🧩 Visual Builder</span>
+          </button>
+          <button id="mode-tab-examples" class="gen-tab" data-mode="examples">
+            <span>🎯 From Examples</span>
+          </button>
+          <button id="mode-tab-ai" class="gen-tab" data-mode="ai">
+            <span>✨ AI Generator</span>
+          </button>
+        </div>
+
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span id="privacy-status-label">100% In-Browser. No network requests.</span>
+        </div>
+      </div>
+
+      <!-- Generator Workspace Grid -->
+      <div class="generator-grid">
+        <!-- Left Column: Generator Input Panel (Visual / Examples / AI) -->
+        <div class="card">
+          <!-- MODE 1: Visual Builder -->
+          <div id="mode-view-visual" class="mode-view-panel">
+            <div class="card-header">
+              <span>Visual Block Builder</span>
+              <div style="display:flex; gap:0.4rem;">
+                <button id="btn-add-block" class="btn btn--primary btn--sm">+ Add Block</button>
+                <button id="btn-reset-blocks" class="btn btn--danger btn--sm">Reset</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Anchors Configuration -->
+              <div style="display:flex; align-items:center; gap:0.85rem; flex-wrap:wrap; background:var(--surface-alt); padding:0.5rem 0.75rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Anchors:</span>
+                <label class="flag-item"><input type="checkbox" id="anchor-start" checked /> <span>Starts with line (^)</span></label>
+                <label class="flag-item"><input type="checkbox" id="anchor-end" checked /> <span>Ends with line ($)</span></label>
+                <label class="flag-item"><input type="checkbox" id="anchor-boundary" /> <span>Word boundary (\b)</span></label>
+              </div>
+
+              <!-- Blocks List -->
+              <div id="blocks-list" class="blocks-container">
+                <!-- Dynamically generated block cards -->
+              </div>
+
+              <!-- Quick Insert Preset Block Strip -->
+              <div>
+                <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Insert Common Presets:</span>
+                <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem;">
+                  <button class="btn btn--sm btn-preset-insert" data-preset="email">📧 Email</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="url">🔗 URL</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="ipv4">🌐 IPv4</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="date">📅 ISO Date</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="hex">🎨 Hex Color</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="uuid">🔢 UUID</button>
+                  <button class="btn btn--sm btn-preset-insert" data-preset="phone">📞 Phone</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE 2: Example-Based Inference -->
+          <div id="mode-view-examples" class="mode-view-panel" style="display:none;">
+            <div class="card-header">
+              <span>Heuristic Example Inference</span>
+              <button id="btn-sample-examples" class="btn btn--sm">Load Sample</button>
+            </div>
+            <div class="card-body">
+              <div class="inference-grid">
+                <div>
+                  <label for="positive-examples" style="font-size:0.75rem; font-weight:700; color:var(--success); text-transform:uppercase;">Must Match (1 per line):</label>
+                  <textarea id="positive-examples" class="form-textarea" rows="6" placeholder="Paste strings that MUST match (e.g.&#10;ABC-1234&#10;XYZ-9876&#10;KLP-4512)" spellcheck="false">ABC-1234
+XYZ-9876
+KLP-4512</textarea>
+                </div>
+                <div>
+                  <label for="negative-examples" style="font-size:0.75rem; font-weight:700; color:var(--error); text-transform:uppercase;">Must NOT Match (optional):</label>
+                  <textarea id="negative-examples" class="form-textarea" rows="6" placeholder="Paste strings that must NOT match (e.g.&#10;123-ABC&#10;AB-12345&#10;invalid)" spellcheck="false">123-ABC
+AB-12345
+invalid</textarea>
+                </div>
+              </div>
+
+              <div class="inference-status-box">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.35rem;">Validation against examples:</div>
+                <div id="inference-results-badges"></div>
+              </div>
+
+              <div style="font-size:0.75rem; color:var(--muted); line-height:1.45;">
+                💡 <em>Heuristic inference detects structural token sequences (digits, uppercase letters, delimiters). Best suited for structured codes and IDs.</em>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE 3: AI Natural Language Generator -->
+          <div id="mode-view-ai" class="mode-view-panel" style="display:none;">
+            <div class="card-header">
+              <span>Natural Language AI Generator</span>
+              <span style="font-size:0.75rem; color:var(--warning); font-weight:600;">Direct Client-Side Fetch</span>
+            </div>
+            <div class="card-body">
+              <div>
+                <label for="ai-prompt-input" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Describe what you want to match in plain English:</label>
+                <textarea id="ai-prompt-input" class="form-textarea" rows="6" style="width:100%; min-height:140px; font-size:0.875rem; line-height:1.6; padding:0.75rem 0.85rem; margin-top:0.35rem;" placeholder="e.g. Match a US phone number with optional country code, parentheses around area code, and hyphens or dots...&#10;&#10;Or: Match a valid semantic version string with optional pre-release and build metadata tag." spellcheck="false">Match a US phone number with optional area code parentheses and dashes or spaces</textarea>
+              </div>
+
+              <!-- Provider & Key Config -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div>
+                  <label for="ai-provider-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Provider:</label>
+                  <select id="ai-provider-select" class="form-select" style="width:100%; margin-top:0.25rem;">
+                    <option value="gemini" selected>Google Gemini (gemini-1.5-flash)</option>
+                    <option value="openai">OpenAI (gpt-4o-mini)</option>
+                    <option value="anthropic">Anthropic Claude (claude-3-5-haiku)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="ai-api-key" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">API Key (Session Only):</label>
+                  <input type="password" id="ai-api-key" class="form-input" style="width:100%; margin-top:0.25rem;" placeholder="Paste API Key..." autocomplete="off" />
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:var(--muted);">Key is stored in browser memory only and sent directly to the provider.</span>
+                <button id="btn-generate-ai" class="btn btn--primary">Generate with AI ✨</button>
+              </div>
+
+              <div id="ai-status-msg" style="font-size:0.8125rem; display:none; padding:0.5rem 0.75rem; border-radius:var(--radius-sm);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Shared Live Tester, Pattern Output & Token Explainer -->
+        <div>
+          <!-- Assembled Pattern Output Card -->
+          <div class="pattern-bar-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Generated Regular Expression</span>
+              <button id="btn-copy-pattern" class="btn btn--sm">Copy /pattern/flags</button>
+            </div>
+
+            <div class="pattern-bar-wrap">
+              <span class="regex-delimiter">/</span>
+              <input type="text" id="active-pattern-input" class="pattern-input" spellcheck="false" value="^[a-zA-Z]{3}-\d{4}$" />
+              <span class="regex-delimiter">/</span>
+              <span id="active-flags-suffix" style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--accent); margin-left:0.25rem;">g</span>
+            </div>
+
+            <!-- Flags -->
+            <div class="flags-bar">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Flags:</span>
+              <label class="flag-item"><input type="checkbox" id="flag-g" checked /> <span>g (global)</span></label>
+              <label class="flag-item"><input type="checkbox" id="flag-i" /> <span>i (ignore case)</span></label>
+              <label class="flag-item"><input type="checkbox" id="flag-m" checked /> <span>m (multiline)</span></label>
+              <label class="flag-item"><input type="checkbox" id="flag-s" /> <span>s (dotAll)</span></label>
+            </div>
+          </div>
+
+          <!-- Live Synchronized Match Tester -->
+          <div class="card" style="margin-bottom:1.25rem;">
+            <div class="card-header">
+              <span>Live Match Tester</span>
+              <span id="match-counter-badge" style="font-size:0.75rem; font-weight:700; color:var(--accent);">0 matches</span>
+            </div>
+            <div style="padding:0.75rem 1.15rem;">
+              <div class="editor-overlay-container">
+                <div id="highlight-backdrop" class="highlight-backdrop"></div>
+                <textarea id="tester-string-input" class="test-string-input" placeholder="Type or paste test strings to see live matches..." spellcheck="false">ABC-1234
+XYZ-9876
+KLP-4512
+123-ABC
+AB-12345</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pattern Token Explainer -->
+          <div class="card">
+            <div class="card-header">
+              <span>Pattern Breakdown &amp; Explanation</span>
+              <span id="token-count-badge" style="font-size:0.75rem; font-weight:700; color:var(--accent);">0 tokens</span>
+            </div>
+            <div class="card-body">
+              <div class="token-explainer-scroll" id="token-explainer-list">
+                <!-- Dynamically populated token items -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../regex-tester/">Regex Tester</a>
+        <a href="../hash-generator/">Hash Generator</a>
+        <a href="../uuid-generator/">UUID Generator</a>
+        <a href="../jwt-decoder/">JWT Decoder</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let currentMode = 'visual'; // 'visual' | 'examples' | 'ai'
+    let visualBlocks = [
+      { type: 'letters_upper', quantifier: 'range', min: 3, max: 3, custom: '', capture: 'none' },
+      { type: 'literal', quantifier: 'exact_1', min: 1, max: 1, custom: '-', capture: 'none' },
+      { type: 'digits', quantifier: 'range', min: 4, max: 4, custom: '', capture: 'none' }
+    ];
+
+    // DOM Elements
+    const modeTabs = document.querySelectorAll('.gen-tab');
+    const modeViewVisual = document.getElementById('mode-view-visual');
+    const modeViewExamples = document.getElementById('mode-view-examples');
+    const modeViewAi = document.getElementById('mode-view-ai');
+    const privacyStatusLabel = document.getElementById('privacy-status-label');
+
+    // Visual Builder
+    const blocksList = document.getElementById('blocks-list');
+    const btnAddBlock = document.getElementById('btn-add-block');
+    const btnResetBlocks = document.getElementById('btn-reset-blocks');
+    const anchorStart = document.getElementById('anchor-start');
+    const anchorEnd = document.getElementById('anchor-end');
+    const anchorBoundary = document.getElementById('anchor-boundary');
+
+    // Example Inference
+    const positiveExamples = document.getElementById('positive-examples');
+    const negativeExamples = document.getElementById('negative-examples');
+    const inferenceResultsBadges = document.getElementById('inference-results-badges');
+    const btnSampleExamples = document.getElementById('btn-sample-examples');
+
+    // AI Generator
+    const aiPromptInput = document.getElementById('ai-prompt-input');
+    const aiProviderSelect = document.getElementById('ai-provider-select');
+    const aiApiKey = document.getElementById('ai-api-key');
+    const btnGenerateAi = document.getElementById('btn-generate-ai');
+    const aiStatusMsg = document.getElementById('ai-status-msg');
+
+    // Shared Tester & Output
+    const activePatternInput = document.getElementById('active-pattern-input');
+    const activeFlagsSuffix = document.getElementById('active-flags-suffix');
+    const flagG = document.getElementById('flag-g');
+    const flagI = document.getElementById('flag-i');
+    const flagM = document.getElementById('flag-m');
+    const flagS = document.getElementById('flag-s');
+    const btnCopyPattern = document.getElementById('btn-copy-pattern');
+
+    const testerStringInput = document.getElementById('tester-string-input');
+    const highlightBackdrop = document.getElementById('highlight-backdrop');
+    const matchCounterBadge = document.getElementById('match-counter-badge');
+    const tokenExplainerList = document.getElementById('token-explainer-list');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Scroll sync
+    testerStringInput.addEventListener('scroll', () => {
+      highlightBackdrop.scrollTop = testerStringInput.scrollTop;
+      highlightBackdrop.scrollLeft = testerStringInput.scrollLeft;
+    });
+
+    // Mode Switching
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        modeTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentMode = tab.dataset.mode;
+
+        modeViewVisual.style.display = currentMode === 'visual' ? 'block' : 'none';
+        modeViewExamples.style.display = currentMode === 'examples' ? 'block' : 'none';
+        modeViewAi.style.display = currentMode === 'ai' ? 'block' : 'none';
+
+        if (currentMode === 'ai') {
+          privacyStatusLabel.textContent = 'Mode 3 sends request directly to selected LLM provider.';
+        } else {
+          privacyStatusLabel.textContent = '100% In-Browser. No network requests.';
+        }
+
+        if (currentMode === 'visual') compileVisualPattern();
+        if (currentMode === 'examples') inferPatternFromExamples();
+      });
+    });
+
+    // Flags helper
+    function getFlags() {
+      let f = '';
+      if (flagG.checked) f += 'g';
+      if (flagI.checked) f += 'i';
+      if (flagM.checked) f += 'm';
+      if (flagS.checked) f += 's';
+      return f;
+    }
+
+    // --- MODE 1: VISUAL BUILDER ---
+    function renderVisualBlocks() {
+      blocksList.innerHTML = '';
+      visualBlocks.forEach((block, idx) => {
+        const div = document.createElement('div');
+        div.className = 'block-card';
+
+        const customVisible = ['literal', 'custom_set', 'neg_set'].includes(block.type);
+        const rangeVisible = block.quantifier === 'range';
+        const exactVisible = block.quantifier === 'exact_n';
+
+        div.innerHTML = `
+          <div class="block-details">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--muted); min-width:20px;">#${idx + 1}</span>
+            <select class="form-select block-type-select" data-idx="${idx}">
+              <option value="digits" ${block.type === 'digits' ? 'selected' : ''}>Digits (\\d)</option>
+              <option value="letters" ${block.type === 'letters' ? 'selected' : ''}>Letters [a-zA-Z]</option>
+              <option value="letters_upper" ${block.type === 'letters_upper' ? 'selected' : ''}>Uppercase [A-Z]</option>
+              <option value="letters_lower" ${block.type === 'letters_lower' ? 'selected' : ''}>Lowercase [a-z]</option>
+              <option value="alphanumeric" ${block.type === 'alphanumeric' ? 'selected' : ''}>Alphanumeric [a-zA-Z0-9]</option>
+              <option value="word" ${block.type === 'word' ? 'selected' : ''}>Word Characters (\\w)</option>
+              <option value="whitespace" ${block.type === 'whitespace' ? 'selected' : ''}>Whitespace (\\s)</option>
+              <option value="any" ${block.type === 'any' ? 'selected' : ''}>Any Character (.)</option>
+              <option value="literal" ${block.type === 'literal' ? 'selected' : ''}>Literal Text</option>
+              <option value="custom_set" ${block.type === 'custom_set' ? 'selected' : ''}>Custom Set [...]</option>
+              <option value="neg_set" ${block.type === 'neg_set' ? 'selected' : ''}>Negative Set [^...]</option>
+              <option value="preset_email" ${block.type === 'preset_email' ? 'selected' : ''}>Preset: Email</option>
+              <option value="preset_url" ${block.type === 'preset_url' ? 'selected' : ''}>Preset: URL</option>
+              <option value="preset_ipv4" ${block.type === 'preset_ipv4' ? 'selected' : ''}>Preset: IPv4</option>
+              <option value="preset_date" ${block.type === 'preset_date' ? 'selected' : ''}>Preset: Date</option>
+              <option value="preset_hex" ${block.type === 'preset_hex' ? 'selected' : ''}>Preset: Hex Color</option>
+              <option value="preset_uuid" ${block.type === 'preset_uuid' ? 'selected' : ''}>Preset: UUID</option>
+              <option value="preset_phone" ${block.type === 'preset_phone' ? 'selected' : ''}>Preset: Phone</option>
+            </select>
+
+            <input type="text" class="form-input block-custom-input" data-idx="${idx}" placeholder="Text..." value="${escapeHtml(block.custom || '')}" style="display:${customVisible ? 'block' : 'none'};" />
+
+            <select class="form-select block-quantifier-select" data-idx="${idx}">
+              <option value="exact_1" ${block.quantifier === 'exact_1' ? 'selected' : ''}>Exactly 1</option>
+              <option value="one_or_more" ${block.quantifier === 'one_or_more' ? 'selected' : ''}>One or more (+)</option>
+              <option value="zero_or_more" ${block.quantifier === 'zero_or_more' ? 'selected' : ''}>Zero or more (*)</option>
+              <option value="optional" ${block.quantifier === 'optional' ? 'selected' : ''}>Optional (?)</option>
+              <option value="exact_n" ${block.quantifier === 'exact_n' ? 'selected' : ''}>Exactly N {n}</option>
+              <option value="range" ${block.quantifier === 'range' ? 'selected' : ''}>Range {min,max}</option>
+            </select>
+
+            <input type="number" class="form-input block-num-n" data-idx="${idx}" value="${block.min || 1}" min="1" max="99" style="width:60px; display:${exactVisible ? 'block' : 'none'};" placeholder="N" />
+            <input type="number" class="form-input block-num-min" data-idx="${idx}" value="${block.min || 1}" min="0" max="99" style="width:60px; display:${rangeVisible ? 'block' : 'none'};" placeholder="Min" />
+            <input type="number" class="form-input block-num-max" data-idx="${idx}" value="${block.max || 5}" min="1" max="99" style="width:60px; display:${rangeVisible ? 'block' : 'none'};" placeholder="Max" />
+
+            <select class="form-select block-capture-select" data-idx="${idx}" style="font-size:0.75rem;">
+              <option value="none" ${block.capture === 'none' ? 'selected' : ''}>No Group</option>
+              <option value="capture" ${block.capture === 'capture' ? 'selected' : ''}>Capture ()</option>
+              <option value="non_capture" ${block.capture === 'non_capture' ? 'selected' : ''}>Non-capturing (?:)</option>
+            </select>
+          </div>
+          <button class="block-btn-del" data-idx="${idx}" title="Remove Block">✕</button>
+        `;
+        blocksList.appendChild(div);
+      });
+
+      attachBlockListeners();
+    }
+
+    function attachBlockListeners() {
+      blocksList.querySelectorAll('.block-type-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].type = e.target.value;
+          renderVisualBlocks();
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-custom-input').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].custom = e.target.value;
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-quantifier-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].quantifier = e.target.value;
+          renderVisualBlocks();
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-num-n').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].min = parseInt(e.target.value, 10) || 1;
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-num-min').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].min = parseInt(e.target.value, 10) || 0;
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-num-max').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].max = parseInt(e.target.value, 10) || 1;
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-capture-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks[idx].capture = e.target.value;
+          compileVisualPattern();
+        });
+      });
+
+      blocksList.querySelectorAll('.block-btn-del').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          visualBlocks.splice(idx, 1);
+          renderVisualBlocks();
+          compileVisualPattern();
+        });
+      });
+    }
+
+    btnAddBlock.addEventListener('click', () => {
+      visualBlocks.push({ type: 'digits', quantifier: 'one_or_more', min: 1, max: 5, custom: '', capture: 'none' });
+      renderVisualBlocks();
+      compileVisualPattern();
+    });
+
+    btnResetBlocks.addEventListener('click', () => {
+      visualBlocks = [{ type: 'digits', quantifier: 'one_or_more', min: 1, max: 5, custom: '', capture: 'none' }];
+      renderVisualBlocks();
+      compileVisualPattern();
+    });
+
+    [anchorStart, anchorEnd, anchorBoundary].forEach(el => {
+      el.addEventListener('change', compileVisualPattern);
+    });
+
+    function compileVisualPattern() {
+      let pattern = '';
+      if (anchorBoundary.checked) pattern += '\\b';
+      if (anchorStart.checked) pattern += '^';
+
+      visualBlocks.forEach(b => {
+        let core = '';
+        if (b.type === 'digits') core = '\\d';
+        else if (b.type === 'letters') core = '[a-zA-Z]';
+        else if (b.type === 'letters_upper') core = '[A-Z]';
+        else if (b.type === 'letters_lower') core = '[a-z]';
+        else if (b.type === 'alphanumeric') core = '[a-zA-Z0-9]';
+        else if (b.type === 'word') core = '\\w';
+        else if (b.type === 'whitespace') core = '\\s';
+        else if (b.type === 'any') core = '.';
+        else if (b.type === 'literal') core = escapeRegexLiteral(b.custom || '');
+        else if (b.type === 'custom_set') core = `[${b.custom || 'abc'}]`;
+        else if (b.type === 'neg_set') core = `[^${b.custom || 'abc'}]`;
+        else if (b.type === 'preset_email') core = '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}';
+        else if (b.type === 'preset_url') core = 'https?:\\/\\/[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b[-a-zA-Z0-9()@:%_\\+.~#?&//=]*';
+        else if (b.type === 'preset_ipv4') core = '(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)';
+        else if (b.type === 'preset_date') core = '\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])';
+        else if (b.type === 'preset_hex') core = '#(?:[0-9a-fA-F]{3}){1,2}';
+        else if (b.type === 'preset_uuid') core = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+        else if (b.type === 'preset_phone') core = '\\+?(?:\\d{1,3})?[-. ]?\\(?\\d{3}\\)?[-. ]?\\d{3}[-. ]?\\d{4}';
+
+        let quant = '';
+        if (b.type.startsWith('preset_')) {
+          // Presets already have internal structure
+        } else {
+          if (b.quantifier === 'one_or_more') quant = '+';
+          else if (b.quantifier === 'zero_or_more') quant = '*';
+          else if (b.quantifier === 'optional') quant = '?';
+          else if (b.quantifier === 'exact_n') quant = `{${b.min || 1}}`;
+          else if (b.quantifier === 'range') quant = `{${b.min || 0},${b.max || 1}}`;
+        }
+
+        let segment = core + quant;
+        if (b.capture === 'capture') segment = `(${segment})`;
+        else if (b.capture === 'non_capture') segment = `(?:${segment})`;
+
+        pattern += segment;
+      });
+
+      if (anchorEnd.checked) pattern += '$';
+      if (anchorBoundary.checked) pattern += '\\b';
+
+      activePatternInput.value = pattern;
+      updateLiveTester();
+    }
+
+    function escapeRegexLiteral(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Preset Insert Bar
+    document.querySelectorAll('.btn-preset-insert').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.dataset.preset;
+        visualBlocks.push({ type: `preset_${p}`, quantifier: 'exact_1', min: 1, max: 1, custom: '', capture: 'none' });
+        renderVisualBlocks();
+        compileVisualPattern();
+        showToast(`Inserted ${btn.textContent} block`);
+      });
+    });
+
+    // --- MODE 2: EXAMPLE INFERENCE ---
+    function inferPatternFromExamples() {
+      const posLines = positiveExamples.value.split('\n').map(s => s.trim()).filter(Boolean);
+      const negLines = negativeExamples.value.split('\n').map(s => s.trim()).filter(Boolean);
+
+      if (posLines.length === 0) {
+        inferenceResultsBadges.innerHTML = '<span style="color:var(--muted)">Enter positive examples to infer regex.</span>';
+        return;
+      }
+
+      // Simple heuristic structural tokenizer
+      // Identify per-character token profile for first string, check if consistent
+      const first = posLines[0];
+      const sameLength = posLines.every(s => s.length === first.length);
+
+      let inferredPattern = '';
+      if (sameLength && first.length > 0) {
+        // Group consecutive characters of same type
+        let segments = [];
+        let curType = getCharType(first[0]);
+        let curStr = first[0];
+
+        for (let i = 1; i < first.length; i++) {
+          const t = getCharType(first[i]);
+          if (t === curType) {
+            curStr += first[i];
+          } else {
+            segments.push({ type: curType, str: curStr });
+            curType = t;
+            curStr = first[i];
+          }
+        }
+        segments.push({ type: curType, str: curStr });
+
+        // Build pattern
+        let parts = [];
+        segments.forEach(seg => {
+          if (seg.type === 'digit') parts.push(`\\d{${seg.str.length}}`);
+          else if (seg.type === 'upper') parts.push(`[A-Z]{${seg.str.length}}`);
+          else if (seg.type === 'lower') parts.push(`[a-z]{${seg.str.length}}`);
+          else if (seg.type === 'alpha') parts.push(`[a-zA-Z]{${seg.str.length}}`);
+          else parts.push(escapeRegexLiteral(seg.str));
+        });
+        inferredPattern = `^${parts.join('')}$`;
+      } else {
+        // Variable length: general token sequence
+        inferredPattern = `^[a-zA-Z0-9._%+-]+$`;
+      }
+
+      activePatternInput.value = inferredPattern;
+
+      // Validate against examples
+      validateInferenceBadges(inferredPattern, posLines, negLines);
+      updateLiveTester();
+    }
+
+    function getCharType(c) {
+      if (/[0-9]/.test(c)) return 'digit';
+      if (/[A-Z]/.test(c)) return 'upper';
+      if (/[a-z]/.test(c)) return 'lower';
+      return 'literal';
+    }
+
+    function validateInferenceBadges(pat, posLines, negLines) {
+      let regex;
+      try {
+        regex = new RegExp(pat);
+      } catch {
+        inferenceResultsBadges.innerHTML = '<span style="color:var(--error)">Invalid inferred pattern</span>';
+        return;
+      }
+
+      let badgesHtml = '';
+      posLines.forEach(str => {
+        const ok = regex.test(str);
+        badgesHtml += `<span class="example-tag ${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✕'} ${escapeHtml(str)}</span>`;
+      });
+
+      negLines.forEach(str => {
+        const rejected = !regex.test(str);
+        badgesHtml += `<span class="example-tag ${rejected ? 'pass' : 'fail'}">${rejected ? '✓' : '✕'} [NOT] ${escapeHtml(str)}</span>`;
+      });
+
+      inferenceResultsBadges.innerHTML = badgesHtml;
+    }
+
+    positiveExamples.addEventListener('input', inferPatternFromExamples);
+    negativeExamples.addEventListener('input', inferPatternFromExamples);
+
+    btnSampleExamples.addEventListener('click', () => {
+      positiveExamples.value = 'US-9821-X\nUS-4310-A\nUS-8812-M';
+      negativeExamples.value = 'UK-1234-A\nUS-99-B\ninvalid';
+      inferPatternFromExamples();
+      showToast('Loaded sample examples');
+    });
+
+    // --- MODE 3: AI GENERATOR ---
+    btnGenerateAi.addEventListener('click', async () => {
+      const prompt = aiPromptInput.value.trim();
+      const provider = aiProviderSelect.value;
+      const apiKey = aiApiKey.value.trim();
+
+      if (!prompt) {
+        alert('Please enter a description for the regex.');
+        return;
+      }
+
+      if (!apiKey) {
+        aiStatusMsg.style.display = 'block';
+        aiStatusMsg.style.background = 'var(--error-bg)';
+        aiStatusMsg.style.color = 'var(--error)';
+        aiStatusMsg.textContent = 'Please enter an API Key for direct client-side fetch.';
+        return;
+      }
+
+      btnGenerateAi.disabled = true;
+      btnGenerateAi.textContent = 'Generating...';
+      aiStatusMsg.style.display = 'block';
+      aiStatusMsg.style.background = 'var(--surface-alt)';
+      aiStatusMsg.style.color = 'var(--text)';
+      aiStatusMsg.textContent = `Connecting directly to ${provider}...`;
+
+      try {
+        let pattern = '';
+        if (provider === 'gemini') {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are a regex generator. User request: "${prompt}". Return ONLY the raw regex pattern without delimiters and without markdown blocks.`
+                }]
+              }]
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          pattern = data.candidates[0].content.parts[0].text.trim().replace(/^`+|`+$/g, '').replace(/^\/|\/$/g, '');
+        } else if (provider === 'openai') {
+          const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'You are a regex generator. Return ONLY the raw regex pattern without delimiters or markdown.' },
+                { role: 'user', content: prompt }
+              ],
+              temperature: 0.2
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          pattern = data.choices[0].message.content.trim().replace(/^`+|`+$/g, '').replace(/^\/|\/$/g, '');
+        } else if (provider === 'anthropic') {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+              'dangerously-allow-browser': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-3-5-haiku-20241022',
+              max_tokens: 300,
+              messages: [{ role: 'user', content: `Return ONLY the raw regex pattern for: ${prompt}` }]
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          pattern = data.content[0].text.trim().replace(/^`+|`+$/g, '').replace(/^\/|\/$/g, '');
+        }
+
+        activePatternInput.value = pattern;
+        aiStatusMsg.style.background = 'var(--success-bg)';
+        aiStatusMsg.style.color = 'var(--success)';
+        aiStatusMsg.textContent = `Generated pattern: /${pattern}/`;
+        updateLiveTester();
+        showToast('Generated regex from AI!');
+      } catch (err) {
+        aiStatusMsg.style.background = 'var(--error-bg)';
+        aiStatusMsg.style.color = 'var(--error)';
+        aiStatusMsg.textContent = `API Error: ${err.message}`;
+      } finally {
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.textContent = 'Generate with AI ✨';
+      }
+    });
+
+    // --- SHARED LIVE TESTER & TOKEN EXPLAINER ---
+    function updateLiveTester() {
+      const pattern = activePatternInput.value;
+      const flags = getFlags();
+      activeFlagsSuffix.textContent = flags;
+      const text = testerStringInput.value;
+
+      if (!pattern) {
+        highlightBackdrop.innerHTML = escapeHtml(text);
+        matchCounterBadge.textContent = '0 matches';
+        tokenExplainerList.innerHTML = '<div style="color:var(--muted); font-size:0.8125rem;">No pattern to explain.</div>';
+        return;
+      }
+
+      let regex;
+      try {
+        regex = new RegExp(pattern, flags);
+      } catch (err) {
+        highlightBackdrop.innerHTML = escapeHtml(text);
+        matchCounterBadge.textContent = 'Invalid Pattern';
+        tokenExplainerList.innerHTML = `<div style="color:var(--error); font-size:0.8125rem;">Syntax Error: ${escapeHtml(err.message)}</div>`;
+        return;
+      }
+
+      // Find matches
+      const matches = [];
+      try {
+        if (flags.includes('g')) {
+          const it = text.matchAll(regex);
+          for (const m of it) {
+            matches.push(m);
+            if (m[0].length === 0 && regex.lastIndex === m.index) regex.lastIndex++;
+          }
+        } else {
+          const single = regex.exec(text);
+          if (single) matches.push(single);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      matchCounterBadge.textContent = `${matches.length} match${matches.length === 1 ? '' : 'es'}`;
+
+      // Render highlights
+      renderHighlights(text, matches);
+
+      // Render Token Explainer
+      renderExplainer(pattern);
+    }
+
+    function renderHighlights(text, matches) {
+      if (matches.length === 0) {
+        highlightBackdrop.innerHTML = escapeHtml(text) + '\n';
+        return;
+      }
+
+      let html = '';
+      let lastIndex = 0;
+
+      matches.forEach((m, idx) => {
+        const start = m.index;
+        const end = m.index + m[0].length;
+
+        if (start > lastIndex) {
+          html += escapeHtml(text.substring(lastIndex, start));
+        }
+
+        const matchClass = idx % 2 === 0 ? 'match-0' : 'match-1';
+        html += `<mark class="${matchClass}">${escapeHtml(text.substring(start, end))}</mark>`;
+        lastIndex = end;
+      });
+
+      if (lastIndex < text.length) {
+        html += escapeHtml(text.substring(lastIndex));
+      }
+
+      highlightBackdrop.innerHTML = html + '\n';
+    }
+
+    function renderExplainer(pat) {
+      const tokenCountBadge = document.getElementById('token-count-badge');
+      const tokens = tokenizeRegex(pat);
+
+      if (tokenCountBadge) {
+        tokenCountBadge.textContent = `${tokens.length} token${tokens.length === 1 ? '' : 's'}`;
+      }
+
+      if (tokens.length === 0) {
+        tokenExplainerList.innerHTML = '<div style="color:var(--muted); font-size:0.8125rem; padding:1rem; text-align:center;">No regex tokens to explain.</div>';
+        return;
+      }
+
+      let html = '';
+      tokens.forEach(t => {
+        const catClass = t.cat || 'literal';
+        const catLabel = t.catLabel || 'Literal';
+        html += `
+          <div class="token-item">
+            <div class="token-left">
+              <span class="token-code">${escapeHtml(t.code)}</span>
+              <span class="token-cat-badge ${catClass}">${catLabel}</span>
+            </div>
+            <div class="token-desc">${escapeHtml(t.desc)}</div>
+          </div>
+        `;
+      });
+      tokenExplainerList.innerHTML = html;
+    }
+
+    function tokenizeRegex(pat) {
+      const tokens = [];
+      let i = 0;
+      while (i < pat.length) {
+        // Escaped characters
+        if (pat[i] === '\\' && i + 1 < pat.length) {
+          const next = pat[i + 1];
+          if (next === 'd') tokens.push({ code: '\\d', cat: 'char', catLabel: 'Digit', desc: 'Matches any ASCII digit [0-9]' });
+          else if (next === 'D') tokens.push({ code: '\\D', cat: 'char', catLabel: 'Non-Digit', desc: 'Matches any non-digit character' });
+          else if (next === 'w') tokens.push({ code: '\\w', cat: 'char', catLabel: 'Word', desc: 'Matches any word character [a-zA-Z0-9_]' });
+          else if (next === 'W') tokens.push({ code: '\\W', cat: 'char', catLabel: 'Non-Word', desc: 'Matches any non-word character' });
+          else if (next === 's') tokens.push({ code: '\\s', cat: 'char', catLabel: 'Space', desc: 'Matches any whitespace character (spaces, tabs, newlines)' });
+          else if (next === 'S') tokens.push({ code: '\\S', cat: 'char', catLabel: 'Non-Space', desc: 'Matches any non-whitespace character' });
+          else if (next === 'b') tokens.push({ code: '\\b', cat: 'anchor', catLabel: 'Boundary', desc: 'Matches a word boundary (between word and non-word characters)' });
+          else if (next === 'B') tokens.push({ code: '\\B', cat: 'anchor', catLabel: 'Non-Boundary', desc: 'Matches a non-word boundary' });
+          else tokens.push({ code: '\\' + next, cat: 'literal', catLabel: 'Escaped', desc: `Escaped literal character '${next}'` });
+          i += 2;
+          continue;
+        }
+
+        // Groups & Lookarounds
+        if (pat.startsWith('(?<', i)) {
+          const close = pat.indexOf('>', i);
+          if (close !== -1) {
+            const name = pat.substring(i + 3, close);
+            tokens.push({ code: `(?<${name}>...)`, cat: 'group', catLabel: 'Named Group', desc: `Named capture group '${name}'` });
+            i = close + 1;
+            continue;
+          }
+        } else if (pat.startsWith('(?:', i)) {
+          tokens.push({ code: '(?:...)', cat: 'group', catLabel: 'Non-Capture', desc: 'Non-capturing group (groups expressions without submatch storage)' });
+          i += 3;
+          continue;
+        } else if (pat.startsWith('(?=', i)) {
+          tokens.push({ code: '(?=...)', cat: 'group', catLabel: 'Lookahead', desc: 'Positive lookahead (asserts what follows immediately)' });
+          i += 3;
+          continue;
+        } else if (pat.startsWith('(?!', i)) {
+          tokens.push({ code: '(?!...)', cat: 'group', catLabel: 'Lookahead', desc: 'Negative lookahead (asserts what does NOT follow)' });
+          i += 3;
+          continue;
+        } else if (pat.startsWith('(?<=', i)) {
+          tokens.push({ code: '(?<=...)', cat: 'group', catLabel: 'Lookbehind', desc: 'Positive lookbehind (asserts what precedes immediately)' });
+          i += 4;
+          continue;
+        } else if (pat.startsWith('(?<!', i)) {
+          tokens.push({ code: '(?<!...)', cat: 'group', catLabel: 'Lookbehind', desc: 'Negative lookbehind (asserts what does NOT precede)' });
+          i += 4;
+          continue;
+        }
+
+        // Character Sets [...]
+        if (pat[i] === '[') {
+          const close = pat.indexOf(']', i);
+          if (close !== -1) {
+            const set = pat.substring(i, close + 1);
+            const isNeg = set.startsWith('[^');
+            tokens.push({
+              code: set,
+              cat: 'char',
+              catLabel: isNeg ? 'Neg Set' : 'Char Set',
+              desc: isNeg ? `Negated set: matches any character EXCEPT (${set.substring(2, set.length - 1)})` : `Character class: matches any character in (${set.substring(1, set.length - 1)})`
+            });
+            i = close + 1;
+            continue;
+          }
+        }
+
+        // Quantifiers {n,m}
+        if (pat[i] === '{') {
+          const close = pat.indexOf('}', i);
+          if (close !== -1) {
+            const q = pat.substring(i, close + 1);
+            tokens.push({ code: q, cat: 'quant', catLabel: 'Quantifier', desc: `Repeat previous token ${q.substring(1, q.length - 1)} times` });
+            i = close + 1;
+            continue;
+          }
+        }
+
+        const char = pat[i];
+        if (char === '^') tokens.push({ code: '^', cat: 'anchor', catLabel: 'Anchor', desc: 'Asserts the start of the line or string' });
+        else if (char === '$') tokens.push({ code: '$', cat: 'anchor', catLabel: 'Anchor', desc: 'Asserts the end of the line or string' });
+        else if (char === '.') tokens.push({ code: '.', cat: 'char', catLabel: 'Wildcard', desc: 'Matches any single character (except line breaks unless /s is set)' });
+        else if (char === '+') tokens.push({ code: '+', cat: 'quant', catLabel: 'Quantifier', desc: 'One or more repetitions of the preceding token' });
+        else if (char === '*') tokens.push({ code: '*', cat: 'quant', catLabel: 'Quantifier', desc: 'Zero or more repetitions of the preceding token' });
+        else if (char === '?') tokens.push({ code: '?', cat: 'quant', catLabel: 'Optional', desc: 'Zero or one occurrence of preceding token (makes it optional)' });
+        else if (char === '(') tokens.push({ code: '(', cat: 'group', catLabel: 'Group', desc: 'Start of a numbered capture group' });
+        else if (char === ')') tokens.push({ code: ')', cat: 'group', catLabel: 'Group', desc: 'End of capture group' });
+        else if (char === '|') tokens.push({ code: '|', cat: 'group', catLabel: 'Alternation', desc: 'Alternation (boolean OR between expressions)' });
+        else tokens.push({ code: char, cat: 'literal', catLabel: 'Literal', desc: `Matches the literal character '${char}'` });
+        i++;
+      }
+      return tokens;
+    }
+
+    activePatternInput.addEventListener('input', updateLiveTester);
+    [flagG, flagI, flagM, flagS].forEach(f => f.addEventListener('change', updateLiveTester));
+    testerStringInput.addEventListener('input', updateLiveTester);
+
+    btnCopyPattern.addEventListener('click', () => {
+      const full = `/${activePatternInput.value}/${getFlags()}`;
+      navigator.clipboard.writeText(full).then(() => showToast(`Copied ${full}`));
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    renderVisualBlocks();
+    compileVisualPattern();
+  </script>
+</body>
+</html>

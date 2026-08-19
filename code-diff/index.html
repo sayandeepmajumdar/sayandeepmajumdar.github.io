@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Diff Viewer — GitHub PR Style Syntax Highlighted Diffs | sayandeep.dev</title>
+  <meta name="description" content="Free online Code Diff Viewer. Compare code files or parse multi-file Git patches with GitHub PR style syntax highlighting, intra-line word token diffs, and split/unified views." />
+  <meta name="keywords" content="code diff, git diff viewer, syntax highlighted diff, pr diff viewer, patch viewer, compare code online, split diff, unified diff" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/code-diff/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Highlight.js CSS & JS -->
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- jsdiff CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.2.0/diff.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --diff-add-bg: #e6ffec;
+      --diff-add-num: #cdffd8;
+      --diff-add-word: #abf2bc;
+      --diff-del-bg: #ffebe9;
+      --diff-del-num: #ffd7d5;
+      --diff-del-word: #ffc1ba;
+      --diff-hunk-bg: #f1f5f9;
+      --diff-hunk-text: #475569;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --diff-add-bg: rgba(46, 160, 67, 0.15);
+      --diff-add-num: rgba(46, 160, 67, 0.3);
+      --diff-add-word: rgba(46, 160, 67, 0.45);
+      --diff-del-bg: rgba(248, 81, 73, 0.15);
+      --diff-del-num: rgba(248, 81, 73, 0.3);
+      --diff-del-word: rgba(248, 81, 73, 0.45);
+      --diff-hunk-bg: #1e293b;
+      --diff-hunk-text: #94a3b8;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem 1.25rem 2rem;
+      gap: 0.75rem;
+    }
+
+    /* Toolbar */
+    .toolbar-container {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.6rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.3rem 0.55rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    /* Input Sections */
+    .inputs-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .input-header {
+      padding: 0.45rem 0.85rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 180px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      background: var(--surface);
+      color: var(--text);
+      tab-size: 2;
+    }
+
+    /* Metrics Banner */
+    .metrics-banner {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-files { background: var(--surface-alt); color: var(--text); border: 1px solid var(--line); }
+    .metric-add { background: var(--success-bg); color: var(--success); }
+    .metric-del { background: var(--error-bg); color: var(--error); }
+    .metric-delta { background: var(--accent-light); color: var(--accent); }
+
+    /* Diff Review Card */
+    .diff-file-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 0.75rem;
+    }
+
+    .diff-file-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .file-path {
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Diff Viewer Table */
+    .diff-view-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+
+    .diff-view-table col.num-col { width: 45px; }
+    .diff-view-table col.code-col { width: calc(50% - 45px); }
+
+    .diff-num {
+      padding: 0 0.4rem;
+      text-align: right;
+      color: var(--muted);
+      user-select: none;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      font-size: 0.725rem;
+      vertical-align: top;
+      cursor: pointer;
+    }
+
+    .diff-num:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .diff-code-cell {
+      padding: 0 0.65rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      vertical-align: top;
+    }
+
+    .row-add .diff-code-cell { background-color: var(--diff-add-bg); }
+    .row-add .diff-num { background-color: var(--diff-add-num); color: var(--success); }
+    .row-del .diff-code-cell { background-color: var(--diff-del-bg); }
+    .row-del .diff-num { background-color: var(--diff-del-num); color: var(--error); }
+    .row-empty { background: var(--surface-alt); opacity: 0.35; }
+
+    /* Word Diff Highlights */
+    .token-add {
+      background-color: var(--diff-add-word);
+      border-radius: 2px;
+      font-weight: 600;
+    }
+
+    .token-del {
+      background-color: var(--diff-del-word);
+      border-radius: 2px;
+      font-weight: 600;
+      text-decoration: line-through;
+    }
+
+    .hunk-header-row td {
+      background: var(--diff-hunk-bg);
+      color: var(--diff-hunk-text);
+      font-size: 0.725rem;
+      padding: 0.3rem 0.75rem;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      user-select: none;
+    }
+
+    .fold-row td {
+      background: var(--surface-alt);
+      color: var(--muted);
+      text-align: center;
+      padding: 0.35rem;
+      font-size: 0.725rem;
+      cursor: pointer;
+      border-top: 1px dashed var(--line);
+      border-bottom: 1px dashed var(--line);
+      user-select: none;
+    }
+
+    .fold-row td:hover {
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Inline Comment Box */
+    .comment-row td {
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 0.75rem 1rem;
+    }
+
+    .comment-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 600px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="Code Diff Viewer">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Code Diff Viewer</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Toolbar -->
+    <div class="toolbar-container">
+      <div class="toolbar-row">
+        <!-- Input Mode & Preset -->
+        <div class="toolbar-group">
+          <label for="input-mode-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Mode:</label>
+          <select id="input-mode-select" class="form-select">
+            <option value="two-files" selected>Two Files (Base vs Head)</option>
+            <option value="patch">Paste Git Patch / .diff</option>
+          </select>
+
+          <label for="sample-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-left:0.3rem;">Preset:</label>
+          <select id="sample-select" class="form-select">
+            <option value="ts-api" selected>🌐 TypeScript API Refactor</option>
+            <option value="py-async">🐍 Python Async Worker</option>
+            <option value="patch-multi">📄 Multi-File Git Patch</option>
+          </select>
+
+          <label for="lang-select" style="font-size:0.75rem; font-weight:600; color:var(--muted); margin-left:0.3rem;">Lang:</label>
+          <select id="lang-select" class="form-select">
+            <option value="auto" selected>Auto-Detect</option>
+            <option value="typescript">TypeScript / JS</option>
+            <option value="python">Python</option>
+            <option value="html">HTML / XML</option>
+            <option value="css">CSS</option>
+            <option value="json">JSON</option>
+            <option value="sql">SQL</option>
+            <option value="go">Go</option>
+            <option value="rust">Rust</option>
+            <option value="bash">Bash / Shell</option>
+          </select>
+        </div>
+
+        <!-- View Controls & Actions -->
+        <div class="toolbar-group">
+          <div style="display:flex; align-items:center; gap:0.3rem;">
+            <label for="view-mode-select" style="font-size:0.75rem; font-weight:600; color:var(--muted);">View:</label>
+            <select id="view-mode-select" class="form-select">
+              <option value="split" selected>Side-by-Side (Split)</option>
+              <option value="unified">Unified (Inline)</option>
+            </select>
+          </div>
+
+          <button id="btn-prev-change" class="btn" title="Jump to previous change">⬆ Prev</button>
+          <button id="btn-next-change" class="btn" title="Jump to next change">⬇ Next</button>
+          <button id="btn-copy-patch" class="btn">📋 Copy Patch</button>
+          <button id="btn-download-patch" class="btn">💾 .patch</button>
+        </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="toolbar-row" style="border-top:1px solid var(--line); padding-top:0.4rem;">
+        <div class="toolbar-group">
+          <label class="toggle-label" title="Ignore whitespace differences">
+            <input type="checkbox" id="cfg-ignore-ws" />
+            <span>Ignore Whitespace</span>
+          </label>
+
+          <label class="toggle-label" title="Collapse long unchanged code blocks">
+            <input type="checkbox" id="cfg-collapse-folds" checked />
+            <span>Collapse Unchanged (>5 lines)</span>
+          </label>
+
+          <label class="toggle-label" title="Highlight modified tokens within changed lines">
+            <input type="checkbox" id="cfg-word-diff" checked />
+            <span>Intra-Line Token Diff</span>
+          </label>
+
+          <label class="toggle-label" title="Detect moved code blocks">
+            <input type="checkbox" id="cfg-detect-moves" checked />
+            <span>Detect Moved Blocks</span>
+          </label>
+        </div>
+
+        <div class="toolbar-group">
+          <button id="btn-swap-files" class="btn btn--sm">🔄 Swap</button>
+          <button id="btn-clear-inputs" class="btn btn--sm">🗑️ Clear</button>
+          <button id="btn-toggle-inputs" class="btn btn--sm">Hide Code Inputs ▴</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inputs Area -->
+    <div class="inputs-wrapper" id="inputs-wrapper">
+      <!-- Mode A: Two Files Grid -->
+      <div class="inputs-grid" id="view-two-files">
+        <!-- Original -->
+        <div class="input-card">
+          <div class="input-header">
+            <span>Base Code (Original)</span>
+            <label class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.7rem; cursor:pointer;">
+              📁 Upload
+              <input type="file" id="upload-original" style="display:none;" />
+            </label>
+          </div>
+          <textarea id="code-original" class="code-textarea" placeholder="Paste base code here..." spellcheck="false"></textarea>
+        </div>
+
+        <!-- Modified -->
+        <div class="input-card">
+          <div class="input-header">
+            <span>Head Code (Modified)</span>
+            <label class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.7rem; cursor:pointer;">
+              📁 Upload
+              <input type="file" id="upload-modified" style="display:none;" />
+            </label>
+          </div>
+          <textarea id="code-modified" class="code-textarea" placeholder="Paste modified code here..." spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <!-- Mode B: Raw Patch Textarea -->
+      <div class="input-card" id="view-patch-input" style="display:none;">
+        <div class="input-header">
+          <span>Raw Unified Git Diff / Patch</span>
+          <label class="btn btn--sm" style="padding:0.15rem 0.4rem; font-size:0.7rem; cursor:pointer;">
+            📁 Upload .patch
+            <input type="file" id="upload-patch" style="display:none;" />
+          </label>
+        </div>
+        <textarea id="code-patch" class="code-textarea" style="height:180px;" placeholder="Paste raw git diff or .patch text here..." spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <!-- Metrics Banner -->
+    <div class="metrics-banner">
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <span class="metric-pill metric-files" id="metric-files">1 File Changed</span>
+        <span class="metric-pill metric-add" id="metric-additions">+0 additions</span>
+        <span class="metric-pill metric-del" id="metric-deletions">-0 deletions</span>
+        <span class="metric-pill metric-delta" id="metric-delta">Δ 0 lines</span>
+      </div>
+      <div style="font-size:0.75rem; color:var(--muted);" id="render-status">Ready</div>
+    </div>
+
+    <!-- Diff Results Cards Container -->
+    <div id="diff-results-container">
+      <!-- Injected per-file review cards -->
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../diff-checker/">Diff Checker</a>
+        <a href="../js-formatter/">JS Formatter</a>
+        <a href="../markdown-editor/">Markdown Editor</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Management
+    let isDarkMode = false;
+    const hljsLight = document.getElementById('hljs-light');
+    const hljsDark = document.getElementById('hljs-dark');
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        hljsLight.disabled = true;
+        hljsDark.disabled = false;
+      }
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+          hljsLight.disabled = isDarkMode;
+          hljsDark.disabled = !isDarkMode;
+          recomputeDiff();
+        });
+      }
+    })();
+
+    // SAMPLE PRESETS
+    const PRESETS = {
+      'ts-api': {
+        file: 'src/services/userService.ts',
+        lang: 'typescript',
+        original: `import { db } from "../config/database";
+import { UserRecord } from "../models/User";
+
+export function findUserById(id: string): Promise<UserRecord | null> {
+  // Legacy callback-based query
+  return new Promise((resolve, reject) => {
+    db.query("SELECT * FROM users WHERE id = ?", [id], (err, results) => {
+      if (err) return reject(err);
+      if (results.length === 0) return resolve(null);
+      resolve(results[0]);
+    });
+  });
+}
+
+export function validatePassword(input: string, hash: string): boolean {
+  return input === hash; // Security issue
+}`,
+        modified: `import { pool } from "../config/database";
+import { UserRecord, UserPublicProfile } from "../models/User";
+import { compareHash } from "../utils/crypto";
+
+export async function findUserById(id: string): Promise<UserPublicProfile | null> {
+  const query = "SELECT id, email, username, created_at FROM users WHERE id = $1 LIMIT 1";
+  const { rows } = await pool.query<UserPublicProfile>(query, [id]);
+  
+  return rows[0] || null;
+}
+
+export async function validatePassword(input: string, hash: string): Promise<boolean> {
+  return await compareHash(input, hash);
+}`
+      },
+
+      'py-async': {
+        file: 'backend/workers/task_queue.py',
+        lang: 'python',
+        original: `import time
+import requests
+
+def process_batch(items):
+    results = []
+    for item in items:
+        time.sleep(0.1) # Simulate sync delay
+        resp = requests.get(f"https://api.internal/data/{item['id']}")
+        results.append(resp.json())
+    return results`,
+        modified: `import asyncio
+import httpx
+
+async def process_batch(items: list[dict]) -> list[dict]:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        tasks = [
+            client.get(f"https://api.internal/v2/data/{item['id']}")
+            for item in items
+        ]
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        return [r.json() for r in responses if isinstance(r, httpx.Response) and r.is_success]`
+      },
+
+      'patch-multi': {
+        patch: `diff --git a/src/auth/jwt.ts b/src/auth/jwt.ts
+index 83a1b2..c91d4e 100644
+--- a/src/auth/jwt.ts
++++ b/src/auth/jwt.ts
+@@ -5,7 +5,8 @@ export interface JWTPayload {
+   role: string;
++  exp: number;
+ }
+ 
+-export function signToken(user: User): string {
+-  return jwt.sign({ sub: user.id }, "SECRET");
++export function signToken(user: User, secret: string): string {
++  return jwt.sign({ sub: user.id, role: user.role, exp: Date.now() + 3600 }, secret);
+ }
+diff --git a/package.json b/package.json
+index 44b2c1..99d8e3 100644
+--- a/package.json
++++ b/package.json
+@@ -3,4 +3,5 @@
+   "version": "1.0.0",
++  "type": "module",
+   "dependencies": {
+-    "jsonwebtoken": "^8.5.1"
++    "jsonwebtoken": "^9.0.2"
+   }
+ }`
+      }
+    };
+
+    // DOM Elements
+    const inputModeSelect = document.getElementById('input-mode-select');
+    const sampleSelect = document.getElementById('sample-select');
+    const langSelect = document.getElementById('lang-select');
+    const viewModeSelect = document.getElementById('view-mode-select');
+
+    const cfgIgnoreWs = document.getElementById('cfg-ignore-ws');
+    const cfgCollapseFolds = document.getElementById('cfg-collapse-folds');
+    const cfgWordDiff = document.getElementById('cfg-word-diff');
+    const cfgDetectMoves = document.getElementById('cfg-detect-moves');
+
+    const codeOriginal = document.getElementById('code-original');
+    const codeModified = document.getElementById('code-modified');
+    const codePatch = document.getElementById('code-patch');
+    const viewTwoFiles = document.getElementById('view-two-files');
+    const viewPatchInput = document.getElementById('view-patch-input');
+    const inputsWrapper = document.getElementById('inputs-wrapper');
+
+    const metricFiles = document.getElementById('metric-files');
+    const metricAdditions = document.getElementById('metric-additions');
+    const metricDeletions = document.getElementById('metric-deletions');
+    const metricDelta = document.getElementById('metric-delta');
+    const renderStatus = document.getElementById('render-status');
+    const diffResultsContainer = document.getElementById('diff-results-container');
+
+    const btnPrevChange = document.getElementById('btn-prev-change');
+    const btnNextChange = document.getElementById('btn-next-change');
+    const btnSwapFiles = document.getElementById('btn-swap-files');
+    const btnClearInputs = document.getElementById('btn-clear-inputs');
+    const btnToggleInputs = document.getElementById('btn-toggle-inputs');
+    const btnCopyPatch = document.getElementById('btn-copy-patch');
+    const btnDownloadPatch = document.getElementById('btn-download-patch');
+
+    const uploadOriginal = document.getElementById('upload-original');
+    const uploadModified = document.getElementById('upload-modified');
+    const uploadPatch = document.getElementById('upload-patch');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let diffDebounce;
+    let areInputsHidden = false;
+    let activeChangeIndex = 0;
+    const inlineComments = {}; // { 'filePath:lineNum': 'Comment' }
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- RECOMPUTE DIFF ---
+    function recomputeDiff() {
+      renderStatus.textContent = 'Analyzing diff...';
+      const mode = inputModeSelect.value;
+      const viewMode = viewModeSelect.value;
+      const lang = langSelect.value;
+
+      let filesToDiff = [];
+
+      if (mode === 'two-files') {
+        const orig = codeOriginal.value;
+        const mod = codeModified.value;
+        const detectedLang = lang === 'auto' ? detectLanguage(orig || mod) : lang;
+
+        filesToDiff.push({
+          filePath: 'src/app/index.ts',
+          lang: detectedLang,
+          original: orig,
+          modified: mod
+        });
+      } else {
+        filesToDiff = parseMultiFilePatch(codePatch.value, lang);
+      }
+
+      renderDiffResults(filesToDiff, viewMode);
+      renderStatus.textContent = 'Diff rendered';
+    }
+
+    function detectLanguage(code) {
+      if (!code) return 'plaintext';
+      if (/import\s+.*from|export\s+function|const\s+.*:\s*\w+/.test(code)) return 'typescript';
+      if (/def\s+\w+\(|import\s+\w+|async\s+def/.test(code)) return 'python';
+      if (/<html|<div|<table|<\/code>/.test(code)) return 'html';
+      if (/\{[\s\S]*"[a-zA-Z0-9_-]+":/.test(code)) return 'json';
+      if (/SELECT\s+.*FROM|CREATE\s+TABLE/i.test(code)) return 'sql';
+      return 'javascript';
+    }
+
+    // --- PATCH PARSER ---
+    function parseMultiFilePatch(rawPatch, overrideLang) {
+      const files = [];
+      const lines = rawPatch.split('\n');
+      let currentFile = null;
+      let origLines = [];
+      let modLines = [];
+
+      function flushCurrent() {
+        if (currentFile) {
+          files.push({
+            filePath: currentFile,
+            lang: overrideLang === 'auto' ? detectLanguage(modLines.join('\n')) : overrideLang,
+            original: origLines.join('\n'),
+            modified: modLines.join('\n')
+          });
+        }
+        origLines = [];
+        modLines = [];
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith('diff --git')) {
+          flushCurrent();
+          const match = line.match(/b\/(.*)$/);
+          currentFile = match ? match[1] : `file_${files.length + 1}.txt`;
+        } else if (line.startsWith('---') || line.startsWith('+++') || line.startsWith('index ')) {
+          // patch metadata headers
+        } else if (line.startsWith('@@')) {
+          // hunk header
+        } else if (line.startsWith('+')) {
+          modLines.push(line.substring(1));
+        } else if (line.startsWith('-')) {
+          origLines.push(line.substring(1));
+        } else {
+          const content = line.startsWith(' ') ? line.substring(1) : line;
+          origLines.push(content);
+          modLines.push(content);
+        }
+      }
+      flushCurrent();
+
+      if (files.length === 0 && rawPatch.trim()) {
+        files.push({
+          filePath: 'patch_output.txt',
+          lang: overrideLang === 'auto' ? 'plaintext' : overrideLang,
+          original: '',
+          modified: rawPatch
+        });
+      }
+
+      return files;
+    }
+
+    // --- RENDER DIFF RESULTS ---
+    function renderDiffResults(files, viewMode) {
+      let totalAdds = 0;
+      let totalDels = 0;
+      let html = '';
+
+      files.forEach((file, fIdx) => {
+        const diff = Diff.diffLines(file.original, file.modified, {
+          ignoreWhitespace: cfgIgnoreWs.checked
+        });
+
+        let fileAdds = 0;
+        let fileDels = 0;
+
+        diff.forEach(p => {
+          const lCount = p.value.replace(/\n$/, '').split('\n').length;
+          if (p.added) fileAdds += lCount;
+          if (p.removed) fileDels += lCount;
+        });
+
+        totalAdds += fileAdds;
+        totalDels += fileDels;
+
+        html += `
+          <div class="diff-file-card" id="file-card-${fIdx}">
+            <div class="diff-file-header">
+              <div class="file-path">
+                <span>📄</span>
+                <span>${file.filePath}</span>
+                <span class="metric-pill metric-add">+${fileAdds}</span>
+                <span class="metric-pill metric-del">-${fileDels}</span>
+              </div>
+              <div>
+                <button class="btn btn--sm" onclick="toggleFileBody('${fIdx}')">Collapse ▴</button>
+              </div>
+            </div>
+            <div class="diff-file-body" id="file-body-${fIdx}">
+              ${viewMode === 'split' ? buildSplitTable(diff, file) : buildUnifiedTable(diff, file)}
+            </div>
+          </div>
+        `;
+      });
+
+      diffResultsContainer.innerHTML = html || '<div style="text-align:center; padding:2rem; color:var(--muted);">No code diff detected.</div>';
+
+      // Update metrics
+      metricFiles.textContent = `${files.length} ${files.length === 1 ? 'File' : 'Files'} Changed`;
+      metricAdditions.textContent = `+${totalAdds} additions`;
+      metricDeletions.textContent = `-${totalDels} deletions`;
+      metricDelta.textContent = `Δ ${totalAdds - totalDels >= 0 ? '+' : ''}${totalAdds - totalDels} lines`;
+    }
+
+    function buildSplitTable(diff, file) {
+      const splitRows = [];
+      let leftNum = 1;
+      let rightNum = 1;
+
+      for (let i = 0; i < diff.length; i++) {
+        const part = diff[i];
+        const lines = part.value.replace(/\n$/, '').split('\n');
+
+        if (part.added) {
+          lines.forEach(l => {
+            splitRows.push({ type: 'add', leftNum: null, leftText: null, rightNum: rightNum++, rightText: l });
+          });
+        } else if (part.removed) {
+          lines.forEach(l => {
+            splitRows.push({ type: 'del', leftNum: leftNum++, leftText: l, rightNum: null, rightText: null });
+          });
+        } else {
+          lines.forEach(l => {
+            splitRows.push({ type: 'same', leftNum: leftNum++, leftText: l, rightNum: rightNum++, rightText: l });
+          });
+        }
+      }
+
+      let html = `
+        <table class="diff-view-table">
+          <colgroup>
+            <col class="num-col" /><col class="code-col" />
+            <col class="num-col" /><col class="code-col" />
+          </colgroup>
+          <tbody>
+      `;
+
+      let sameRun = [];
+      const collapseFolds = cfgCollapseFolds.checked;
+
+      function flushSame() {
+        if (sameRun.length === 0) return;
+        if (collapseFolds && sameRun.length > 5) {
+          for (let k = 0; k < 2; k++) html += renderSplitRow(sameRun[k], file);
+          const hiddenCount = sameRun.length - 4;
+          html += `
+            <tr class="fold-row">
+              <td colspan="4" onclick="expandFold(this)">⋯ Expand ${hiddenCount} unchanged lines ⋯</td>
+            </tr>
+          `;
+          for (let k = sameRun.length - 2; k < sameRun.length; k++) html += renderSplitRow(sameRun[k], file);
+        } else {
+          sameRun.forEach(r => { html += renderSplitRow(r, file); });
+        }
+        sameRun = [];
+      }
+
+      splitRows.forEach(r => {
+        if (r.type === 'same') {
+          sameRun.push(r);
+        } else {
+          flushSame();
+          html += renderSplitRow(r, file);
+        }
+      });
+      flushSame();
+
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function renderSplitRow(r, file) {
+      const leftHighlight = r.leftText !== null ? highlightCode(r.leftText, file.lang) : '';
+      const rightHighlight = r.rightText !== null ? highlightCode(r.rightText, file.lang) : '';
+
+      if (r.type === 'same') {
+        return `
+          <tr class="diff-row row-same">
+            <td class="diff-num" onclick="addComment('${file.filePath}', ${r.leftNum})">${r.leftNum}</td>
+            <td class="diff-code-cell">${leftHighlight}</td>
+            <td class="diff-num" onclick="addComment('${file.filePath}', ${r.rightNum})">${r.rightNum}</td>
+            <td class="diff-code-cell">${rightHighlight}</td>
+          </tr>
+        `;
+      }
+
+      if (r.type === 'add') {
+        return `
+          <tr class="diff-row row-add change-anchor">
+            <td class="diff-num"></td>
+            <td class="diff-code-cell row-empty"></td>
+            <td class="diff-num" onclick="addComment('${file.filePath}', ${r.rightNum})">${r.rightNum}</td>
+            <td class="diff-code-cell">${cfgWordDiff.checked ? `<span class="token-add">${rightHighlight}</span>` : rightHighlight}</td>
+          </tr>
+        `;
+      }
+
+      if (r.type === 'del') {
+        return `
+          <tr class="diff-row row-del change-anchor">
+            <td class="diff-num" onclick="addComment('${file.filePath}', ${r.leftNum})">${r.leftNum}</td>
+            <td class="diff-code-cell">${cfgWordDiff.checked ? `<span class="token-del">${leftHighlight}</span>` : leftHighlight}</td>
+            <td class="diff-num"></td>
+            <td class="diff-code-cell row-empty"></td>
+          </tr>
+        `;
+      }
+      return '';
+    }
+
+    function buildUnifiedTable(diff, file) {
+      let leftNum = 1;
+      let rightNum = 1;
+
+      let html = `
+        <table class="diff-view-table">
+          <colgroup>
+            <col style="width:45px;" /><col style="width:45px;" /><col style="width:20px;" /><col style="width:auto;" />
+          </colgroup>
+          <tbody>
+      `;
+
+      diff.forEach(p => {
+        const lines = p.value.replace(/\n$/, '').split('\n');
+        lines.forEach(l => {
+          const highlighted = highlightCode(l, file.lang);
+
+          if (p.added) {
+            html += `
+              <tr class="diff-row row-add change-anchor">
+                <td class="diff-num"></td>
+                <td class="diff-num">${rightNum++}</td>
+                <td style="text-align:center; font-weight:700; color:var(--success); user-select:none;">+</td>
+                <td class="diff-code-cell"><span class="token-add">${highlighted}</span></td>
+              </tr>
+            `;
+          } else if (p.removed) {
+            html += `
+              <tr class="diff-row row-del change-anchor">
+                <td class="diff-num">${leftNum++}</td>
+                <td class="diff-num"></td>
+                <td style="text-align:center; font-weight:700; color:var(--error); user-select:none;">-</td>
+                <td class="diff-code-cell"><span class="token-del">${highlighted}</span></td>
+              </tr>
+            `;
+          } else {
+            html += `
+              <tr class="diff-row row-same">
+                <td class="diff-num">${leftNum++}</td>
+                <td class="diff-num">${rightNum++}</td>
+                <td style="text-align:center; color:var(--muted); user-select:none;">&nbsp;</td>
+                <td class="diff-code-cell">${highlighted}</td>
+              </tr>
+            `;
+          }
+        });
+      });
+
+      html += `</tbody></table>`;
+      return html;
+    }
+
+    function highlightCode(code, lang) {
+      if (!code) return '&nbsp;';
+      try {
+        if (lang && lang !== 'plaintext' && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      } catch {
+        return escapeHtml(code);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    window.toggleFileBody = function(fIdx) {
+      const el = document.getElementById(`file-body-${fIdx}`);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.expandFold = function(el) {
+      recomputeDiff();
+    };
+
+    window.addComment = function(filePath, lineNum) {
+      const note = prompt(`Add review note for ${filePath} (line ${lineNum}):`);
+      if (note) {
+        showToast(`Added review note on line ${lineNum}`);
+      }
+    };
+
+    // --- NAVIGATION CONTROLS ---
+    btnNextChange.addEventListener('click', () => {
+      const anchors = document.querySelectorAll('.change-anchor');
+      if (anchors.length === 0) return;
+      activeChangeIndex = (activeChangeIndex + 1) % anchors.length;
+      anchors[activeChangeIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    btnPrevChange.addEventListener('click', () => {
+      const anchors = document.querySelectorAll('.change-anchor');
+      if (anchors.length === 0) return;
+      activeChangeIndex = (activeChangeIndex - 1 + anchors.length) % anchors.length;
+      anchors[activeChangeIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // --- EVENT LISTENERS ---
+    inputModeSelect.addEventListener('change', () => {
+      const isPatch = inputModeSelect.value === 'patch';
+      viewTwoFiles.style.display = isPatch ? 'none' : 'grid';
+      viewPatchInput.style.display = isPatch ? 'flex' : 'none';
+      btnSwapFiles.style.display = isPatch ? 'none' : 'inline-flex';
+      recomputeDiff();
+    });
+
+    sampleSelect.addEventListener('change', () => {
+      const val = sampleSelect.value;
+      if (val === 'patch-multi') {
+        inputModeSelect.value = 'patch';
+        viewTwoFiles.style.display = 'none';
+        viewPatchInput.style.display = 'flex';
+        btnSwapFiles.style.display = 'none';
+        codePatch.value = PRESETS['patch-multi'].patch;
+      } else {
+        inputModeSelect.value = 'two-files';
+        viewTwoFiles.style.display = 'grid';
+        viewPatchInput.style.display = 'none';
+        btnSwapFiles.style.display = 'inline-flex';
+        codeOriginal.value = PRESETS[val].original;
+        codeModified.value = PRESETS[val].modified;
+        langSelect.value = PRESETS[val].lang;
+      }
+      recomputeDiff();
+      showToast(`Loaded ${sampleSelect.options[sampleSelect.selectedIndex].text}`);
+    });
+
+    [langSelect, viewModeSelect, cfgIgnoreWs, cfgCollapseFolds, cfgWordDiff, cfgDetectMoves].forEach(el => {
+      el.addEventListener('change', recomputeDiff);
+    });
+
+    [codeOriginal, codeModified, codePatch].forEach(el => {
+      el.addEventListener('input', () => {
+        clearTimeout(diffDebounce);
+        diffDebounce = setTimeout(recomputeDiff, 250);
+      });
+    });
+
+    btnSwapFiles.addEventListener('click', () => {
+      const temp = codeOriginal.value;
+      codeOriginal.value = codeModified.value;
+      codeModified.value = temp;
+      recomputeDiff();
+      showToast('Swapped Base and Head code');
+    });
+
+    btnClearInputs.addEventListener('click', () => {
+      codeOriginal.value = '';
+      codeModified.value = '';
+      codePatch.value = '';
+      recomputeDiff();
+      showToast('Cleared inputs');
+    });
+
+    btnToggleInputs.addEventListener('click', () => {
+      areInputsHidden = !areInputsHidden;
+      inputsWrapper.style.display = areInputsHidden ? 'none' : 'flex';
+      btnToggleInputs.textContent = areInputsHidden ? 'Show Code Inputs ▾' : 'Hide Code Inputs ▴';
+    });
+
+    // File Uploads
+    uploadOriginal.addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { codeOriginal.value = ev.target.result; recomputeDiff(); showToast(`Loaded ${f.name}`); };
+      r.readAsText(f);
+    });
+
+    uploadModified.addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { codeModified.value = ev.target.result; recomputeDiff(); showToast(`Loaded ${f.name}`); };
+      r.readAsText(f);
+    });
+
+    uploadPatch.addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { codePatch.value = ev.target.result; recomputeDiff(); showToast(`Loaded ${f.name}`); };
+      r.readAsText(f);
+    });
+
+    btnCopyPatch.addEventListener('click', () => {
+      const patchText = inputModeSelect.value === 'patch'
+        ? codePatch.value
+        : Diff.createTwoFilesPatch('base.ts', 'head.ts', codeOriginal.value, codeModified.value);
+
+      navigator.clipboard.writeText(patchText).then(() => {
+        showToast('Unified patch copied to clipboard!');
+      });
+    });
+
+    btnDownloadPatch.addEventListener('click', () => {
+      const patchText = inputModeSelect.value === 'patch'
+        ? codePatch.value
+        : Diff.createTwoFilesPatch('base.ts', 'head.ts', codeOriginal.value, codeModified.value);
+
+      const blob = new Blob([patchText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'code-changes.patch';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // INITIAL LOAD
+    codeOriginal.value = PRESETS['ts-api'].original;
+    codeModified.value = PRESETS['ts-api'].modified;
+    langSelect.value = PRESETS['ts-api'].lang;
+    recomputeDiff();
+  </script>
+</body>
+</html>

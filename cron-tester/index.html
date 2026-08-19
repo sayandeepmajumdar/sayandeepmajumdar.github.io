@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cron Expression Tester &amp; Debugger — Free Client-Side Cron Validator | sayandeep.dev</title>
+  <meta name="description" content="Test, validate, simulate, and debug cron expressions in-browser. Inspect field-by-field matches, simulate arbitrary start dates, verify timezone execution times, and detect DST edge cases." />
+  <meta name="keywords" content="cron tester, cron validator, cron debugger, test cron expression, next cron run, cron simulator, does cron match, cron dst edge cases" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/cron-tester/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .top-controls-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Main Hero Banner: Expression Bar, Translation & Status */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .raw-expression-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 2px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem 0.5rem;
+      transition: border-color var(--transition);
+    }
+
+    .raw-expression-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .raw-expression-wrap.invalid {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    .raw-cron-input {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0.75rem;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .field-pills-strip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .field-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .field-pill .pill-label {
+      color: var(--muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+    }
+
+    .field-pill.error {
+      border-color: var(--error);
+      background: var(--error-bg);
+      color: var(--error);
+    }
+
+    .human-explanation-box {
+      background: var(--accent-light);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .human-explanation-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1.4;
+    }
+
+    /* Warning & Error Alerts */
+    .alert-box {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+    }
+
+    .alert-box.warning {
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--warning);
+    }
+
+    .alert-box.error {
+      background: var(--error-bg);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    /* Tabs Navigation */
+    .tester-tabs {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+      margin-bottom: 1.25rem;
+      display: inline-flex;
+    }
+
+    .tester-tab {
+      padding: 0.5rem 1.15rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .tester-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 0.65rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Simulation Table */
+    .sim-table-wrap {
+      overflow-x: auto;
+      max-height: 420px;
+    }
+
+    .sim-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    .sim-table th {
+      background: var(--surface-alt);
+      padding: 0.55rem 0.85rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .sim-table td {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sim-table tr:hover {
+      background: var(--surface-alt);
+    }
+
+    .dow-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: var(--accent-light);
+      color: var(--accent);
+      display: inline-block;
+    }
+
+    .relative-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* Moment Inspector Match Breakdown */
+    .match-breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .match-field-card {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .match-field-card.matched {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: var(--success-bg);
+    }
+
+    .match-field-card.mismatched {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: var(--error-bg);
+    }
+
+    .match-field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .stat-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Cron Expression Tester &amp; Debugger</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Preset & Dialect Bar -->
+      <div class="top-bar">
+        <div class="top-controls-left">
+          <label for="preset-select" style="font-size:0.8125rem; font-weight:600;">Tricky Presets &amp; Edge Cases:</label>
+          <select id="preset-select" class="form-select" style="min-width:200px;">
+            <option value="" selected>Load test preset...</option>
+            <option value="0 9-17 * * 1-5">Business Hours (0 9-17 * * 1-5)</option>
+            <option value="*/15 9-17 * * 1-5">Every 15m on Weekdays (*/15 9-17 * * 1-5)</option>
+            <option value="0 0 31 * *">Month-End Day 31 (0 0 31 * *) [Skips short months]</option>
+            <option value="0 0 29 2 *">Leap-Year Feb 29 (0 0 29 2 *) [Every 4 years]</option>
+            <option value="*/10 * * * 0,6">Every 10m on Weekends (*/10 * * * 0,6)</option>
+            <option value="0 0 13 * 5">Friday the 13th Midnight (0 0 13 * 5)</option>
+            <option value="30 2 * * *">DST 2:30 AM (30 2 * * *) [Time shift alert]</option>
+          </select>
+
+          <label for="dialect-select" style="font-size:0.8125rem; font-weight:600; margin-left:0.5rem;">Dialect:</label>
+          <select id="dialect-select" class="form-select">
+            <option value="auto" selected>Auto-Detect Format</option>
+            <option value="unix">Standard Unix (5-field)</option>
+            <option value="quartz">Quartz / 6-Field (with Seconds)</option>
+            <option value="aws">AWS EventBridge</option>
+          </select>
+        </div>
+
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>100% In-Browser Testing &amp; Simulation</span>
+        </div>
+      </div>
+
+      <!-- Main Hero: Expression Bar & Human Translation -->
+      <div class="hero-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Cron Schedule Under Test</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button id="btn-copy-link" class="btn btn--sm">🔗 Copy Share Link</button>
+            <button id="btn-copy-cron" class="btn btn--sm">Copy Cron</button>
+            <button id="btn-reset-cron" class="btn btn--sm">Reset</button>
+          </div>
+        </div>
+
+        <!-- Raw Expression Input -->
+        <div class="raw-expression-wrap" id="raw-expression-wrap">
+          <input type="text" id="raw-cron-input" class="raw-cron-input" value="0 9-17 * * 1-5" placeholder="e.g. */15 9-17 * * 1-5" spellcheck="false" />
+        </div>
+
+        <!-- Field Breakdown Pills Strip -->
+        <div class="field-pills-strip" id="field-pills-strip"></div>
+
+        <!-- Natural Language Translation Banner -->
+        <div class="human-explanation-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; color:var(--accent);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span id="human-explanation-text" class="human-explanation-text">At 00 minutes past the hour, between 09:00 AM and 05:00 PM, Monday through Friday</span>
+        </div>
+
+        <!-- Dynamic Warnings / DST Alert Box -->
+        <div id="edge-case-alert" class="alert-box warning" style="display:none;"></div>
+
+        <!-- Validation Error Box -->
+        <div id="validation-error-box" class="alert-box error" style="display:none;"></div>
+      </div>
+
+      <!-- Mode Tabs -->
+      <div class="tester-tabs">
+        <button id="tab-btn-sim" class="tester-tab active" data-tab="sim">
+          <span>🔮 Next Runs Simulation</span>
+        </button>
+        <button id="tab-btn-moment" class="tester-tab" data-tab="moment">
+          <span>🎯 "Does It Match This Moment?"</span>
+        </button>
+        <button id="tab-btn-stats" class="tester-tab" data-tab="stats">
+          <span>📊 Frequency &amp; Statistics</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: Next Runs Simulation -->
+      <div id="view-sim" class="card">
+        <div class="card-header">
+          <span>Upcoming Execution Timeline</span>
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:0.35rem;">
+              <label for="sim-start-time" style="font-size:0.75rem; color:var(--muted); font-weight:600;">Simulate From:</label>
+              <input type="datetime-local" id="sim-start-time" class="form-input" style="font-size:0.75rem; padding:0.25rem 0.5rem;" />
+              <button id="btn-sim-now" class="btn btn--sm" title="Reset start time to current moment">Now</button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.35rem;">
+              <label for="tz-select" style="font-size:0.75rem; color:var(--muted); font-weight:600;">Timezone:</label>
+              <select id="tz-select" class="form-select" style="font-size:0.75rem; padding:0.25rem 0.5rem;">
+                <option value="local" selected>Local Time</option>
+                <option value="UTC">UTC (Universal)</option>
+                <option value="America/New_York">New York (EST/EDT)</option>
+                <option value="America/Los_Angeles">Los Angeles (PST/PDT)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Asia/Kolkata">India (IST)</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Australia/Sydney">Sydney (AEST)</option>
+              </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.35rem;">
+              <label for="run-count-select" style="font-size:0.75rem; color:var(--muted); font-weight:600;">Count:</label>
+              <select id="run-count-select" class="form-select" style="font-size:0.75rem; padding:0.25rem 0.5rem;">
+                <option value="5">5 runs</option>
+                <option value="10" selected>10 runs</option>
+                <option value="25">25 runs</option>
+                <option value="50">50 runs</option>
+                <option value="100">100 runs</option>
+              </select>
+            </div>
+
+            <button id="btn-copy-sim-table" class="btn btn--sm">📋 Copy Table</button>
+          </div>
+        </div>
+
+        <div class="card-body" style="padding:0;">
+          <div class="sim-table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th style="width:50px;">#</th>
+                  <th style="width:80px;">Day</th>
+                  <th>Execution Date &amp; Time (Selected TZ)</th>
+                  <th>UTC Timestamp</th>
+                  <th>Relative Countdown</th>
+                </tr>
+              </thead>
+              <tbody id="sim-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: "Does It Match This Moment?" Inspector -->
+      <div id="view-moment" class="card" style="display:none;">
+        <div class="card-header">
+          <span>Moment Evaluation &amp; Near-Miss Inspector</span>
+          <div style="display:flex; align-items:center; gap:0.45rem;">
+            <label for="moment-input" style="font-size:0.75rem; color:var(--muted); font-weight:600;">Test Moment:</label>
+            <input type="datetime-local" id="moment-input" class="form-input" style="font-size:0.75rem; padding:0.25rem 0.5rem;" />
+            <button id="btn-moment-now" class="btn btn--sm">Current Moment</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="moment-verdict-banner" style="padding:0.85rem 1.15rem; border-radius:var(--radius-sm); font-size:1rem; font-weight:700; display:flex; align-items:center; gap:0.6rem;"></div>
+
+          <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Field-by-Field Match Breakdown:</div>
+          <div class="match-breakdown-grid" id="moment-match-grid"></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Frequency & Statistics -->
+      <div id="view-stats" class="card" style="display:none;">
+        <div class="card-header">
+          <span>Run Frequency &amp; Operational Statistics</span>
+        </div>
+        <div class="card-body">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-val" id="stat-per-hour">0</div>
+              <div class="stat-label">Executions / Hour</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" id="stat-per-day">0</div>
+              <div class="stat-label">Executions / Day</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" id="stat-per-month">0</div>
+              <div class="stat-label">Executions / Month (Avg)</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val" id="stat-per-year">0</div>
+              <div class="stat-label">Executions / Year</div>
+            </div>
+          </div>
+
+          <div style="background:var(--surface-alt); border:1px solid var(--line); border-radius:var(--radius-sm); padding:1rem; font-size:0.8125rem; line-height:1.6;">
+            <div style="font-weight:700; margin-bottom:0.35rem;">Schedule Characteristics:</div>
+            <div id="stats-summary-desc"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../cron-builder/">Cron Builder</a>
+        <a href="../regex-generator/">Regex Generator</a>
+        <a href="../regex-tester/">Regex Tester</a>
+        <a href="../hash-generator/">Hash Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State Model
+    let currentDialect = 'auto'; // 'auto' | 'unix' | 'quartz' | 'aws'
+    let resolvedDialect = 'unix';
+
+    const cronState = {
+      second: '0',
+      minute: '0',
+      hour: '9-17',
+      day: '*',
+      month: '*',
+      weekday: '1-5',
+      year: '*'
+    };
+
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+    // DOM Elements
+    const rawCronInput = document.getElementById('raw-cron-input');
+    const rawExpressionWrap = document.getElementById('raw-expression-wrap');
+    const fieldPillsStrip = document.getElementById('field-pills-strip');
+    const humanExplanationText = document.getElementById('human-explanation-text');
+    const edgeCaseAlert = document.getElementById('edge-case-alert');
+    const validationErrorBox = document.getElementById('validation-error-box');
+
+    const presetSelect = document.getElementById('preset-select');
+    const dialectSelect = document.getElementById('dialect-select');
+    const tzSelect = document.getElementById('tz-select');
+    const runCountSelect = document.getElementById('run-count-select');
+    const simStartTime = document.getElementById('sim-start-time');
+    const btnSimNow = document.getElementById('btn-sim-now');
+    const simTableBody = document.getElementById('sim-table-body');
+    const btnCopySimTable = document.getElementById('btn-copy-sim-table');
+
+    const momentInput = document.getElementById('moment-input');
+    const btnMomentNow = document.getElementById('btn-moment-now');
+    const momentVerdictBanner = document.getElementById('moment-verdict-banner');
+    const momentMatchGrid = document.getElementById('moment-match-grid');
+
+    const statPerHour = document.getElementById('stat-per-hour');
+    const statPerDay = document.getElementById('stat-per-day');
+    const statPerMonth = document.getElementById('stat-per-month');
+    const statPerYear = document.getElementById('stat-per-year');
+    const statsSummaryDesc = document.getElementById('stats-summary-desc');
+
+    const btnCopyCron = document.getElementById('btn-copy-cron');
+    const btnCopyLink = document.getElementById('btn-copy-link');
+    const btnResetCron = document.getElementById('btn-reset-cron');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Initialize DateTime Pickers with Now
+    function formatDateTimeLocal(d) {
+      const pad = n => (n < 10 ? '0' : '') + n;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    const now = new Date();
+    simStartTime.value = formatDateTimeLocal(now);
+    momentInput.value = formatDateTimeLocal(now);
+
+    btnSimNow.addEventListener('click', () => {
+      simStartTime.value = formatDateTimeLocal(new Date());
+      runEvaluation();
+    });
+
+    btnMomentNow.addEventListener('click', () => {
+      momentInput.value = formatDateTimeLocal(new Date());
+      evaluateMoment();
+    });
+
+    // Tab Navigation
+    const tabBtnSim = document.getElementById('tab-btn-sim');
+    const tabBtnMoment = document.getElementById('tab-btn-moment');
+    const tabBtnStats = document.getElementById('tab-btn-stats');
+
+    const viewSim = document.getElementById('view-sim');
+    const viewMoment = document.getElementById('view-moment');
+    const viewStats = document.getElementById('view-stats');
+
+    function switchView(tab) {
+      [tabBtnSim, tabBtnMoment, tabBtnStats].forEach(b => b.classList.remove('active'));
+      [viewSim, viewMoment, viewStats].forEach(v => v.style.display = 'none');
+
+      if (tab === 'sim') { tabBtnSim.classList.add('active'); viewSim.style.display = 'flex'; }
+      if (tab === 'moment') { tabBtnMoment.classList.add('active'); viewMoment.style.display = 'flex'; evaluateMoment(); }
+      if (tab === 'stats') { tabBtnStats.classList.add('active'); viewStats.style.display = 'flex'; calculateStats(); }
+    }
+
+    tabBtnSim.addEventListener('click', () => switchView('sim'));
+    tabBtnMoment.addEventListener('click', () => switchView('moment'));
+    tabBtnStats.addEventListener('click', () => switchView('stats'));
+
+    // Preset & Dialect Handlers
+    presetSelect.addEventListener('change', () => {
+      if (!presetSelect.value) return;
+      rawCronInput.value = presetSelect.value;
+      runEvaluation();
+      showToast(`Loaded ${presetSelect.options[presetSelect.selectedIndex].text}`);
+    });
+
+    dialectSelect.addEventListener('change', () => {
+      currentDialect = dialectSelect.value;
+      runEvaluation();
+    });
+
+    tzSelect.addEventListener('change', () => {
+      runEvaluation();
+      evaluateMoment();
+    });
+
+    runCountSelect.addEventListener('change', runEvaluation);
+    simStartTime.addEventListener('input', runEvaluation);
+    momentInput.addEventListener('input', evaluateMoment);
+
+    // Debounced Live Input
+    let debounceTimer;
+    rawCronInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(runEvaluation, 150);
+    });
+
+    // --- EVALUATION CORE ---
+    function runEvaluation() {
+      const raw = rawCronInput.value.trim();
+      if (!raw) {
+        showError('Please enter a cron expression.');
+        return;
+      }
+
+      // 1. Resolve Dialect & Tokenize
+      let clean = raw;
+      let detected = 'unix';
+      if (clean.startsWith('cron(') && clean.endsWith(')')) {
+        clean = clean.substring(5, clean.length - 1);
+        detected = 'aws';
+      }
+
+      const parts = clean.split(/\s+/).filter(Boolean);
+
+      if (currentDialect === 'auto') {
+        if (detected === 'aws') resolvedDialect = 'aws';
+        else if (parts.length === 6 || parts.length === 7) resolvedDialect = 'quartz';
+        else resolvedDialect = 'unix';
+      } else {
+        resolvedDialect = currentDialect;
+      }
+
+      // 2. Validate Token Count & Populate State
+      const validationError = validateCronParts(parts, resolvedDialect);
+      if (validationError) {
+        showError(validationError);
+        renderErrorPills(parts);
+        return;
+      }
+
+      clearError();
+
+      // Populate state
+      if (resolvedDialect === 'unix') {
+        cronState.second = '0';
+        cronState.minute = parts[0];
+        cronState.hour = parts[1];
+        cronState.day = parts[2];
+        cronState.month = parts[3];
+        cronState.weekday = parts[4];
+      } else if (resolvedDialect === 'quartz') {
+        cronState.second = parts[0];
+        cronState.minute = parts[1];
+        cronState.hour = parts[2];
+        cronState.day = parts[3];
+        cronState.month = parts[4];
+        cronState.weekday = parts[5];
+      } else if (resolvedDialect === 'aws') {
+        cronState.second = '0';
+        cronState.minute = parts[0];
+        cronState.hour = parts[1];
+        cronState.day = parts[2];
+        cronState.month = parts[3];
+        cronState.weekday = parts[4];
+      }
+
+      renderPillsStrip();
+      updateHumanExplanation();
+      detectEdgeCases();
+      simulateNextRuns();
+      if (viewMoment.style.display !== 'none') evaluateMoment();
+      if (viewStats.style.display !== 'none') calculateStats();
+    }
+
+    // --- FIELD VALIDATOR ---
+    function validateCronParts(parts, dialect) {
+      if (dialect === 'unix' && parts.length !== 5) {
+        return `Standard Unix cron requires exactly 5 fields (Minute, Hour, Day, Month, Weekday). Got ${parts.length}.`;
+      }
+      if (dialect === 'quartz' && parts.length !== 6 && parts.length !== 7) {
+        return `Quartz cron requires 6 or 7 fields (Second, Minute, Hour, Day, Month, Weekday, [Year]). Got ${parts.length}.`;
+      }
+      if (dialect === 'aws' && parts.length !== 6) {
+        return `AWS EventBridge cron requires 6 fields (Minute, Hour, Day, Month, Weekday, Year). Got ${parts.length}.`;
+      }
+
+      const offset = (dialect === 'quartz') ? 1 : 0;
+      const minField = parts[offset];
+      const hrField = parts[offset + 1];
+      const domField = parts[offset + 2];
+      const monField = parts[offset + 3];
+      const dowField = parts[offset + 4];
+
+      const checkMin = validateFieldRange(minField, 0, 59, 'Minute (field ' + (offset + 1) + ')');
+      if (checkMin) return checkMin;
+
+      const checkHr = validateFieldRange(hrField, 0, 23, 'Hour (field ' + (offset + 2) + ')');
+      if (checkHr) return checkHr;
+
+      const checkDom = validateFieldRange(domField, 1, 31, 'Day of Month (field ' + (offset + 3) + ')', true);
+      if (checkDom) return checkDom;
+
+      const checkMon = validateFieldRange(monField, 1, 12, 'Month (field ' + (offset + 4) + ')', false, monthNames);
+      if (checkMon) return checkMon;
+
+      const checkDow = validateFieldRange(dowField, 0, 7, 'Day of Week (field ' + (offset + 5) + ')', true, weekdayNames);
+      if (checkDow) return checkDow;
+
+      if (dialect === 'quartz' && domField !== '?' && dowField !== '?') {
+        return `Quartz format requires either Day-of-Month or Day-of-Week to be '?' (no specific value). Both cannot be specified simultaneously.`;
+      }
+
+      return null;
+    }
+
+    function validateFieldRange(str, min, max, name, allowWild = false, nameAliases = null) {
+      if (str === '*' || (allowWild && str === '?') || str === 'L') return null;
+
+      // Handle steps */n or start/step
+      if (str.includes('/')) {
+        const [base, step] = str.split('/');
+        const sNum = parseInt(step, 10);
+        if (isNaN(sNum) || sNum < 1 || sNum > max) {
+          return `${name}: Step value '/${step}' is invalid (must be 1-${max})`;
+        }
+        if (base !== '*' && base !== '') {
+          return validateFieldRange(base, min, max, name, allowWild, nameAliases);
+        }
+        return null;
+      }
+
+      // Handle comma lists
+      const items = str.split(',');
+      for (const item of items) {
+        if (item.includes('-')) {
+          const [startStr, endStr] = item.split('-');
+          const start = resolveVal(startStr, nameAliases);
+          const end = resolveVal(endStr, nameAliases);
+          if (isNaN(start) || start < min || start > max) return `${name}: Range start '${startStr}' is out of range (${min}-${max})`;
+          if (isNaN(end) || end < min || end > max) return `${name}: Range end '${endStr}' is out of range (${min}-${max})`;
+          if (start > end) return `${name}: Range '${item}' start cannot be greater than end`;
+        } else {
+          const val = resolveVal(item, nameAliases);
+          if (isNaN(val) || val < min || val > max) return `${name}: Value '${item}' is out of range (${min}-${max})`;
+        }
+      }
+      return null;
+    }
+
+    function resolveVal(token, aliases) {
+      if (aliases) {
+        const idx = aliases.indexOf(token.toUpperCase());
+        if (idx !== -1) return idx + 1; // 1-indexed for month
+      }
+      return parseInt(token, 10);
+    }
+
+    function showError(msg) {
+      rawExpressionWrap.classList.add('invalid');
+      validationErrorBox.style.display = 'flex';
+      validationErrorBox.textContent = `❌ ${msg}`;
+      humanExplanationText.textContent = 'Invalid expression — please review diagnostics above.';
+      simTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--error);">Invalid Cron Syntax: ${escapeHtml(msg)}</td></tr>`;
+    }
+
+    function clearError() {
+      rawExpressionWrap.classList.remove('invalid');
+      validationErrorBox.style.display = 'none';
+    }
+
+    function renderErrorPills(parts) {
+      fieldPillsStrip.innerHTML = parts.map((p, i) => `<span class="field-pill error"><span class="pill-label">F${i + 1}</span> ${escapeHtml(p)}</span>`).join('');
+    }
+
+    function renderPillsStrip() {
+      fieldPillsStrip.innerHTML = `
+        ${resolvedDialect === 'quartz' ? `<span class="field-pill"><span class="pill-label">SEC</span> ${escapeHtml(cronState.second)}</span>` : ''}
+        <span class="field-pill"><span class="pill-label">MIN</span> ${escapeHtml(cronState.minute)}</span>
+        <span class="field-pill"><span class="pill-label">HOUR</span> ${escapeHtml(cronState.hour)}</span>
+        <span class="field-pill"><span class="pill-label">DOM</span> ${escapeHtml(cronState.day)}</span>
+        <span class="field-pill"><span class="pill-label">MONTH</span> ${escapeHtml(cronState.month)}</span>
+        <span class="field-pill"><span class="pill-label">DOW</span> ${escapeHtml(cronState.weekday)}</span>
+      `;
+    }
+
+    // --- NATURAL LANGUAGE TRANSLATION ---
+    function updateHumanExplanation() {
+      const min = cronState.minute;
+      const hr = cronState.hour;
+      const dom = cronState.day;
+      const mon = cronState.month;
+      const dow = cronState.weekday;
+
+      if (min === '*' && hr === '*' && dom === '*' && mon === '*' && dow === '*') {
+        humanExplanationText.textContent = 'Runs every minute, every day.';
+        return;
+      }
+
+      let timeDesc = '';
+      if (min === '*' && hr === '*') timeDesc = 'every minute';
+      else if (min.startsWith('*/')) timeDesc = `every ${min.substring(2)} minutes`;
+      else if (hr === '*') timeDesc = `at minute ${min} of every hour`;
+      else {
+        timeDesc = `at ${formatTimeRange(hr, min)}`;
+      }
+
+      let dayDesc = '';
+      if (dow === '1-5') dayDesc = 'Monday through Friday';
+      else if (dow === '0,6' || dow === '6,0') dayDesc = 'on weekends (Saturday and Sunday)';
+      else if (dow !== '*' && dow !== '?') {
+        const dows = dow.split(',').map(d => weekdayNames[parseInt(d, 10)] || d);
+        dayDesc = `on ${dows.join(', ')}`;
+      } else if (dom !== '*' && dom !== '?') {
+        dayDesc = `on day ${dom} of the month`;
+      } else {
+        dayDesc = 'every day';
+      }
+
+      let monDesc = '';
+      if (mon !== '*' && mon !== '?') {
+        const mons = mon.split(',').map(m => monthNames[parseInt(m, 10) - 1] || m);
+        monDesc = `in ${mons.join(', ')}`;
+      }
+
+      humanExplanationText.textContent = `Runs ${timeDesc}, ${dayDesc}${monDesc ? `, ${monDesc}` : ''}.`;
+    }
+
+    function formatTimeRange(hr, min) {
+      if (hr.includes('-')) {
+        const [h1, h2] = hr.split('-');
+        return `minute ${min}, between ${formatHourAMPM(parseInt(h1, 10))} and ${formatHourAMPM(parseInt(h2, 10))}`;
+      }
+      return hr.split(',').map(h => formatHourAMPM(parseInt(h, 10), parseInt(min, 10) || 0)).join(', ');
+    }
+
+    function formatHourAMPM(h, m = 0) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      const mStr = (m < 10 ? '0' : '') + m;
+      return `${h12}:${mStr} ${ampm}`;
+    }
+
+    // --- EDGE CASE & DST DETECTOR ---
+    function detectEdgeCases() {
+      const warnings = [];
+      const dom = cronState.day;
+      const mon = cronState.month;
+      const hr = cronState.hour;
+
+      if (dom === '31') {
+        warnings.push('⚠️ <strong>Month-End Alert:</strong> Day 31 will silently skip months with fewer than 31 days (February, April, June, September, November).');
+      } else if (dom === '30' || dom === '29') {
+        if (mon === '2' && dom === '29') {
+          warnings.push('⚠️ <strong>Leap-Year Alert:</strong> February 29 will only execute once every 4 years on leap years (next: 2028).');
+        } else if (dom === '30' && mon === '2') {
+          warnings.push('❌ <strong>Impossible Date:</strong> February 30 never occurs. This expression will never execute.');
+        }
+      }
+
+      if (hr === '2' || hr.includes('2') || hr.startsWith('2-')) {
+        warnings.push('🕒 <strong>DST Shift Alert:</strong> Scheduled in the 02:00 AM hour. During Daylight Saving Spring-Forward switches, 2:00 AM is skipped; during Fall-Back, 2:00 AM occurs twice.');
+      }
+
+      if (warnings.length > 0) {
+        edgeCaseAlert.style.display = 'flex';
+        edgeCaseAlert.innerHTML = warnings.join('<br/>');
+      } else {
+        edgeCaseAlert.style.display = 'none';
+      }
+    }
+
+    // --- SIMULATE NEXT RUNS ---
+    function simulateNextRuns() {
+      simTableBody.innerHTML = '';
+      const count = parseInt(runCountSelect.value, 10) || 10;
+      const tz = tzSelect.value;
+      const startIso = simStartTime.value;
+      const startDt = startIso ? new Date(startIso) : new Date();
+
+      const dates = calculateNextRuns(startDt, count);
+      if (dates.length === 0) {
+        simTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--muted);">No matching execution dates found in simulation horizon.</td></tr>`;
+        return;
+      }
+
+      dates.forEach((d, idx) => {
+        const dow = weekdayNames[d.getDay()];
+        const formattedTZ = formatDateTZ(d, tz);
+        const formattedUTC = d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+        const relative = getRelativeCountdown(d);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-family:'JetBrains Mono',monospace; color:var(--muted);">${idx + 1}</td>
+          <td><span class="dow-badge">${dow}</span></td>
+          <td style="font-family:'JetBrains Mono',monospace; font-weight:600;">${escapeHtml(formattedTZ)}</td>
+          <td style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--muted);">${escapeHtml(formattedUTC)}</td>
+          <td><span class="relative-badge">${escapeHtml(relative)}</span></td>
+        `;
+        simTableBody.appendChild(tr);
+      });
+    }
+
+    function calculateNextRuns(startDate, count) {
+      const minVals = parseToSet(cronState.minute, 0, 59);
+      const hrVals = parseToSet(cronState.hour, 0, 23);
+      const domVals = parseToSet(cronState.day, 1, 31);
+      const monVals = parseToSet(cronState.month, 1, 12, monthNames);
+      const dowVals = parseToSet(cronState.weekday, 0, 6, weekdayNames);
+
+      const list = [];
+      let cur = new Date(startDate);
+      cur.setSeconds(0);
+      cur.setMilliseconds(0);
+      cur.setMinutes(cur.getMinutes() + 1); // Start from next minute
+
+      let loops = 0;
+      while (list.length < count && loops < 75000) {
+        loops++;
+        const mon = cur.getMonth() + 1;
+        const dom = cur.getDate();
+        const dow = cur.getDay();
+        const hr = cur.getHours();
+        const min = cur.getMinutes();
+
+        if (monVals.has(mon) && domVals.has(dom) && dowVals.has(dow) && hrVals.has(hr) && minVals.has(min)) {
+          list.push(new Date(cur));
+        }
+
+        cur.setMinutes(cur.getMinutes() + 1);
+      }
+      return list;
+    }
+
+    function parseToSet(str, min, max, aliases = null) {
+      const s = new Set();
+      if (str === '*' || str === '?') {
+        for (let i = min; i <= max; i++) s.add(i);
+        return s;
+      }
+      if (str.startsWith('*/')) {
+        const step = parseInt(str.substring(2), 10) || 1;
+        for (let i = min; i <= max; i += step) s.add(i);
+        return s;
+      }
+      if (str.includes('-') && !str.includes(',')) {
+        const [a, b] = str.split('-');
+        const v1 = resolveVal(a, aliases);
+        const v2 = resolveVal(b, aliases);
+        for (let i = v1; i <= v2; i++) s.add(i);
+        return s;
+      }
+      str.split(',').forEach(item => {
+        const v = resolveVal(item, aliases);
+        if (!isNaN(v)) s.add(v);
+      });
+      return s;
+    }
+
+    function formatDateTZ(date, tz) {
+      const options = {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      };
+      if (tz !== 'local') options.timeZone = tz;
+      return new Intl.DateTimeFormat('en-US', options).format(date);
+    }
+
+    function getRelativeCountdown(target) {
+      const diffMs = target - new Date();
+      const diffMin = Math.round(diffMs / (60 * 1000));
+      if (diffMin < 1) return 'in < 1 min';
+      if (diffMin < 60) return `in ${diffMin}m`;
+      const diffHrs = Math.floor(diffMin / 60);
+      const remMin = diffMin % 60;
+      if (diffHrs < 24) return `in ${diffHrs}h ${remMin}m`;
+      const diffDays = Math.floor(diffHrs / 24);
+      return `in ${diffDays} day${diffDays === 1 ? '' : 's'}`;
+    }
+
+    // --- TAB 2: "DOES IT MATCH THIS MOMENT?" ---
+    function evaluateMoment() {
+      const targetIso = momentInput.value;
+      if (!targetIso) return;
+      const targetDate = new Date(targetIso);
+
+      const tMin = targetDate.getMinutes();
+      const tHr = targetDate.getHours();
+      const tDom = targetDate.getDate();
+      const tMon = targetDate.getMonth() + 1;
+      const tDow = targetDate.getDay();
+
+      const minSet = parseToSet(cronState.minute, 0, 59);
+      const hrSet = parseToSet(cronState.hour, 0, 23);
+      const domSet = parseToSet(cronState.day, 1, 31);
+      const monSet = parseToSet(cronState.month, 1, 12, monthNames);
+      const dowSet = parseToSet(cronState.weekday, 0, 6, weekdayNames);
+
+      const minMatch = minSet.has(tMin);
+      const hrMatch = hrSet.has(tHr);
+      const domMatch = domSet.has(tDom);
+      const monMatch = monSet.has(tMon);
+      const dowMatch = dowSet.has(tDow);
+
+      const matchedCount = [minMatch, hrMatch, domMatch, monMatch, dowMatch].filter(Boolean).length;
+      const isFullMatch = matchedCount === 5;
+
+      if (isFullMatch) {
+        momentVerdictBanner.style.background = 'var(--success-bg)';
+        momentVerdictBanner.style.color = 'var(--success)';
+        momentVerdictBanner.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        momentVerdictBanner.innerHTML = `✅ <strong>FIRES AT THIS MOMENT!</strong> All 5 schedule fields matched.`;
+      } else {
+        momentVerdictBanner.style.background = 'var(--error-bg)';
+        momentVerdictBanner.style.color = 'var(--error)';
+        momentVerdictBanner.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        momentVerdictBanner.innerHTML = `❌ <strong>SKIPPED AT THIS MOMENT:</strong> Near miss (${matchedCount}/5 fields matched).`;
+      }
+
+      momentMatchGrid.innerHTML = `
+        <div class="match-field-card ${minMatch ? 'matched' : 'mismatched'}">
+          <div class="match-field-header"><span>Minute</span> <span>${minMatch ? 'MATCH' : 'MISMATCH'}</span></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:700;">Moment: :${(tMin < 10 ? '0' : '') + tMin}</div>
+          <div style="font-size:0.75rem; color:var(--muted);">Rule: <code>${escapeHtml(cronState.minute)}</code></div>
+        </div>
+        <div class="match-field-card ${hrMatch ? 'matched' : 'mismatched'}">
+          <div class="match-field-header"><span>Hour</span> <span>${hrMatch ? 'MATCH' : 'MISMATCH'}</span></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:700;">Moment: ${formatHourAMPM(tHr)}</div>
+          <div style="font-size:0.75rem; color:var(--muted);">Rule: <code>${escapeHtml(cronState.hour)}</code></div>
+        </div>
+        <div class="match-field-card ${domMatch ? 'matched' : 'mismatched'}">
+          <div class="match-field-header"><span>Day of Month</span> <span>${domMatch ? 'MATCH' : 'MISMATCH'}</span></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:700;">Moment: Day ${tDom}</div>
+          <div style="font-size:0.75rem; color:var(--muted);">Rule: <code>${escapeHtml(cronState.day)}</code></div>
+        </div>
+        <div class="match-field-card ${monMatch ? 'matched' : 'mismatched'}">
+          <div class="match-field-header"><span>Month</span> <span>${monMatch ? 'MATCH' : 'MISMATCH'}</span></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:700;">Moment: ${monthNames[tMon - 1]} (${tMon})</div>
+          <div style="font-size:0.75rem; color:var(--muted);">Rule: <code>${escapeHtml(cronState.month)}</code></div>
+        </div>
+        <div class="match-field-card ${dowMatch ? 'matched' : 'mismatched'}">
+          <div class="match-field-header"><span>Day of Week</span> <span>${dowMatch ? 'MATCH' : 'MISMATCH'}</span></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; font-weight:700;">Moment: ${weekdayNames[tDow]} (${tDow})</div>
+          <div style="font-size:0.75rem; color:var(--muted);">Rule: <code>${escapeHtml(cronState.weekday)}</code></div>
+        </div>
+      `;
+    }
+
+    // --- TAB 3: STATS & FREQUENCY CALCULATOR ---
+    function calculateStats() {
+      const minSet = parseToSet(cronState.minute, 0, 59);
+      const hrSet = parseToSet(cronState.hour, 0, 23);
+      const domSet = parseToSet(cronState.day, 1, 31);
+      const monSet = parseToSet(cronState.month, 1, 12, monthNames);
+      const dowSet = parseToSet(cronState.weekday, 0, 6, weekdayNames);
+
+      const perHour = minSet.size;
+      const perDay = perHour * hrSet.size;
+      const perWeek = Math.round(perDay * (dowSet.size / 7));
+      const perMonth = Math.round(perWeek * 4.345);
+      const perYear = Math.round(perMonth * 12);
+
+      statPerHour.textContent = perHour.toLocaleString();
+      statPerDay.textContent = perDay.toLocaleString();
+      statPerMonth.textContent = perMonth.toLocaleString();
+      statPerYear.textContent = perYear.toLocaleString();
+
+      statsSummaryDesc.innerHTML = `
+        • <strong>Active Hours:</strong> Fires across ${hrSet.size} of 24 hours per active day.<br/>
+        • <strong>Weekly Schedule:</strong> Executes on ${dowSet.size} of 7 days per week.<br/>
+        • <strong>Monthly Cadence:</strong> Active across ${monSet.size} of 12 months in a calendar year.
+      `;
+    }
+
+    // Copy & Share Handlers
+    btnCopyCron.addEventListener('click', () => {
+      navigator.clipboard.writeText(rawCronInput.value.trim()).then(() => showToast('Copied cron expression!'));
+    });
+
+    btnResetCron.addEventListener('click', () => {
+      rawCronInput.value = '0 9-17 * * 1-5';
+      runEvaluation();
+      showToast('Reset to weekday business hours');
+    });
+
+    btnCopyLink.addEventListener('click', () => {
+      const params = new URLSearchParams();
+      params.set('expr', rawCronInput.value.trim());
+      params.set('dialect', dialectSelect.value);
+      params.set('tz', tzSelect.value);
+      const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+      navigator.clipboard.writeText(url).then(() => showToast('Share link copied to clipboard!'));
+    });
+
+    btnCopySimTable.addEventListener('click', () => {
+      const rows = Array.from(simTableBody.querySelectorAll('tr')).map(r => {
+        return Array.from(r.querySelectorAll('td')).map(td => td.innerText.trim()).join('\t');
+      });
+      navigator.clipboard.writeText(rows.join('\n')).then(() => showToast('Copied simulation table!'));
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Load from URL Search Params if present
+    (function loadFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('expr')) rawCronInput.value = params.get('expr');
+      if (params.has('dialect')) dialectSelect.value = params.get('dialect');
+      if (params.has('tz')) tzSelect.value = params.get('tz');
+    })();
+
+    // Initial Execution
+    runEvaluation();
+  </script>
+</body>
+</html>

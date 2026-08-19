@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HTTP Status Code Reference &amp; Lookup — Complete Guide | sayandeep.dev</title>
+  <meta name="description" content="Searchable, categorized reference for all standard and vendor HTTP status codes (1xx-5xx, Cloudflare, Nginx) with causes, headers, retryability, and comparison guides." />
+  <meta name="keywords" content="http status codes, http response codes, 404 not found, 401 vs 403, 502 bad gateway, 503 vs 504, http headers, rest api status codes, iana http codes" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/http-status-codes/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+
+      /* Status Category Colors */
+      --cat-1xx: #3b82f6;
+      --cat-1xx-bg: rgba(59, 130, 246, 0.1);
+      --cat-2xx: #10b981;
+      --cat-2xx-bg: rgba(16, 185, 129, 0.1);
+      --cat-3xx: #f59e0b;
+      --cat-3xx-bg: rgba(245, 158, 11, 0.1);
+      --cat-4xx: #ea580c;
+      --cat-4xx-bg: rgba(234, 88, 12, 0.1);
+      --cat-5xx: #ef4444;
+      --cat-5xx-bg: rgba(239, 68, 68, 0.1);
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+
+      --cat-1xx: #60a5fa;
+      --cat-1xx-bg: rgba(96, 165, 250, 0.15);
+      --cat-2xx: #34d399;
+      --cat-2xx-bg: rgba(52, 211, 153, 0.15);
+      --cat-3xx: #fbbf24;
+      --cat-3xx-bg: rgba(251, 191, 36, 0.15);
+      --cat-4xx: #fb923c;
+      --cat-4xx-bg: rgba(251, 146, 60, 0.15);
+      --cat-5xx: #f87171;
+      --cat-5xx-bg: rgba(248, 113, 113, 0.15);
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Sticky Search & Filter Bar */
+    .filter-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrap {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 0.6rem 0.85rem 0.6rem 2.2rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .quick-jumper-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .jumper-input {
+      width: 90px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.6rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      text-align: center;
+      outline: none;
+    }
+
+    .jumper-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Category Filter Pills */
+    .pill-filters {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .filter-pill:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    /* Section Headers */
+    .category-section {
+      margin-bottom: 2rem;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.85rem;
+      font-weight: 700;
+      font-size: 0.875rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .category-header.cat-1xx { background: var(--cat-1xx-bg); color: var(--cat-1xx); }
+    .category-header.cat-2xx { background: var(--cat-2xx-bg); color: var(--cat-2xx); }
+    .category-header.cat-3xx { background: var(--cat-3xx-bg); color: var(--cat-3xx); }
+    .category-header.cat-4xx { background: var(--cat-4xx-bg); color: var(--cat-4xx); }
+    .category-header.cat-5xx { background: var(--cat-5xx-bg); color: var(--cat-5xx); }
+
+    /* Code Cards Grid */
+    .codes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      .codes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Code Card */
+    .code-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: all var(--transition);
+      scroll-margin-top: 80px;
+    }
+
+    .code-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-md);
+    }
+
+    .code-card.highlighted {
+      border-color: var(--accent);
+      outline: 3px solid var(--accent-light);
+      animation: pulseHighlight 2s ease;
+    }
+
+    @keyframes pulseHighlight {
+      0% { transform: scale(1.02); }
+      50% { transform: scale(1); }
+      100% { transform: scale(1); }
+    }
+
+    .code-card-header {
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      background: var(--surface);
+    }
+
+    .code-title-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .code-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+
+    .code-badge.cat-1xx { background: var(--cat-1xx-bg); color: var(--cat-1xx); }
+    .code-badge.cat-2xx { background: var(--cat-2xx-bg); color: var(--cat-2xx); }
+    .code-badge.cat-3xx { background: var(--cat-3xx-bg); color: var(--cat-3xx); }
+    .code-badge.cat-4xx { background: var(--cat-4xx-bg); color: var(--cat-4xx); }
+    .code-badge.cat-5xx { background: var(--cat-5xx-bg); color: var(--cat-5xx); }
+
+    .code-name {
+      font-weight: 700;
+      font-size: 0.925rem;
+      color: var(--text);
+    }
+
+    .code-meta-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .spec-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    /* Card Expanded Body */
+    .code-card-body {
+      padding: 0.85rem 1rem 1rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .code-desc {
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .detail-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .detail-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .detail-tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .header-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .op-flags-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.75rem;
+    }
+
+    .op-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .card-actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Comparison Section */
+    .comparison-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .compare-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+
+    .compare-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">HTTP Status Code Reference</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Search, Jumper & Category Filter Panel -->
+      <div class="filter-panel">
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-input" class="search-input" placeholder="Search by code, title, header (e.g. '404', 'auth', 'rate limit', 'retry-after')..." spellcheck="false" />
+          </div>
+
+          <div class="quick-jumper-wrap">
+            <label for="jumper-input" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Quick Lookup:</label>
+            <input type="text" id="jumper-input" class="jumper-input" placeholder="429" maxlength="3" />
+            <button id="btn-jump" class="btn btn--sm">Jump</button>
+          </div>
+
+          <button id="btn-random-code" class="btn btn--sm">🎲 Random</button>
+          <button id="btn-toggle-expand" class="btn btn--sm">Expand All</button>
+        </div>
+
+        <div class="pill-filters" id="category-pills">
+          <button class="filter-pill active" data-cat="all">All Codes (<span id="count-all">0</span>)</button>
+          <button class="filter-pill" data-cat="1xx">1xx Info (<span id="count-1xx">0</span>)</button>
+          <button class="filter-pill" data-cat="2xx">2xx Success (<span id="count-2xx">0</span>)</button>
+          <button class="filter-pill" data-cat="3xx">3xx Redirection (<span id="count-3xx">0</span>)</button>
+          <button class="filter-pill" data-cat="4xx">4xx Client Error (<span id="count-4xx">0</span>)</button>
+          <button class="filter-pill" data-cat="5xx">5xx Server Error (<span id="count-5xx">0</span>)</button>
+          <button class="filter-pill" data-cat="vendor">Vendor Specific</button>
+        </div>
+      </div>
+
+      <!-- Commonly Confused Codes Section -->
+      <div class="comparison-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="comparison-toggle">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span style="font-size:1.1rem;">⚖️</span>
+            <span style="font-weight:700; font-size:0.95rem;">Commonly Confused Status Codes (Comparison Guide)</span>
+          </div>
+          <span id="comparison-arrow" style="color:var(--muted); font-weight:700;">▼</span>
+        </div>
+
+        <div class="comparison-grid" id="comparison-content">
+          <div class="compare-item">
+            <div class="compare-title">401 Unauthorized vs 403 Forbidden</div>
+            <strong>401 Unauthorized:</strong> Missing or invalid authentication credentials (identity unknown — "Who are you?"). Client should authenticate with <code>WWW-Authenticate</code>.<br/>
+            <strong>403 Forbidden:</strong> Identity known and authenticated, but lacks sufficient permissions ("I know who you are, but you're not allowed here"). Retrying with same credentials will not work.
+          </div>
+
+          <div class="compare-item">
+            <div class="compare-title">301 vs 302 vs 307 vs 308 Redirects</div>
+            <strong>301 Moved Permanently / 302 Found:</strong> Historical redirects. Browsers may rewrite <code>POST</code> to <code>GET</code>.<br/>
+            <strong>307 Temporary / 308 Permanent:</strong> Strict modern redirects. The HTTP request method (e.g. <code>POST</code>, <code>PUT</code>) and request body are <em>guaranteed</em> not to change.
+          </div>
+
+          <div class="compare-item">
+            <div class="compare-title">502 Bad Gateway vs 503 vs 504 Timeout</div>
+            <strong>502 Bad Gateway:</strong> Edge proxy or reverse proxy received an invalid/malformed response from upstream backend.<br/>
+            <strong>503 Service Unavailable:</strong> Server is overloaded or down for maintenance.<br/>
+            <strong>504 Gateway Timeout:</strong> Upstream backend server took too long and failed to respond in time.
+          </div>
+
+          <div class="compare-item">
+            <div class="compare-title">400 Bad Request vs 422 Unprocessable</div>
+            <strong>400 Bad Request:</strong> Syntax error or malformed payload (e.g. invalid JSON, missing required HTTP headers).<br/>
+            <strong>422 Unprocessable Content:</strong> Payload syntax is valid JSON/XML, but semantically invalid (e.g. field failed validation rules, email format wrong).
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Sections Container -->
+      <div id="status-codes-container">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../timestamp-converter/">Timestamp Converter</a>
+        <a href="../cron-tester/">Cron Tester</a>
+        <a href="../cron-builder/">Cron Builder</a>
+        <a href="../regex-generator/">Regex Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // HTTP Status Codes Dataset (Complete IANA / RFC + Vendor Extensions)
+    const STATUS_DATA = [
+      // 1xx Informational
+      { code: 100, name: "Continue", cat: "1xx", spec: "RFC 9110", isStandard: true, desc: "The server has received the request headers and the client should proceed to send the request body.", causes: ["Expect: 100-continue header sent by client before uploading large payload"], headers: ["Expect"], cacheable: "No", retryable: "N/A" },
+      { code: 101, name: "Switching Protocols", cat: "1xx", spec: "RFC 9110", isStandard: true, desc: "The requester has asked the server to switch protocols and the server has agreed to do so.", causes: ["WebSocket connection handshake (Upgrade: websocket)", "HTTP/2 upgrade"], headers: ["Upgrade", "Connection"], cacheable: "No", retryable: "N/A" },
+      { code: 102, name: "Processing", cat: "1xx", spec: "RFC 2518 (WebDAV)", isStandard: true, desc: "The server has received and is processing the request, but no response is available yet.", causes: ["Long-running WebDAV operations containing multiple sub-requests"], headers: [], cacheable: "No", retryable: "N/A" },
+      { code: 103, name: "Early Hints", cat: "1xx", spec: "RFC 8297", isStandard: true, desc: "Used to return some response headers before final HTTP message, allowing browser to preload resources.", causes: ["Server hints stylesheet/script preloads while preparing final HTML"], headers: ["Link"], cacheable: "No", retryable: "N/A" },
+
+      // 2xx Success
+      { code: 200, name: "OK", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "Standard response for successful HTTP requests. The payload depends on request method (GET=resource, POST=result).", causes: ["Successful resource fetch, REST API query, or web page load"], headers: ["Content-Type", "Content-Length", "ETag", "Cache-Control"], cacheable: "Yes (by default for GET/HEAD)", retryable: "Yes" },
+      { code: 201, name: "Created", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "The request has been fulfilled and resulted in a new resource being created.", causes: ["Successful POST/PUT creating a user, record, or file upload"], headers: ["Location", "ETag"], cacheable: "Yes (with explicit headers)", retryable: "Safe if idempotent" },
+      { code: 202, name: "Accepted", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "The request has been accepted for processing, but processing has not been completed.", causes: ["Asynchronous batch job queued", "Background video transcoding started"], headers: ["Location", "Retry-After"], cacheable: "No", retryable: "Yes" },
+      { code: 203, name: "Non-Authoritative Information", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "The request was successful, but the returned payload was modified by a transforming proxy.", causes: ["CDN or web proxy compressed or modified origin payload"], headers: [], cacheable: "Yes", retryable: "Yes" },
+      { code: 204, name: "No Content", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "The server successfully fulfilled the request and there is no additional content to send in the response payload body.", causes: ["DELETE request succeeded", "PUT/PATCH update succeeded with no body required", "Form save with no navigation"], headers: [], cacheable: "Yes", retryable: "Yes" },
+      { code: 205, name: "Reset Content", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "Tells the user agent to reset the document view which sent the request (e.g. clear form inputs).", causes: ["User submitted a form and the browser should reset the form fields"], headers: [], cacheable: "No", retryable: "Yes" },
+      { code: 206, name: "Partial Content", cat: "2xx", spec: "RFC 9110", isStandard: true, desc: "The server is delivering only part of the resource due to a Range header sent by the client.", causes: ["Video/Audio streaming seek", "Multi-threaded or resumed file download"], headers: ["Content-Range", "Accept-Ranges", "ETag"], cacheable: "Yes", retryable: "Yes" },
+      { code: 207, name: "Multi-Status", cat: "2xx", spec: "RFC 4918 (WebDAV)", isStandard: true, desc: "Conveys information about multiple resources in situations where multiple status codes might be appropriate.", causes: ["WebDAV batch XML operations returning individual sub-status codes"], headers: ["Content-Type: application/xml"], cacheable: "No", retryable: "Yes" },
+      { code: 226, name: "IM Used", cat: "2xx", spec: "RFC 3229", isStandard: true, desc: "The server has fulfilled a GET request for the resource, and the response is a representation of one or more instance-manipulations.", causes: ["Delta encoding applied to reduce bandwidth"], headers: ["Delta-Base", "IM"], cacheable: "Yes", retryable: "Yes" },
+
+      // 3xx Redirection
+      { code: 300, name: "Multiple Choices", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "The request has more than one possible response. The user agent or user should choose one of them.", causes: ["Content negotiation for multiple video formats or language variations"], headers: ["Location"], cacheable: "Yes", retryable: "Yes" },
+      { code: 301, name: "Moved Permanently", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "The target resource has been assigned a new permanent URI and any future references should use this URI.", causes: ["Domain change / SEO canonical migration", "HTTP to HTTPS redirect", "URL structure refactor"], headers: ["Location", "Cache-Control"], cacheable: "Yes (cached indefinitely by browsers by default)", retryable: "Yes" },
+      { code: 302, name: "Found", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "The target resource resides temporarily under a different URI. Historical temporary redirect.", causes: ["Temporary redirect during site maintenance", "Post-login user redirect"], headers: ["Location"], cacheable: "No (unless Cache-Control indicates)", retryable: "Yes" },
+      { code: 303, name: "See Other", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "The server sends this response to direct the client to get the requested resource at another URI with a GET request.", causes: ["Post/Redirect/Get (PRG) pattern after form submission to prevent duplicate POSTs"], headers: ["Location"], cacheable: "No", retryable: "Yes" },
+      { code: 304, name: "Not Modified", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "Tells the client that the response has not been modified, so the client can continue to use the cached version.", causes: ["Conditional GET request matched If-None-Match (ETag) or If-Modified-Since"], headers: ["ETag", "Cache-Control", "Expires", "Vary"], cacheable: "Yes", retryable: "Yes" },
+      { code: 307, name: "Temporary Redirect", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "Temporary redirect that strictly preserves the original HTTP request method (e.g. POST remains POST).", causes: ["API temporary redirect where payload and POST method must not be mutated to GET"], headers: ["Location"], cacheable: "No", retryable: "Yes" },
+      { code: 308, name: "Permanent Redirect", cat: "3xx", spec: "RFC 9110", isStandard: true, desc: "Permanent redirect that strictly preserves the original HTTP request method (POST remains POST).", causes: ["Permanent API migration or HTTPS migration preserving POST/PUT bodies"], headers: ["Location"], cacheable: "Yes", retryable: "Yes" },
+
+      // 4xx Client Error
+      { code: 400, name: "Bad Request", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server cannot or will not process the request due to something that is perceived to be a client error.", causes: ["Malformed JSON syntax", "Missing required headers", "Invalid URL query parameters", "File upload exceeds max size"], headers: [], cacheable: "No", retryable: "No (fix payload first)" },
+      { code: 401, name: "Unauthorized", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "Authentication is required and has failed or has not yet been provided. Means 'Unauthenticated'.", causes: ["Missing Authorization header", "Expired JWT or session token", "Invalid API key"], headers: ["WWW-Authenticate"], cacheable: "No", retryable: "Yes (after acquiring valid token)" },
+      { code: 402, name: "Payment Required", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "Reserved for future use. Frequently used by digital payment platforms and SaaS subscription paywalls.", causes: ["Subscription expired", "API credit balance depleted", "Stripe payment required"], headers: [], cacheable: "No", retryable: "No" },
+      { code: 403, name: "Forbidden", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The client is authenticated, but does not have permission to access the requested resource.", causes: ["Role-based access control (RBAC) failure (e.g. regular user accessing /admin)", "IP whitelist block", "CORS origin forbidden"], headers: [], cacheable: "No", retryable: "No (retrying with same user won't work)" },
+      { code: 404, name: "Not Found", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server cannot find the requested resource. The endpoint or ID does not exist.", causes: ["Mistyped URL route", "Resource deleted from database", "Missing static file asset"], headers: [], cacheable: "Yes (with explicit headers)", retryable: "No" },
+      { code: 405, name: "Method Not Allowed", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The request method is known by the server but is not supported by the target resource.", causes: ["Sending POST to a GET-only endpoint", "DELETE sent to read-only route"], headers: ["Allow"], cacheable: "No", retryable: "No (change HTTP method)" },
+      { code: 406, name: "Not Acceptable", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server cannot produce a response matching the list of acceptable values defined in Accept headers.", causes: ["Client requested 'Accept: application/xml' but server only outputs JSON"], headers: [], cacheable: "No", retryable: "No" },
+      { code: 408, name: "Request Timeout", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server did not receive a complete request message within the time that it was prepared to wait.", causes: ["Slow upload connection", "Client paused mid-stream without finishing request"], headers: ["Connection: close"], cacheable: "No", retryable: "Yes" },
+      { code: 409, name: "Conflict", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The request could not be completed due to a conflict with the current state of the target resource.", causes: ["Unique constraint violation (e.g. email already registered)", "Version mismatch / optimistic locking collision", "Git merge conflict"], headers: [], cacheable: "No", retryable: "Yes (after resolving state conflict)" },
+      { code: 410, name: "Gone", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The target resource is no longer available at the origin server and no forwarding address is known.", causes: ["Intentionally removed API version", "Deleted user account", "Permanent content purge"], headers: [], cacheable: "Yes", retryable: "No (purge link)" },
+      { code: 413, name: "Content Too Large", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The request payload is larger than the server is willing or able to process (formerly Payload Too Large).", causes: ["File upload exceeds Nginx client_max_body_size or framework payload limit"], headers: ["Retry-After"], cacheable: "No", retryable: "No (compress/reduce payload)" },
+      { code: 414, name: "URI Too Long", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server is refusing to service the request because the request-target is longer than the server is willing to interpret.", causes: ["Extremely long query string with massive encoded IDs", "Redirect loop adding parameters"], headers: [], cacheable: "No", retryable: "No (use POST body instead)" },
+      { code: 415, name: "Unsupported Media Type", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The origin server is refusing to service the request because the payload is in a format not supported.", causes: ["Sending 'Content-Type: text/plain' when API expects 'application/json'", "Uploading unsupported image format (e.g. .bmp instead of .png)"], headers: ["Accept"], cacheable: "No", retryable: "No" },
+      { code: 418, name: "I'm a Teapot", cat: "4xx", spec: "RFC 2324 / RFC 7168", isStandard: false, desc: "Hyper Text Coffee Pot Control Protocol (HTCPCP) April Fools' joke. The server refuses the attempt to brew coffee with a teapot.", causes: ["Easter eggs", "API test mocks", "Humorous anti-bot honeypots"], headers: [], cacheable: "No", retryable: "No" },
+      { code: 422, name: "Unprocessable Content", cat: "4xx", spec: "RFC 9110", isStandard: true, desc: "The server understands the content type and syntax, but was unable to process the contained instructions.", causes: ["Form validation errors (e.g. age must be > 18)", "Semantic validation failures in Rails, Laravel, FastAPI"], headers: [], cacheable: "No", retryable: "No (correct field validation)" },
+      { code: 429, name: "Too Many Requests", cat: "4xx", spec: "RFC 6585", isStandard: true, desc: "The user has sent too many requests in a given amount of time ('rate limiting').", causes: ["API rate limit exceeded", "Scraper or bot detected", "Abuse prevention / DDoS threshold reached"], headers: ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"], cacheable: "No", retryable: "Yes (after Retry-After duration)" },
+      { code: 451, name: "Unavailable For Legal Reasons", cat: "4xx", spec: "RFC 7725", isStandard: true, desc: "The server is denying access to the resource as a consequence of a legal demand (named after Fahrenheit 451).", causes: ["Government censorship", "DMCA copyright takedown", "GDPR regional compliance block"], headers: ["Link: <uri>; rel=\"blocked-by\""], cacheable: "Yes", retryable: "No" },
+      { code: 499, name: "Client Closed Request", cat: "4xx", spec: "Nginx Extension", isStandard: false, desc: "A non-standard status code introduced by Nginx for the case when a client closes the connection while Nginx is still processing the request.", causes: ["User closed browser tab or cancelled request before server finished response"], headers: [], cacheable: "No", retryable: "Yes" },
+
+      // 5xx Server Error
+      { code: 500, name: "Internal Server Error", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "A generic error message, given when an unexpected condition was encountered and no more specific message is suitable.", causes: ["Unhandled programming exception or crash", "Database connection pool exhaustion", "Syntax error in server code"], headers: [], cacheable: "No", retryable: "Yes (with exponential backoff)" },
+      { code: 501, name: "Not Implemented", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "The server either does not recognize the request method, or it lacks the ability to fulfill the request.", causes: ["HTTP method not recognized (e.g. PATCH sent to server supporting only GET/POST)", "Planned feature not yet deployed"], headers: [], cacheable: "No", retryable: "No" },
+      { code: 502, name: "Bad Gateway", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "The server, while acting as a gateway or proxy, received an invalid response from the inbound server it accessed.", causes: ["Backend Node/PHP-FPM process crashed", "Nginx/Apache unable to reach upstream application port", "Malformed response from microservice"], headers: [], cacheable: "No", retryable: "Yes (with backoff)" },
+      { code: 503, name: "Service Unavailable", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "The server is currently unable to handle the request due to a temporary overload or scheduled maintenance.", causes: ["Server undergoing scheduled maintenance", "CPU/RAM exhaustion under traffic spike", "Circuit breaker opened"], headers: ["Retry-After"], cacheable: "No", retryable: "Yes (after Retry-After seconds)" },
+      { code: 504, name: "Gateway Timeout", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "The server, while acting as a gateway or proxy, did not receive a timely response from an upstream server.", causes: ["Long-running database query timed out upstream", "Microservice unresponsive or hanging", "Slow external third-party API call"], headers: [], cacheable: "No", retryable: "Yes (with backoff)" },
+      { code: 505, name: "HTTP Version Not Supported", cat: "5xx", spec: "RFC 9110", isStandard: true, desc: "The server does not support, or refuses to support, the major version of HTTP that was used in the request message.", causes: ["Client sent HTTP/3 or HTTP/2 to an ancient HTTP/1.1-only server"], headers: [], cacheable: "No", retryable: "No (downgrade protocol)" },
+
+      // Cloudflare Vendor Codes
+      { code: 520, name: "Web Server Returned an Unknown Error", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare proxy caught an unexpected or blank response from the origin web server.", causes: ["Origin server connection reset", "Origin server returned headers larger than 16KB"], headers: ["CF-RAY"], cacheable: "No", retryable: "Yes" },
+      { code: 521, name: "Web Server Is Down", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Origin web server refused TCP connections from Cloudflare.", causes: ["Web server (Nginx/Apache) stopped or crashed", "Origin firewall/iptables blocking Cloudflare IP ranges"], headers: ["CF-RAY"], cacheable: "No", retryable: "Yes" },
+      { code: 522, name: "Connection Timed Out", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare could not complete a TCP handshake with the origin server before timing out.", causes: ["Network routing failure", "Origin server CPU overload preventing TCP SYN-ACK"], headers: ["CF-RAY"], cacheable: "No", retryable: "Yes" },
+      { code: 523, name: "Origin Is Unreachable", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare could not reach the origin web server due to network routing or DNS resolution failures.", causes: ["Incorrect origin IP configured in Cloudflare DNS", "Origin hosting provider network outage"], headers: ["CF-RAY"], cacheable: "No", retryable: "Yes" },
+      { code: 524, name: "A Timeout Occurred", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare completed the TCP connection, but the origin server did not reply with HTTP data within 100 seconds.", causes: ["Heavy background database query", "Long-running export script exceeding 100s HTTP limit"], headers: ["CF-RAY"], cacheable: "No", retryable: "Yes" },
+      { code: 525, name: "SSL Handshake Failed", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare could not perform a successful SSL/TLS handshake with the origin server in Full SSL mode.", causes: ["Origin SSL certificate expired or untrusted", "Cipher suite mismatch"], headers: ["CF-RAY"], cacheable: "No", retryable: "No" },
+      { code: 526, name: "Invalid SSL Certificate", cat: "5xx", spec: "Cloudflare", isStandard: false, desc: "Cloudflare could not validate the SSL certificate on origin server in Full (Strict) SSL mode.", causes: ["Self-signed certificate on origin in Strict mode", "Certificate hostname mismatch"], headers: ["CF-RAY"], cacheable: "No", retryable: "No" }
+    ];
+
+    // DOM Elements
+    const searchInput = document.getElementById('search-input');
+    const jumperInput = document.getElementById('jumper-input');
+    const btnJump = document.getElementById('btn-jump');
+    const btnRandomCode = document.getElementById('btn-random-code');
+    const btnToggleExpand = document.getElementById('btn-toggle-expand');
+    const categoryPills = document.getElementById('category-pills');
+    const statusCodesContainer = document.getElementById('status-codes-container');
+
+    const comparisonToggle = document.getElementById('comparison-toggle');
+    const comparisonContent = document.getElementById('comparison-content');
+    const comparisonArrow = document.getElementById('comparison-arrow');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let currentFilter = 'all';
+    let allExpanded = false;
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Comparison Collapsible Toggle
+    comparisonToggle.addEventListener('click', () => {
+      const isHidden = comparisonContent.style.display === 'none';
+      comparisonContent.style.display = isHidden ? 'grid' : 'none';
+      comparisonArrow.textContent = isHidden ? '▼' : '▲';
+    });
+
+    // Counts update
+    function updateCounts() {
+      document.getElementById('count-all').textContent = STATUS_DATA.length;
+      document.getElementById('count-1xx').textContent = STATUS_DATA.filter(d => d.cat === '1xx').length;
+      document.getElementById('count-2xx').textContent = STATUS_DATA.filter(d => d.cat === '2xx').length;
+      document.getElementById('count-3xx').textContent = STATUS_DATA.filter(d => d.cat === '3xx').length;
+      document.getElementById('count-4xx').textContent = STATUS_DATA.filter(d => d.cat === '4xx').length;
+      document.getElementById('count-5xx').textContent = STATUS_DATA.filter(d => d.cat === '5xx').length;
+    }
+    updateCounts();
+
+    // Category Filter Pills
+    categoryPills.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        categoryPills.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        currentFilter = pill.dataset.cat;
+        renderCodes();
+      });
+    });
+
+    // Live Search
+    searchInput.addEventListener('input', renderCodes);
+
+    // Quick Lookup Jumper
+    btnJump.addEventListener('click', jumpToCode);
+    jumperInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') jumpToCode();
+    });
+
+    function jumpToCode() {
+      const val = jumperInput.value.trim();
+      if (!val) return;
+      scrollToAndHighlight(val);
+    }
+
+    // Random Code
+    btnRandomCode.addEventListener('click', () => {
+      const randomEntry = STATUS_DATA[Math.floor(Math.random() * STATUS_DATA.length)];
+      scrollToAndHighlight(randomEntry.code);
+    });
+
+    // Toggle Expand All
+    btnToggleExpand.addEventListener('click', () => {
+      allExpanded = !allExpanded;
+      btnToggleExpand.textContent = allExpanded ? 'Collapse All' : 'Expand All';
+      document.querySelectorAll('.code-card-body').forEach(body => {
+        body.style.display = allExpanded ? 'flex' : 'none';
+      });
+    });
+
+    // --- RENDER CODES LIST ---
+    function renderCodes() {
+      const query = searchInput.value.trim().toLowerCase();
+      statusCodesContainer.innerHTML = '';
+
+      const categories = [
+        { id: '1xx', title: '1xx Informational Responses', desc: 'Request received, continuing process.' },
+        { id: '2xx', title: '2xx Success', desc: 'Action successfully received, understood, and accepted.' },
+        { id: '3xx', title: '3xx Redirection', desc: 'Further action must be taken in order to complete the request.' },
+        { id: '4xx', title: '4xx Client Errors', desc: 'Request contains bad syntax or cannot be fulfilled by client.' },
+        { id: '5xx', title: '5xx Server Errors', desc: 'Server failed to fulfill an apparently valid request.' }
+      ];
+
+      let totalVisible = 0;
+
+      categories.forEach(cat => {
+        // Filter by category pill
+        if (currentFilter !== 'all' && currentFilter !== cat.id && currentFilter !== 'vendor') return;
+
+        let items = STATUS_DATA.filter(d => d.cat === cat.id);
+        if (currentFilter === 'vendor') {
+          items = items.filter(d => !d.isStandard);
+        }
+
+        // Filter by search query
+        if (query) {
+          items = items.filter(item => {
+            const matchesCode = String(item.code).includes(query);
+            const matchesName = item.name.toLowerCase().includes(query);
+            const matchesDesc = item.desc.toLowerCase().includes(query);
+            const matchesCauses = item.causes.some(c => c.toLowerCase().includes(query));
+            const matchesHeaders = item.headers.some(h => h.toLowerCase().includes(query));
+            return matchesCode || matchesName || matchesDesc || matchesCauses || matchesHeaders;
+          });
+        }
+
+        if (items.length === 0) return;
+        totalVisible += items.length;
+
+        const section = document.createElement('div');
+        section.className = 'category-section';
+
+        section.innerHTML = `
+          <div class="category-header cat-${cat.id}">
+            <span>${cat.title} (${items.length})</span>
+            <span style="font-size:0.75rem; font-weight:500;">${cat.desc}</span>
+          </div>
+          <div class="codes-grid">
+            ${items.map(item => createCardHtml(item)).join('')}
+          </div>
+        `;
+
+        statusCodesContainer.appendChild(section);
+      });
+
+      if (totalVisible === 0) {
+        statusCodesContainer.innerHTML = `
+          <div style="text-align:center; padding:3rem 1rem; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-md);">
+            <div style="font-size:1.5rem; margin-bottom:0.5rem;">🔍 No matching status codes</div>
+            <div style="font-size:0.875rem;">No codes matched "${escapeHtml(query)}". Try searching for "404", "auth", "cache", or "timeout".</div>
+          </div>
+        `;
+      }
+
+      attachCardListeners();
+    }
+
+    function createCardHtml(item) {
+      const headersHtml = item.headers.length > 0
+        ? `<div class="detail-block"><div class="detail-label">Associated Headers</div><div class="detail-tags-list">${item.headers.map(h => `<span class="header-pill">${escapeHtml(h)}</span>`).join('')}</div></div>`
+        : '';
+
+      const causesHtml = item.causes.length > 0
+        ? `<div class="detail-block"><div class="detail-label">Common Real-World Causes</div><ul style="padding-left:1.15rem; line-height:1.5;">${item.causes.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul></div>`
+        : '';
+
+      return `
+        <div class="code-card" id="code-${item.code}">
+          <div class="code-card-header" data-code="${item.code}">
+            <div class="code-title-left">
+              <span class="code-badge cat-${item.cat}">${item.code}</span>
+              <span class="code-name">${escapeHtml(item.name)}</span>
+            </div>
+            <div class="code-meta-badges">
+              <span class="spec-tag">${escapeHtml(item.spec)}</span>
+              <span style="font-size:0.75rem; color:var(--muted);">▼</span>
+            </div>
+          </div>
+          <div class="code-card-body" style="display:${allExpanded ? 'flex' : 'none'};">
+            <div class="code-desc">${escapeHtml(item.desc)}</div>
+            ${causesHtml}
+            ${headersHtml}
+            <div class="op-flags-row">
+              <span class="op-flag">📦 <strong>Cacheable:</strong> ${escapeHtml(item.cacheable)}</span>
+              <span class="op-flag">🔄 <strong>Retryable:</strong> ${escapeHtml(item.retryable)}</span>
+            </div>
+            <div class="card-actions-row">
+              <button class="btn btn--sm btn-copy-card" data-code="${item.code}">📋 Copy Details</button>
+              <button class="btn btn--sm btn-share-link" data-code="${item.code}">🔗 Direct Link</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function attachCardListeners() {
+      // Toggle card expansion
+      document.querySelectorAll('.code-card-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const body = header.nextElementSibling;
+          const isHidden = body.style.display === 'none';
+          body.style.display = isHidden ? 'flex' : 'none';
+        });
+      });
+
+      // Copy Details button
+      document.querySelectorAll('.btn-copy-card').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const codeNum = parseInt(btn.dataset.code, 10);
+          const item = STATUS_DATA.find(d => d.code === codeNum);
+          if (!item) return;
+
+          const md = `**HTTP ${item.code} ${item.name}** (${item.spec})\n\n${item.desc}\n\n**Common Causes:**\n${item.causes.map(c => `- ${c}`).join('\n')}\n\n**Cacheable:** ${item.cacheable} | **Retryable:** ${item.retryable}`;
+          navigator.clipboard.writeText(md).then(() => showToast(`Copied details for HTTP ${item.code}!`));
+        });
+      });
+
+      // Direct Link button
+      document.querySelectorAll('.btn-share-link').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const codeNum = btn.dataset.code;
+          const url = `${window.location.origin}${window.location.pathname}#${codeNum}`;
+          navigator.clipboard.writeText(url).then(() => {
+            window.location.hash = codeNum;
+            showToast(`Copied direct link to #${codeNum}`);
+          });
+        });
+      });
+    }
+
+    function scrollToAndHighlight(code) {
+      searchInput.value = '';
+      currentFilter = 'all';
+      categoryPills.querySelectorAll('.filter-pill').forEach(p => p.classList.toggle('active', p.dataset.cat === 'all'));
+      renderCodes();
+
+      setTimeout(() => {
+        const card = document.getElementById(`code-${code}`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const body = card.querySelector('.code-card-body');
+          if (body) body.style.display = 'flex';
+          card.classList.add('highlighted');
+          setTimeout(() => card.classList.remove('highlighted'), 2500);
+        } else {
+          showToast(`Status code ${code} not found`);
+        }
+      }, 50);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Load from URL Hash (e.g. #404)
+    window.addEventListener('hashchange', checkHash);
+    function checkHash() {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && /^\d{3}$/.test(hash)) {
+        scrollToAndHighlight(hash);
+      }
+    }
+
+    // Initialize
+    renderCodes();
+    checkHash();
+  </script>
+</body>
+</html>

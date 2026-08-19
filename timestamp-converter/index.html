@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unix Timestamp Converter — Free Epoch Time &amp; Date Tool | sayandeep.dev</title>
+  <meta name="description" content="Convert between Unix timestamps and human-readable dates with auto unit detection (seconds, ms, microseconds, ns), live current epoch ticker, multi-timezone comparisons, batch mode, and date math." />
+  <meta name="keywords" content="unix timestamp converter, epoch converter, timestamp to date, date to timestamp, unix time, epoch time, epoch seconds, batch timestamp converter, year 2038" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/timestamp-converter/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Right Now Live Ticker Card */
+    .ticker-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.15rem 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .ticker-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .ticker-val-sec {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    .ticker-val-ms {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* Workspace Grid */
+    .converter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .converter-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      padding: 0.75rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-select, .form-input, .form-textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+      width: 100%;
+    }
+
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .form-textarea {
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.5;
+      resize: vertical;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    /* Unit Pill Group */
+    .pill-group {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.2rem;
+      border-radius: var(--radius-sm);
+      gap: 0.2rem;
+    }
+
+    .pill-btn {
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all var(--transition);
+    }
+
+    .pill-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Outputs Table / List */
+    .output-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      transition: all var(--transition);
+    }
+
+    .output-row:hover {
+      border-color: var(--accent);
+    }
+
+    .output-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      min-width: 140px;
+    }
+
+    .output-val {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* Tabs Bar */
+    .feature-tabs {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+      margin-bottom: 1.25rem;
+      display: inline-flex;
+    }
+
+    .feature-tab {
+      padding: 0.5rem 1.15rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .feature-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Batch Table */
+    .batch-table-wrap {
+      overflow-x: auto;
+      max-height: 320px;
+    }
+
+    .batch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    .batch-table th {
+      background: var(--surface-alt);
+      padding: 0.55rem 0.85rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+    }
+
+    .batch-table td {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Unix Timestamp Converter</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Live "Right Now" Ticker Banner -->
+      <div class="ticker-card">
+        <div class="ticker-left">
+          <div class="pulse-dot" title="Live clock ticking"></div>
+          <div>
+            <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Current Unix Timestamp (Epoch)</div>
+            <div style="display:flex; align-items:baseline; gap:0.75rem; flex-wrap:wrap; margin-top:0.15rem;">
+              <span id="ticker-seconds" class="ticker-val-sec">1787124128</span>
+              <span class="ticker-val-ms">.<span id="ticker-millis">500</span> ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          <button id="btn-copy-ticker-sec" class="btn btn--sm">Copy Seconds</button>
+          <button id="btn-copy-ticker-ms" class="btn btn--sm">Copy Millis</button>
+          <button id="btn-load-now" class="btn btn--primary btn--sm">Load in Converter ↓</button>
+        </div>
+      </div>
+
+      <!-- Two-Way Converter Grid -->
+      <div class="converter-grid">
+        <!-- Column 1: Timestamp to Date -->
+        <div class="card">
+          <div class="card-header">
+            <span>Timestamp → Human Date</span>
+            <div class="pill-group" id="unit-pill-group">
+              <button class="pill-btn active" data-unit="auto">Auto</button>
+              <button class="pill-btn" data-unit="s">Sec (s)</button>
+              <button class="pill-btn" data-unit="ms">Millis (ms)</button>
+              <button class="pill-btn" data-unit="us">Micro (μs)</button>
+              <button class="pill-btn" data-unit="ns">Nano (ns)</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div>
+              <label for="input-timestamp" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; display:flex; justify-content:space-between;">
+                <span>Enter Unix Timestamp:</span>
+                <span id="detected-unit-badge" style="color:var(--accent); font-weight:600;">10 digits (Seconds)</span>
+              </label>
+              <input type="text" id="input-timestamp" class="form-input" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:600; margin-top:0.35rem;" placeholder="e.g. 1787124128" value="1787124128" spellcheck="false" />
+            </div>
+
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button id="btn-quick-now" class="btn btn--sm">Now</button>
+              <button id="btn-quick-minus-1h" class="btn btn--sm">-1 Hour</button>
+              <button id="btn-quick-plus-1h" class="btn btn--sm">+1 Hour</button>
+              <button id="btn-quick-plus-1d" class="btn btn--sm">+1 Day</button>
+              <button id="btn-quick-y2k38" class="btn btn--sm" title="2038-01-19 03:14:07 UTC">Y2K38 (32-bit max)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Date to Timestamp -->
+        <div class="card">
+          <div class="card-header">
+            <span>Human Date → Timestamp</span>
+            <button id="btn-copy-date-sec" class="btn btn--sm">Copy Epoch Sec</button>
+          </div>
+          <div class="card-body">
+            <div>
+              <label for="input-date-picker" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Select Date &amp; Time (Local):</label>
+              <input type="datetime-local" id="input-date-picker" class="form-input" style="margin-top:0.35rem; font-size:0.95rem;" />
+            </div>
+
+            <div>
+              <label for="input-date-text" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Or Type Any Standard Date String:</label>
+              <input type="text" id="input-date-text" class="form-input" style="margin-top:0.35rem; font-family:'JetBrains Mono',monospace;" placeholder="e.g. 2026-08-19 14:30:00 or Aug 19, 2026" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formatted Output Displays -->
+      <div class="card" style="margin-bottom:1.25rem;">
+        <div class="card-header">
+          <span>Converted Formats &amp; Timezone Comparison</span>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <label for="tz-select" style="font-size:0.75rem; color:var(--muted); font-weight:600;">Custom Timezone:</label>
+            <select id="tz-select" class="form-select" style="font-size:0.75rem; padding:0.2rem 0.5rem; min-width:180px;">
+              <option value="UTC">UTC (Universal Coordinated Time)</option>
+              <option value="America/New_York">New York (EST/EDT)</option>
+              <option value="America/Los_Angeles">Los Angeles (PST/PDT)</option>
+              <option value="America/Chicago">Chicago (CST/CDT)</option>
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Europe/Paris">Paris / Berlin (CET/CEST)</option>
+              <option value="Asia/Kolkata">India (IST)</option>
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Asia/Dubai">Dubai (GST)</option>
+              <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+            </select>
+            <button id="btn-copy-share-url" class="btn btn--sm">🔗 Share Link</button>
+          </div>
+        </div>
+
+        <div class="card-body" style="gap:0.6rem;">
+          <!-- Format Rows -->
+          <div class="output-row">
+            <span class="output-label">ISO 8601 (UTC)</span>
+            <span id="out-iso" class="output-val">2026-08-19T09:52:08.000Z</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-iso">Copy</button>
+          </div>
+
+          <div class="output-row">
+            <span class="output-label">RFC 2822 / HTTP</span>
+            <span id="out-rfc" class="output-val">Wed, 19 Aug 2026 09:52:08 GMT</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-rfc">Copy</button>
+          </div>
+
+          <div class="output-row">
+            <span class="output-label">Local Browser Time</span>
+            <span id="out-local" class="output-val">Wednesday, August 19, 2026, 3:22:08 PM</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-local">Copy</button>
+          </div>
+
+          <div class="output-row">
+            <span class="output-label" id="out-tz-label">Custom Timezone</span>
+            <span id="out-tz" class="output-val">Wednesday, August 19, 2026, 9:52:08 AM</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-tz">Copy</button>
+          </div>
+
+          <div class="output-row">
+            <span class="output-label">Relative / Human</span>
+            <span id="out-relative" class="output-val" style="color:var(--accent); font-weight:700;">just now</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-relative">Copy</button>
+          </div>
+
+          <div class="output-row">
+            <span class="output-label">Unix Seconds &amp; MS</span>
+            <span id="out-seconds-ms" class="output-val">1787124128 (Sec) · 1787124128000 (ms)</span>
+            <button class="btn btn--sm btn-copy-row" data-target="out-seconds-ms">Copy</button>
+          </div>
+
+          <div style="font-size:0.75rem; color:var(--muted); line-height:1.45; margin-top:0.4rem;">
+            💡 <em>Note: Unix timestamps are timezone-agnostic (pure seconds elapsed since January 1, 1970 00:00:00 UTC). Only the human calendar presentation is localized.</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Tabs (Batch Mode, Date Math, Reference) -->
+      <div class="feature-tabs">
+        <button id="tab-btn-batch" class="feature-tab active" data-tab="batch">
+          <span>📋 Batch Converter</span>
+        </button>
+        <button id="tab-btn-math" class="feature-tab" data-tab="math">
+          <span>➕ Date Math &amp; TTL</span>
+        </button>
+        <button id="tab-btn-ref" class="feature-tab" data-tab="ref">
+          <span>📖 Epoch &amp; Y2K38 Reference</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: Batch Mode -->
+      <div id="view-batch" class="card">
+        <div class="card-header">
+          <span>Batch Timestamp Converter (Multi-Line)</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button id="btn-batch-sample" class="btn btn--sm">Load Sample</button>
+            <button id="btn-batch-copy-csv" class="btn btn--sm">Export CSV</button>
+            <button id="btn-batch-clear" class="btn btn--sm">Clear</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <textarea id="batch-input" class="form-textarea" rows="4" placeholder="Paste multiple timestamps (one per line, seconds or millis)...&#10;1787124128&#10;1787124128000&#10;1787127728&#10;2147483647" spellcheck="false"></textarea>
+
+          <div class="batch-table-wrap">
+            <table class="batch-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Raw Timestamp</th>
+                  <th>Detected Unit</th>
+                  <th>Local Date &amp; Time</th>
+                  <th>ISO 8601 (UTC)</th>
+                  <th>Relative</th>
+                </tr>
+              </thead>
+              <tbody id="batch-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Date Math & TTL -->
+      <div id="view-math" class="card" style="display:none;">
+        <div class="card-header">
+          <span>Date Math &amp; Expiration Calculator</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <span style="font-size:0.8125rem; font-weight:600;">Take:</span>
+            <select id="math-base-select" class="form-select" style="width:160px;">
+              <option value="now" selected>Current Moment (Now)</option>
+              <option value="current_ts">Active Converter Timestamp</option>
+            </select>
+
+            <select id="math-op-select" class="form-select" style="width:100px;">
+              <option value="add" selected>Add (+)</option>
+              <option value="sub">Subtract (-)</option>
+            </select>
+
+            <input type="number" id="math-amount" class="form-input" value="7" min="1" style="width:80px;" />
+
+            <select id="math-unit-select" class="form-select" style="width:120px;">
+              <option value="days" selected>Days</option>
+              <option value="hours">Hours</option>
+              <option value="minutes">Minutes</option>
+              <option value="seconds">Seconds</option>
+            </select>
+          </div>
+
+          <div style="background:var(--surface-alt); border:1px solid var(--line); border-radius:var(--radius-sm); padding:1rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Calculated Result:</div>
+            <div style="display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap;">
+              <span id="math-res-sec" style="font-family:'JetBrains Mono',monospace; font-size:1.3rem; font-weight:700; color:var(--accent);">1787728928</span>
+              <span id="math-res-date" style="font-size:0.95rem; font-weight:600; color:var(--text);">Wed, Aug 26, 2026 3:22:08 PM</span>
+            </div>
+            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+              <button id="btn-math-copy" class="btn btn--sm">Copy Timestamp</button>
+              <button id="btn-math-apply" class="btn btn--sm">Load into Converter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Epoch & Y2K38 Reference -->
+      <div id="view-ref" class="card" style="display:none;">
+        <div class="card-header">
+          <span>Unix Epoch &amp; Year 2038 Reference</span>
+        </div>
+        <div class="card-body" style="font-size:0.8125rem; line-height:1.6; gap:0.85rem;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem;">
+            <div style="background:var(--surface-alt); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+              <div style="font-weight:700; color:var(--accent); margin-bottom:0.25rem;">Unix Epoch (0)</div>
+              <div>Thursday, January 1, 1970 00:00:00 UTC. The universal baseline for POSIX time.</div>
+            </div>
+            <div style="background:var(--surface-alt); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+              <div style="font-weight:700; color:var(--error); margin-bottom:0.25rem;">Year 2038 Problem (2,147,483,647)</div>
+              <div>Tuesday, January 19, 2038 03:14:07 UTC. 32-bit signed integers overflow back to 1901. Modern 64-bit systems are safe for ~292 billion years.</div>
+            </div>
+            <div style="background:var(--surface-alt); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+              <div style="font-weight:700; color:var(--success); margin-bottom:0.25rem;">Unit Digit Length Guide</div>
+              <div>• 10 Digits = Seconds<br/>• 13 Digits = Milliseconds (JS Date default)<br/>• 16 Digits = Microseconds (Python/C++)<br/>• 19 Digits = Nanoseconds (Go/Rust/Linux)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../cron-tester/">Cron Tester</a>
+        <a href="../cron-builder/">Cron Builder</a>
+        <a href="../regex-generator/">Regex Generator</a>
+        <a href="../hash-generator/">Hash Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State Model
+    let selectedUnit = 'auto'; // 'auto' | 's' | 'ms' | 'us' | 'ns'
+    let activeDate = new Date();
+
+    // DOM Elements
+    const tickerSeconds = document.getElementById('ticker-seconds');
+    const tickerMillis = document.getElementById('ticker-millis');
+    const btnCopyTickerSec = document.getElementById('btn-copy-ticker-sec');
+    const btnCopyTickerMs = document.getElementById('btn-copy-ticker-ms');
+    const btnLoadNow = document.getElementById('btn-load-now');
+
+    const inputTimestamp = document.getElementById('input-timestamp');
+    const detectedUnitBadge = document.getElementById('detected-unit-badge');
+    const unitPillGroup = document.getElementById('unit-pill-group');
+
+    const inputDatePicker = document.getElementById('input-date-picker');
+    const inputDateText = document.getElementById('input-date-text');
+    const btnCopyDateSec = document.getElementById('btn-copy-date-sec');
+
+    const tzSelect = document.getElementById('tz-select');
+    const outIso = document.getElementById('out-iso');
+    const outRfc = document.getElementById('out-rfc');
+    const outLocal = document.getElementById('out-local');
+    const outTzLabel = document.getElementById('out-tz-label');
+    const outTz = document.getElementById('out-tz');
+    const outRelative = document.getElementById('out-relative');
+    const outSecondsMs = document.getElementById('out-seconds-ms');
+    const btnCopyShareUrl = document.getElementById('btn-copy-share-url');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Live "Right Now" Ticker Engine
+    function updateTicker() {
+      const now = new Date();
+      const ms = now.getTime();
+      const sec = Math.floor(ms / 1000);
+      const remMs = ms % 1000;
+
+      tickerSeconds.textContent = sec;
+      tickerMillis.textContent = (remMs < 100 ? (remMs < 10 ? '00' : '0') : '') + remMs;
+    }
+    setInterval(updateTicker, 100);
+    updateTicker();
+
+    btnCopyTickerSec.addEventListener('click', () => {
+      navigator.clipboard.writeText(tickerSeconds.textContent).then(() => showToast('Copied current seconds!'));
+    });
+
+    btnCopyTickerMs.addEventListener('click', () => {
+      const fullMs = `${tickerSeconds.textContent}${tickerMillis.textContent}`;
+      navigator.clipboard.writeText(fullMs).then(() => showToast('Copied current milliseconds!'));
+    });
+
+    btnLoadNow.addEventListener('click', () => {
+      activeDate = new Date();
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+      showToast('Loaded current moment into converter');
+    });
+
+    // Unit Pills
+    unitPillGroup.querySelectorAll('.pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        unitPillGroup.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedUnit = btn.dataset.unit;
+        convertFromTimestamp();
+      });
+    });
+
+    // Timestamp Input Handler
+    inputTimestamp.addEventListener('input', convertFromTimestamp);
+
+    function convertFromTimestamp() {
+      const raw = inputTimestamp.value.trim();
+      if (!raw) return;
+
+      const num = Number(raw);
+      if (isNaN(num)) {
+        detectedUnitBadge.textContent = 'Invalid numeric timestamp';
+        detectedUnitBadge.style.color = 'var(--error)';
+        return;
+      }
+
+      detectedUnitBadge.style.color = 'var(--accent)';
+      let epochMs = 0;
+      let unit = selectedUnit;
+
+      if (unit === 'auto') {
+        const len = raw.replace(/^-/, '').length;
+        if (len >= 18) unit = 'ns';
+        else if (len >= 15) unit = 'us';
+        else if (len >= 12) unit = 'ms';
+        else unit = 's';
+      }
+
+      if (unit === 's') {
+        epochMs = num * 1000;
+        detectedUnitBadge.textContent = `${raw.length} digits (Seconds)`;
+      } else if (unit === 'ms') {
+        epochMs = num;
+        detectedUnitBadge.textContent = `${raw.length} digits (Milliseconds)`;
+      } else if (unit === 'us') {
+        epochMs = Math.round(num / 1000);
+        detectedUnitBadge.textContent = `${raw.length} digits (Microseconds)`;
+      } else if (unit === 'ns') {
+        epochMs = Math.round(num / 1000000);
+        detectedUnitBadge.textContent = `${raw.length} digits (Nanoseconds)`;
+      }
+
+      activeDate = new Date(epochMs);
+      updateOutputs(false); // Don't overwrite timestamp input
+    }
+
+    // Date Inputs Handlers
+    inputDatePicker.addEventListener('input', () => {
+      if (!inputDatePicker.value) return;
+      activeDate = new Date(inputDatePicker.value);
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs(true, false);
+    });
+
+    inputDateText.addEventListener('input', () => {
+      const val = inputDateText.value.trim();
+      if (!val) return;
+      const parsed = new Date(val);
+      if (!isNaN(parsed.getTime())) {
+        activeDate = parsed;
+        inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+        updateOutputs(true, true);
+      }
+    });
+
+    // Quick Buttons
+    document.getElementById('btn-quick-now')?.addEventListener('click', () => {
+      activeDate = new Date();
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+    });
+
+    document.getElementById('btn-quick-minus-1h')?.addEventListener('click', () => {
+      activeDate = new Date(activeDate.getTime() - 3600 * 1000);
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+    });
+
+    document.getElementById('btn-quick-plus-1h')?.addEventListener('click', () => {
+      activeDate = new Date(activeDate.getTime() + 3600 * 1000);
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+    });
+
+    document.getElementById('btn-quick-plus-1d')?.addEventListener('click', () => {
+      activeDate = new Date(activeDate.getTime() + 86400 * 1000);
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+    });
+
+    document.getElementById('btn-quick-y2k38')?.addEventListener('click', () => {
+      inputTimestamp.value = '2147483647';
+      convertFromTimestamp();
+    });
+
+    // Synchronize All Outputs
+    function updateOutputs(syncDatePicker = true, syncDateText = true) {
+      if (isNaN(activeDate.getTime())) {
+        outIso.textContent = 'Invalid Date';
+        outRfc.textContent = 'Invalid Date';
+        outLocal.textContent = 'Invalid Date';
+        outTz.textContent = 'Invalid Date';
+        outRelative.textContent = 'Invalid Date';
+        outSecondsMs.textContent = 'Invalid Date';
+        return;
+      }
+
+      const epochSec = Math.floor(activeDate.getTime() / 1000);
+      const epochMs = activeDate.getTime();
+
+      // Format ISO
+      outIso.textContent = activeDate.toISOString();
+
+      // Format RFC 2822
+      outRfc.textContent = activeDate.toUTCString();
+
+      // Format Local
+      const localOptions = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      };
+      outLocal.textContent = new Intl.DateTimeFormat('en-US', localOptions).format(activeDate);
+
+      // Custom Timezone
+      const tz = tzSelect.value;
+      outTzLabel.textContent = `${tzSelect.options[tzSelect.selectedIndex].text}`;
+      const tzOptions = { ...localOptions, timeZone: tz };
+      outTz.textContent = new Intl.DateTimeFormat('en-US', tzOptions).format(activeDate);
+
+      // Relative Format
+      outRelative.textContent = getRelativeTime(activeDate);
+
+      // Seconds and Milliseconds
+      outSecondsMs.textContent = `${epochSec} (Sec) · ${epochMs} (ms)`;
+
+      // Sync Pickers
+      if (syncDatePicker) {
+        const pad = n => (n < 10 ? '0' : '') + n;
+        inputDatePicker.value = `${activeDate.getFullYear()}-${pad(activeDate.getMonth() + 1)}-${pad(activeDate.getDate())}T${pad(activeDate.getHours())}:${pad(activeDate.getMinutes())}`;
+      }
+
+      if (syncDateText) {
+        inputDateText.value = activeDate.toISOString().replace('T', ' ').substring(0, 19);
+      }
+
+      updateDateMathResult();
+    }
+
+    function getRelativeTime(date) {
+      const diffSec = Math.round((date - new Date()) / 1000);
+      const absSec = Math.abs(diffSec);
+
+      if (absSec < 30) return 'just now';
+
+      const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+      if (absSec < 3600) return rtf.format(Math.round(diffSec / 60), 'minute');
+      if (absSec < 86400) return rtf.format(Math.round(diffSec / 3600), 'hour');
+      if (absSec < 2592000) return rtf.format(Math.round(diffSec / 86400), 'day');
+      if (absSec < 31536000) return rtf.format(Math.round(diffSec / 2592000), 'month');
+      return rtf.format(Math.round(diffSec / 31536000), 'year');
+    }
+
+    tzSelect.addEventListener('change', () => updateOutputs(false, false));
+
+    // Copy Row Buttons
+    document.querySelectorAll('.btn-copy-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const text = document.getElementById(targetId)?.textContent || '';
+        navigator.clipboard.writeText(text).then(() => showToast(`Copied ${text}`));
+      });
+    });
+
+    btnCopyDateSec.addEventListener('click', () => {
+      const sec = Math.floor(activeDate.getTime() / 1000);
+      navigator.clipboard.writeText(String(sec)).then(() => showToast(`Copied ${sec}`));
+    });
+
+    btnCopyShareUrl.addEventListener('click', () => {
+      const sec = Math.floor(activeDate.getTime() / 1000);
+      const params = new URLSearchParams();
+      params.set('t', sec);
+      params.set('unit', selectedUnit);
+      params.set('tz', tzSelect.value);
+      const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+      navigator.clipboard.writeText(url).then(() => showToast('Share link copied to clipboard!'));
+    });
+
+    // --- FEATURE TABS ---
+    const tabBtnBatch = document.getElementById('tab-btn-batch');
+    const tabBtnMath = document.getElementById('tab-btn-math');
+    const tabBtnRef = document.getElementById('tab-btn-ref');
+
+    const viewBatch = document.getElementById('view-batch');
+    const viewMath = document.getElementById('view-math');
+    const viewRef = document.getElementById('view-ref');
+
+    function switchFeatureTab(tab) {
+      [tabBtnBatch, tabBtnMath, tabBtnRef].forEach(b => b.classList.remove('active'));
+      [viewBatch, viewMath, viewRef].forEach(v => v.style.display = 'none');
+
+      if (tab === 'batch') { tabBtnBatch.classList.add('active'); viewBatch.style.display = 'flex'; runBatchConvert(); }
+      if (tab === 'math') { tabBtnMath.classList.add('active'); viewMath.style.display = 'flex'; updateDateMathResult(); }
+      if (tab === 'ref') { tabBtnRef.classList.add('active'); viewRef.style.display = 'flex'; }
+    }
+
+    tabBtnBatch.addEventListener('click', () => switchFeatureTab('batch'));
+    tabBtnMath.addEventListener('click', () => switchFeatureTab('math'));
+    tabBtnRef.addEventListener('click', () => switchFeatureTab('ref'));
+
+    // --- TAB 1: BATCH CONVERT ---
+    const batchInput = document.getElementById('batch-input');
+    const batchTableBody = document.getElementById('batch-table-body');
+    const btnBatchSample = document.getElementById('btn-batch-sample');
+    const btnBatchCopyCsv = document.getElementById('btn-batch-copy-csv');
+    const btnBatchClear = document.getElementById('btn-batch-clear');
+
+    batchInput.addEventListener('input', runBatchConvert);
+
+    function runBatchConvert() {
+      batchTableBody.innerHTML = '';
+      const lines = batchInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) {
+        batchTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1rem; color:var(--muted);">No timestamps entered. Paste multiple timestamps above.</td></tr>`;
+        return;
+      }
+
+      lines.forEach((line, idx) => {
+        const num = Number(line);
+        if (isNaN(num)) {
+          batchTableBody.innerHTML += `<tr><td>${idx + 1}</td><td>${escapeHtml(line)}</td><td colspan="4" style="color:var(--error);">Invalid Numeric Value</td></tr>`;
+          return;
+        }
+
+        let unit = 'Seconds';
+        let ms = num * 1000;
+        const len = line.replace(/^-/, '').length;
+        if (len >= 18) { unit = 'Nanoseconds'; ms = Math.round(num / 1000000); }
+        else if (len >= 15) { unit = 'Microseconds'; ms = Math.round(num / 1000); }
+        else if (len >= 12) { unit = 'Milliseconds'; ms = num; }
+
+        const d = new Date(ms);
+        const iso = isNaN(d.getTime()) ? 'Invalid' : d.toISOString();
+        const local = isNaN(d.getTime()) ? 'Invalid' : d.toLocaleString();
+        const rel = isNaN(d.getTime()) ? 'Invalid' : getRelativeTime(d);
+
+        batchTableBody.innerHTML += `
+          <tr>
+            <td style="color:var(--muted);">${idx + 1}</td>
+            <td><strong>${escapeHtml(line)}</strong></td>
+            <td><span style="font-size:0.75rem; color:var(--accent); font-weight:600;">${unit}</span></td>
+            <td>${escapeHtml(local)}</td>
+            <td>${escapeHtml(iso)}</td>
+            <td>${escapeHtml(rel)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    btnBatchSample.addEventListener('click', () => {
+      const nowSec = Math.floor(Date.now() / 1000);
+      batchInput.value = `${nowSec}\n${nowSec * 1000}\n${nowSec - 86400}\n${nowSec + 604800}\n2147483647`;
+      runBatchConvert();
+      showToast('Loaded sample timestamps');
+    });
+
+    btnBatchClear.addEventListener('click', () => {
+      batchInput.value = '';
+      runBatchConvert();
+    });
+
+    btnBatchCopyCsv.addEventListener('click', () => {
+      const rows = Array.from(batchTableBody.querySelectorAll('tr')).map(r => {
+        return Array.from(r.querySelectorAll('td')).map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(',');
+      });
+      const csv = `"Index","Raw Timestamp","Unit","Local Time","ISO UTC","Relative"\n${rows.join('\n')}`;
+      navigator.clipboard.writeText(csv).then(() => showToast('Batch table copied as CSV!'));
+    });
+
+    // --- TAB 2: DATE MATH ---
+    const mathBaseSelect = document.getElementById('math-base-select');
+    const mathOpSelect = document.getElementById('math-op-select');
+    const mathAmount = document.getElementById('math-amount');
+    const mathUnitSelect = document.getElementById('math-unit-select');
+    const mathResSec = document.getElementById('math-res-sec');
+    const mathResDate = document.getElementById('math-res-date');
+    const btnMathCopy = document.getElementById('btn-math-copy');
+    const btnMathApply = document.getElementById('btn-math-apply');
+
+    [mathBaseSelect, mathOpSelect, mathAmount, mathUnitSelect].forEach(el => {
+      el.addEventListener('input', updateDateMathResult);
+    });
+
+    let currentMathDate = new Date();
+
+    function updateDateMathResult() {
+      const baseMode = mathBaseSelect.value;
+      let baseMs = baseMode === 'now' ? Date.now() : activeDate.getTime();
+      const op = mathOpSelect.value; // 'add' | 'sub'
+      const amt = parseInt(mathAmount.value, 10) || 0;
+      const unit = mathUnitSelect.value;
+
+      let multiplierMs = 1000;
+      if (unit === 'minutes') multiplierMs = 60 * 1000;
+      if (unit === 'hours') multiplierMs = 3600 * 1000;
+      if (unit === 'days') multiplierMs = 86400 * 1000;
+
+      const deltaMs = amt * multiplierMs;
+      const targetMs = op === 'add' ? baseMs + deltaMs : baseMs - deltaMs;
+
+      currentMathDate = new Date(targetMs);
+      const sec = Math.floor(targetMs / 1000);
+
+      mathResSec.textContent = sec;
+      mathResDate.textContent = currentMathDate.toLocaleString();
+    }
+
+    btnMathCopy.addEventListener('click', () => {
+      navigator.clipboard.writeText(mathResSec.textContent).then(() => showToast(`Copied ${mathResSec.textContent}`));
+    });
+
+    btnMathApply.addEventListener('click', () => {
+      activeDate = new Date(currentMathDate);
+      inputTimestamp.value = Math.floor(activeDate.getTime() / 1000);
+      updateOutputs();
+      showToast('Loaded math result into converter');
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Load from URL Params
+    (function loadFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('t')) inputTimestamp.value = params.get('t');
+      if (params.has('unit')) {
+        selectedUnit = params.get('unit');
+        unitPillGroup.querySelectorAll('.pill-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.unit === selectedUnit);
+        });
+      }
+      if (params.has('tz')) tzSelect.value = params.get('tz');
+    })();
+
+    // Initial Run
+    convertFromTimestamp();
+    runBatchConvert();
+  </script>
+</body>
+</html>

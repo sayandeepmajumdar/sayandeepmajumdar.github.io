@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XML to JSON & JSON to XML Converter — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Convert XML to JSON and JSON to XML instantly in your browser. Configurable conventions for attributes (@ vs _attributes), #text, namespaces, repeated sibling arrays, and CDATA. 100% private." />
+  <meta name="keywords" content="xml to json, json to xml, convert xml to json, xml converter, json to xml converter, soap to json, xml domparser converter" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/xml-to-json/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔄</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode Tabs & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Config / Options Panel */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.15rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-input {
+      cursor: text;
+      width: 100px;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-container {
+      display: flex;
+      flex: 1;
+      min-height: 580px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .pane-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Resizer Divider */
+    .resizer {
+      width: 8px;
+      background: var(--line);
+      cursor: col-resize;
+      user-select: none;
+      transition: background var(--transition);
+    }
+
+    .resizer:hover, .resizer.dragging {
+      background: var(--accent);
+    }
+
+    /* Editor View */
+    .editor-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .gutter {
+      padding: 0.75rem 0.5rem;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      text-align: right;
+      user-select: none;
+      min-width: 48px;
+      font-size: 0.75rem;
+      overflow: hidden;
+    }
+
+    .gutter-num {
+      height: 1.55em;
+    }
+
+    .gutter-num.error-line {
+      color: var(--error);
+      font-weight: 700;
+      background: var(--error-bg);
+      border-radius: 2px;
+    }
+
+    .code-textarea {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 2;
+    }
+
+    /* Output Pre */
+    .code-output {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: var(--text);
+      overflow: auto;
+      white-space: pre;
+      background: var(--surface);
+    }
+
+    /* Drag Overlay */
+    .drag-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--accent-light);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--accent);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .drag-overlay.active {
+      display: flex;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        min-height: 800px;
+      }
+      .resizer {
+        width: 100%;
+        height: 8px;
+        cursor: row-resize;
+      }
+      .pane {
+        min-height: 350px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">XML ⮂ JSON Converter</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Mode Switcher & Privacy -->
+      <div class="top-bar">
+        <div class="mode-tabs">
+          <button id="tab-xml2json" class="mode-tab active">
+            <span>📜 XML ➔ 📦 JSON</span>
+          </button>
+          <button id="tab-json2xml" class="mode-tab">
+            <span>📦 JSON ➔ 📜 XML</span>
+          </button>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. No data leaves your machine.</span>
+        </div>
+      </div>
+
+      <!-- Config Controls Bar (XML -> JSON) -->
+      <div id="config-xml2json" class="config-card">
+        <div class="config-group">
+          <div class="config-item">
+            <label for="attr-mode">Attributes:</label>
+            <select id="attr-mode" class="form-select" title="Prefix attributes with @ or nest in _attributes">
+              <option value="at">Prefix with @ (@id)</option>
+              <option value="nested">Nest in _attributes</option>
+            </select>
+          </div>
+
+          <div class="config-item">
+            <label for="text-key">Text Key:</label>
+            <select id="text-key" class="form-select" title="Property name for text nodes when attributes are present">
+              <option value="#text">#text</option>
+              <option value="_text">_text</option>
+              <option value="value">value</option>
+            </select>
+          </div>
+
+          <label class="toggle-label" title="Strip namespace prefixes (e.g. soap:Envelope -> Envelope)">
+            <input type="checkbox" id="strip-ns-toggle" />
+            <span>Strip Namespaces</span>
+          </label>
+
+          <label class="toggle-label" title="Auto-detect numbers and booleans instead of string values">
+            <input type="checkbox" id="auto-type-toggle" checked />
+            <span>Auto-Detect Types</span>
+          </label>
+
+          <label class="toggle-label" title="Wrap CDATA in distinct #cdata property">
+            <input type="checkbox" id="cdata-toggle" />
+            <span>#cdata Wrapper</span>
+          </label>
+
+          <div class="config-item">
+            <label for="json-indent">Indent:</label>
+            <select id="json-indent" class="form-select">
+              <option value="2">2 Spaces</option>
+              <option value="4">4 Spaces</option>
+              <option value="tab">Tab</option>
+              <option value="0">Minified</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <button id="btn-sample-xml" class="btn" title="Load sample XML dataset">Sample XML</button>
+          <input type="file" id="file-input-xml" accept=".xml, .rss, .svg, .txt" style="display:none;" />
+          <button id="btn-upload-xml" class="btn" title="Upload XML file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload</span>
+          </button>
+          <button id="btn-clear-xml" class="btn btn--danger" title="Clear input">Clear</button>
+        </div>
+      </div>
+
+      <!-- Config Controls Bar (JSON -> XML) -->
+      <div id="config-json2xml" class="config-card" style="display:none;">
+        <div class="config-group">
+          <div class="config-item">
+            <label for="root-tag-input">Root Element:</label>
+            <input type="text" id="root-tag-input" class="form-input" value="root" placeholder="root" />
+          </div>
+
+          <div class="config-item">
+            <label for="xml-indent">Indent:</label>
+            <select id="xml-indent" class="form-select">
+              <option value="2">2 Spaces</option>
+              <option value="4">4 Spaces</option>
+              <option value="tab">Tab</option>
+            </select>
+          </div>
+
+          <label class="toggle-label" title="Collapse empty tags to self-closing (&lt;tag/&gt;)">
+            <input type="checkbox" id="self-closing-xml-toggle" checked />
+            <span>Self-Closing Tags (&lt;tag/&gt;)</span>
+          </label>
+        </div>
+
+        <div class="config-group">
+          <button id="btn-sample-json" class="btn" title="Load sample JSON dataset">Sample JSON</button>
+          <input type="file" id="file-input-json" accept=".json, .txt" style="display:none;" />
+          <button id="btn-upload-json" class="btn" title="Upload JSON file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload</span>
+          </button>
+          <button id="btn-clear-json" class="btn btn--danger" title="Clear input">Clear</button>
+        </div>
+      </div>
+
+      <!-- Live Status Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span>Ready. Paste or drop your data to convert.</span>
+      </div>
+
+      <!-- Split Workspace -->
+      <div class="split-container" id="split-box">
+        <div class="drag-overlay" id="drag-overlay">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Drop file here to convert</span>
+        </div>
+
+        <!-- Left Pane: Input Editor -->
+        <div class="pane" id="pane-left">
+          <div class="pane-header">
+            <span id="input-title">Raw XML Input</span>
+            <span id="input-stats" style="color:var(--muted); font-size:0.75rem; font-family:'JetBrains Mono',monospace;">0 lines · 0 chars</span>
+          </div>
+
+          <div class="editor-wrapper">
+            <div class="gutter" id="editor-gutter">
+              <div class="gutter-num">1</div>
+            </div>
+            <textarea id="main-input" class="code-textarea" placeholder="Paste or type XML data here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Draggable Resizer Divider -->
+        <div class="resizer" id="split-resizer"></div>
+
+        <!-- Right Pane: Output -->
+        <div class="pane" id="pane-right">
+          <div class="pane-header">
+            <span id="output-title">Converted JSON Output</span>
+            <div class="pane-actions">
+              <button id="btn-copy" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy</button>
+              <button id="btn-download" class="btn btn--primary" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Download</button>
+            </div>
+          </div>
+
+          <pre class="code-output" id="output-view"></pre>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../xml-formatter/">XML Formatter</a>
+        <a href="../yaml-formatter/">YAML Formatter</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Application State
+    let currentMode = 'xml2json'; // 'xml2json' | 'json2xml'
+    let rawOutputData = '';
+    let debounceTimer = null;
+
+    // DOM Elements
+    const tabXml2Json = document.getElementById('tab-xml2json');
+    const tabJson2Xml = document.getElementById('tab-json2xml');
+    const configXml2Json = document.getElementById('config-xml2json');
+    const configJson2Xml = document.getElementById('config-json2xml');
+    const statusBanner = document.getElementById('status-banner');
+    const mainInput = document.getElementById('main-input');
+    const editorGutter = document.getElementById('editor-gutter');
+    const inputTitle = document.getElementById('input-title');
+    const inputStats = document.getElementById('input-stats');
+    const outputTitle = document.getElementById('output-title');
+    const outputView = document.getElementById('output-view');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnDownload = document.getElementById('btn-download');
+    const btnClearXml = document.getElementById('btn-clear-xml');
+    const btnClearJson = document.getElementById('btn-clear-json');
+    const btnSampleXml = document.getElementById('btn-sample-xml');
+    const btnSampleJson = document.getElementById('btn-sample-json');
+    const btnUploadXml = document.getElementById('btn-upload-xml');
+    const btnUploadJson = document.getElementById('btn-upload-json');
+    const fileInputXml = document.getElementById('file-input-xml');
+    const fileInputJson = document.getElementById('file-input-json');
+    const splitBox = document.getElementById('split-box');
+    const dragOverlay = document.getElementById('drag-overlay');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    // Config Elements
+    const attrMode = document.getElementById('attr-mode');
+    const textKey = document.getElementById('text-key');
+    const stripNsToggle = document.getElementById('strip-ns-toggle');
+    const autoTypeToggle = document.getElementById('auto-type-toggle');
+    const cdataToggle = document.getElementById('cdata-toggle');
+    const jsonIndent = document.getElementById('json-indent');
+    const rootTagInput = document.getElementById('root-tag-input');
+    const xmlIndent = document.getElementById('xml-indent');
+    const selfClosingXmlToggle = document.getElementById('self-closing-xml-toggle');
+
+    // Toast
+    function showToast(message) {
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Gutter & Stats
+    function updateGutter(errorLineNum = null) {
+      const lines = mainInput.value.split('\n');
+      const lineCount = Math.max(lines.length, 1);
+      let html = '';
+      for (let i = 1; i <= lineCount; i++) {
+        const isError = errorLineNum === i;
+        html += `<div class="gutter-num ${isError ? 'error-line' : ''}">${i}</div>`;
+      }
+      editorGutter.innerHTML = html;
+
+      const bytes = new Blob([mainInput.value]).size;
+      let sizeStr = bytes + ' B';
+      if (bytes > 1024 * 1024) sizeStr = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      else if (bytes > 1024) sizeStr = (bytes / 1024).toFixed(1) + ' KB';
+
+      inputStats.textContent = `${lineCount} lines · ${mainInput.value.length} chars · ${sizeStr}`;
+    }
+
+    mainInput.addEventListener('scroll', () => {
+      editorGutter.scrollTop = mainInput.scrollTop;
+    });
+
+    // Tab key support in textarea
+    mainInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = mainInput.selectionStart;
+        const end = mainInput.selectionEnd;
+        mainInput.value = mainInput.value.substring(0, start) + '  ' + mainInput.value.substring(end);
+        mainInput.selectionStart = mainInput.selectionEnd = start + 2;
+        triggerValidation();
+      }
+    });
+
+    // Switch Mode
+    tabXml2Json.addEventListener('click', () => setMode('xml2json'));
+    tabJson2Xml.addEventListener('click', () => setMode('json2xml'));
+
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'xml2json') {
+        tabXml2Json.classList.add('active');
+        tabJson2Xml.classList.remove('active');
+        configXml2Json.style.display = 'flex';
+        configJson2Xml.style.display = 'none';
+        inputTitle.textContent = 'Raw XML Input';
+        outputTitle.textContent = 'Converted JSON Output';
+        mainInput.placeholder = 'Paste or type XML data here (e.g. <catalog><book id="1">Title</book></catalog>)...';
+        btnDownload.textContent = 'Download .json';
+      } else {
+        tabJson2Xml.classList.add('active');
+        tabXml2Json.classList.remove('active');
+        configJson2Xml.style.display = 'flex';
+        configXml2Json.style.display = 'none';
+        inputTitle.textContent = 'Raw JSON Input';
+        outputTitle.textContent = 'Converted XML Output';
+        mainInput.placeholder = 'Paste or type JSON data here (e.g. { "catalog": { "book": { "@id": 1, "#text": "Title" } } })...';
+        btnDownload.textContent = 'Download .xml';
+      }
+      processConversion();
+    }
+
+    // Process Conversion
+    function processConversion() {
+      const text = mainInput.value.trim();
+      updateGutter();
+
+      if (!text) {
+        statusBanner.className = 'status-banner empty';
+        statusBanner.innerHTML = '<span>Ready. Paste or drop your data to convert.</span>';
+        rawOutputData = '';
+        outputView.textContent = '';
+        return;
+      }
+
+      if (currentMode === 'xml2json') {
+        convertXmlToJson(text);
+      } else {
+        convertJsonToXml(text);
+      }
+    }
+
+    // Helper to parse primitive types
+    function parseType(str) {
+      if (str === 'true') return true;
+      if (str === 'false') return false;
+      if (str === 'null') return null;
+      if (!isNaN(str) && str.trim() !== '') {
+        const num = Number(str);
+        if (!isNaN(num)) return num;
+      }
+      return str;
+    }
+
+    // Pure Tree-Walking XML -> JSON Engine
+    function xmlNodeToJson(node, options) {
+      const { attrM, txtKey, stripNs, cdataM, autoT } = options;
+
+      if (node.nodeType === Node.DOCUMENT_NODE) {
+        const root = node.documentElement;
+        if (!root) return {};
+        const rootName = stripNs && root.tagName.includes(':') ? root.tagName.split(':')[1] : root.tagName;
+        return { [rootName]: xmlNodeToJson(root, options) };
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const obj = {};
+        const attrs = Array.from(node.attributes);
+
+        // Process attributes
+        if (attrs.length > 0) {
+          if (attrM === 'at') {
+            attrs.forEach(a => {
+              const aName = stripNs && a.name.includes(':') ? a.name.split(':')[1] : a.name;
+              obj[`@${aName}`] = autoT ? parseType(a.value) : a.value;
+            });
+          } else {
+            const attrObj = {};
+            attrs.forEach(a => {
+              const aName = stripNs && a.name.includes(':') ? a.name.split(':')[1] : a.name;
+              attrObj[aName] = autoT ? parseType(a.value) : a.value;
+            });
+            obj['_attributes'] = attrObj;
+          }
+        }
+
+        // Process child nodes
+        const childNodes = Array.from(node.childNodes).filter(c => {
+          if (c.nodeType === Node.TEXT_NODE) return c.nodeValue.trim().length > 0;
+          return c.nodeType === Node.ELEMENT_NODE || c.nodeType === Node.CDATA_SECTION_NODE;
+        });
+
+        // Leaf text node without attributes
+        if (childNodes.length === 1 && (childNodes[0].nodeType === Node.TEXT_NODE || (childNodes[0].nodeType === Node.CDATA_SECTION_NODE && cdataM === 'text'))) {
+          const textVal = childNodes[0].nodeValue.trim();
+          const typedVal = autoT ? parseType(textVal) : textVal;
+          if (attrs.length === 0) {
+            return typedVal;
+          } else {
+            obj[txtKey] = typedVal;
+            return obj;
+          }
+        }
+
+        if (childNodes.length === 0 && attrs.length === 0) {
+          return null;
+        }
+
+        childNodes.forEach(child => {
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            const childTag = stripNs && child.tagName.includes(':') ? child.tagName.split(':')[1] : child.tagName;
+            const childVal = xmlNodeToJson(child, options);
+
+            if (obj[childTag] === undefined) {
+              obj[childTag] = childVal;
+            } else if (Array.isArray(obj[childTag])) {
+              obj[childTag].push(childVal);
+            } else {
+              obj[childTag] = [obj[childTag], childVal];
+            }
+          } else if (child.nodeType === Node.TEXT_NODE) {
+            const textVal = child.nodeValue.trim();
+            if (textVal.length > 0) {
+              obj[txtKey] = autoT ? parseType(textVal) : textVal;
+            }
+          } else if (child.nodeType === Node.CDATA_SECTION_NODE) {
+            if (cdataM === 'cdata') {
+              obj['#cdata'] = child.nodeValue;
+            } else {
+              const val = autoT ? parseType(child.nodeValue) : child.nodeValue;
+              if (attrs.length === 0 && childNodes.length === 1) return val;
+              obj[txtKey] = val;
+            }
+          }
+        });
+
+        return obj;
+      }
+
+      return null;
+    }
+
+    // Convert XML -> JSON
+    function convertXmlToJson(text) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/xml');
+      const parserErrors = doc.getElementsByTagName('parsererror');
+
+      if (parserErrors.length > 0) {
+        const errText = parserErrors[0].textContent || parserErrors[0].innerText || 'XML Parse Error';
+        let line = 1;
+        let col = 1;
+        const lineMatch = errText.match(/(?:line|line number)\s*:?\s*(\d+)/i);
+        const colMatch = errText.match(/(?:column|column number)\s*:?\s*(\d+)/i);
+        if (lineMatch) line = parseInt(lineMatch[1], 10);
+        if (colMatch) col = parseInt(colMatch[1], 10);
+
+        let cleanReason = errText.split('\n')[0].replace(/Location:.*$/i, '').trim();
+        if (cleanReason.length > 150) cleanReason = cleanReason.substring(0, 150) + '…';
+
+        statusBanner.className = 'status-banner invalid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          <span>XML Parse Error at Line ${line}, Column ${col}: ${escapeHtml(cleanReason)}</span>
+        `;
+        updateGutter(line);
+        rawOutputData = '';
+        outputView.textContent = '';
+        return;
+      }
+
+      try {
+        const options = {
+          attrM: attrMode.value,
+          txtKey: textKey.value,
+          stripNs: stripNsToggle.checked,
+          cdataM: cdataToggle.checked ? 'cdata' : 'text',
+          autoT: autoTypeToggle.checked
+        };
+
+        const jsonObj = xmlNodeToJson(doc, options);
+        const indentVal = jsonIndent.value === 'tab' ? '\t' : (jsonIndent.value === '0' ? 0 : Number(jsonIndent.value));
+
+        rawOutputData = indentVal === 0 ? JSON.stringify(jsonObj) : JSON.stringify(jsonObj, null, indentVal);
+        outputView.textContent = rawOutputData;
+
+        statusBanner.className = 'status-banner valid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Successfully converted XML to JSON (Repeated sibling tags collapsed into arrays)</span>
+        `;
+        updateGutter(null);
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusBanner.innerHTML = `<span>Conversion Error: ${escapeHtml(err.message)}</span>`;
+        rawOutputData = '';
+        outputView.textContent = '';
+      }
+    }
+
+    // Pure Tree-Walking JSON -> XML Engine
+    function jsonObjectToXml(data, rootTag, indentStr, level = 0, selfClose = true) {
+      const indent = indentStr.repeat(level);
+
+      if (data === null || data === undefined) {
+        return selfClose ? `${indent}<${rootTag}/>\n` : `${indent}<${rootTag}></${rootTag}>\n`;
+      }
+
+      if (typeof data !== 'object') {
+        return `${indent}<${rootTag}>${escapeXmlText(String(data))}</${rootTag}>\n`;
+      }
+
+      if (Array.isArray(data)) {
+        return data.map(item => jsonObjectToXml(item, rootTag, indentStr, level, selfClose)).join('');
+      }
+
+      // Object
+      const attrs = [];
+      let childrenXml = '';
+      let textContent = null;
+      let cdataContent = null;
+
+      for (let key in data) {
+        if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+        const val = data[key];
+
+        if (key.startsWith('@')) {
+          const aName = key.substring(1);
+          attrs.push(`${aName}="${escapeXmlAttr(String(val))}"`);
+        } else if (key === '_attributes' && typeof val === 'object' && val !== null) {
+          for (let a in val) {
+            attrs.push(`${a}="${escapeXmlAttr(String(val[a]))}"`);
+          }
+        } else if (key === '#text' || key === '_text' || key === 'value') {
+          textContent = String(val);
+        } else if (key === '#cdata') {
+          cdataContent = String(val);
+        } else {
+          childrenXml += jsonObjectToXml(val, key, indentStr, level + 1, selfClose);
+        }
+      }
+
+      const attrStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+
+      if (childrenXml === '' && textContent === null && cdataContent === null) {
+        return selfClose ? `${indent}<${rootTag}${attrStr}/>\n` : `${indent}<${rootTag}${attrStr}></${rootTag}>\n`;
+      }
+
+      if (childrenXml === '' && cdataContent !== null) {
+        return `${indent}<${rootTag}${attrStr}><![CDATA[${cdataContent}]]></${rootTag}>\n`;
+      }
+
+      if (childrenXml === '' && textContent !== null) {
+        return `${indent}<${rootTag}${attrStr}>${escapeXmlText(textContent)}</${rootTag}>\n`;
+      }
+
+      let inner = '';
+      if (textContent !== null) inner += `${indentStr.repeat(level + 1)}${escapeXmlText(textContent)}\n`;
+      if (cdataContent !== null) inner += `${indentStr.repeat(level + 1)}<![CDATA[${cdataContent}]]>\n`;
+      inner += childrenXml;
+
+      return `${indent}<${rootTag}${attrStr}>\n${inner}${indent}</${rootTag}>\n`;
+    }
+
+    // Convert JSON -> XML
+    function convertJsonToXml(text) {
+      try {
+        const parsed = JSON.parse(text);
+        const indentVal = xmlIndent.value === 'tab' ? '\t' : ' '.repeat(Number(xmlIndent.value));
+        const selfClose = selfClosingXmlToggle.checked;
+        const defaultRoot = rootTagInput.value.trim() || 'root';
+
+        let xmlResult = '<?xml version="1.0" encoding="UTF-8"?>\n';
+
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          const keys = Object.keys(parsed);
+          if (keys.length === 1 && !keys[0].startsWith('@') && keys[0] !== '_attributes') {
+            xmlResult += jsonObjectToXml(parsed[keys[0]], keys[0], indentVal, 0, selfClose);
+          } else {
+            xmlResult += jsonObjectToXml(parsed, defaultRoot, indentVal, 0, selfClose);
+          }
+        } else {
+          xmlResult += jsonObjectToXml(parsed, defaultRoot, indentVal, 0, selfClose);
+        }
+
+        rawOutputData = xmlResult;
+        outputView.textContent = xmlResult;
+
+        statusBanner.className = 'status-banner valid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Successfully converted JSON to formatted XML</span>
+        `;
+        updateGutter(null);
+      } catch (err) {
+        let line = 1;
+        let col = 1;
+        const match = err.message.match(/line (\d+) column (\d+)/i) || err.message.match(/position (\d+)/i);
+        if (match && match[2]) {
+          line = parseInt(match[1], 10);
+          col = parseInt(match[2], 10);
+        } else if (match && match[1]) {
+          const pos = parseInt(match[1], 10);
+          const upToPos = text.substring(0, pos);
+          line = upToPos.split('\n').length;
+          col = pos - upToPos.lastIndexOf('\n');
+        }
+
+        statusBanner.className = 'status-banner invalid';
+        statusBanner.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          <span>JSON Parse Error at Line ${line}, Column ${col}: ${escapeHtml(err.message)}</span>
+        `;
+        updateGutter(line);
+        rawOutputData = '';
+        outputView.textContent = '';
+      }
+    }
+
+    // Input Debounced Event
+    mainInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processConversion, 180);
+      updateGutter();
+    });
+
+    function triggerValidation() {
+      clearTimeout(debounceTimer);
+      processConversion();
+      updateGutter();
+    }
+
+    // Config change listeners
+    [
+      attrMode, textKey, stripNsToggle, autoTypeToggle, cdataToggle,
+      jsonIndent, rootTagInput, xmlIndent, selfClosingXmlToggle
+    ].forEach(el => {
+      el.addEventListener('change', processConversion);
+      if (el.tagName === 'INPUT' && el.type === 'text') {
+        el.addEventListener('input', processConversion);
+      }
+    });
+
+    // Copy Action
+    btnCopy.addEventListener('click', () => {
+      if (!rawOutputData) return;
+      navigator.clipboard.writeText(rawOutputData).then(() => {
+        showToast(currentMode === 'xml2json' ? 'JSON copied to clipboard!' : 'XML copied to clipboard!');
+      });
+    });
+
+    // Download Action
+    btnDownload.addEventListener('click', () => {
+      if (!rawOutputData) return;
+      const isJson = currentMode === 'xml2json';
+      const mime = isJson ? 'application/json;charset=utf-8;' : 'application/xml;charset=utf-8;' ;
+      const filename = isJson ? 'export.json' : 'export.xml';
+      const blob = new Blob([rawOutputData], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    });
+
+    // Clear
+    btnClearXml.addEventListener('click', () => {
+      mainInput.value = '';
+      triggerValidation();
+      mainInput.focus();
+    });
+    btnClearJson.addEventListener('click', () => {
+      mainInput.value = '';
+      triggerValidation();
+      mainInput.focus();
+    });
+
+    // Sample XML
+    btnSampleXml.addEventListener('click', () => {
+      const sample = `<?xml version="1.0" encoding="UTF-8"?>
+<bookstore name="Developer Library" location="Kolkata">
+  <book id="BK-101" category="web" inStock="true">
+    <title lang="en">Building High-Performance Client-Side Tools</title>
+    <author>Sayandeep Majumdar</author>
+    <year>2026</year>
+    <price currency="USD">49.99</price>
+    <summary><![CDATA[A comprehensive guide to building zero-backend browser tools.]]></summary>
+  </book>
+  <book id="BK-102" category="architecture" inStock="true">
+    <title lang="en">Modern Web Systems &amp; APIs</title>
+    <author>Sayandeep Majumdar</author>
+    <year>2025</year>
+    <price currency="USD">59.99</price>
+  </book>
+</bookstore>`;
+      mainInput.value = sample;
+      triggerValidation();
+      showToast('Loaded Bookstore XML sample');
+    });
+
+    // Sample JSON
+    btnSampleJson.addEventListener('click', () => {
+      const sample = {
+        "catalog": {
+          "@store": "Sayandeep.dev Tech Store",
+          "@verified": true,
+          "product": [
+            {
+              "@id": "PRD-01",
+              "name": "Cloud API Gateway",
+              "price": 199.99,
+              "tags": { "tag": ["cloud", "api", "security"] }
+            },
+            {
+              "@id": "PRD-02",
+              "name": "Client-side Web Suite",
+              "price": 89.50,
+              "#cdata": "Zero server latency, 100% privacy"
+            }
+          ]
+        }
+      };
+      mainInput.value = JSON.stringify(sample, null, 2);
+      triggerValidation();
+      showToast('Loaded Catalog JSON sample');
+    });
+
+    // Upload Files
+    btnUploadXml.addEventListener('click', () => fileInputXml.click());
+    btnUploadJson.addEventListener('click', () => fileInputJson.click());
+
+    [fileInputXml, fileInputJson].forEach(input => {
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          mainInput.value = evt.target.result;
+          triggerValidation();
+          showToast(`Loaded ${file.name}`);
+        };
+        reader.readAsText(file);
+        input.value = '';
+      });
+    });
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.add('active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      splitBox.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragOverlay.classList.remove('active');
+      });
+    });
+
+    splitBox.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const isXmlFile = file.name.endsWith('.xml') || file.name.endsWith('.svg') || file.name.endsWith('.rss');
+        if (isXmlFile && currentMode !== 'xml2json') {
+          setMode('xml2json');
+        } else if (!isXmlFile && currentMode !== 'json2xml') {
+          setMode('json2xml');
+        }
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          mainInput.value = evt.target.result;
+          triggerValidation();
+          showToast(`Loaded ${file.name}`);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Resizable Split Divider
+    (function initResizer() {
+      const resizer = document.getElementById('split-resizer');
+      const leftPane = document.getElementById('pane-left');
+      const container = document.getElementById('split-box');
+
+      let isDragging = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const offset = e.clientX - rect.left;
+        const percent = (offset / rect.width) * 100;
+        if (percent > 15 && percent < 85) {
+          leftPane.style.flex = 'none';
+          leftPane.style.width = percent + '%';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeXmlAttr(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeXmlText(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>

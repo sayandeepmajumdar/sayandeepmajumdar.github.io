@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Encoder & Decoder with Query Inspector — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Encode and decode URLs, URI components, and form-urlencoded strings. Features live URL breakdown, interactive query parameter editor, batch line processing, and percent-escape highlighting. 100% private." />
+  <meta name="keywords" content="url encoder, url decoder, encodeuricomponent, encodeuri, url query editor, url parser, form urlencoded, percent encoding, client side url tool" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/url-encoder/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --token-bg: rgba(79, 70, 229, 0.15);
+      --token-color: #4338ca;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --token-bg: rgba(129, 140, 248, 0.22);
+      --token-color: #c7d2fe;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Top Mode Tabs & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Config / Options Panel */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    /* Status Banner */
+    .status-banner {
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      flex-wrap: wrap;
+    }
+
+    .status-banner.valid {
+      background: var(--success-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.invalid {
+      background: var(--error-bg);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--error);
+    }
+
+    .status-banner.empty {
+      background: var(--surface-alt);
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    /* Split Workspace */
+    .split-container {
+      display: flex;
+      flex: 1;
+      min-height: 380px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      margin-bottom: 1.25rem;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .pane-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Swap Divider */
+    .resizer-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: var(--line);
+      width: 14px;
+      user-select: none;
+      cursor: col-resize;
+      transition: background var(--transition);
+    }
+
+    .resizer-wrap:hover, .resizer-wrap.dragging {
+      background: var(--accent);
+    }
+
+    .btn-swap {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      z-index: 10;
+      transition: all var(--transition);
+    }
+
+    .btn-swap:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    /* Editor View */
+    .editor-wrapper {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .code-textarea {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: auto;
+    }
+
+    .highlighted-output {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: auto;
+      display: none;
+    }
+
+    .escape-token {
+      background: var(--token-bg);
+      color: var(--token-color);
+      font-weight: 600;
+      padding: 0.05rem 0.2rem;
+      border-radius: 3px;
+    }
+
+    /* URL Inspector Card */
+    .inspector-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: none;
+    }
+
+    .inspector-header {
+      padding: 0.75rem 1.15rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .inspector-body {
+      padding: 1rem 1.15rem;
+    }
+
+    .url-parts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .url-part-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+    }
+
+    .url-part-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+
+    .url-part-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* Query Param Table */
+    .param-table-wrap {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .param-table th {
+      background: var(--surface-alt);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .param-table td {
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .param-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .param-input {
+      width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+
+    .param-input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-row-del {
+      background: transparent;
+      border: none;
+      color: var(--error);
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .btn-row-del:hover {
+      background: var(--error-bg);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+        min-height: 600px;
+      }
+      .resizer-wrap {
+        width: 100%;
+        height: 14px;
+        cursor: row-resize;
+      }
+      .btn-swap {
+        transform: rotate(90deg);
+      }
+      .btn-swap:hover {
+        transform: rotate(90deg) scale(1.1);
+      }
+      .pane {
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">URL Encoder & Decoder</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Mode Tabs & Privacy -->
+      <div class="top-bar">
+        <div class="mode-tabs">
+          <button id="tab-encode" class="mode-tab active">
+            <span>🔒 Encode URL</span>
+          </button>
+          <button id="tab-decode" class="mode-tab">
+            <span>🔓 Decode URL</span>
+          </button>
+        </div>
+        <div class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>100% Client-Side. URLs & tokens never leave your browser.</span>
+        </div>
+      </div>
+
+      <!-- Config Toolbar -->
+      <div class="config-card">
+        <div class="config-group">
+          <div class="config-item" id="mode-select-wrap">
+            <label for="encode-mode">Mode:</label>
+            <select id="encode-mode" class="form-select" title="Choose encoding specification">
+              <option value="component">Component (encodeURIComponent) — For query params</option>
+              <option value="uri">Full URI (encodeURI) — Preserves :/?#&= delimiters</option>
+              <option value="form">Form Encoded (application/x-www-form-urlencoded, space ➔ +)</option>
+            </select>
+          </div>
+
+          <label class="toggle-label" id="plus-space-label" style="display:none;" title="Convert + characters to spaces during decode">
+            <input type="checkbox" id="plus-space-toggle" checked />
+            <span>Decode '+' as Space</span>
+          </label>
+
+          <label class="toggle-label" title="Process each line independently in bulk">
+            <input type="checkbox" id="batch-toggle" />
+            <span>Batch (Line-by-line)</span>
+          </label>
+
+          <label class="toggle-label" title="Colorize percent-encoded %XX sequences in the output">
+            <input type="checkbox" id="highlight-toggle" checked />
+            <span>Highlight %XX Escapes</span>
+          </label>
+        </div>
+
+        <div class="config-group">
+          <button id="btn-sample" class="btn" title="Load sample URL with complex query params">Sample URL</button>
+          <button id="btn-clear" class="btn btn--danger" title="Clear input">Clear</button>
+        </div>
+      </div>
+
+      <!-- Status & Length Delta Banner -->
+      <div id="status-banner" class="status-banner empty">
+        <span id="status-text">Ready. Paste or type a URL or string to convert.</span>
+        <span id="ratio-stats" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;"></span>
+      </div>
+
+      <!-- Split Workspace -->
+      <div class="split-container" id="split-box">
+        <!-- Left Pane: Input -->
+        <div class="pane" id="pane-left">
+          <div class="pane-header">
+            <span id="input-title">Raw Input</span>
+            <span id="input-stats" style="color:var(--muted); font-size:0.75rem; font-family:'JetBrains Mono',monospace;">0 chars</span>
+          </div>
+
+          <div class="editor-wrapper">
+            <textarea id="main-input" class="code-textarea" placeholder="Paste or type URL or text here..." spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- Swap Divider -->
+        <div class="resizer-wrap" id="split-resizer">
+          <button id="btn-swap" class="btn-swap" title="Swap input and output (Reverse direction)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          </button>
+        </div>
+
+        <!-- Right Pane: Output -->
+        <div class="pane" id="pane-right">
+          <div class="pane-header">
+            <span id="output-title">Encoded URL Output</span>
+            <div class="pane-actions">
+              <button id="btn-copy" class="btn" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Copy</button>
+            </div>
+          </div>
+
+          <div class="editor-wrapper">
+            <textarea id="main-output" class="code-textarea" readonly placeholder="Converted output will appear here..." spellcheck="false"></textarea>
+            <div id="highlighted-view" class="highlighted-output"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live URL Inspector & Parameter Editor -->
+      <div class="inspector-card" id="url-inspector">
+        <div class="inspector-header">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span>🔍 URL Breakdown &amp; Interactive Parameter Editor</span>
+          </div>
+          <button id="btn-add-param" class="btn btn--primary" style="padding:0.25rem 0.6rem; font-size:0.75rem;">+ Add Parameter</button>
+        </div>
+
+        <div class="inspector-body">
+          <!-- URL Components Breakdown -->
+          <div class="url-parts-grid">
+            <div class="url-part-box">
+              <div class="url-part-label">Protocol</div>
+              <div class="url-part-val" id="part-protocol">https:</div>
+            </div>
+            <div class="url-part-box">
+              <div class="url-part-label">Host</div>
+              <div class="url-part-val" id="part-host">sayandeepmajumdar.github.io</div>
+            </div>
+            <div class="url-part-box">
+              <div class="url-part-label">Pathname</div>
+              <div class="url-part-val" id="part-pathname">/tools/</div>
+            </div>
+            <div class="url-part-box">
+              <div class="url-part-label">Hash Fragment</div>
+              <div class="url-part-val" id="part-hash">—</div>
+            </div>
+          </div>
+
+          <!-- Query Parameters Table -->
+          <div class="param-table-wrap">
+            <table class="param-table" id="params-table">
+              <thead>
+                <tr>
+                  <th style="width:35%;">Parameter Key</th>
+                  <th>Decoded Value</th>
+                  <th style="width:45px; text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="params-tbody">
+                <tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--muted)">No query parameters found in URL.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../index.html">Portfolio</a>
+        <a href="../base64-tool/">Base64 Tool</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+        <a href="../xml-formatter/">XML Formatter</a>
+        <a href="../json-to-csv/">JSON ⮂ CSV</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const dark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // State
+    let currentMode = 'encode'; // 'encode' | 'decode'
+    let debounceTimer = null;
+    let detectedUrlObj = null;
+    let isInspectorUpdating = false;
+
+    // DOM Elements
+    const tabEncode = document.getElementById('tab-encode');
+    const tabDecode = document.getElementById('tab-decode');
+    const encodeMode = document.getElementById('encode-mode');
+    const modeSelectWrap = document.getElementById('mode-select-wrap');
+    const plusSpaceLabel = document.getElementById('plus-space-label');
+    const plusSpaceToggle = document.getElementById('plus-space-toggle');
+    const batchToggle = document.getElementById('batch-toggle');
+    const highlightToggle = document.getElementById('highlight-toggle');
+    const statusBanner = document.getElementById('status-banner');
+    const statusText = document.getElementById('status-text');
+    const ratioStats = document.getElementById('ratio-stats');
+    const mainInput = document.getElementById('main-input');
+    const mainOutput = document.getElementById('main-output');
+    const highlightedView = document.getElementById('highlighted-view');
+    const inputTitle = document.getElementById('input-title');
+    const inputStats = document.getElementById('input-stats');
+    const outputTitle = document.getElementById('output-title');
+    const btnSwap = document.getElementById('btn-swap');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnClear = document.getElementById('btn-clear');
+    const btnSample = document.getElementById('btn-sample');
+    const splitBox = document.getElementById('split-box');
+    const urlInspector = document.getElementById('url-inspector');
+    const partProtocol = document.getElementById('part-protocol');
+    const partHost = document.getElementById('part-host');
+    const partPathname = document.getElementById('part-pathname');
+    const partHash = document.getElementById('part-hash');
+    const paramsTbody = document.getElementById('params-tbody');
+    const btnAddParam = document.getElementById('btn-add-param');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    // Toast
+    function showToast(message) {
+      toastMsg.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Switch Mode
+    tabEncode.addEventListener('click', () => setMode('encode'));
+    tabDecode.addEventListener('click', () => setMode('decode'));
+
+    function setMode(mode) {
+      currentMode = mode;
+      if (mode === 'encode') {
+        tabEncode.classList.add('active');
+        tabDecode.classList.remove('active');
+        inputTitle.textContent = 'Raw Text / URL Input';
+        outputTitle.textContent = 'Encoded URL Output';
+        modeSelectWrap.style.display = 'flex';
+        plusSpaceLabel.style.display = 'none';
+        mainInput.placeholder = 'Paste or type full URL or string to encode...';
+      } else {
+        tabDecode.classList.add('active');
+        tabEncode.classList.remove('active');
+        inputTitle.textContent = 'Encoded URL String Input';
+        outputTitle.textContent = 'Decoded Plain Text Output';
+        modeSelectWrap.style.display = 'none';
+        plusSpaceLabel.style.display = 'inline-flex';
+        mainInput.placeholder = 'Paste encoded URL string (with %XX escapes) to decode...';
+      }
+      processConversion();
+    }
+
+    // Swap Direction
+    btnSwap.addEventListener('click', () => {
+      const prevOutput = mainOutput.value;
+      setMode(currentMode === 'encode' ? 'decode' : 'encode');
+      if (prevOutput) {
+        mainInput.value = prevOutput;
+        processConversion();
+      }
+    });
+
+    // Single Line Encoding
+    function encodeSingle(str, mode) {
+      if (mode === 'component') {
+        return encodeURIComponent(str);
+      } else if (mode === 'uri') {
+        return encodeURI(str);
+      } else if (mode === 'form') {
+        return encodeURIComponent(str).replace(/%20/g, '+');
+      }
+      return str;
+    }
+
+    // Single Line Decoding with Malformed Check
+    function decodeSingle(str, decodePlusAsSpace) {
+      if (decodePlusAsSpace) {
+        str = str.replace(/\+/g, ' ');
+      }
+
+      // Check for malformed percent encoding
+      const malformedMatch = str.match(/%(?![0-9A-Fa-f]{2})/);
+      if (malformedMatch) {
+        const idx = malformedMatch.index;
+        const segment = str.substring(Math.max(0, idx - 4), Math.min(str.length, idx + 6));
+        throw new Error(`Malformed percent-encoding at character ${idx + 1} (near "${segment}"). A lone '%' must be followed by two valid hex digits.`);
+      }
+
+      try {
+        return decodeURIComponent(str);
+      } catch (err) {
+        return decodeURI(str);
+      }
+    }
+
+    // Process Conversion
+    function processConversion() {
+      if (isInspectorUpdating) return;
+      const text = mainInput.value;
+      inputStats.textContent = `${text.length} chars`;
+
+      if (!text) {
+        statusBanner.className = 'status-banner empty';
+        statusText.textContent = 'Ready. Paste or type a URL or string to convert.';
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+        highlightedView.innerHTML = '';
+        urlInspector.style.display = 'none';
+        detectedUrlObj = null;
+        return;
+      }
+
+      if (currentMode === 'encode') {
+        runEncode(text);
+      } else {
+        runDecode(text);
+      }
+
+      inspectUrl(text);
+    }
+
+    // Run Encode
+    function runEncode(text) {
+      const mode = encodeMode.value;
+      const isBatch = batchToggle.checked;
+
+      try {
+        let result = '';
+        if (isBatch) {
+          result = text.split('\n').map(line => encodeSingle(line, mode)).join('\n');
+        } else {
+          result = encodeSingle(text, mode);
+        }
+
+        mainOutput.value = result;
+        renderHighlightedView(result);
+
+        const inLen = text.length;
+        const outLen = result.length;
+        const delta = inLen > 0 ? `+${Math.round(((outLen - inLen) / inLen) * 100)}%` : '+0%';
+
+        statusBanner.className = 'status-banner valid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Successfully Encoded (${mode === 'component' ? 'Component' : (mode === 'uri' ? 'Full URI' : 'Form x-www-urlencoded')})
+          </span>
+        `;
+        ratioStats.textContent = `${inLen} chars ➔ ${outLen} chars (${delta})`;
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `<span>Encoding Error: ${escapeHtml(err.message)}</span>`;
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+      }
+    }
+
+    // Run Decode
+    function runDecode(text) {
+      const decodePlus = plusSpaceToggle.checked;
+      const isBatch = batchToggle.checked;
+
+      try {
+        let result = '';
+        if (isBatch) {
+          result = text.split('\n').map(line => decodeSingle(line, decodePlus)).join('\n');
+        } else {
+          result = decodeSingle(text, decodePlus);
+        }
+
+        mainOutput.value = result;
+        renderHighlightedView(result);
+
+        const inLen = text.length;
+        const outLen = result.length;
+        const delta = inLen > 0 ? `-${Math.round(((inLen - outLen) / inLen) * 100)}%` : '-0%';
+
+        statusBanner.className = 'status-banner valid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Valid URL Encoding — Successfully Decoded
+          </span>
+        `;
+        ratioStats.textContent = `${inLen} chars ➔ ${outLen} chars (${delta})`;
+      } catch (err) {
+        statusBanner.className = 'status-banner invalid';
+        statusText.innerHTML = `
+          <span style="display:inline-flex; align-items:center; gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            ${escapeHtml(err.message)}
+          </span>
+        `;
+        ratioStats.textContent = '';
+        mainOutput.value = '';
+      }
+    }
+
+    // Highlighted Output View
+    function renderHighlightedView(output) {
+      const shouldHighlight = highlightToggle.checked;
+      if (!shouldHighlight || !/%[0-9A-Fa-f]{2}|\+/.test(output)) {
+        highlightedView.style.display = 'none';
+        mainOutput.style.display = 'block';
+        return;
+      }
+
+      highlightedView.style.display = 'block';
+      mainOutput.style.display = 'none';
+
+      let html = escapeHtml(output)
+        .replace(/%[0-9A-Fa-f]{2}/g, '<span class="escape-token">$&</span>');
+
+      if (encodeMode.value === 'form' && currentMode === 'encode') {
+        html = html.replace(/\+/g, '<span class="escape-token">+</span>');
+      }
+
+      highlightedView.innerHTML = html;
+    }
+
+    // Inspect URL & Query Parameters
+    function inspectUrl(rawStr) {
+      const isBatch = batchToggle.checked;
+      if (isBatch || !rawStr.trim()) {
+        urlInspector.style.display = 'none';
+        detectedUrlObj = null;
+        return;
+      }
+
+      let parsed = null;
+      let trimmed = rawStr.trim();
+
+      try {
+        parsed = new URL(trimmed);
+      } catch (e) {
+        if (!/^https?:\/\//i.test(trimmed) && trimmed.includes('.') && (trimmed.includes('/') || trimmed.includes('?'))) {
+          try {
+            parsed = new URL('https://' + trimmed);
+          } catch (_) {}
+        }
+      }
+
+      if (!parsed || !parsed.protocol || !parsed.host) {
+        urlInspector.style.display = 'none';
+        detectedUrlObj = null;
+        return;
+      }
+
+      detectedUrlObj = parsed;
+      urlInspector.style.display = 'block';
+
+      partProtocol.textContent = parsed.protocol;
+      partHost.textContent = parsed.host + (parsed.port ? `:${parsed.port}` : '');
+      partPathname.textContent = parsed.pathname || '/';
+      partHash.textContent = parsed.hash || '—';
+
+      renderParamsTable(parsed);
+    }
+
+    // Render Query Param Table
+    function renderParamsTable(urlObj) {
+      paramsTbody.innerHTML = '';
+      const params = Array.from(urlObj.searchParams.entries());
+
+      if (params.length === 0) {
+        paramsTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1.25rem; color:var(--muted)">No query parameters found. Click "+ Add Parameter" above to attach query keys.</td></tr>';
+        return;
+      }
+
+      params.forEach(([key, val], idx) => {
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>
+            <input type="text" class="param-input param-key" value="${escapeHtml(key)}" placeholder="key" data-idx="${idx}" />
+          </td>
+          <td>
+            <input type="text" class="param-input param-val" value="${escapeHtml(val)}" placeholder="value" data-idx="${idx}" />
+          </td>
+          <td style="text-align:center;">
+            <button class="btn-row-del" title="Delete parameter" data-idx="${idx}">✕</button>
+          </td>
+        `;
+
+        paramsTbody.appendChild(tr);
+      });
+
+      // Bind input events
+      paramsTbody.querySelectorAll('.param-input').forEach(input => {
+        input.addEventListener('input', rebuildUrlFromTable);
+      });
+
+      paramsTbody.querySelectorAll('.btn-row-del').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const row = e.target.closest('tr');
+          row.remove();
+          rebuildUrlFromTable();
+        });
+      });
+    }
+
+    // Add Param Action
+    btnAddParam.addEventListener('click', () => {
+      if (!detectedUrlObj) return;
+
+      const noRows = paramsTbody.querySelector('td[colspan="3"]');
+      if (noRows) paramsTbody.innerHTML = '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" class="param-input param-key" value="new_param" placeholder="key" /></td>
+        <td><input type="text" class="param-input param-val" value="value" placeholder="value" /></td>
+        <td style="text-align:center;"><button class="btn-row-del" title="Delete parameter">✕</button></td>
+      `;
+      paramsTbody.appendChild(tr);
+
+      tr.querySelectorAll('.param-input').forEach(input => {
+        input.addEventListener('input', rebuildUrlFromTable);
+      });
+      tr.querySelector('.btn-row-del').addEventListener('click', () => {
+        tr.remove();
+        rebuildUrlFromTable();
+      });
+
+      rebuildUrlFromTable();
+    });
+
+    // Rebuild URL from Table
+    function rebuildUrlFromTable() {
+      if (!detectedUrlObj) return;
+      isInspectorUpdating = true;
+
+      const rows = paramsTbody.querySelectorAll('tr');
+      const newSearchParams = new URLSearchParams();
+
+      rows.forEach(r => {
+        const k = r.querySelector('.param-key')?.value.trim();
+        const v = r.querySelector('.param-val')?.value ?? '';
+        if (k) {
+          newSearchParams.append(k, v);
+        }
+      });
+
+      detectedUrlObj.search = newSearchParams.toString();
+      mainInput.value = detectedUrlObj.toString();
+
+      isInspectorUpdating = false;
+      processConversion();
+    }
+
+    // Input Events
+    mainInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(processConversion, 120);
+    });
+
+    [encodeMode, plusSpaceToggle, batchToggle, highlightToggle].forEach(el => {
+      el.addEventListener('change', processConversion);
+    });
+
+    // Copy Action
+    btnCopy.addEventListener('click', () => {
+      if (!mainOutput.value) return;
+      navigator.clipboard.writeText(mainOutput.value).then(() => {
+        showToast('Copied to clipboard!');
+      });
+    });
+
+    // Clear Action
+    btnClear.addEventListener('click', () => {
+      mainInput.value = '';
+      mainOutput.value = '';
+      highlightedView.innerHTML = '';
+      urlInspector.style.display = 'none';
+      detectedUrlObj = null;
+      processConversion();
+      mainInput.focus();
+    });
+
+    // Sample URL Action
+    btnSample.addEventListener('click', () => {
+      if (currentMode === 'encode') {
+        mainInput.value = 'https://sayandeepmajumdar.github.io/search?query=web+development&category=developer tools&sort=rating#results';
+      } else {
+        mainInput.value = 'https%3A%2F%2Fsayandeepmajumdar.github.io%2Fsearch%3Fquery%3Dweb%2Bdevelopment%26category%3Ddeveloper%20tools%26sort%3Drating%23results';
+      }
+      processConversion();
+      showToast('Loaded sample URL');
+    });
+
+    // Resizable Split Divider
+    (function initResizer() {
+      const resizer = document.getElementById('split-resizer');
+      const leftPane = document.getElementById('pane-left');
+      const container = document.getElementById('split-box');
+
+      let isDragging = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        if (e.target.closest('#btn-swap')) return;
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        const offset = e.clientX - rect.left;
+        const percent = (offset / rect.width) * 100;
+        if (percent > 15 && percent < 85) {
+          leftPane.style.flex = 'none';
+          leftPane.style.width = percent + '%';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    })();
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

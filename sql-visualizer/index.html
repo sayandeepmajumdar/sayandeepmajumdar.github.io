@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL Schema Visualizer — Interactive ER Diagrams &amp; DDL Parser | sayandeep.dev</title>
+  <meta name="description" content="Free online SQL schema visualizer and ER diagram generator. Parse CREATE TABLE SQL DDL or JSON into interactive, zoomable entity-relationship diagrams with relationship highlighting, SVG/PNG export, and Mermaid code generation." />
+  <meta name="keywords" content="sql schema visualizer, er diagram generator, sql to er diagram, database schema visualizer, create table visualizer, mermaid er diagram, database diagram" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/sql-visualizer/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 2rem;
+    }
+
+    /* Toolbar */
+    .toolbar-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .form-select {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Main Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.25rem;
+      align-items: stretch;
+      min-height: 640px;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Sidebar Card */
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .output-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .output-tab {
+      padding: 0.25rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .output-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: var(--surface);
+      overflow: auto;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      padding: 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+    }
+
+    /* Diagram Canvas */
+    .canvas-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-toolbar {
+      padding: 0.5rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .diagram-viewport {
+      flex: 1;
+      min-height: 560px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+      position: relative;
+      background-color: var(--surface);
+      user-select: none;
+    }
+
+    .diagram-viewport:active {
+      cursor: grabbing;
+    }
+
+    .diagram-container {
+      transform-origin: center center;
+      transition: transform 0.05s ease-out;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diagram-container svg {
+      max-width: 100%;
+      max-height: 100%;
+      height: auto;
+    }
+
+    /* Table Node Hover & Highlight Styles */
+    .diagram-container svg g[id^="entity-"],
+    .diagram-container svg .er.entityBox {
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .diagram-container svg .dimmed {
+      opacity: 0.2 !important;
+    }
+
+    /* Highlight bounding rects only, NEVER apply stroke to text */
+    .diagram-container svg .highlighted > rect,
+    .diagram-container svg .highlighted rect,
+    .diagram-container svg g.highlighted rect {
+      stroke: var(--accent) !important;
+      stroke-width: 2.5px !important;
+      filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.4));
+    }
+
+    .diagram-container svg .highlighted text,
+    .diagram-container svg g.highlighted text,
+    .diagram-container svg text {
+      stroke: none !important;
+      stroke-width: 0 !important;
+      paint-order: fill !important;
+    }
+
+    /* Table List Inspector */
+    .table-list-item {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .table-list-item:hover {
+      background: var(--surface-alt);
+    }
+
+    .table-list-title {
+      font-weight: 700;
+      font-size: 0.845rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="SQL Schema Visualizer">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">SQL Schema Visualizer</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Toolbar -->
+      <div class="toolbar-card">
+        <div class="toolbar-left">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <label for="sample-select" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Sample Schema:</label>
+            <select id="sample-select" class="form-select">
+              <option value="ecommerce" selected>🛍️ E-Commerce &amp; Orders</option>
+              <option value="saas">🏢 SaaS &amp; Invoicing</option>
+              <option value="social">📱 Social Network &amp; Blog</option>
+            </select>
+          </div>
+
+          <label class="btn btn--sm" style="cursor:pointer;">
+            📁 Import .sql / .json
+            <input type="file" id="file-upload" accept=".sql,.json,.txt" style="display:none;" />
+          </label>
+          <button id="btn-parse-render" class="btn btn--primary btn--sm">🔄 Parse &amp; Render</button>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="btn-export-png" class="btn btn--sm">🖼️ Export PNG</button>
+          <button id="btn-export-svg" class="btn btn--sm">📄 Export SVG</button>
+          <button id="btn-export-sql" class="btn btn--sm">💾 Export DDL</button>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Left: Schema Input & Inspector Panel -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="output-tabs" id="input-tabs">
+              <button class="output-tab active" data-tab="sql">SQL DDL</button>
+              <button class="output-tab" data-tab="json">JSON</button>
+              <button class="output-tab" data-tab="tables">Tables (<span id="table-count-badge">0</span>)</button>
+            </div>
+            <span style="font-size:0.75rem; color:var(--muted); font-weight:600;" id="relation-count-badge">0 Relations</span>
+          </div>
+
+          <div class="panel-body">
+            <!-- View 1: SQL DDL Textarea -->
+            <div id="view-sql" style="height:100%; display:flex; flex-direction:column;">
+              <textarea id="sql-ddl-input" class="code-textarea" placeholder="Paste CREATE TABLE statements here..." spellcheck="false"></textarea>
+            </div>
+
+            <!-- View 2: JSON Schema Textarea -->
+            <div id="view-json" style="height:100%; display:none; flex-direction:column;">
+              <textarea id="json-schema-input" class="code-textarea" placeholder="JSON schema structure..." spellcheck="false"></textarea>
+            </div>
+
+            <!-- View 3: Tables List Inspector -->
+            <div id="view-tables" style="display:none; flex-direction:column;">
+              <div id="tables-inspector-list">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Canvas -->
+        <div class="canvas-card">
+          <div class="canvas-toolbar">
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <input type="text" id="table-search-input" class="form-input" placeholder="🔍 Search table..." style="width:160px;" />
+
+              <div style="display:flex; align-items:center; gap:0.3rem;">
+                <label for="isolate-select" style="font-size:0.75rem; font-weight:600; color:var(--muted);">Isolate:</label>
+                <select id="isolate-select" class="form-select" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                  <option value="all" selected>All Tables</option>
+                </select>
+              </div>
+
+              <label style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                <input type="checkbox" id="chk-compact-mode" />
+                <span>Compact (Keys Only)</span>
+              </label>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.3rem;">
+              <button id="btn-zoom-in" class="btn btn--sm" title="Zoom In">🔍+</button>
+              <button id="btn-zoom-out" class="btn btn--sm" title="Zoom Out">🔍-</button>
+              <button id="btn-zoom-reset" class="btn btn--sm" title="Reset Zoom">⛶ Reset</button>
+            </div>
+          </div>
+
+          <div class="diagram-viewport" id="diagram-viewport">
+            <div class="diagram-container" id="diagram-container">
+              <div id="mermaid-output" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+                <!-- Rendered Mermaid SVG injected here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../sql-builder/">SQL Query Builder</a>
+        <a href="../sql-formatter/">SQL Formatter</a>
+        <a href="../json-formatter/">JSON Formatter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher & Mermaid Config
+    let isDarkMode = false;
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+          renderDiagram();
+        });
+      }
+    })();
+
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: isDarkMode ? 'dark' : 'default',
+      er: {
+        useMaxWidth: false,
+        layoutDirection: 'TB',
+        minEntityWidth: 140,
+        minEntityHeight: 80
+      }
+    });
+
+    // SAMPLE SCHEMAS
+    const SAMPLES = {
+      ecommerce: `CREATE TABLE customers (
+  id INT PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE,
+  country VARCHAR(50),
+  created_at TIMESTAMP
+);
+
+CREATE TABLE orders (
+  id INT PRIMARY KEY,
+  customer_id INT NOT NULL,
+  order_date DATE NOT NULL,
+  status VARCHAR(30),
+  total_amount DECIMAL(10,2),
+  FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+CREATE TABLE products (
+  id INT PRIMARY KEY,
+  category_id INT,
+  sku VARCHAR(50) UNIQUE,
+  name VARCHAR(120) NOT NULL,
+  price DECIMAL(10,2),
+  stock_qty INT,
+  FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE categories (
+  id INT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL,
+  slug VARCHAR(80)
+);
+
+CREATE TABLE order_items (
+  id INT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  quantity INT NOT NULL,
+  unit_price DECIMAL(10,2),
+  FOREIGN KEY (order_id) REFERENCES orders(id),
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE reviews (
+  id INT PRIMARY KEY,
+  product_id INT NOT NULL,
+  customer_id INT NOT NULL,
+  rating INT,
+  comment TEXT,
+  FOREIGN KEY (product_id) REFERENCES products(id),
+  FOREIGN KEY (customer_id) REFERENCES customers(id)
+);`,
+
+      saas: `CREATE TABLE organizations (
+  id INT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE users (
+  id INT PRIMARY KEY,
+  org_id INT NOT NULL,
+  email VARCHAR(150) UNIQUE,
+  role VARCHAR(50),
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE TABLE subscriptions (
+  id INT PRIMARY KEY,
+  org_id INT NOT NULL,
+  plan_name VARCHAR(50),
+  status VARCHAR(30),
+  current_period_end DATE,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);
+
+CREATE TABLE invoices (
+  id INT PRIMARY KEY,
+  subscription_id INT NOT NULL,
+  amount DECIMAL(10,2),
+  paid BOOLEAN,
+  invoice_date DATE,
+  FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+);
+
+CREATE TABLE api_keys (
+  id INT PRIMARY KEY,
+  org_id INT NOT NULL,
+  key_hash VARCHAR(255) NOT NULL,
+  last_used_at TIMESTAMP,
+  FOREIGN KEY (org_id) REFERENCES organizations(id)
+);`,
+
+      social: `CREATE TABLE users (
+  id INT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  bio TEXT,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE posts (
+  id INT PRIMARY KEY,
+  author_id INT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  content TEXT,
+  published_at TIMESTAMP,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+CREATE TABLE comments (
+  id INT PRIMARY KEY,
+  post_id INT NOT NULL,
+  user_id INT NOT NULL,
+  body TEXT NOT NULL,
+  FOREIGN KEY (post_id) REFERENCES posts(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE tags (
+  id INT PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE post_tags (
+  post_id INT NOT NULL,
+  tag_id INT NOT NULL,
+  PRIMARY KEY (post_id, tag_id),
+  FOREIGN KEY (post_id) REFERENCES posts(id),
+  FOREIGN KEY (tag_id) REFERENCES tags(id)
+);`
+    };
+
+    // DOM Elements
+    const sqlDdlInput = document.getElementById('sql-ddl-input');
+    const jsonSchemaInput = document.getElementById('json-schema-input');
+    const sampleSelect = document.getElementById('sample-select');
+    const btnParseRender = document.getElementById('btn-parse-render');
+    const fileUpload = document.getElementById('file-upload');
+
+    const tableCountBadge = document.getElementById('table-count-badge');
+    const relationCountBadge = document.getElementById('relation-count-badge');
+    const tablesInspectorList = document.getElementById('tables-inspector-list');
+
+    const inputTabs = document.getElementById('input-tabs');
+    const viewSql = document.getElementById('view-sql');
+    const viewJson = document.getElementById('view-json');
+    const viewTables = document.getElementById('view-tables');
+
+    const tableSearchInput = document.getElementById('table-search-input');
+    const isolateSelect = document.getElementById('isolate-select');
+    const chkCompactMode = document.getElementById('chk-compact-mode');
+
+    const diagramViewport = document.getElementById('diagram-viewport');
+    const diagramContainer = document.getElementById('diagram-container');
+    const mermaidOutput = document.getElementById('mermaid-output');
+
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+
+    const btnExportPng = document.getElementById('btn-export-png');
+    const btnExportSvg = document.getElementById('btn-export-svg');
+    const btnExportSql = document.getElementById('btn-export-sql');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    let currentSchema = { tables: {}, relationships: [] };
+    let zoomLevel = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let activeHighlightedTable = null;
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- SQL DDL PARSER ---
+    function parseSqlDdl(sqlText) {
+      const tables = {};
+      const relationships = [];
+
+      // Clean comments and normalize
+      const cleanSql = sqlText
+        .replace(/--.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '');
+
+      // Match CREATE TABLE blocks
+      const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:[`"\[]?(\w+)[`"\]]?\.)?[`"\[]?(\w+)[`"\]]?\s*\(([\s\S]*?)\)(?:;|\s*$)/gi;
+      let match;
+
+      while ((match = createTableRegex.exec(cleanSql)) !== null) {
+        const tableName = match[2];
+        const body = match[3];
+
+        tables[tableName] = {
+          name: tableName,
+          columns: []
+        };
+
+        // Split lines by comma ignoring commas inside parentheses (e.g. DECIMAL(10,2))
+        const lines = splitTableBodyLines(body);
+
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+
+          // Table-level PRIMARY KEY constraint
+          const pkMatch = trimmed.match(/^(?:CONSTRAINT\s+[`"\[]?\w+[`"\]]?\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/i);
+          if (pkMatch) {
+            const pkCols = pkMatch[1].split(',').map(c => c.replace(/[`"\[\]]/g, '').trim());
+            pkCols.forEach(pkCol => {
+              const col = tables[tableName].columns.find(c => c.name.toLowerCase() === pkCol.toLowerCase());
+              if (col) col.isPk = true;
+            });
+            return;
+          }
+
+          // Table-level FOREIGN KEY constraint
+          const fkMatch = trimmed.match(/^(?:CONSTRAINT\s+[`"\[]?\w+[`"\]]?\s+)?FOREIGN\s+KEY\s*\(([^)]+)\)\s*REFERENCES\s+[`"\[]?(\w+)[`"\]]?\s*\(([^)]+)\)/i);
+          if (fkMatch) {
+            const fkCol = fkMatch[1].replace(/[`"\[\]]/g, '').trim();
+            const refTable = fkMatch[2].replace(/[`"\[\]]/g, '').trim();
+            const refCol = fkMatch[3].replace(/[`"\[\]]/g, '').trim();
+
+            const col = tables[tableName].columns.find(c => c.name.toLowerCase() === fkCol.toLowerCase());
+            if (col) col.isFk = `${refTable}.${refCol}`;
+
+            relationships.push({
+              fromTable: tableName,
+              fromCol: fkCol,
+              toTable: refTable,
+              toCol: refCol,
+              cardinality: '1:N'
+            });
+            return;
+          }
+
+          // Column Definition: name type [constraints]
+          const colParts = trimmed.split(/\s+/);
+          if (colParts.length >= 2) {
+            const rawColName = colParts[0].replace(/[`"\[\]]/g, '').trim();
+            const rawType = colParts[1].replace(/,/g, '').trim();
+
+            // Ignore keywords starting lines like CONSTRAINT, INDEX, KEY
+            if (/^(CONSTRAINT|KEY|INDEX|UNIQUE|CHECK)$/i.test(rawColName)) return;
+
+            const isInlinePk = /PRIMARY\s+KEY/i.test(trimmed);
+            const isNullable = !/NOT\s+NULL/i.test(trimmed);
+
+            // Inline REFERENCES
+            const inlineFkMatch = trimmed.match(/REFERENCES\s+[`"\[]?(\w+)[`"\]]?\s*\(([^)]+)\)/i);
+            let inlineFk = null;
+            if (inlineFkMatch) {
+              const refTable = inlineFkMatch[1].replace(/[`"\[\]]/g, '').trim();
+              const refCol = inlineFkMatch[2].replace(/[`"\[\]]/g, '').trim();
+              inlineFk = `${refTable}.${refCol}`;
+
+              relationships.push({
+                fromTable: tableName,
+                fromCol: rawColName,
+                toTable: refTable,
+                toCol: refCol,
+                cardinality: '1:N'
+              });
+            }
+
+            tables[tableName].columns.push({
+              name: rawColName,
+              type: simplifyDataType(rawType),
+              isPk: isInlinePk,
+              isFk: inlineFk,
+              isNullable: isNullable
+            });
+          }
+        });
+      }
+
+      return { tables, relationships };
+    }
+
+    function splitTableBodyLines(body) {
+      const lines = [];
+      let current = '';
+      let parenDepth = 0;
+
+      for (let i = 0; i < body.length; i++) {
+        const char = body[i];
+        if (char === '(') parenDepth++;
+        else if (char === ')') parenDepth--;
+
+        if (char === ',' && parenDepth === 0) {
+          lines.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      if (current.trim()) lines.push(current);
+      return lines;
+    }
+
+    function simplifyDataType(type) {
+      const t = type.toLowerCase();
+      if (t.includes('int')) return 'int';
+      if (t.includes('varchar') || t.includes('char') || t.includes('text') || t.includes('string')) return 'string';
+      if (t.includes('dec') || t.includes('num') || t.includes('float') || t.includes('double') || t.includes('real')) return 'decimal';
+      if (t.includes('bool')) return 'boolean';
+      if (t.includes('date') || t.includes('time')) return 'datetime';
+      return t.replace(/\(.*\)/, '');
+    }
+
+    // --- MERMAID ER CODE GENERATOR ---
+    function generateMermaidErCode(schema, isolateTable = null, compactOnly = false) {
+      let code = 'erDiagram\n';
+
+      const tableKeys = Object.keys(schema.tables);
+      if (tableKeys.length === 0) return 'erDiagram\n  EMPTY_SCHEMA';
+
+      let visibleTables = tableKeys;
+
+      if (isolateTable && isolateTable !== 'all') {
+        const neighborSet = new Set([isolateTable]);
+        schema.relationships.forEach(rel => {
+          if (rel.fromTable === isolateTable) neighborSet.add(rel.toTable);
+          if (rel.toTable === isolateTable) neighborSet.add(rel.fromTable);
+        });
+        visibleTables = Array.from(neighborSet);
+      }
+
+      // Add Table Definitions
+      visibleTables.forEach(tName => {
+        const table = schema.tables[tName];
+        if (!table) return;
+
+        code += `  ${tName} {\n`;
+        const colsToRender = compactOnly ? table.columns.filter(c => c.isPk || c.isFk) : table.columns;
+
+        if (colsToRender.length === 0) {
+          code += `    string id PK\n`;
+        } else {
+          colsToRender.forEach(c => {
+            const keyLabel = c.isPk ? 'PK' : (c.isFk ? 'FK' : '');
+            code += `    ${c.type || 'string'} ${c.name} ${keyLabel}\n`;
+          });
+        }
+        code += `  }\n`;
+      });
+
+      // Add Relationships
+      schema.relationships.forEach(rel => {
+        if (visibleTables.includes(rel.fromTable) && visibleTables.includes(rel.toTable)) {
+          // Standard crow's foot: target 1 to source N
+          code += `  ${rel.toTable} ||--o{ ${rel.fromTable} : "references"\n`;
+        }
+      });
+
+      return code;
+    }
+
+    // --- RENDER MERMAID DIAGRAM ---
+    async function renderDiagram() {
+      const sqlText = sqlDdlInput.value;
+      currentSchema = parseSqlDdl(sqlText);
+
+      // Update Inspector & Badges
+      const tableCount = Object.keys(currentSchema.tables).length;
+      tableCountBadge.textContent = tableCount;
+      relationCountBadge.textContent = `${currentSchema.relationships.length} Relations`;
+
+      // Update Isolate Select Dropdown
+      updateIsolateSelect(Object.keys(currentSchema.tables));
+      renderTablesInspector();
+
+      // Update JSON view
+      jsonSchemaInput.value = JSON.stringify(currentSchema, null, 2);
+
+      // Generate Mermaid Code
+      const isolate = isolateSelect.value;
+      const compact = chkCompactMode.checked;
+      const mermaidCode = generateMermaidErCode(currentSchema, isolate, compact);
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDarkMode ? 'dark' : 'default',
+        securityLevel: 'loose'
+      });
+
+      try {
+        const { svg } = await mermaid.render('mermaid-svg-chart-' + Date.now(), mermaidCode);
+        mermaidOutput.innerHTML = svg;
+        attachDiagramInteractivity();
+        resetZoom();
+      } catch (err) {
+        mermaidOutput.innerHTML = `<div style="color:var(--error); padding:2rem; text-align:center;">Failed to render diagram: ${err.message}</div>`;
+      }
+    }
+
+    function updateIsolateSelect(tableNames) {
+      const currentVal = isolateSelect.value;
+      isolateSelect.innerHTML = '<option value="all">All Tables</option>';
+      tableNames.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = `Isolate ${t}`;
+        if (t === currentVal) opt.selected = true;
+        isolateSelect.appendChild(opt);
+      });
+    }
+
+    function renderTablesInspector() {
+      tablesInspectorList.innerHTML = '';
+      Object.keys(currentSchema.tables).forEach(tName => {
+        const table = currentSchema.tables[tName];
+        const item = document.createElement('div');
+        item.className = 'table-list-item';
+        item.innerHTML = `
+          <div class="table-list-title">
+            <span>📋 ${tName}</span>
+            <span style="font-size:0.75rem; color:var(--muted);">${table.columns.length} cols</span>
+          </div>
+          <div style="font-size:0.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace;">
+            ${table.columns.map(c => `${c.name}${c.isPk ? ' [PK]' : ''}${c.isFk ? ' [FK]' : ''}`).join(', ')}
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          isolateSelect.value = tName;
+          renderDiagram();
+        });
+        tablesInspectorList.appendChild(item);
+      });
+    }
+
+    // --- INTERACTIVE HIGHLIGHTING & PAN / ZOOM ---
+    function attachDiagramInteractivity() {
+      const svg = mermaidOutput.querySelector('svg');
+      if (!svg) return;
+
+      const entityGroups = svg.querySelectorAll('g[id^="entity-"]');
+      if (entityGroups.length > 0) {
+        entityGroups.forEach(g => {
+          g.style.cursor = 'pointer';
+          g.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const gId = g.id || '';
+            const match = gId.match(/^entity-([^-]+)/);
+            const tableName = match ? match[1] : (g.querySelector('text')?.textContent || '');
+            highlightTableInDiagram(tableName);
+          });
+        });
+      } else {
+        svg.querySelectorAll('.er.entityBox').forEach(box => {
+          const parent = box.closest('g') || box;
+          parent.style.cursor = 'pointer';
+          parent.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const text = parent.querySelector('text')?.textContent || '';
+            highlightTableInDiagram(text);
+          });
+        });
+      }
+
+      svg.addEventListener('click', () => {
+        clearHighlights();
+      });
+    }
+
+    function highlightTableInDiagram(tableName) {
+      const svg = mermaidOutput.querySelector('svg');
+      if (!svg) return;
+
+      const cleanTarget = tableName.trim().toLowerCase();
+      if (!cleanTarget) {
+        clearHighlights();
+        return;
+      }
+
+      // Find all connected tables in currentSchema
+      const relatedTables = new Set([cleanTarget]);
+      currentSchema.relationships.forEach(rel => {
+        if (rel.fromTable.toLowerCase() === cleanTarget) relatedTables.add(rel.toTable.toLowerCase());
+        if (rel.toTable.toLowerCase() === cleanTarget) relatedTables.add(rel.fromTable.toLowerCase());
+      });
+
+      const allGroups = svg.querySelectorAll('g[id^="entity-"]');
+      if (allGroups.length > 0) {
+        allGroups.forEach(g => {
+          const gId = (g.id || '').toLowerCase();
+          const isTargetOrRelated = Array.from(relatedTables).some(t => gId.includes(`entity-${t}`));
+          if (isTargetOrRelated) {
+            g.classList.add('highlighted');
+            g.classList.remove('dimmed');
+          } else {
+            g.classList.add('dimmed');
+            g.classList.remove('highlighted');
+          }
+        });
+      } else {
+        svg.querySelectorAll('.er.entityBox').forEach(box => {
+          const parent = box.closest('g') || box;
+          const text = (parent.textContent || '').toLowerCase();
+          const isTargetOrRelated = Array.from(relatedTables).some(t => text.includes(t));
+          if (isTargetOrRelated) {
+            parent.classList.add('highlighted');
+            parent.classList.remove('dimmed');
+          } else {
+            parent.classList.add('dimmed');
+            parent.classList.remove('highlighted');
+          }
+        });
+      }
+    }
+
+    function clearHighlights() {
+      const svg = mermaidOutput.querySelector('svg');
+      if (!svg) return;
+      svg.querySelectorAll('.dimmed, .highlighted').forEach(el => {
+        el.classList.remove('dimmed', 'highlighted');
+      });
+    }
+
+    // Pan & Zoom
+    function applyTransform() {
+      diagramContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    }
+
+    function resetZoom() {
+      zoomLevel = 1;
+      panX = 0;
+      panY = 0;
+      applyTransform();
+    }
+
+    btnZoomIn.addEventListener('click', () => {
+      zoomLevel = Math.min(zoomLevel + 0.2, 3);
+      applyTransform();
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      zoomLevel = Math.max(zoomLevel - 0.2, 0.3);
+      applyTransform();
+    });
+
+    btnZoomReset.addEventListener('click', resetZoom);
+
+    diagramViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      zoomLevel = Math.min(Math.max(zoomLevel + delta, 0.3), 3);
+      applyTransform();
+    });
+
+    diagramViewport.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // --- EVENT LISTENERS ---
+    sampleSelect.addEventListener('change', () => {
+      sqlDdlInput.value = SAMPLES[sampleSelect.value];
+      renderDiagram();
+      showToast(`Loaded ${sampleSelect.options[sampleSelect.selectedIndex].text}`);
+    });
+
+    btnParseRender.addEventListener('click', () => {
+      renderDiagram();
+      showToast('Schema parsed & diagram updated');
+    });
+
+    isolateSelect.addEventListener('change', renderDiagram);
+    chkCompactMode.addEventListener('change', renderDiagram);
+
+    tableSearchInput.addEventListener('input', () => {
+      const q = tableSearchInput.value.trim().toLowerCase();
+      if (!q) {
+        clearHighlights();
+        return;
+      }
+      highlightTableInDiagram(q);
+    });
+
+    // Tab switcher for Left Panel
+    inputTabs.querySelectorAll('.output-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        inputTabs.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const activeTab = tab.dataset.tab;
+
+        viewSql.style.display = activeTab === 'sql' ? 'flex' : 'none';
+        viewJson.style.display = activeTab === 'json' ? 'flex' : 'none';
+        viewTables.style.display = activeTab === 'tables' ? 'flex' : 'none';
+      });
+    });
+
+    // File Upload
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        if (file.name.endsWith('.json')) {
+          try {
+            const parsed = JSON.parse(text);
+            jsonSchemaInput.value = text;
+            // Convert JSON back to SQL DDL
+            sqlDdlInput.value = jsonSchemaToSql(parsed);
+          } catch {
+            sqlDdlInput.value = text;
+          }
+        } else {
+          sqlDdlInput.value = text;
+        }
+        renderDiagram();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+    });
+
+    function jsonSchemaToSql(schema) {
+      let sql = '';
+      if (!schema.tables) return '';
+      Object.keys(schema.tables).forEach(tName => {
+        const t = schema.tables[tName];
+        sql += `CREATE TABLE ${tName} (\n`;
+        const colDefs = (t.columns || []).map(c => `  ${c.name} ${c.type || 'VARCHAR(100)'}${c.isPk ? ' PRIMARY KEY' : ''}`);
+        sql += colDefs.join(',\n');
+        sql += `\n);\n\n`;
+      });
+      return sql;
+    }
+
+    // --- EXPORT FUNCTIONALITY ---
+    btnExportSql.addEventListener('click', () => {
+      const val = sqlDdlInput.value;
+      const blob = new Blob([val], { type: 'text/sql;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'schema.sql';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportSvg.addEventListener('click', () => {
+      const svg = mermaidOutput.querySelector('svg');
+      if (!svg) return;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'schema-diagram.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnExportPng.addEventListener('click', () => {
+      const svg = mermaidOutput.querySelector('svg');
+      if (!svg) return;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        canvas.width = img.width * 2 || 1600;
+        canvas.height = img.height * 2 || 1200;
+        ctx.fillStyle = isDarkMode ? '#1c1917' : '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = 'schema-diagram.png';
+          a.click();
+          URL.revokeObjectURL(pngUrl);
+        });
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    });
+
+    // INITIAL LOAD
+    sqlDdlInput.value = SAMPLES.ecommerce;
+    renderDiagram();
+  </script>
+</body>
+</html>
