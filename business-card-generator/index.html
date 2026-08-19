@@ -1,0 +1,3314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Card Generator Studio — Design, Preview &amp; Export Print-Ready Cards | sayandeep.dev</title>
+  <meta name="description" content="Free online print-ready business card maker with double-sided design, bleed &amp; safe zone guides, built-in vCard QR code generator, regional size presets (US, EU, Japan), 15 modern designer templates, print sheet tiling (Letter/A4) with crop marks, 300 DPI PNG, vector SVG, and PDF exports." />
+  <meta name="keywords" content="business card generator, modern business card templates, print ready business cards, vcard qr code generator, double sided business card maker, glassmorphism card, neobrutalism business card, swiss grid business card, 300 dpi business card pdf, business card designer" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/business-card-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>" />
+
+  <!-- Google Fonts for Print & Web Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=DM+Sans:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Montserrat:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet" />
+
+  <!-- External Libraries: QRCode.js, jsPDF & html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f1f5f9;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: #eff6ff;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+
+      /* Stage neutral color (never dark to ensure accurate card color perception) */
+      --stage-bg: #e2e8f0;
+      --stage-grid: #cbd5e1;
+    }
+
+    html.dark {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-rgb: 24, 24, 27;
+      --surface-alt: #27272a;
+      --text: #fafaf9;
+      --muted: #a1a1aa;
+      --line: #27272a;
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-light: rgba(96, 165, 250, 0.12);
+      --track-bg: #3f3f46;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+      /* Card stage remains neutral gray so user sees true card colors */
+      --stage-bg: #1e293b;
+      --stage-grid: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 54px;
+      padding: 0 1.25rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+      border-color: var(--accent-hover);
+    }
+
+    .btn--success {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+    }
+
+    .btn--success:hover {
+      filter: brightness(0.92);
+      color: #ffffff;
+    }
+
+    .btn--danger { color: var(--error); }
+    .btn--danger:hover { background: var(--error-bg); border-color: var(--error); }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Mobile tabs */
+    .mobile-tab-bar {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 0.4rem 1rem;
+      gap: 0.5rem;
+    }
+
+    .mobile-tab-btn {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .mobile-tab-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    @media (max-width: 1024px) {
+      .mobile-tab-bar { display: flex; }
+      .hidden-on-mobile { display: none !important; }
+    }
+
+    /* Main Workspace */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 480px minmax(0, 1fr);
+      gap: 1.25rem;
+      padding: 1.25rem;
+      max-width: 1700px;
+      width: 100%;
+      margin: 0 auto;
+      min-width: 0;
+    }
+
+    @media (max-width: 1180px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-title {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.42rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Segmented Control Buttons */
+    .segmented-control {
+      display: flex;
+      background: var(--surface-alt);
+      padding: 0.25rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      gap: 0.25rem;
+    }
+
+    .segment-btn {
+      flex: 1;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .segment-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+    }
+
+    html.dark .segment-btn.active {
+      background: var(--surface);
+      color: #ffffff;
+    }
+
+    /* Template Grid */
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 0.5rem;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .template-card {
+      border: 2px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem;
+      cursor: pointer;
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      transition: all var(--transition);
+      user-select: none;
+      position: relative;
+    }
+
+    .template-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .template-card.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .template-thumb {
+      height: 52px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .template-name {
+      font-size: 0.675rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Field Row with Toggle */
+    .field-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.5rem;
+    }
+
+    .field-toggle {
+      cursor: pointer;
+    }
+
+    .field-label {
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--muted);
+      width: 75px;
+      flex-shrink: 0;
+    }
+
+    /* Social Handle Rows */
+    .social-handle-row {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    /* Canvas & Preview Stage */
+    .canvas-stage-wrapper {
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 68px;
+      height: calc(100vh - 84px);
+      min-width: 0;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--stage-bg);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stage-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 0.5rem 0.85rem;
+      font-size: 0.775rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      z-index: 10;
+    }
+
+    .stage-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      padding: 2.5rem 1.5rem;
+      background-image: 
+        linear-gradient(to right, var(--stage-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--stage-grid) 1px, transparent 1px);
+      background-size: 24px 24px;
+      perspective: 1400px;
+      -webkit-perspective: 1400px;
+    }
+
+    /* 3D Card Flip Container */
+    .card-flipper-container {
+      position: relative;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-flipper-container.flipped {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+    }
+
+    /* Side by side preview container */
+    .dual-card-container {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ====================================================
+       PRINT-READY CARD CANVAS (With Bleed & Safe-Zone Guides)
+       ==================================================== */
+    .business-card-artboard {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: #ffffff;
+      box-sizing: border-box;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      border-radius: 2px;
+      user-select: none;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+    }
+
+    .business-card-artboard.front-artboard {
+      transform: rotateY(0deg);
+      -webkit-transform: rotateY(0deg);
+      z-index: 2;
+    }
+
+    .business-card-artboard.back-artboard {
+      transform: rotateY(180deg);
+      -webkit-transform: rotateY(180deg);
+      z-index: 1;
+    }
+
+    .card-flipper-container.flipped .front-artboard {
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .card-flipper-container.flipped .back-artboard {
+      z-index: 2;
+      pointer-events: auto;
+    }
+
+    .dual-card-container .business-card-artboard {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+      -webkit-transform: none !important;
+    }
+
+    /* Bleed Margin (0.125" / 3.175mm beyond trim) */
+    .card-bleed-zone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 1.5px dashed rgba(239, 68, 68, 0.65); /* Red bleed guide */
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    /* Trim Edge (Actual Cut Line) */
+    .card-trim-zone {
+      position: absolute;
+      border: 1px solid rgba(15, 23, 42, 0.75); /* Trim boundary */
+      pointer-events: none;
+      z-index: 41;
+    }
+
+    /* Safe Zone (0.125" inset from trim) */
+    .card-safe-zone {
+      position: absolute;
+      border: 1.5px dashed rgba(16, 185, 129, 0.75); /* Green safe zone */
+      pointer-events: none;
+      z-index: 42;
+    }
+
+    /* Live Card Content Surface */
+    .card-content-surface {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .card-bg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .card-bg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .card-interactive-layer {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    /* Printable crop marks & guides info */
+    .guide-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Print Sheet Mode Tiling Stage */
+    .print-sheet-stage {
+      display: none;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      position: relative;
+      box-sizing: border-box;
+      padding: 0.5in;
+      color: #000000;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-sheet-grid {
+      display: grid;
+      gap: 0.125in;
+      justify-content: center;
+      align-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .sheet-card-cell {
+      position: relative;
+      box-sizing: border-box;
+      border: 1px dashed #cbd5e1;
+    }
+
+    /* Corner Crop Marks */
+    .crop-mark-tl {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 8px;
+      height: 8px;
+      border-top: 1px solid #000000;
+      border-left: 1px solid #000000;
+    }
+    .crop-mark-tr {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 8px;
+      height: 8px;
+      border-top: 1px solid #000000;
+      border-right: 1px solid #000000;
+    }
+    .crop-mark-bl {
+      position: absolute;
+      bottom: -8px;
+      left: -8px;
+      width: 8px;
+      height: 8px;
+      border-bottom: 1px solid #000000;
+      border-left: 1px solid #000000;
+    }
+    .crop-mark-br {
+      position: absolute;
+      bottom: -8px;
+      right: -8px;
+      width: 8px;
+      height: 8px;
+      border-bottom: 1px solid #000000;
+      border-right: 1px solid #000000;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      width: 680px;
+      max-width: 100%;
+      max-height: 85vh;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-lg);
+      overflow-y: auto;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 110;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Privacy Banner */
+    .privacy-banner {
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      font-size: 0.75rem;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* CMYK Warning Box */
+    .cmyk-note-box {
+      background: var(--warning-light);
+      border: 1px solid var(--warning);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.725rem;
+      color: #78350f;
+      line-height: 1.4;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      background: var(--surface);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 0 1.25rem;
+      max-width: 1700px;
+      margin: 0 auto;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <a href="./" class="brand" aria-label="Business Card Studio">
+        <span class="brand-badge">PRINT STUDIO</span>
+        <span class="brand-title">Business Card Generator</span>
+      </a>
+
+      <div class="header-actions">
+        <button class="btn" id="btn-sample-data">✨ Sample Card</button>
+        <button class="btn" id="btn-open-gallery">📚 Saved Designs (<span id="saved-count-badge">0</span>)</button>
+        <button class="btn" id="btn-save-design">💾 Save Design</button>
+        <button class="btn" id="btn-duplicate-design">📋 Duplicate</button>
+        <button class="btn" id="btn-open-backup">📦 JSON Backup</button>
+        
+        <div style="display:flex; gap:0.25rem; margin-left:0.25rem;">
+          <button class="btn" id="btn-export-svg" title="Vector SVG (Lossless Print Ready)">📐 SVG Vector</button>
+          <button class="btn" id="btn-export-png" title="300 DPI High-Resolution PNG">🖼️ 300 DPI PNG</button>
+          <button class="btn btn--primary" id="btn-export-pdf" title="Print-Ready PDF with Bleed &amp; Crop Marks">📄 Download PDF</button>
+        </div>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme" style="margin-left:0.4rem;">
+          <svg class="icon-sun" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Tools</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Tabs -->
+  <div class="mobile-tab-bar">
+    <button class="mobile-tab-btn active" id="tab-btn-editor" onclick="setMobileView('editor')">✏️ Design Editor</button>
+    <button class="mobile-tab-btn" id="tab-btn-stage" onclick="setMobileView('stage')">👁️ Live Card Preview</button>
+  </div>
+
+  <!-- Main Grid Workspace -->
+  <main>
+    <!-- Left: Design Controls Sidebar Panel -->
+    <div class="sidebar-panel" id="main-editor-panel">
+      
+      <!-- 0. Card View Mode & Side Switcher -->
+      <div class="card" style="border-left: 4px solid var(--accent);">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Editing Target Side</label>
+            <div class="segmented-control">
+              <button type="button" class="segment-btn active" id="btn-side-front" onclick="setActiveSide('front')">
+                <span>Front Side</span>
+              </button>
+              <button type="button" class="segment-btn" id="btn-side-back" onclick="setActiveSide('back')">
+                <span>Back Side</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Preview Display Mode</label>
+            <div class="segmented-control">
+              <button type="button" class="segment-btn active" id="btn-view-single" onclick="setDisplayViewMode('single')">
+                <span>Single (3D Flip)</span>
+              </button>
+              <button type="button" class="segment-btn" id="btn-view-dual" onclick="setDisplayViewMode('dual')">
+                <span>Side-by-Side</span>
+              </button>
+              <button type="button" class="segment-btn" id="btn-view-sheet" onclick="setDisplayViewMode('sheet')">
+                <span>Print Sheet</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Regional Dimensions, Orientation & Bleed Guides -->
+      <div class="card">
+        <div class="card-title">
+          <span>📐 Dimensions &amp; Print Specs</span>
+          <label style="font-size:0.7rem; font-weight:600; text-transform:none; display:flex; align-items:center; gap:0.25rem; cursor:pointer;">
+            <input type="checkbox" id="chk-show-guides" checked onchange="toggleGuides(this.checked)" /> Show Bleed / Safe Guides
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="form-label">Regional Size Standard</label>
+            <select id="select-card-size" class="form-select" onchange="handleSizePresetChange(this.value)">
+              <option value="us" selected>US &amp; Canada (3.5" × 2.0" / 88.9 × 50.8 mm)</option>
+              <option value="eu">Europe &amp; UK (85 × 55 mm / 3.346" × 2.165")</option>
+              <option value="jp">Japan Meishi (91 × 55 mm / 3.582" × 2.165")</option>
+              <option value="au">Australia &amp; NZ (90 × 55 mm / 3.543" × 2.165")</option>
+              <option value="cn">China &amp; HK (90 × 54 mm / 3.543" × 2.126")</option>
+              <option value="iso">Credit Card Size (85.6 × 54 mm)</option>
+              <option value="square">Square Modern (2.5" × 2.5" / 63.5 × 63.5 mm)</option>
+              <option value="slim">Mini / Slim Card (3.5" × 1.125" / 88.9 × 28.5 mm)</option>
+              <option value="custom">Custom Dimensions...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Orientation</label>
+            <div class="segmented-control">
+              <button type="button" class="segment-btn active" id="btn-orient-landscape" onclick="setOrientation('landscape')">
+                <span>Horizontal</span>
+              </button>
+              <button type="button" class="segment-btn" id="btn-orient-portrait" onclick="setOrientation('portrait')">
+                <span>Vertical</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bleed Margin (Print Standard)</label>
+            <input type="text" class="form-input" value="0.125 in (3.175 mm)" readonly disabled style="font-family:'JetBrains Mono',monospace; opacity:0.8;" />
+          </div>
+
+          <!-- Custom Dimension inputs (shown when custom selected) -->
+          <div class="form-group" id="grp-custom-w" style="display:none;">
+            <label class="form-label">Width (inches)</label>
+            <input type="number" id="input-custom-w" class="form-input" min="1" max="10" step="0.05" value="3.5" oninput="renderCards()" />
+          </div>
+          <div class="form-group" id="grp-custom-h" style="display:none;">
+            <label class="form-label">Height (inches)</label>
+            <input type="number" id="input-custom-h" class="form-input" min="1" max="10" step="0.05" value="2.0" oninput="renderCards()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Template Gallery (15 Curated Modern & Trendy Templates) -->
+      <div class="card">
+        <div class="card-title">
+          <span>🎨 Template Gallery (15 Modern Styles)</span>
+          <button type="button" class="btn btn--sm" id="btn-reset-template" onclick="resetToTemplateDefault()">Reset to Template</button>
+        </div>
+
+        <div class="template-grid" id="template-gallery-list">
+          <!-- Injected templates -->
+        </div>
+      </div>
+
+      <!-- 3. Card Content & Contact Fields (Individually Toggleable) -->
+      <div class="card">
+        <div class="card-title">
+          <span id="content-card-title">👤 Front Content &amp; Contact Info</span>
+          <button type="button" class="btn btn--sm" id="btn-import-biz" onclick="importFromBusinessProfile()" title="Import details from Invoice/Receipt tools">⚡ Import Profile</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <!-- Name -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-name" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Full Name</span>
+            <input type="text" id="input-field-name" class="form-input" placeholder="e.g. Alex Morgan" value="Alex Morgan" oninput="renderCards()" />
+          </div>
+
+          <!-- Job Title -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-title" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Job Title</span>
+            <input type="text" id="input-field-title" class="form-input" placeholder="e.g. Principal Cloud Architect" value="Principal Cloud Architect" oninput="renderCards()" />
+          </div>
+
+          <!-- Company / Brand -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-company" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Company</span>
+            <input type="text" id="input-field-company" class="form-input" placeholder="e.g. Blue Harbor Technologies" value="Blue Harbor Technologies" oninput="renderCards()" />
+          </div>
+
+          <!-- Tagline / Department -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-tagline" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Tagline</span>
+            <input type="text" id="input-field-tagline" class="form-input" placeholder="e.g. Enterprise Cloud &amp; AI Systems" value="Enterprise Cloud &amp; AI Systems" oninput="renderCards()" />
+          </div>
+
+          <!-- Logo Upload -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-logo" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Brand Logo</span>
+            <div style="display:flex; gap:0.3rem; flex:1; align-items:center;">
+              <input type="file" id="input-logo-file" accept="image/*" class="form-input" style="padding:0.25rem 0.4rem; font-size:0.725rem;" onchange="handleLogoUpload(event)" />
+              <button type="button" class="btn btn--sm btn--danger" id="btn-clear-logo" style="display:none;" onclick="clearLogo()">✕</button>
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-phone" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Phone</span>
+            <input type="text" id="input-field-phone" class="form-input" placeholder="e.g. +1 (555) 302-9182" value="+1 (555) 302-9182" oninput="renderCards()" />
+          </div>
+
+          <!-- Email -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-email" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Email</span>
+            <input type="email" id="input-field-email" class="form-input" placeholder="e.g. alex.morgan@blueharbor.com" value="alex.morgan@blueharbor.com" oninput="renderCards()" />
+          </div>
+
+          <!-- Website -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-website" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Website</span>
+            <input type="text" id="input-field-website" class="form-input" placeholder="e.g. www.blueharbor.com" value="www.blueharbor.com" oninput="renderCards()" />
+          </div>
+
+          <!-- Address -->
+          <div class="field-row">
+            <input type="checkbox" id="chk-field-address" class="field-toggle" checked onchange="renderCards()" />
+            <span class="field-label">Address</span>
+            <input type="text" id="input-field-address" class="form-input" placeholder="e.g. 100 Montgomery St, Suite 400, San Francisco, CA" value="100 Montgomery St, San Francisco, CA" oninput="renderCards()" />
+          </div>
+
+          <!-- Social / Custom Handles -->
+          <div style="margin-top:0.4rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+              <span style="font-size:0.725rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Social &amp; Custom Handles</span>
+              <button type="button" class="btn btn--sm" onclick="addSocialHandle()">+ Add Handle</button>
+            </div>
+            <div id="social-handles-container" style="display:flex; flex-direction:column; gap:0.35rem;">
+              <!-- Dynamic social handles -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Back Side Design Presets & Content -->
+      <div class="card" id="card-back-side-settings">
+        <div class="card-title">
+          <span>🔄 Back Side Layout Mode</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="form-label">Back Style Preset</label>
+            <select id="select-back-preset" class="form-select" onchange="handleBackPresetChange(this.value)">
+              <option value="qr_contact" selected>📱 Large vCard QR Code &amp; Tagline</option>
+              <option value="logo_centered">🏢 Minimalist Centered Logo &amp; Brand</option>
+              <option value="dual_lang">🌐 Secondary Language / International</option>
+              <option value="appointment">📅 Appointment / Notes Table</option>
+              <option value="solid_color">🎨 Bold Solid / Accent Color Block</option>
+              <option value="blank">⚪ Clean Blank</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width" id="grp-back-text-custom">
+            <label class="form-label">Back Custom Heading / Tagline</label>
+            <input type="text" id="input-back-heading" class="form-input" placeholder="e.g. Scan to Save Contact directly to Phone" value="Scan to Save Contact" oninput="renderCards()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. QR Code Generator (vCard 3.0 & URL) -->
+      <div class="card">
+        <div class="card-title">
+          <span>📲 Built-In QR Code Generator</span>
+          <label style="font-size:0.7rem; font-weight:600; text-transform:none; display:flex; align-items:center; gap:0.25rem; cursor:pointer;">
+            <input type="checkbox" id="chk-enable-qr" checked onchange="renderCards()" /> Enable QR Code
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Placement Side</label>
+            <select id="select-qr-side" class="form-select" onchange="renderCards()">
+              <option value="back" selected>Place on Back Side</option>
+              <option value="front">Place on Front Side</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Encoding Payload</label>
+            <select id="select-qr-type" class="form-select" onchange="handleQrTypeChange(this.value)">
+              <option value="vcard" selected>📇 vCard 3.0 (One-Tap Save to Contacts)</option>
+              <option value="url">🔗 Website / Portfolio URL</option>
+              <option value="custom">📝 Custom Text / Link</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width" id="grp-custom-qr-val" style="display:none;">
+            <label class="form-label">Custom URL / Payload</label>
+            <input type="text" id="input-custom-qr-val" class="form-input" placeholder="https://linkedin.com/in/alexmorgan" oninput="renderCards()" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">QR Foreground Color</label>
+            <input type="color" id="input-qr-color" class="form-input" value="#0f172a" style="height:32px; padding:2px;" onchange="renderCards()" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">QR Size on Card</label>
+            <input type="range" id="input-qr-size" min="40" max="140" value="70" style="width:100%; margin-top:0.4rem;" oninput="renderCards()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Typography, Colors & Background Controls -->
+      <div class="card">
+        <div class="card-title">
+          <span>🎨 Colors &amp; Typography</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Primary Font</label>
+            <select id="select-font-family" class="form-select" onchange="renderCards()">
+              <option value="'Inter', sans-serif" selected>Inter (Modern Clean)</option>
+              <option value="'Space Grotesk', sans-serif">Space Grotesk (Neo-Brutalist / Tech)</option>
+              <option value="'DM Sans', sans-serif">DM Sans (Modern Geometric)</option>
+              <option value="'Syne', sans-serif">Syne (Avant-Garde Display)</option>
+              <option value="'Outfit', sans-serif">Outfit (Contemporary)</option>
+              <option value="'Montserrat', sans-serif">Montserrat (Geometric Tech)</option>
+              <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
+              <option value="'Playfair Display', serif">Playfair Display (Luxury Serif)</option>
+              <option value="'Cinzel', serif">Cinzel (Prestige Classical)</option>
+              <option value="'Merriweather', serif">Merriweather (Classic Editorial)</option>
+              <option value="'JetBrains Mono', monospace">JetBrains Mono (Developer / Cyber)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Primary Accent Color</label>
+            <div style="display:flex; gap:0.3rem; align-items:center;">
+              <input type="color" id="input-accent-color" class="form-input" value="#2563eb" style="height:32px; width:45px; padding:2px;" onchange="renderCards()" />
+              <button type="button" class="btn btn--sm" style="padding:0.2rem 0.4rem; font-size:0.65rem;" onclick="setCardAccent('#2563eb')">Blue</button>
+              <button type="button" class="btn btn--sm" style="padding:0.2rem 0.4rem; font-size:0.65rem;" onclick="setCardAccent('#059669')">Emerald</button>
+              <button type="button" class="btn btn--sm" style="padding:0.2rem 0.4rem; font-size:0.65rem;" onclick="setCardAccent('#d4af37')">Gold</button>
+              <button type="button" class="btn btn--sm" style="padding:0.2rem 0.4rem; font-size:0.65rem;" onclick="setCardAccent('#facc15')">Yellow</button>
+              <button type="button" class="btn btn--sm" style="padding:0.2rem 0.4rem; font-size:0.65rem;" onclick="setCardAccent('#0f172a')">Slate</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Front Background Mode</label>
+            <select id="select-front-bg-type" class="form-select" onchange="renderCards()">
+              <option value="solid" selected>Solid White / Clean</option>
+              <option value="dark">Dark Luxury / Midnight</option>
+              <option value="gradient_soft">Soft Subtle Gradient</option>
+              <option value="gradient_bold">Vibrant Dual Gradient</option>
+              <option value="image">Custom Uploaded Pattern/Image</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Back Background Mode</label>
+            <select id="select-back-bg-type" class="form-select" onchange="renderCards()">
+              <option value="match_front">Match Front Background</option>
+              <option value="invert">Inverted (Dark if front light)</option>
+              <option value="accent_solid">Full Accent Color</option>
+              <option value="solid_white" selected>Clean White</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width" id="grp-custom-bg-img" style="display:none;">
+            <label class="form-label">Upload Background Texture / Pattern</label>
+            <input type="file" id="input-bg-image" accept="image/*" class="form-input" style="padding:0.3rem;" onchange="handleBgUpload(event)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Print Sheet Tiling Configuration (US Letter & A4) -->
+      <div class="card">
+        <div class="card-title">
+          <span>🖨️ Print Sheet Tiling (Letter / A4)</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Sheet Paper Size</label>
+            <select id="select-sheet-paper" class="form-select" onchange="updateSheetTiling()">
+              <option value="letter" selected>US Letter (8.5" × 11")</option>
+              <option value="a4">A4 (210 × 297 mm)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Print Sheet Side</label>
+            <select id="select-sheet-side" class="form-select" onchange="updateSheetTiling()">
+              <option value="front" selected>Front Side Sheet</option>
+              <option value="back">Back Side Sheet</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Crop Marks &amp; Cut Lines</label>
+            <select id="select-sheet-marks" class="form-select" onchange="updateSheetTiling()">
+              <option value="crop_marks" selected>Corner Crop Tick Marks</option>
+              <option value="full_lines">Full Grid Cutting Lines</option>
+              <option value="none">No Marks</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Cards Per Sheet (Auto)</label>
+            <input type="text" id="txt-cards-per-sheet" class="form-input" value="10 Cards (2 × 5 Grid)" readonly disabled style="font-weight:700;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CMYK Note Disclaimer -->
+      <div class="cmyk-note-box">
+        <strong>⚠️ CMYK Print Notice:</strong> Web browsers operate natively in sRGB color space. Professional offset/digital printers convert files to CMYK inks, which can subtly shift neon or high-saturation colors. For maximum print fidelity, select deep rich tones and verify hard proofs with your commercial printer.
+      </div>
+
+      <!-- Privacy & Client-Side Notice -->
+      <div class="privacy-banner">
+        <span style="font-size:1.1rem;">🔒</span>
+        <div>
+          <strong>100% Client-Side Privacy:</strong> Your business card designs, contact details, uploaded logos, and vCards remain strictly on your device (IndexedDB &amp; LocalStorage). No data or graphics are ever sent to an external server.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Central Live Card Canvas Stage -->
+    <div class="canvas-stage-wrapper" id="main-stage-panel">
+      <!-- Stage Toolbar -->
+      <div class="stage-toolbar">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button class="btn btn--sm btn--primary" id="btn-flip-card" onclick="flipCard()">
+            <span id="txt-flip-btn">🔄 Flip to Back</span>
+          </button>
+          <span style="font-weight:700; font-size:0.8rem;" id="txt-active-side-indicator">Front View (3.5" × 2.0")</span>
+        </div>
+
+        <!-- Bleed & Safe Guide Legend -->
+        <div class="guide-legend" id="guide-legend-wrap">
+          <div class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span> Bleed (0.125")</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#0f172a;"></span> Trim Line</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Safe Zone</div>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div style="display:flex; align-items:center; gap:0.35rem;">
+          <button class="btn btn--sm" onclick="setZoom(zoomLevel - 0.15)" title="Zoom Out">🔍−</button>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; min-width:42px; text-align:center;" id="txt-zoom-pct">100%</span>
+          <button class="btn btn--sm" onclick="setZoom(zoomLevel + 0.15)" title="Zoom In">🔍+</button>
+          <button class="btn btn--sm" onclick="setZoom(1.0)" title="Reset Zoom">Fit</button>
+        </div>
+      </div>
+
+      <!-- Stage Viewport (Neutral Gray Backdrop) -->
+      <div class="stage-viewport" id="stage-viewport">
+        <!-- Single Card Flipper Mode -->
+        <div class="card-flipper-container" id="card-flipper">
+          <!-- Front Card Artboard -->
+          <div class="business-card-artboard front-artboard" id="front-card-artboard">
+            <!-- Bleed & Safe Guides Overlay -->
+            <div class="card-bleed-zone guide-overlay"></div>
+            <div class="card-trim-zone guide-overlay" id="front-trim-guide"></div>
+            <div class="card-safe-zone guide-overlay" id="front-safe-guide"></div>
+
+            <!-- Card Content Surface -->
+            <div class="card-content-surface" id="front-content-surface">
+              <div class="card-bg-layer" id="front-bg-layer"></div>
+              <div class="card-bg-overlay" id="front-bg-overlay"></div>
+              <div class="card-interactive-layer" id="front-interactive-layer">
+                <!-- Dynamically populated template layout elements -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Back Card Artboard -->
+          <div class="business-card-artboard back-artboard" id="back-card-artboard">
+            <!-- Bleed & Safe Guides Overlay -->
+            <div class="card-bleed-zone guide-overlay"></div>
+            <div class="card-trim-zone guide-overlay" id="back-trim-guide"></div>
+            <div class="card-safe-zone guide-overlay" id="back-safe-guide"></div>
+
+            <!-- Card Content Surface -->
+            <div class="card-content-surface" id="back-content-surface">
+              <div class="card-bg-layer" id="back-bg-layer"></div>
+              <div class="card-bg-overlay" id="back-bg-overlay"></div>
+              <div class="card-interactive-layer" id="back-interactive-layer">
+                <!-- Dynamically populated template layout elements -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual Side-by-Side Mode Container -->
+        <div class="dual-card-container" id="dual-card-container" style="display:none;">
+          <!-- Cloned or rendered front and back simultaneously -->
+          <div id="dual-front-slot"></div>
+          <div id="dual-back-slot"></div>
+        </div>
+
+        <!-- Print Sheet Tiling Mode Container (Letter / A4) -->
+        <div class="print-sheet-stage" id="print-sheet-stage">
+          <div class="print-sheet-grid" id="print-sheet-grid">
+            <!-- 8 or 10 tiled cards with crop marks -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Saved Designs Gallery Modal (IndexedDB) -->
+  <div class="modal-overlay" id="gallery-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.05rem; font-weight:700;">📚 Saved Business Card Designs</h3>
+        <button class="btn btn--sm" id="btn-close-gallery">✕</button>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <input type="text" id="gallery-search" class="form-input" placeholder="Search by design name, company, or cardholder..." style="flex:1; min-width:200px;" oninput="filterGalleryList()" />
+        <button type="button" class="btn btn--danger btn--sm" id="btn-clear-all-gallery">🗑️ Clear All</button>
+      </div>
+
+      <div style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;" id="gallery-list-items">
+        <!-- Injected saved designs -->
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON Backup & Restore Modal -->
+  <div class="modal-overlay" id="backup-modal">
+    <div class="modal-card" style="width:580px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.05rem; font-weight:700;">📦 JSON Backup &amp; Restore</h3>
+        <button class="btn btn--sm" id="btn-close-backup">✕</button>
+      </div>
+
+      <p style="font-size:0.775rem; color:var(--muted);">
+        Export your complete card design state as a JSON file, or restore a previously saved card.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <div style="background:var(--surface-alt); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+          <strong style="font-size:0.825rem; display:block; margin-bottom:0.3rem;">Export Design Data</strong>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn--primary" id="btn-export-current-json">⬇️ Export Current Card JSON</button>
+            <button type="button" class="btn" id="btn-export-all-json">📦 Export All Saved Designs</button>
+          </div>
+        </div>
+
+        <div style="background:var(--surface-alt); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+          <strong style="font-size:0.825rem; display:block; margin-bottom:0.3rem;">Import / Restore JSON</strong>
+          <input type="file" id="json-file-input" accept=".json" class="form-input" style="padding:0.4rem;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Saved business card design!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem; flex-wrap:wrap;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../invoice-generator/" style="font-weight:600; color:var(--accent);">🧾 Invoice Studio</a>
+        <a href="../quotation-generator/" style="font-weight:600; color:var(--accent);">💼 Quotation Studio</a>
+        <a href="../receipt-generator/" style="font-weight:600; color:var(--accent);">💳 Receipt Studio</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript Engine -->
+  <script>
+    // --- Theme Management ---
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // --- Mobile View Switcher ---
+    function setMobileView(view) {
+      const editorPanel = document.getElementById('main-editor-panel');
+      const stagePanel = document.getElementById('main-stage-panel');
+      const tabEdit = document.getElementById('tab-btn-editor');
+      const tabStage = document.getElementById('tab-btn-stage');
+
+      if (view === 'editor') {
+        editorPanel.classList.remove('hidden-on-mobile');
+        stagePanel.classList.add('hidden-on-mobile');
+        tabEdit.classList.add('active');
+        tabStage.classList.remove('active');
+      } else {
+        editorPanel.classList.add('hidden-on-mobile');
+        stagePanel.classList.remove('hidden-on-mobile');
+        tabEdit.classList.remove('active');
+        tabStage.classList.add('active');
+      }
+    }
+    window.setMobileView = setMobileView;
+
+    // --- Toast Utility ---
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // --- Regional Card Dimension Standards (in Inches & Millimeters) ---
+    const SIZE_PRESETS = {
+      us: { name: 'US & Canada', wIn: 3.5, hIn: 2.0, wMm: 88.9, hMm: 50.8 },
+      eu: { name: 'Europe & UK', wIn: 3.346, hIn: 2.165, wMm: 85.0, hMm: 55.0 },
+      jp: { name: 'Japan Meishi', wIn: 3.582, hIn: 2.165, wMm: 91.0, hMm: 55.0 },
+      au: { name: 'Australia & NZ', wIn: 3.543, hIn: 2.165, wMm: 90.0, hMm: 55.0 },
+      cn: { name: 'China & HK', wIn: 3.543, hIn: 2.126, wMm: 90.0, hMm: 54.0 },
+      iso: { name: 'Credit Card Size', wIn: 3.370, hIn: 2.125, wMm: 85.6, hMm: 54.0 },
+      square: { name: 'Square Modern', wIn: 2.5, hIn: 2.5, wMm: 63.5, hMm: 63.5 },
+      slim: { name: 'Mini / Slim Card', wIn: 3.5, hIn: 1.125, wMm: 88.9, hMm: 28.5 },
+      custom: { name: 'Custom Dimensions', wIn: 3.5, hIn: 2.0, wMm: 88.9, hMm: 50.8 }
+    };
+
+    // Standard Print Margins (0.125 in / 3.175 mm)
+    const BLEED_IN = 0.125;
+    const SAFE_IN = 0.125;
+
+    // Base screen DPI scaling for on-screen editor canvas
+    const SCREEN_SCALE = 120; // 1 inch = 120px on screen
+
+    // --- State Variables ---
+    let currentSizePreset = 'us';
+    let currentOrientation = 'landscape';
+    let activeSide = 'front'; // 'front' or 'back'
+    let displayViewMode = 'single'; // 'single', 'dual', 'sheet'
+    let isFlipped = false;
+    let showGuides = true;
+    let zoomLevel = 1.0;
+    let currentTemplate = 'modern_exec';
+    let customLogoBase64 = '';
+    let customBgBase64 = '';
+    let currentDesignId = `card_${Date.now()}`;
+    let designName = 'My Business Card';
+
+    // Social Handles State
+    let socialHandles = [
+      { platform: 'LinkedIn', handle: 'in/alexmorgan', enabled: true },
+      { platform: 'GitHub', handle: 'github.com/alexmorgan', enabled: true }
+    ];
+
+    // --- 15 Modern Designer Templates Catalog ---
+    const TEMPLATES = [
+      { id: 'modern_exec', name: 'Modern Executive', icon: '👔', desc: 'Clean left-aligned typography with bold name and crisp accent bar' },
+      { id: 'glassmorphism', name: 'Frosted Glass / Neon', icon: '🔮', desc: 'Translucent glass surface with luminous glowing accents & neon badges' },
+      { id: 'neobrutalism', name: 'Neo-Brutalist Pop', icon: '⚡', desc: 'High-contrast bold black borders, offset shadows & pop color badges' },
+      { id: 'swiss_grid', name: 'Swiss Minimal / Bauhaus', icon: '🇨🇭', desc: 'Asymmetric modular grid with bold modernist hierarchy' },
+      { id: 'holographic', name: 'Holographic Luxe', icon: '🌈', desc: 'Shimmering iridescent pastel sheen with refined metallic foil feel' },
+      { id: 'dark_luxury', name: 'Dark Luxury Monolith', icon: '✨', desc: 'Deep slate backdrop with gold/accent borders and sleek typography' },
+      { id: 'editorial_vogue', name: 'Editorial Vogue', icon: '📰', desc: 'High-fashion magazine masthead layout with dramatic serif typography' },
+      { id: 'cyber_terminal', name: 'Cyber Terminal / Matrix', icon: '💻', desc: 'Dark terminal with neon monospace text and CLI prompt styling' },
+      { id: 'architect_minimal', name: 'Architectural Monoline', icon: '📐', desc: 'Hairline wireframe borders, crosshair corners & wide letter-spacing' },
+      { id: 'nordic_organic', name: 'Nordic Organic Earth', icon: '🌿', desc: 'Earthy botanical tones, rounded pill badges & warm humanist layout' },
+      { id: 'minimal_mono', name: 'Developer / Code Mono', icon: '⌨️', desc: 'Clean syntax-highlighted monospace layout with key-value pairs' },
+      { id: 'logo_creative', name: 'Creative Studio', icon: '🎨', desc: 'Prominent focal logo with modern hierarchy and dynamic badge' },
+      { id: 'split_block', name: 'Split Color Block', icon: '🌓', desc: 'Two-tone contrast band with clean contact grid' },
+      { id: 'classic_corp', name: 'Classic Corporate', icon: '🏛️', desc: 'Centered symmetrical layout with elegant serif accents' },
+      { id: 'gradient_tech', name: 'Gradient Wave Tech', icon: '🚀', desc: 'Futuristic subtle gradient with clean monospace touch' },
+      { id: 'portrait_modern', name: 'Vertical Modern', icon: '📱', desc: 'Mobile-first portrait layout with structured contact chips' }
+    ];
+
+    // --- IndexedDB for Card Designs ---
+    const DB_NAME = 'BusinessCardStudioDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'designs';
+
+    function openIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbSaveDesign(design) {
+      try {
+        const db = await openIndexedDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          store.put(design);
+          tx.oncomplete = () => {
+            updateSavedCount();
+            resolve(true);
+          };
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        const list = JSON.parse(localStorage.getItem('saved_card_designs') || '[]');
+        const idx = list.findIndex(d => d.id === design.id);
+        if (idx >= 0) list[idx] = design;
+        else list.unshift(design);
+        localStorage.setItem('saved_card_designs', JSON.stringify(list));
+        updateSavedCount();
+        return true;
+      }
+    }
+
+    async function dbGetAllDesigns() {
+      try {
+        const db = await openIndexedDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        return JSON.parse(localStorage.getItem('saved_card_designs') || '[]');
+      }
+    }
+
+    async function dbDeleteDesign(id) {
+      try {
+        const db = await openIndexedDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          store.delete(id);
+          tx.oncomplete = () => {
+            updateSavedCount();
+            resolve(true);
+          };
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        let list = JSON.parse(localStorage.getItem('saved_card_designs') || '[]');
+        list = list.filter(d => d.id !== id);
+        localStorage.setItem('saved_card_designs', JSON.stringify(list));
+        updateSavedCount();
+        return true;
+      }
+    }
+
+    async function dbClearAllDesigns() {
+      try {
+        const db = await openIndexedDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          store.clear();
+          tx.oncomplete = () => {
+            updateSavedCount();
+            resolve(true);
+          };
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        localStorage.removeItem('saved_card_designs');
+        updateSavedCount();
+        return true;
+      }
+    }
+
+    async function updateSavedCount() {
+      const designs = await dbGetAllDesigns();
+      const badge = document.getElementById('saved-count-badge');
+      if (badge) badge.textContent = designs.length;
+    }
+
+    // --- DOM Elements Reference ---
+    const selectCardSize = document.getElementById('select-card-size');
+    const inputCustomW = document.getElementById('input-custom-w');
+    const inputCustomH = document.getElementById('input-custom-h');
+    const grpCustomW = document.getElementById('grp-custom-w');
+    const grpCustomH = document.getElementById('grp-custom-h');
+    const btnOrientLandscape = document.getElementById('btn-orient-landscape');
+    const btnOrientPortrait = document.getElementById('btn-orient-portrait');
+    const chkShowGuides = document.getElementById('chk-show-guides');
+
+    // Fields
+    const chkFieldName = document.getElementById('chk-field-name');
+    const inputFieldName = document.getElementById('input-field-name');
+    const chkFieldTitle = document.getElementById('chk-field-title');
+    const inputFieldTitle = document.getElementById('input-field-title');
+    const chkFieldCompany = document.getElementById('chk-field-company');
+    const inputFieldCompany = document.getElementById('input-field-company');
+    const chkFieldTagline = document.getElementById('chk-field-tagline');
+    const inputFieldTagline = document.getElementById('input-field-tagline');
+    const chkFieldLogo = document.getElementById('chk-field-logo');
+    const inputLogoFile = document.getElementById('input-logo-file');
+    const btnClearLogo = document.getElementById('btn-clear-logo');
+    const chkFieldPhone = document.getElementById('chk-field-phone');
+    const inputFieldPhone = document.getElementById('input-field-phone');
+    const chkFieldEmail = document.getElementById('chk-field-email');
+    const inputFieldEmail = document.getElementById('input-field-email');
+    const chkFieldWebsite = document.getElementById('chk-field-website');
+    const inputFieldWebsite = document.getElementById('input-field-website');
+    const chkFieldAddress = document.getElementById('chk-field-address');
+    const inputFieldAddress = document.getElementById('input-field-address');
+    const socialHandlesContainer = document.getElementById('social-handles-container');
+
+    // Back Side Settings
+    const selectBackPreset = document.getElementById('select-back-preset');
+    const inputBackHeading = document.getElementById('input-back-heading');
+    const grpBackTextCustom = document.getElementById('grp-back-text-custom');
+
+    // QR Code
+    const chkEnableQr = document.getElementById('chk-enable-qr');
+    const selectQrSide = document.getElementById('select-qr-side');
+    const selectQrType = document.getElementById('select-qr-type');
+    const inputCustomQrVal = document.getElementById('input-custom-qr-val');
+    const grpCustomQrVal = document.getElementById('grp-custom-qr-val');
+    const inputQrColor = document.getElementById('input-qr-color');
+    const inputQrSize = document.getElementById('input-qr-size');
+
+    // Typography & Backgrounds
+    const selectFontFamily = document.getElementById('select-font-family');
+    const inputAccentColor = document.getElementById('input-accent-color');
+    const selectFrontBgType = document.getElementById('select-front-bg-type');
+    const selectBackBgType = document.getElementById('select-back-bg-type');
+    const inputBgImage = document.getElementById('input-bg-image');
+    const grpCustomBgImg = document.getElementById('grp-custom-bg-img');
+
+    // Print Sheet Tiling
+    const selectSheetPaper = document.getElementById('select-sheet-paper');
+    const selectSheetSide = document.getElementById('select-sheet-side');
+    const selectSheetMarks = document.getElementById('select-sheet-marks');
+    const txtCardsPerSheet = document.getElementById('txt-cards-per-sheet');
+
+    // Stage Elements
+    const stageViewport = document.getElementById('stage-viewport');
+    const cardFlipper = document.getElementById('card-flipper');
+    const frontCardArtboard = document.getElementById('front-card-artboard');
+    const backCardArtboard = document.getElementById('back-card-artboard');
+    const frontInteractiveLayer = document.getElementById('front-interactive-layer');
+    const backInteractiveLayer = document.getElementById('back-interactive-layer');
+    const frontBgLayer = document.getElementById('front-bg-layer');
+    const backBgLayer = document.getElementById('back-bg-layer');
+    const dualCardContainer = document.getElementById('dual-card-container');
+    const dualFrontSlot = document.getElementById('dual-front-slot');
+    const dualBackSlot = document.getElementById('dual-back-slot');
+    const printSheetStage = document.getElementById('print-sheet-stage');
+    const printSheetGrid = document.getElementById('print-sheet-grid');
+    const txtActiveSideIndicator = document.getElementById('txt-active-side-indicator');
+    const txtFlipBtn = document.getElementById('txt-flip-btn');
+    const txtZoomPct = document.getElementById('txt-zoom-pct');
+
+    // --- Dimensions & Orientation Calculation ---
+    function getCardDimensionsInches() {
+      let w = 3.5;
+      let h = 2.0;
+
+      if (currentSizePreset === 'custom') {
+        w = parseFloat(inputCustomW.value) || 3.5;
+        h = parseFloat(inputCustomH.value) || 2.0;
+      } else {
+        const preset = SIZE_PRESETS[currentSizePreset] || SIZE_PRESETS.us;
+        w = preset.wIn;
+        h = preset.hIn;
+      }
+
+      if (currentOrientation === 'portrait') {
+        const temp = w;
+        w = Math.min(w, h);
+        h = Math.max(temp, h);
+      } else {
+        const temp = w;
+        w = Math.max(w, h);
+        h = Math.min(temp, h);
+      }
+
+      return {
+        widthIn: w,
+        heightIn: h,
+        totalWidthIn: w + (BLEED_IN * 2),
+        totalHeightIn: h + (BLEED_IN * 2)
+      };
+    }
+
+    function handleSizePresetChange(val) {
+      currentSizePreset = val;
+      if (val === 'custom') {
+        grpCustomW.style.display = 'flex';
+        grpCustomH.style.display = 'flex';
+      } else {
+        grpCustomW.style.display = 'none';
+        grpCustomH.style.display = 'none';
+      }
+      renderCards();
+    }
+    window.handleSizePresetChange = handleSizePresetChange;
+
+    function setOrientation(orient) {
+      currentOrientation = orient;
+      if (orient === 'landscape') {
+        btnOrientLandscape.classList.add('active');
+        btnOrientPortrait.classList.remove('active');
+      } else {
+        btnOrientPortrait.classList.add('active');
+        btnOrientLandscape.classList.remove('active');
+      }
+      renderCards();
+    }
+    window.setOrientation = setOrientation;
+
+    function toggleGuides(val) {
+      showGuides = val;
+      const overlays = document.querySelectorAll('.guide-overlay');
+      overlays.forEach(el => el.style.display = val ? 'block' : 'none');
+      const legend = document.getElementById('guide-legend-wrap');
+      if (legend) legend.style.opacity = val ? '1' : '0.2';
+    }
+    window.toggleGuides = toggleGuides;
+
+    function setZoom(val) {
+      zoomLevel = Math.max(0.4, Math.min(2.5, val));
+      txtZoomPct.textContent = `${Math.round(zoomLevel * 100)}%`;
+      applyArtboardDimensions();
+    }
+    window.setZoom = setZoom;
+
+    // --- Side Switching & 3D Flip ---
+    function setActiveSide(side) {
+      activeSide = side;
+      const btnF = document.getElementById('btn-side-front');
+      const btnB = document.getElementById('btn-side-back');
+      if (side === 'front') {
+        btnF.classList.add('active');
+        btnB.classList.remove('active');
+        isFlipped = false;
+        cardFlipper.classList.remove('flipped');
+        txtFlipBtn.textContent = '🔄 Flip to Back';
+      } else {
+        btnB.classList.add('active');
+        btnF.classList.remove('active');
+        isFlipped = true;
+        cardFlipper.classList.add('flipped');
+        txtFlipBtn.textContent = '🔄 Flip to Front';
+      }
+      updateActiveSideIndicator();
+    }
+    window.setActiveSide = setActiveSide;
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      if (isFlipped) {
+        cardFlipper.classList.add('flipped');
+        setActiveSide('back');
+      } else {
+        cardFlipper.classList.remove('flipped');
+        setActiveSide('front');
+      }
+    }
+    window.flipCard = flipCard;
+
+    function setDisplayViewMode(mode) {
+      displayViewMode = mode;
+      document.getElementById('btn-view-single').classList.toggle('active', mode === 'single');
+      document.getElementById('btn-view-dual').classList.toggle('active', mode === 'dual');
+      document.getElementById('btn-view-sheet').classList.toggle('active', mode === 'sheet');
+
+      if (mode === 'single') {
+        cardFlipper.style.display = 'block';
+        dualCardContainer.style.display = 'none';
+        printSheetStage.style.display = 'none';
+        document.getElementById('btn-flip-card').style.display = 'inline-flex';
+      } else if (mode === 'dual') {
+        cardFlipper.style.display = 'none';
+        dualCardContainer.style.display = 'flex';
+        printSheetStage.style.display = 'none';
+        document.getElementById('btn-flip-card').style.display = 'none';
+      } else if (mode === 'sheet') {
+        cardFlipper.style.display = 'none';
+        dualCardContainer.style.display = 'none';
+        printSheetStage.style.display = 'block';
+        document.getElementById('btn-flip-card').style.display = 'none';
+        updateSheetTiling();
+      }
+      renderCards();
+    }
+    window.setDisplayViewMode = setDisplayViewMode;
+
+    function updateActiveSideIndicator() {
+      const dim = getCardDimensionsInches();
+      const presetName = SIZE_PRESETS[currentSizePreset] ? SIZE_PRESETS[currentSizePreset].name : 'Custom';
+      txtActiveSideIndicator.textContent = `${activeSide === 'front' ? 'Front View' : 'Back View'} (${dim.widthIn}" × ${dim.heightIn}" · ${presetName})`;
+    }
+
+    // --- Template Gallery & Selection ---
+    function renderTemplateGallery() {
+      const container = document.getElementById('template-gallery-list');
+      container.innerHTML = TEMPLATES.map(t => `
+        <div class="template-card ${t.id === currentTemplate ? 'active' : ''}" onclick="selectTemplate('${t.id}')">
+          <div class="template-thumb" style="background:${getTemplateThumbBg(t.id)}; color:${getTemplateThumbColor(t.id)};">
+            <span style="font-size:1.05rem;">${t.icon}</span>
+          </div>
+          <div class="template-name">${t.name}</div>
+        </div>
+      `).join('');
+    }
+
+    function getTemplateThumbBg(id) {
+      switch(id) {
+        case 'glassmorphism': return 'linear-gradient(135deg, #6366f1, #a855f7)';
+        case 'neobrutalism': return '#facc15';
+        case 'swiss_grid': return 'linear-gradient(90deg, #dc2626 22%, #f8fafc 22%)';
+        case 'holographic': return 'linear-gradient(135deg, #fbc2eb, #a6c1ee, #c2e9fb)';
+        case 'editorial_vogue': return '#ffffff';
+        case 'cyber_terminal': return '#050505';
+        case 'architect_minimal': return '#f8fafc';
+        case 'nordic_organic': return 'linear-gradient(135deg, #e2ece9, #d3e2dc)';
+        case 'minimal_mono': return '#0f172a';
+        case 'classic_corp': return 'linear-gradient(135deg, #f8fafc, #e2e8f0)';
+        case 'logo_creative': return 'linear-gradient(135deg, #eff6ff, #dbeafe)';
+        case 'split_block': return 'linear-gradient(90deg, #1e293b 35%, #ffffff 35%)';
+        case 'dark_luxury': return 'linear-gradient(135deg, #09090b, #18181b)';
+        case 'gradient_tech': return 'linear-gradient(135deg, #1e1b4b, #312e81)';
+        case 'portrait_modern': return 'linear-gradient(180deg, #2563eb 20%, #ffffff 20%)';
+        default: return '#ffffff';
+      }
+    }
+
+    function getTemplateThumbColor(id) {
+      switch(id) {
+        case 'neobrutalism':
+        case 'holographic':
+        case 'nordic_organic':
+        case 'editorial_vogue':
+        case 'architect_minimal':
+        case 'swiss_grid':
+          return '#0f172a';
+        default:
+          return '#ffffff';
+      }
+    }
+
+    function selectTemplate(tmplId) {
+      currentTemplate = tmplId;
+
+      // Smart Defaults per template style
+      if (tmplId === 'dark_luxury') {
+        selectFrontBgType.value = 'dark';
+        inputAccentColor.value = '#d4af37';
+      } else if (tmplId === 'glassmorphism') {
+        selectFrontBgType.value = 'gradient_soft';
+        inputAccentColor.value = '#6366f1';
+        selectFontFamily.value = "'Outfit', sans-serif";
+      } else if (tmplId === 'neobrutalism') {
+        selectFrontBgType.value = 'solid';
+        inputAccentColor.value = '#facc15';
+        selectFontFamily.value = "'Space Grotesk', sans-serif";
+      } else if (tmplId === 'swiss_grid') {
+        selectFrontBgType.value = 'solid';
+        inputAccentColor.value = '#dc2626';
+        selectFontFamily.value = "'Inter', sans-serif";
+      } else if (tmplId === 'holographic') {
+        selectFrontBgType.value = 'gradient_soft';
+        inputAccentColor.value = '#8b5cf6';
+        selectFontFamily.value = "'DM Sans', sans-serif";
+      } else if (tmplId === 'editorial_vogue') {
+        selectFrontBgType.value = 'solid';
+        inputAccentColor.value = '#1e1b4b';
+        selectFontFamily.value = "'Playfair Display', serif";
+      } else if (tmplId === 'cyber_terminal') {
+        selectFrontBgType.value = 'dark';
+        inputAccentColor.value = '#10b981';
+        selectFontFamily.value = "'JetBrains Mono', monospace";
+      } else if (tmplId === 'architect_minimal') {
+        selectFrontBgType.value = 'solid';
+        inputAccentColor.value = '#0f172a';
+        selectFontFamily.value = "'Space Grotesk', sans-serif";
+      } else if (tmplId === 'nordic_organic') {
+        selectFrontBgType.value = 'solid';
+        inputAccentColor.value = '#059669';
+        selectFontFamily.value = "'Outfit', sans-serif";
+      } else if (tmplId === 'minimal_mono') {
+        selectFrontBgType.value = 'dark';
+        inputAccentColor.value = '#38bdf8';
+        selectFontFamily.value = "'JetBrains Mono', monospace";
+      } else if (tmplId === 'gradient_tech') {
+        selectFrontBgType.value = 'gradient_bold';
+        inputAccentColor.value = '#3b82f6';
+      } else if (tmplId === 'portrait_modern') {
+        setOrientation('portrait');
+      }
+
+      renderTemplateGallery();
+      renderCards();
+      showToast(`Selected template: ${TEMPLATES.find(t => t.id === tmplId)?.name}`);
+    }
+    window.selectTemplate = selectTemplate;
+
+    function resetToTemplateDefault() {
+      selectTemplate(currentTemplate);
+      showToast('Reset to template layout');
+    }
+    window.resetToTemplateDefault = resetToTemplateDefault;
+
+    function setCardAccent(color) {
+      inputAccentColor.value = color;
+      renderCards();
+      showToast(`Accent set to ${color}`);
+    }
+    window.setCardAccent = setCardAccent;
+
+    // --- Social Handles Manager ---
+    function renderSocialHandlesForm() {
+      socialHandlesContainer.innerHTML = socialHandles.map((sh, idx) => `
+        <div class="social-handle-row">
+          <input type="checkbox" ${sh.enabled ? 'checked' : ''} onchange="toggleSocialHandle(${idx}, this.checked)" title="Show on card" />
+          <input type="text" class="form-input" style="width:85px; padding:0.25rem 0.4rem; font-size:0.75rem;" value="${escapeHtml(sh.platform)}" placeholder="Platform" oninput="updateSocialHandle(${idx}, 'platform', this.value)" />
+          <input type="text" class="form-input" style="flex:1; padding:0.25rem 0.4rem; font-size:0.75rem;" value="${escapeHtml(sh.handle)}" placeholder="Username / link" oninput="updateSocialHandle(${idx}, 'handle', this.value)" />
+          <button type="button" class="btn btn--sm btn--danger" style="padding:0.2rem 0.45rem;" onclick="removeSocialHandle(${idx})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addSocialHandle() {
+      socialHandles.push({ platform: 'X', handle: '@alexmorgan', enabled: true });
+      renderSocialHandlesForm();
+      renderCards();
+    }
+    window.addSocialHandle = addSocialHandle;
+
+    function toggleSocialHandle(idx, val) {
+      if (socialHandles[idx]) {
+        socialHandles[idx].enabled = val;
+        renderCards();
+      }
+    }
+    window.toggleSocialHandle = toggleSocialHandle;
+
+    function updateSocialHandle(idx, key, val) {
+      if (socialHandles[idx]) {
+        socialHandles[idx][key] = val;
+        renderCards();
+      }
+    }
+    window.updateSocialHandle = updateSocialHandle;
+
+    function removeSocialHandle(idx) {
+      socialHandles.splice(idx, 1);
+      renderSocialHandlesForm();
+      renderCards();
+    }
+    window.removeSocialHandle = removeSocialHandle;
+
+    // --- Logo & Background Uploads ---
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          customLogoBase64 = ev.target.result;
+          btnClearLogo.style.display = 'inline-flex';
+          renderCards();
+          showToast('Uploaded brand logo');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    window.handleLogoUpload = handleLogoUpload;
+
+    function clearLogo() {
+      customLogoBase64 = '';
+      inputLogoFile.value = '';
+      btnClearLogo.style.display = 'none';
+      renderCards();
+      showToast('Removed logo');
+    }
+    window.clearLogo = clearLogo;
+
+    function handleBgUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          customBgBase64 = ev.target.result;
+          renderCards();
+          showToast('Uploaded custom background texture');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    window.handleBgUpload = handleBgUpload;
+
+    // --- Shared LocalStorage Integration (inv_sender_biz) ---
+    function importFromBusinessProfile() {
+      const savedBiz = localStorage.getItem('inv_sender_biz');
+      if (!savedBiz) {
+        showToast('No saved business profile found in local storage.');
+        return;
+      }
+      try {
+        const biz = JSON.parse(savedBiz);
+        if (biz.name) inputFieldCompany.value = biz.name;
+        if (biz.email) inputFieldEmail.value = biz.email;
+        if (biz.phone) inputFieldPhone.value = biz.phone;
+        if (biz.address) inputFieldAddress.value = biz.address;
+        if (biz.logo) {
+          customLogoBase64 = biz.logo;
+          btnClearLogo.style.display = 'inline-flex';
+        }
+        renderCards();
+        showToast('Imported details from business profile!');
+      } catch (err) {
+        showToast('Failed to parse business profile data.');
+      }
+    }
+    window.importFromBusinessProfile = importFromBusinessProfile;
+
+    // --- QR Code Generator Engine (vCard 3.0 & URL) ---
+    function generateVCardString() {
+      const fn = inputFieldName.value.trim() || 'Alex Morgan';
+      const nameParts = fn.split(' ');
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : fn;
+      const org = inputFieldCompany.value.trim();
+      const title = inputFieldTitle.value.trim();
+      const phone = inputFieldPhone.value.trim();
+      const email = inputFieldEmail.value.trim();
+      const url = inputFieldWebsite.value.trim();
+      const addr = inputFieldAddress.value.trim();
+
+      const lines = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `N:${lastName};${firstName};;;`,
+        `FN:${fn}`,
+        org ? `ORG:${org}` : '',
+        title ? `TITLE:${title}` : '',
+        phone ? `TEL;TYPE=CELL,VOICE:${phone}` : '',
+        email ? `EMAIL;TYPE=WORK,INTERNET:${email}` : '',
+        url ? `URL:${url.startsWith('http') ? url : 'https://' + url}` : '',
+        addr ? `ADR;TYPE=WORK:;;${addr};;;;` : '',
+        'END:VCARD'
+      ].filter(Boolean);
+
+      return lines.join('\n');
+    }
+
+    function getQrPayload() {
+      const type = selectQrType.value;
+      if (type === 'vcard') {
+        return generateVCardString();
+      } else if (type === 'url') {
+        const site = inputFieldWebsite.value.trim() || 'https://sayandeep.dev';
+        return site.startsWith('http') ? site : `https://${site}`;
+      } else {
+        return inputCustomQrVal.value.trim() || 'https://sayandeep.dev';
+      }
+    }
+
+    function handleQrTypeChange(type) {
+      grpCustomQrVal.style.display = (type === 'custom') ? 'flex' : 'none';
+      renderCards();
+    }
+    window.handleQrTypeChange = handleQrTypeChange;
+
+    function handleBackPresetChange(preset) {
+      grpBackTextCustom.style.display = (preset === 'blank' || preset === 'solid_color') ? 'none' : 'flex';
+      renderCards();
+    }
+    window.handleBackPresetChange = handleBackPresetChange;
+
+    // --- Apply Canvas Artboard Dimensions & Guide Overlays ---
+    function applyArtboardDimensions() {
+      const dim = getCardDimensionsInches();
+      const scale = SCREEN_SCALE * zoomLevel;
+
+      const totalW = dim.totalWidthIn * scale;
+      const totalH = dim.totalHeightIn * scale;
+      const bleedPx = BLEED_IN * scale;
+      const safePx = SAFE_IN * scale;
+
+      // Set explicit dimensions on 3D flipper container
+      if (cardFlipper) {
+        cardFlipper.style.width = `${totalW}px`;
+        cardFlipper.style.height = `${totalH}px`;
+      }
+
+      // Apply to artboards
+      [frontCardArtboard, backCardArtboard].forEach(art => {
+        art.style.width = `${totalW}px`;
+        art.style.height = `${totalH}px`;
+      });
+
+      // Position Trim Guide
+      const trimGuides = document.querySelectorAll('.card-trim-zone');
+      trimGuides.forEach(g => {
+        g.style.top = `${bleedPx}px`;
+        g.style.left = `${bleedPx}px`;
+        g.style.width = `${dim.widthIn * scale}px`;
+        g.style.height = `${dim.heightIn * scale}px`;
+      });
+
+      // Position Safe Guide
+      const safeGuides = document.querySelectorAll('.card-safe-zone');
+      safeGuides.forEach(g => {
+        g.style.top = `${bleedPx + safePx}px`;
+        g.style.left = `${bleedPx + safePx}px`;
+        g.style.width = `${(dim.widthIn - (SAFE_IN * 2)) * scale}px`;
+        g.style.height = `${(dim.heightIn - (SAFE_IN * 2)) * scale}px`;
+      });
+
+      // Set content surface padding equal to bleed for inner elements
+      const surfaces = document.querySelectorAll('.card-content-surface');
+      surfaces.forEach(s => {
+        s.style.padding = `${bleedPx + (safePx * 0.4)}px`;
+      });
+
+      updateActiveSideIndicator();
+    }
+
+    // --- Main Render Engine ---
+    function renderCards() {
+      applyArtboardDimensions();
+
+      const accent = inputAccentColor.value;
+      const font = selectFontFamily.value;
+      const isPortrait = currentOrientation === 'portrait';
+
+      // Backgrounds
+      renderBackground('front', selectFrontBgType.value, frontBgLayer);
+      renderBackground('back', selectBackBgType.value, backBgLayer);
+
+      // Render Front Layout
+      renderFrontInteractiveLayer(accent, font, isPortrait);
+
+      // Render Back Layout
+      renderBackInteractiveLayer(accent, font, isPortrait);
+
+      // Render Dual Slot clones if in dual mode
+      if (displayViewMode === 'dual') {
+        renderDualMode();
+      }
+
+      // Update Tiling if in sheet mode
+      if (displayViewMode === 'sheet') {
+        updateSheetTiling();
+      }
+    }
+
+    function renderBackground(side, bgType, layerEl) {
+      layerEl.style.backgroundImage = 'none';
+      layerEl.style.backgroundColor = '#ffffff';
+
+      if (bgType === 'match_front') {
+        bgType = selectFrontBgType.value;
+      } else if (bgType === 'invert') {
+        bgType = (selectFrontBgType.value === 'dark') ? 'solid' : 'dark';
+      }
+
+      const accent = inputAccentColor.value;
+
+      if (bgType === 'dark') {
+        layerEl.style.backgroundColor = '#0f172a';
+      } else if (bgType === 'accent_solid') {
+        layerEl.style.backgroundColor = accent;
+      } else if (bgType === 'gradient_soft') {
+        layerEl.style.backgroundImage = `linear-gradient(135deg, #ffffff 0%, ${accent}18 100%)`;
+      } else if (bgType === 'gradient_bold') {
+        layerEl.style.backgroundImage = `linear-gradient(135deg, #0f172a 0%, ${accent} 100%)`;
+      } else if (bgType === 'image' && customBgBase64) {
+        layerEl.style.backgroundImage = `url(${customBgBase64})`;
+      } else {
+        layerEl.style.backgroundColor = '#ffffff';
+      }
+    }
+
+    // --- Front Card Template Layouts ---
+    function renderFrontInteractiveLayer(accent, font, isPortrait) {
+      const isDark = (selectFrontBgType.value === 'dark' || selectFrontBgType.value === 'gradient_bold');
+      const textColor = isDark ? '#ffffff' : '#0f172a';
+      const mutedColor = isDark ? '#94a3b8' : '#64748b';
+
+      const showName = chkFieldName.checked && inputFieldName.value.trim();
+      const showTitle = chkFieldTitle.checked && inputFieldTitle.value.trim();
+      const showComp = chkFieldCompany.checked && inputFieldCompany.value.trim();
+      const showTagline = chkFieldTagline.checked && inputFieldTagline.value.trim();
+      const showLogo = chkFieldLogo.checked && customLogoBase64;
+      const showPhone = chkFieldPhone.checked && inputFieldPhone.value.trim();
+      const showEmail = chkFieldEmail.checked && inputFieldEmail.value.trim();
+      const showWeb = chkFieldWebsite.checked && inputFieldWebsite.value.trim();
+      const showAddr = chkFieldAddress.checked && inputFieldAddress.value.trim();
+
+      const qrOnFront = chkEnableQr.checked && selectQrSide.value === 'front';
+
+      // Build contact item chips
+      const contacts = [];
+      if (showPhone) contacts.push(`<span>📞 ${escapeHtml(inputFieldPhone.value)}</span>`);
+      if (showEmail) contacts.push(`<span>✉️ ${escapeHtml(inputFieldEmail.value)}</span>`);
+      if (showWeb) contacts.push(`<span>🌐 ${escapeHtml(inputFieldWebsite.value)}</span>`);
+      if (showAddr) contacts.push(`<span>📍 ${escapeHtml(inputFieldAddress.value)}</span>`);
+      
+      // Socials
+      socialHandles.filter(sh => sh.enabled && sh.handle.trim()).forEach(sh => {
+        contacts.push(`<span>💬 <strong>${escapeHtml(sh.platform)}:</strong> ${escapeHtml(sh.handle)}</span>`);
+      });
+
+      let layoutHtml = '';
+
+      if (currentTemplate === 'glassmorphism') {
+        // Frosted Glass / Neon Glow
+        layoutHtml = `
+          <div style="font-family:${font}; color:${textColor}; width:100%; height:100%; background:rgba(${isDark ? '15,23,42,0.7' : '255,255,255,0.75'}); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1.5px solid rgba(${isDark ? '255,255,255,0.18' : '255,255,255,0.65'}); box-shadow:0 8px 32px 0 rgba(31,38,135,0.12); border-radius:10px; padding:0.75rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:34px; max-width:100px; object-fit:contain; margin-bottom:0.25rem;" alt="Logo" />` : ''}
+                ${showComp ? `<div style="font-size:0.775rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:${accent};">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.625rem; color:${mutedColor};">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+              </div>
+              ${qrOnFront ? `<div id="front-qr-target" style="flex-shrink:0; background:#ffffff; padding:3px; border-radius:6px;"></div>` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.3rem; font-weight:900; letter-spacing:-0.03em;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-weight:700; color:${accent}; margin-top:0.05rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.35rem 0.5rem; font-size:0.625rem;">
+              ${contacts.map(c => `<div style="background:rgba(${isDark ? '255,255,255,0.08' : '0,0,0,0.04'}); border:1px solid rgba(${isDark ? '255,255,255,0.12' : '0,0,0,0.08'}); padding:0.15rem 0.45rem; border-radius:20px;">${c}</div>`).join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'neobrutalism') {
+        // Neo-Brutalist Pop
+        layoutHtml = `
+          <div style="font-family:${font}; color:#000000; width:100%; height:100%; border:2.5px solid #000000; background:#ffffff; box-shadow:4px 4px 0 #000000; border-radius:4px; padding:0.65rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:30px; max-width:80px; object-fit:contain;" alt="Logo" />` : ''}
+                ${showComp ? `<div style="background:${accent}; color:#ffffff; font-weight:900; font-size:0.75rem; padding:0.15rem 0.45rem; border:2px solid #000000; border-radius:3px; text-transform:uppercase; letter-spacing:0.04em;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+              </div>
+              ${qrOnFront ? `<div id="front-qr-target" style="border:2px solid #000; padding:2px; background:#fff;"></div>` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.35rem; font-weight:900; letter-spacing:-0.03em; line-height:1.1; text-transform:uppercase;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="display:inline-block; background:#000000; color:#ffffff; font-weight:700; font-size:0.7rem; padding:0.1rem 0.4rem; border-radius:2px; margin-top:0.25rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.3rem 0.5rem; font-size:0.65rem; font-weight:700; border-top:2px solid #000000; padding-top:0.35rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'swiss_grid') {
+        // Swiss Minimalist Grid
+        layoutHtml = `
+          <div style="font-family:${font}; color:#0f172a; width:100%; height:100%; display:grid; grid-template-columns:1fr 1fr; border-left:5px solid ${accent}; padding:0.5rem 0.75rem; box-sizing:border-box;">
+            <div style="display:flex; flex-direction:column; justify-content:space-between; padding-right:0.6rem; border-right:1px solid #e2e8f0;">
+              <div>
+                ${showComp ? `<div style="font-size:0.75rem; font-weight:900; letter-spacing:0.06em; text-transform:uppercase;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.6rem; color:#64748b; margin-top:0.1rem;">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+              </div>
+
+              <div>
+                ${showName ? `<div style="font-size:1.35rem; font-weight:900; letter-spacing:-0.04em; line-height:1.1;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+                ${showTitle ? `<div style="font-size:0.725rem; font-weight:600; color:${accent}; margin-top:0.15rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; justify-content:space-between; padding-left:0.6rem;">
+              <div style="display:flex; justify-content:flex-end;">
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:28px; max-width:80px; object-fit:contain;" alt="Logo" />` : ''}
+                ${qrOnFront && !showLogo ? `<div id="front-qr-target"></div>` : ''}
+              </div>
+
+              <div style="font-size:0.625rem; color:#475569; display:flex; flex-direction:column; gap:0.25rem;">
+                ${contacts.join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'holographic') {
+        // Holographic Luxe
+        layoutHtml = `
+          <div style="font-family:${font}; color:#0f172a; width:100%; height:100%; background:linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #c2e9fb 100%); border:1px solid rgba(255,255,255,0.8); border-radius:8px; padding:0.75rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:34px; max-width:90px; object-fit:contain; margin-bottom:0.2rem;" alt="Logo" />` : ''}
+                ${showComp ? `<div style="font-size:0.8rem; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:#1e1b4b;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+              </div>
+              ${qrOnFront ? `<div id="front-qr-target" style="padding:2px; background:#fff; border-radius:4px;"></div>` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.35rem; font-weight:900; letter-spacing:-0.02em; color:#0f172a;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-weight:700; color:#4338ca; margin-top:0.05rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="background:rgba(255,255,255,0.65); backdrop-filter:blur(4px); border-radius:6px; padding:0.35rem 0.5rem; font-size:0.625rem; color:#334155; display:flex; flex-wrap:wrap; gap:0.25rem 0.6rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'architect_minimal') {
+        // Architectural Monoline
+        layoutHtml = `
+          <div style="font-family:${font}; color:#0f172a; width:100%; height:100%; border:1px solid #0f172a; padding:0.65rem; display:flex; flex-direction:column; justify-content:space-between; position:relative; box-sizing:border-box;">
+            <div style="position:absolute; top:3px; left:4px; font-size:10px; font-family:monospace; color:#64748b;">+</div>
+            <div style="position:absolute; top:3px; right:4px; font-size:10px; font-family:monospace; color:#64748b;">+</div>
+            <div style="position:absolute; bottom:3px; left:4px; font-size:10px; font-family:monospace; color:#64748b;">+</div>
+            <div style="position:absolute; bottom:3px; right:4px; font-size:10px; font-family:monospace; color:#64748b;">+</div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showComp ? `<div style="font-size:0.75rem; font-weight:800; letter-spacing:0.18em; text-transform:uppercase;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.6rem; font-family:monospace; color:#64748b; letter-spacing:0.05em;">[${escapeHtml(inputFieldTagline.value)}]</div>` : ''}
+              </div>
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:28px; max-width:80px; object-fit:contain;" alt="Logo" />` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.25rem; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.7rem; font-weight:600; color:${accent}; letter-spacing:0.08em; text-transform:uppercase; margin-top:0.1rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="border-top:1px solid #0f172a; padding-top:0.35rem; font-size:0.6rem; color:#475569; font-family:monospace; display:flex; flex-wrap:wrap; gap:0.25rem 0.65rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'editorial_vogue') {
+        // Editorial Vogue / Luxury Serif
+        layoutHtml = `
+          <div style="font-family:'Playfair Display', serif; color:#0f172a; width:100%; height:100%; padding:0.65rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #0f172a; padding-bottom:0.25rem;">
+              ${showComp ? `<div style="font-size:0.8rem; font-weight:800; letter-spacing:0.15em; text-transform:uppercase;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:24px; max-width:70px; object-fit:contain;" alt="Logo" />` : ''}
+            </div>
+
+            <div style="text-align:center; margin:0.3rem 0;">
+              ${showName ? `<div style="font-size:1.4rem; font-weight:800; letter-spacing:0.02em; font-style:normal;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-style:italic; color:${accent}; margin-top:0.1rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="font-family:'Inter', sans-serif; font-size:0.625rem; color:#475569; display:flex; justify-content:center; flex-wrap:wrap; gap:0.3rem 0.75rem; border-top:1px solid #e2e8f0; padding-top:0.35rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'cyber_terminal') {
+        // Cyberpunk Terminal / Matrix
+        layoutHtml = `
+          <div style="font-family:'JetBrains Mono', monospace; color:#10b981; background:#050505; width:100%; height:100%; border:1px solid #10b98166; padding:0.65rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box; text-shadow:0 0 4px #10b98144;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:0.65rem; color:#34d399; display:flex; align-items:center; gap:0.3rem;">
+                <span style="display:inline-block; width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
+                <span>SYS.USER_PROFILE // ${escapeHtml(inputFieldCompany.value || 'NODE')}</span>
+              </div>
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:24px; max-width:70px; object-fit:contain; filter:invert(1) hue-rotate(90deg);" alt="Logo" />` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.25rem; font-weight:800; color:#ffffff; letter-spacing:-0.02em;">&gt; ${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.7rem; color:#38bdf8; margin-top:0.1rem;">ROLE: ${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="font-size:0.6rem; color:#94a3b8; display:flex; flex-wrap:wrap; gap:0.25rem 0.65rem; border-top:1px dashed #10b98144; padding-top:0.35rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'nordic_organic') {
+        // Nordic Organic / Botanical
+        layoutHtml = `
+          <div style="font-family:${font}; color:#132a13; width:100%; height:100%; background:linear-gradient(135deg, #f3f7f4 0%, #e1ebe3 100%); border-radius:12px; padding:0.75rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showComp ? `<div style="font-size:0.775rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#2d6a4f;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.625rem; color:#52796f;">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+              </div>
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:32px; max-width:80px; object-fit:contain;" alt="Logo" />` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.3rem; font-weight:900; letter-spacing:-0.02em; color:#081c15;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-weight:700; color:#40916c; margin-top:0.05rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:0.3rem 0.5rem; font-size:0.625rem;">
+              ${contacts.map(c => `<div style="background:#ffffff; padding:0.2rem 0.5rem; border-radius:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">${c}</div>`).join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'minimal_mono') {
+        // Developer / Code Mono
+        layoutHtml = `
+          <div style="font-family:'JetBrains Mono', monospace; color:#f8fafc; background:#0f172a; width:100%; height:100%; padding:0.7rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.65rem; color:#38bdf8;">const <span style="color:#f472b6;">developer</span> = {</span>
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:22px; max-width:70px; object-fit:contain; filter:brightness(1.5);" alt="Logo" />` : ''}
+            </div>
+
+            <div style="padding-left:0.6rem;">
+              ${showName ? `<div style="font-size:1.15rem; font-weight:800; color:#ffffff;">name: <span style="color:#a5f3fc;">'${escapeHtml(inputFieldName.value)}'</span>,</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.7rem; color:#94a3b8;">title: <span style="color:#fed7aa;">'${escapeHtml(inputFieldTitle.value)}'</span>,</div>` : ''}
+              ${showComp ? `<div style="font-size:0.65rem; color:#94a3b8;">org: <span style="color:#86efac;">'${escapeHtml(inputFieldCompany.value)}'</span>,</div>` : ''}
+            </div>
+
+            <div>
+              <div style="font-size:0.6rem; color:#94a3b8; display:flex; flex-wrap:wrap; gap:0.25rem 0.6rem; padding-left:0.6rem;">
+                ${contacts.join('')}
+              </div>
+              <div style="font-size:0.65rem; color:#38bdf8; margin-top:0.2rem;">};</div>
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'classic_corp') {
+        // Centered Classic Corporate
+        layoutHtml = `
+          <div style="font-family:${font}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; align-items:center; text-align:center; padding:0.4rem;">
+            <div>
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:36px; max-width:110px; object-fit:contain; margin-bottom:0.25rem;" alt="Logo" />` : ''}
+              ${showComp ? `<div style="font-size:0.85rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:${accent};">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+              ${showTagline ? `<div style="font-size:0.65rem; color:${mutedColor}; letter-spacing:0.04em;">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+            </div>
+
+            <div style="margin:0.25rem 0;">
+              ${showName ? `<div style="font-size:1.25rem; font-weight:800; letter-spacing:-0.02em;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-weight:600; color:${accent}; margin-top:0.1rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="font-size:0.65rem; color:${mutedColor}; display:flex; flex-wrap:wrap; justify-content:center; gap:0.6rem 0.8rem; line-height:1.3;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'split_block') {
+        // Split Color Block
+        layoutHtml = `
+          <div style="font-family:${font}; color:${textColor}; width:100%; height:100%; display:grid; grid-template-columns:1.2fr 1fr; gap:0.75rem; align-items:center;">
+            <div style="display:flex; flex-direction:column; justify-content:center;">
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:32px; max-width:90px; object-fit:contain; margin-bottom:0.35rem;" alt="Logo" />` : ''}
+              ${showName ? `<div style="font-size:1.25rem; font-weight:900; letter-spacing:-0.03em;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.725rem; font-weight:700; color:${accent}; margin-top:0.1rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+              ${showComp ? `<div style="font-size:0.675rem; font-weight:800; text-transform:uppercase; color:${mutedColor}; margin-top:0.25rem;">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+            </div>
+
+            <div style="border-left:2px solid ${accent}; padding-left:0.65rem; font-size:0.65rem; color:${mutedColor}; display:flex; flex-direction:column; gap:0.3rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'logo_creative') {
+        // Logo-Prominent Creative
+        layoutHtml = `
+          <div style="font-family:${font}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; padding:0.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:42px; max-width:120px; object-fit:contain;" alt="Logo" />` : ''}
+                ${showComp ? `<div style="font-size:0.95rem; font-weight:900; letter-spacing:-0.02em; color:${accent};">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.65rem; color:${mutedColor};">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+              </div>
+              ${qrOnFront ? `<div id="front-qr-target" style="flex-shrink:0;"></div>` : ''}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:0.5rem;">
+              <div>
+                ${showName ? `<div style="font-size:1.15rem; font-weight:800;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+                ${showTitle ? `<div style="font-size:0.725rem; font-weight:600; color:${accent};">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+              </div>
+              <div style="font-size:0.625rem; color:${mutedColor}; text-align:right; display:flex; flex-direction:column; gap:0.15rem;">
+                ${contacts.slice(0, 3).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (currentTemplate === 'dark_luxury') {
+        // Dark Luxury Monolith
+        layoutHtml = `
+          <div style="font-family:${font}; color:#ffffff; width:100%; height:100%; border:1px solid ${accent}66; padding:0.6rem; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              ${showLogo ? `<img src="${customLogoBase64}" style="max-height:28px; max-width:80px; object-fit:contain; filter:brightness(1.2);" alt="Logo" />` : ''}
+              ${showComp ? `<div style="font-size:0.75rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:${accent};">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.3rem; font-weight:900; letter-spacing:0.02em; color:#ffffff;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.725rem; font-weight:600; color:${accent}; letter-spacing:0.04em; margin-top:0.1rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="font-size:0.625rem; color:#94a3b8; display:flex; flex-wrap:wrap; gap:0.4rem 0.75rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        // Default: Modern Executive Left-Aligned
+        layoutHtml = `
+          <div style="font-family:${font}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                ${showLogo ? `<img src="${customLogoBase64}" style="max-height:36px; max-width:110px; object-fit:contain; margin-bottom:0.25rem;" alt="Logo" />` : ''}
+                ${showComp ? `<div style="font-size:0.8rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:${accent};">${escapeHtml(inputFieldCompany.value)}</div>` : ''}
+                ${showTagline ? `<div style="font-size:0.625rem; color:${mutedColor};">${escapeHtml(inputFieldTagline.value)}</div>` : ''}
+              </div>
+              ${qrOnFront ? `<div id="front-qr-target" style="flex-shrink:0;"></div>` : ''}
+            </div>
+
+            <div>
+              ${showName ? `<div style="font-size:1.25rem; font-weight:900; letter-spacing:-0.03em;">${escapeHtml(inputFieldName.value)}</div>` : ''}
+              ${showTitle ? `<div style="font-size:0.75rem; font-weight:600; color:${accent}; margin-top:0.05rem;">${escapeHtml(inputFieldTitle.value)}</div>` : ''}
+            </div>
+
+            <div style="border-top:1.5px solid ${accent}33; padding-top:0.35rem; font-size:0.65rem; color:${mutedColor}; display:flex; flex-wrap:wrap; gap:0.35rem 0.75rem;">
+              ${contacts.join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      frontInteractiveLayer.innerHTML = layoutHtml;
+
+      // Render QR on Front if enabled
+      if (qrOnFront) {
+        renderQrCodeElement('front-qr-target');
+      }
+    }
+
+    // --- Back Card Template Layouts ---
+    function renderBackInteractiveLayer(accent, font, isPortrait) {
+      const preset = selectBackPreset.value;
+      const isDark = (selectBackBgType.value === 'dark' || selectBackBgType.value === 'gradient_bold' || (selectBackBgType.value === 'invert' && selectFrontBgType.value !== 'dark'));
+      const textColor = isDark ? '#ffffff' : '#0f172a';
+      const mutedColor = isDark ? '#94a3b8' : '#64748b';
+
+      const showLogo = customLogoBase64;
+      const showComp = inputFieldCompany.value.trim();
+      const heading = inputBackHeading.value.trim();
+      const qrOnBack = chkEnableQr.checked && selectQrSide.value === 'back';
+
+      let backHtml = '';
+
+      // Template-specific style modifiers
+      let qrContainerStyle = 'padding:6px; background:#ffffff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      let backFont = font;
+
+      if (currentTemplate === 'neobrutalism') {
+        qrContainerStyle = 'padding:6px; background:#ffffff; border:2.5px solid #000000; box-shadow:3px 3px 0 #000000; border-radius:3px;';
+        backFont = "'Space Grotesk', sans-serif";
+      } else if (currentTemplate === 'cyber_terminal') {
+        qrContainerStyle = 'padding:6px; background:#050505; border:1.5px solid #10b98166; border-radius:4px; box-shadow:0 0 10px rgba(16,185,129,0.3);';
+        backFont = "'JetBrains Mono', monospace";
+      } else if (currentTemplate === 'glassmorphism') {
+        qrContainerStyle = 'padding:6px; background:rgba(255,255,255,0.85); backdrop-filter:blur(8px); border:1.5px solid rgba(255,255,255,0.6); border-radius:10px; box-shadow:0 8px 24px rgba(31,38,135,0.15);';
+      } else if (currentTemplate === 'editorial_vogue') {
+        backFont = "'Playfair Display', serif";
+      }
+
+      if (preset === 'logo_centered') {
+        backHtml = `
+          <div style="font-family:${backFont}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:0.5rem; box-sizing:border-box;">
+            ${showLogo ? `<img src="${customLogoBase64}" style="max-height:56px; max-width:160px; object-fit:contain; margin-bottom:0.4rem;" alt="Logo" />` : ''}
+            ${showComp ? `<div style="font-size:1.15rem; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; color:${accent};">${escapeHtml(showComp)}</div>` : ''}
+            ${heading ? `<div style="font-size:0.725rem; color:${mutedColor}; letter-spacing:0.04em; margin-top:0.2rem;">${escapeHtml(heading)}</div>` : ''}
+          </div>
+        `;
+      } else if (preset === 'dual_lang') {
+        backHtml = `
+          <div style="font-family:${backFont}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; text-align:center; padding:0.5rem; box-sizing:border-box;">
+            <div>
+              <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:${accent};">${escapeHtml(showComp)}</div>
+              <div style="font-size:0.625rem; color:${mutedColor};">International Business Representative</div>
+            </div>
+            <div>
+              <div style="font-size:1.25rem; font-weight:900;">${escapeHtml(inputFieldName.value)}</div>
+              <div style="font-size:0.75rem; color:${accent}; font-weight:600;">${escapeHtml(inputFieldTitle.value)}</div>
+            </div>
+            <div style="font-size:0.625rem; color:${mutedColor};">
+              ${escapeHtml(inputFieldEmail.value)} · ${escapeHtml(inputFieldPhone.value)}
+            </div>
+          </div>
+        `;
+      } else if (preset === 'appointment') {
+        backHtml = `
+          <div style="font-family:${backFont}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; padding:0.4rem; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:0.8rem; text-transform:uppercase; color:${accent};">Next Appointment</strong>
+              <span style="font-size:0.65rem; color:${mutedColor};">${escapeHtml(showComp)}</span>
+            </div>
+            <div style="border:1px solid ${accent}44; border-radius:4px; padding:0.45rem; font-size:0.7rem; display:flex; flex-direction:column; gap:0.35rem; background:rgba(255,255,255,0.03);">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #cbd5e1; padding-bottom:0.25rem;">
+                <span>Date: ________________</span>
+                <span>Time: ___________</span>
+              </div>
+              <div style="font-size:0.625rem; color:${mutedColor};">Please provide 24 hours notice for rescheduling.</div>
+            </div>
+            <div style="font-size:0.625rem; color:${mutedColor}; text-align:center;">
+              Call ${escapeHtml(inputFieldPhone.value)} to confirm.
+            </div>
+          </div>
+        `;
+      } else if (preset === 'blank' || preset === 'solid_color') {
+        backHtml = `<div style="width:100%; height:100%;"></div>`;
+      } else {
+        // Default: Large vCard QR Code & Tagline
+        backHtml = `
+          <div style="font-family:${backFont}; color:${textColor}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:0.45rem; padding:0.5rem; box-sizing:border-box;">
+            ${qrOnBack ? `<div id="back-qr-target" style="${qrContainerStyle}"></div>` : ''}
+            <div>
+              <div style="font-size:0.85rem; font-weight:800; color:${textColor};">${escapeHtml(heading || 'Scan to Save Contact')}</div>
+              <div style="font-size:0.65rem; color:${mutedColor}; margin-top:0.1rem;">${escapeHtml(showComp)} ${showComp && inputFieldName.value.trim() ? '·' : ''} ${escapeHtml(inputFieldName.value)}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      backInteractiveLayer.innerHTML = backHtml;
+
+      if (qrOnBack && preset !== 'blank' && preset !== 'solid_color') {
+        renderQrCodeElement('back-qr-target');
+      }
+    }
+
+    // --- QR Code DOM Injection ---
+    function renderQrCodeElement(targetId) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      const payload = getQrPayload();
+      const qrColor = inputQrColor.value || '#0f172a';
+      const qrSize = parseInt(inputQrSize.value, 10) || 70;
+
+      try {
+        new QRCode(el, {
+          text: payload,
+          width: qrSize,
+          height: qrSize,
+          colorDark: qrColor,
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (err) {
+        el.textContent = '[QR Error]';
+      }
+    }
+
+    // --- Dual View Renderer ---
+    function renderDualMode() {
+      dualFrontSlot.innerHTML = '';
+      dualBackSlot.innerHTML = '';
+
+      const frontClone = frontCardArtboard.cloneNode(true);
+      frontClone.id = 'dual-front-artboard';
+      frontClone.className = 'business-card-artboard';
+
+      const backClone = backCardArtboard.cloneNode(true);
+      backClone.id = 'dual-back-artboard';
+      backClone.className = 'business-card-artboard dual-mode-back';
+
+      dualFrontSlot.appendChild(frontClone);
+      dualBackSlot.appendChild(backClone);
+
+      // Re-render QRs on clones
+      const fQr = frontClone.querySelector('#front-qr-target');
+      if (fQr) {
+        fQr.id = 'dual-front-qr';
+        renderQrCodeElement('dual-front-qr');
+      }
+      const bQr = backClone.querySelector('#back-qr-target');
+      if (bQr) {
+        bQr.id = 'dual-back-qr';
+        renderQrCodeElement('dual-back-qr');
+      }
+    }
+
+    // --- Print Sheet Tiling Engine (Letter / A4) ---
+    function updateSheetTiling() {
+      const paper = selectSheetPaper.value; // 'letter' (8.5x11) or 'a4' (8.27x11.69)
+      const targetSide = selectSheetSide.value; // 'front' or 'back'
+      const marksType = selectSheetMarks.value; // 'crop_marks', 'full_lines', 'none'
+
+      const sheetWIn = (paper === 'letter') ? 8.5 : 8.27;
+      const sheetHIn = (paper === 'letter') ? 11.0 : 11.69;
+
+      const dim = getCardDimensionsInches();
+      const cardW = dim.widthIn;
+      const cardH = dim.heightIn;
+
+      // Margins
+      const marginX = 0.5;
+      const marginY = 0.5;
+      const printableW = sheetWIn - (marginX * 2);
+      const printableH = sheetHIn - (marginY * 2);
+
+      const cols = Math.floor(printableW / cardW);
+      const rows = Math.floor(printableH / cardH);
+      const totalCards = Math.max(1, cols * rows);
+
+      txtCardsPerSheet.value = `${totalCards} Cards (${cols} × ${rows} Grid)`;
+
+      // Scale sheet to fit stage viewport nicely
+      const sheetPxW = sheetWIn * 96;
+      const sheetPxH = sheetHIn * 96;
+
+      printSheetStage.style.width = `${sheetPxW}px`;
+      printSheetStage.style.height = `${sheetPxH}px`;
+      printSheetGrid.style.gridTemplateColumns = `repeat(${cols}, ${cardW * 96}px)`;
+      printSheetGrid.style.gridTemplateRows = `repeat(${rows}, ${cardH * 96}px)`;
+
+      // Generate tiled cards
+      const sourceArtboard = (targetSide === 'front') ? frontCardArtboard : backCardArtboard;
+      const surfaceContent = sourceArtboard.querySelector('.card-content-surface').innerHTML;
+
+      let cellsHtml = '';
+      for (let i = 0; i < totalCards; i++) {
+        cellsHtml += `
+          <div class="sheet-card-cell" style="width:${cardW * 96}px; height:${cardH * 96}px; overflow:hidden; position:relative;">
+            ${marksType === 'crop_marks' ? `
+              <div class="crop-mark-tl"></div>
+              <div class="crop-mark-tr"></div>
+              <div class="crop-mark-bl"></div>
+              <div class="crop-mark-br"></div>
+            ` : ''}
+            <div style="width:100%; height:100%; transform:scale(${96 / (SCREEN_SCALE * zoomLevel)}); transform-origin:top left;">
+              <div style="width:${dim.totalWidthIn * SCREEN_SCALE * zoomLevel}px; height:${dim.totalHeightIn * SCREEN_SCALE * zoomLevel}px;">
+                ${surfaceContent}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      printSheetGrid.innerHTML = cellsHtml;
+    }
+
+    // --- State Serialization (IndexedDB & JSON) ---
+    function getCurrentDesignState() {
+      return {
+        id: currentDesignId || `card_${Date.now()}`,
+        name: designName || `${inputFieldName.value || 'Card'} - ${inputFieldCompany.value || 'Design'}`,
+        updatedAt: new Date().toISOString(),
+        sizePreset: currentSizePreset,
+        customWidth: inputCustomW.value,
+        customHeight: inputCustomH.value,
+        orientation: currentOrientation,
+        template: currentTemplate,
+        fields: {
+          name: { val: inputFieldName.value, enabled: chkFieldName.checked },
+          title: { val: inputFieldTitle.value, enabled: chkFieldTitle.checked },
+          company: { val: inputFieldCompany.value, enabled: chkFieldCompany.checked },
+          tagline: { val: inputFieldTagline.value, enabled: chkFieldTagline.checked },
+          logo: { val: customLogoBase64, enabled: chkFieldLogo.checked },
+          phone: { val: inputFieldPhone.value, enabled: chkFieldPhone.checked },
+          email: { val: inputFieldEmail.value, enabled: chkFieldEmail.checked },
+          website: { val: inputFieldWebsite.value, enabled: chkFieldWebsite.checked },
+          address: { val: inputFieldAddress.value, enabled: chkFieldAddress.checked }
+        },
+        socialHandles: JSON.parse(JSON.stringify(socialHandles)),
+        back: {
+          preset: selectBackPreset.value,
+          heading: inputBackHeading.value
+        },
+        qr: {
+          enabled: chkEnableQr.checked,
+          side: selectQrSide.value,
+          type: selectQrType.value,
+          customVal: inputCustomQrVal.value,
+          color: inputQrColor.value,
+          size: inputQrSize.value
+        },
+        style: {
+          fontFamily: selectFontFamily.value,
+          accentColor: inputAccentColor.value,
+          frontBgType: selectFrontBgType.value,
+          backBgType: selectBackBgType.value,
+          customBg: customBgBase64
+        }
+      };
+    }
+
+    function loadDesignState(state) {
+      if (!state) return;
+      currentDesignId = state.id || `card_${Date.now()}`;
+      designName = state.name || 'My Business Card';
+
+      if (state.sizePreset) {
+        selectCardSize.value = state.sizePreset;
+        handleSizePresetChange(state.sizePreset);
+      }
+      if (state.customWidth) inputCustomW.value = state.customWidth;
+      if (state.customHeight) inputCustomH.value = state.customHeight;
+      if (state.orientation) setOrientation(state.orientation);
+      if (state.template) selectTemplate(state.template);
+
+      if (state.fields) {
+        if (state.fields.name) { inputFieldName.value = state.fields.name.val; chkFieldName.checked = state.fields.name.enabled; }
+        if (state.fields.title) { inputFieldTitle.value = state.fields.title.val; chkFieldTitle.checked = state.fields.title.enabled; }
+        if (state.fields.company) { inputFieldCompany.value = state.fields.company.val; chkFieldCompany.checked = state.fields.company.enabled; }
+        if (state.fields.tagline) { inputFieldTagline.value = state.fields.tagline.val; chkFieldTagline.checked = state.fields.tagline.enabled; }
+        if (state.fields.phone) { inputFieldPhone.value = state.fields.phone.val; chkFieldPhone.checked = state.fields.phone.enabled; }
+        if (state.fields.email) { inputFieldEmail.value = state.fields.email.val; chkFieldEmail.checked = state.fields.email.enabled; }
+        if (state.fields.website) { inputFieldWebsite.value = state.fields.website.val; chkFieldWebsite.checked = state.fields.website.enabled; }
+        if (state.fields.address) { inputFieldAddress.value = state.fields.address.val; chkFieldAddress.checked = state.fields.address.enabled; }
+        if (state.fields.logo) {
+          customLogoBase64 = state.fields.logo.val || '';
+          chkFieldLogo.checked = state.fields.logo.enabled;
+          btnClearLogo.style.display = customLogoBase64 ? 'inline-flex' : 'none';
+        }
+      }
+
+      if (state.socialHandles && Array.isArray(state.socialHandles)) {
+        socialHandles = state.socialHandles;
+        renderSocialHandlesForm();
+      }
+
+      if (state.back) {
+        selectBackPreset.value = state.back.preset || 'qr_contact';
+        inputBackHeading.value = state.back.heading || 'Scan to Save Contact';
+        handleBackPresetChange(selectBackPreset.value);
+      }
+
+      if (state.qr) {
+        chkEnableQr.checked = state.qr.enabled !== false;
+        selectQrSide.value = state.qr.side || 'back';
+        selectQrType.value = state.qr.type || 'vcard';
+        inputCustomQrVal.value = state.qr.customVal || '';
+        inputQrColor.value = state.qr.color || '#0f172a';
+        inputQrSize.value = state.qr.size || 70;
+        handleQrTypeChange(selectQrType.value);
+      }
+
+      if (state.style) {
+        selectFontFamily.value = state.style.fontFamily || "'Inter', sans-serif";
+        inputAccentColor.value = state.style.accentColor || '#2563eb';
+        selectFrontBgType.value = state.style.frontBgType || 'solid';
+        selectBackBgType.value = state.style.backBgType || 'solid_white';
+        customBgBase64 = state.style.customBg || '';
+      }
+
+      renderCards();
+    }
+
+    // --- Saved Designs Modal Actions ---
+    const galleryModal = document.getElementById('gallery-modal');
+    const galleryListItems = document.getElementById('gallery-list-items');
+    const gallerySearch = document.getElementById('gallery-search');
+
+    document.getElementById('btn-open-gallery').addEventListener('click', async () => {
+      await renderGalleryList();
+      galleryModal.classList.add('show');
+    });
+    document.getElementById('btn-close-gallery').addEventListener('click', () => {
+      galleryModal.classList.remove('show');
+    });
+
+    document.getElementById('btn-save-design').addEventListener('click', async () => {
+      const design = getCurrentDesignState();
+      await dbSaveDesign(design);
+      showToast(`Saved design "${design.name}"!`);
+    });
+
+    document.getElementById('btn-duplicate-design').addEventListener('click', async () => {
+      const design = getCurrentDesignState();
+      design.id = `card_${Date.now()}`;
+      design.name = `${design.name} (Copy)`;
+      await dbSaveDesign(design);
+      loadDesignState(design);
+      showToast(`Duplicated into new card design!`);
+    });
+
+    async function renderGalleryList() {
+      const list = await dbGetAllDesigns();
+      const q = (gallerySearch.value || '').toLowerCase().trim();
+
+      const filtered = list.filter(d => {
+        return !q ||
+          (d.name && d.name.toLowerCase().includes(q)) ||
+          (d.fields?.name?.val && d.fields.name.val.toLowerCase().includes(q)) ||
+          (d.fields?.company?.val && d.fields.company.val.toLowerCase().includes(q));
+      });
+
+      if (filtered.length === 0) {
+        galleryListItems.innerHTML = `
+          <div style="text-align:center; padding:2rem; color:var(--muted); font-size:0.85rem;">
+            No saved business cards found. Click "💾 Save Design" to preserve cards in this browser.
+          </div>
+        `;
+        return;
+      }
+
+      galleryListItems.innerHTML = filtered.map(d => `
+        <div style="background:var(--surface-alt); border:1px solid var(--line); border-radius:var(--radius-sm); padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
+          <div>
+            <strong style="font-size:0.875rem; color:var(--text);">${escapeHtml(d.name)}</strong>
+            <div style="font-size:0.75rem; color:var(--muted); margin-top:0.15rem;">
+              ${escapeHtml(d.fields?.name?.val || 'No Name')} · ${escapeHtml(d.fields?.company?.val || 'No Company')} · ${escapeHtml(d.sizePreset?.toUpperCase() || 'US')}
+            </div>
+          </div>
+          <div style="display:flex; gap:0.35rem;">
+            <button class="btn btn--sm btn--primary" onclick="reopenDesign('${d.id}')">✏️ Load</button>
+            <button class="btn btn--sm btn--danger" onclick="deleteDesign('${d.id}')">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    window.filterGalleryList = renderGalleryList;
+
+    window.reopenDesign = async (id) => {
+      const list = await dbGetAllDesigns();
+      const d = list.find(item => item.id === id);
+      if (d) {
+        loadDesignState(d);
+        galleryModal.classList.remove('show');
+        showToast(`Loaded "${d.name}"`);
+      }
+    };
+
+    window.deleteDesign = async (id) => {
+      if (confirm('Delete this saved card design?')) {
+        await dbDeleteDesign(id);
+        await renderGalleryList();
+        showToast('Deleted design');
+      }
+    };
+
+    document.getElementById('btn-clear-all-gallery').addEventListener('click', async () => {
+      if (confirm('Delete ALL saved business card designs from this browser?')) {
+        await dbClearAllDesigns();
+        await renderGalleryList();
+        showToast('Cleared all designs');
+      }
+    });
+
+    // --- JSON Backup Modal Actions ---
+    const backupModal = document.getElementById('backup-modal');
+    document.getElementById('btn-open-backup').addEventListener('click', () => {
+      backupModal.classList.add('show');
+    });
+    document.getElementById('btn-close-backup').addEventListener('click', () => {
+      backupModal.classList.remove('show');
+    });
+
+    document.getElementById('btn-export-current-json').addEventListener('click', () => {
+      const data = getCurrentDesignState();
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `business-card-${data.name.replace(/\s+/g, '-').toLowerCase()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Exported card JSON');
+    });
+
+    document.getElementById('btn-export-all-json').addEventListener('click', async () => {
+      const list = await dbGetAllDesigns();
+      const backupData = {
+        app: 'BusinessCardStudio',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        designs: list
+      };
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `business-cards-backup-${new Date().toISOString().substring(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Exported complete designs backup');
+    });
+
+    document.getElementById('json-file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            if (parsed.designs && Array.isArray(parsed.designs)) {
+              for (const d of parsed.designs) {
+                await dbSaveDesign(d);
+              }
+              showToast(`Imported ${parsed.designs.length} card designs!`);
+            } else if (parsed.fields) {
+              loadDesignState(parsed);
+              showToast(`Restored design "${parsed.name}"`);
+            }
+            backupModal.classList.remove('show');
+          } catch (err) {
+            alert('Invalid JSON file format');
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // --- Sample Card Loader ---
+    document.getElementById('btn-sample-data').addEventListener('click', () => {
+      currentSizePreset = 'us';
+      selectCardSize.value = 'us';
+      setOrientation('landscape');
+      selectTemplate('glassmorphism');
+
+      inputFieldName.value = 'Alex Morgan';
+      inputFieldTitle.value = 'Principal Cloud Architect';
+      inputFieldCompany.value = 'Blue Harbor Technologies';
+      inputFieldTagline.value = 'Enterprise Cloud & AI Systems';
+      inputFieldPhone.value = '+1 (555) 302-9182';
+      inputFieldEmail.value = 'alex.morgan@blueharbor.com';
+      inputFieldWebsite.value = 'www.blueharbor.com';
+      inputFieldAddress.value = '100 Montgomery St, San Francisco, CA';
+
+      chkFieldName.checked = true;
+      chkFieldTitle.checked = true;
+      chkFieldCompany.checked = true;
+      chkFieldTagline.checked = true;
+      chkFieldPhone.checked = true;
+      chkFieldEmail.checked = true;
+      chkFieldWebsite.checked = true;
+      chkFieldAddress.checked = true;
+      chkFieldLogo.checked = false;
+
+      socialHandles = [
+        { platform: 'LinkedIn', handle: 'in/alexmorgan', enabled: true },
+        { platform: 'GitHub', handle: 'github.com/alexmorgan', enabled: true }
+      ];
+      renderSocialHandlesForm();
+
+      selectBackPreset.value = 'qr_contact';
+      inputBackHeading.value = 'Scan to Save Contact';
+      chkEnableQr.checked = true;
+      selectQrSide.value = 'back';
+      selectQrType.value = 'vcard';
+
+      selectFontFamily.value = "'Outfit', sans-serif";
+      inputAccentColor.value = '#6366f1';
+      selectFrontBgType.value = 'gradient_soft';
+      selectBackBgType.value = 'solid_white';
+
+      renderCards();
+      showToast('Loaded modern sample card');
+    });
+
+    // --- EXPORT ENGINES (PDF, 300 DPI PNG, SVG) ---
+
+    // 1. High-Resolution 300 DPI PNG Export
+    document.getElementById('btn-export-png').addEventListener('click', async () => {
+      showToast('Rasterizing 300 DPI print image...');
+      
+      const targetSide = activeSide;
+      const targetEl = (targetSide === 'front') ? frontCardArtboard : backCardArtboard;
+
+      // Temporarily pause transitions and unflip flipper so no 3D rotation affects capture
+      const origTransition = cardFlipper.style.transition;
+      cardFlipper.style.transition = 'none';
+      const wasFlipped = cardFlipper.classList.contains('flipped');
+      cardFlipper.classList.remove('flipped');
+      cardFlipper.style.transform = 'none';
+      cardFlipper.style.webkitTransform = 'none';
+
+      // Temporarily hide guide overlays and reset 3D rotation for upright print capture
+      const guides = targetEl.querySelectorAll('.guide-overlay');
+      guides.forEach(g => g.style.display = 'none');
+
+      const origTransform = targetEl.style.transform;
+      const origWebkitTransform = targetEl.style.webkitTransform;
+      targetEl.style.transform = 'none';
+      targetEl.style.webkitTransform = 'none';
+
+      try {
+        // 300 DPI scale: standard screen is 96 DPI, 300 / 96 = ~3.125
+        const canvas = await html2canvas(targetEl, {
+          scale: 3.125,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `business-card-${targetSide}-300dpi.png`;
+        a.click();
+        showToast(`Downloaded ${targetSide.toUpperCase()} side 300 DPI PNG`);
+      } catch (err) {
+        showToast('Raster export failed. Please try again.');
+      } finally {
+        targetEl.style.transform = origTransform;
+        targetEl.style.webkitTransform = origWebkitTransform;
+        if (showGuides) {
+          guides.forEach(g => g.style.display = 'block');
+        }
+        if (wasFlipped) {
+          cardFlipper.classList.add('flipped');
+        }
+        cardFlipper.style.transform = '';
+        cardFlipper.style.webkitTransform = '';
+        requestAnimationFrame(() => {
+          cardFlipper.style.transition = origTransition;
+        });
+      }
+    });
+
+    // 2. Vector SVG Lossless Export
+    document.getElementById('btn-export-svg').addEventListener('click', () => {
+      showToast('Generating vector SVG...');
+      const dim = getCardDimensionsInches();
+      const targetSide = activeSide;
+      const targetEl = (targetSide === 'front') ? frontCardArtboard : backCardArtboard;
+      const surfaceHtml = targetEl.querySelector('.card-content-surface').innerHTML;
+
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${dim.totalWidthIn}in" height="${dim.totalHeightIn}in" viewBox="0 0 ${dim.totalWidthIn * 72} ${dim.totalHeightIn * 72}">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;display=swap');
+    text { font-family: 'Inter', sans-serif; }
+  </style>
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%; height:100%; position:relative; box-sizing:border-box;">
+      ${surfaceHtml}
+    </div>
+  </foreignObject>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `business-card-${targetSide}-vector.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${targetSide.toUpperCase()} Vector SVG`);
+    });
+
+    // 3. Print-Ready PDF Export (with Bleed & 2-page Front+Back)
+    document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+      showToast('Compiling Print-Ready PDF with Bleed...');
+      const { jsPDF } = window.jspdf;
+      const dim = getCardDimensionsInches();
+
+      // Convert inches to mm
+      const totalWMm = dim.totalWidthIn * 25.4;
+      const totalHMm = dim.totalHeightIn * 25.4;
+
+      // Temporarily pause transitions and unflip flipper container so html2canvas doesn't inherit parent 3D rotation
+      const origTransition = cardFlipper.style.transition;
+      cardFlipper.style.transition = 'none';
+      const wasFlipped = cardFlipper.classList.contains('flipped');
+      cardFlipper.classList.remove('flipped');
+      cardFlipper.style.transform = 'none';
+      cardFlipper.style.webkitTransform = 'none';
+
+      // Temporarily hide guides & reset 3D rotation for flat, upright 2D rasterization
+      const frontGuides = frontCardArtboard.querySelectorAll('.guide-overlay');
+      const backGuides = backCardArtboard.querySelectorAll('.guide-overlay');
+      frontGuides.forEach(g => g.style.display = 'none');
+      backGuides.forEach(g => g.style.display = 'none');
+
+      const origFrontTransform = frontCardArtboard.style.transform;
+      const origFrontWebkit = frontCardArtboard.style.webkitTransform;
+      const origBackTransform = backCardArtboard.style.transform;
+      const origBackWebkit = backCardArtboard.style.webkitTransform;
+      frontCardArtboard.style.transform = 'none';
+      frontCardArtboard.style.webkitTransform = 'none';
+      backCardArtboard.style.transform = 'none';
+      backCardArtboard.style.webkitTransform = 'none';
+
+      try {
+        const frontCanvas = await html2canvas(frontCardArtboard, {
+          scale: 3.125,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        const backCanvas = await html2canvas(backCardArtboard, {
+          scale: 3.125,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        const pdf = new jsPDF({
+          orientation: (dim.widthIn >= dim.heightIn) ? 'landscape' : 'portrait',
+          unit: 'mm',
+          format: [totalWMm, totalHMm]
+        });
+
+        // Page 1: Front
+        const frontImg = frontCanvas.toDataURL('image/png');
+        pdf.addImage(frontImg, 'PNG', 0, 0, totalWMm, totalHMm);
+
+        // Page 2: Back
+        pdf.addPage([totalWMm, totalHMm], (dim.widthIn >= dim.heightIn) ? 'landscape' : 'portrait');
+        const backImg = backCanvas.toDataURL('image/png');
+        pdf.addImage(backImg, 'PNG', 0, 0, totalWMm, totalHMm);
+
+        pdf.save(`business-card-print-ready.pdf`);
+        showToast('Downloaded 2-Page Print-Ready PDF with Bleed');
+      } catch (err) {
+        showToast('PDF generation failed. Please try again.');
+      } finally {
+        frontCardArtboard.style.transform = origFrontTransform;
+        frontCardArtboard.style.webkitTransform = origFrontWebkit;
+        backCardArtboard.style.transform = origBackTransform;
+        backCardArtboard.style.webkitTransform = origBackWebkit;
+        if (showGuides) {
+          frontGuides.forEach(g => g.style.display = 'block');
+          backGuides.forEach(g => g.style.display = 'block');
+        }
+        if (wasFlipped) {
+          cardFlipper.classList.add('flipped');
+        }
+        cardFlipper.style.transform = '';
+        cardFlipper.style.webkitTransform = '';
+        requestAnimationFrame(() => {
+          cardFlipper.style.transition = origTransition;
+        });
+      }
+    });
+
+    // --- Initial Startup ---
+    (function initApp() {
+      renderTemplateGallery();
+      renderSocialHandlesForm();
+      renderCards();
+      updateSavedCount();
+    })();
+  </script>
+</body>
+</html>
