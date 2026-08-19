@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG Vector Editor Studio — In-Browser Drawing &amp; Synced Code | sayandeep.dev</title>
+  <meta name="description" content="Free in-browser vector graphics editor with bidirectional synced SVG code view. Draw rectangles, circles, paths, text, manipulate transform handles, manage layers, and export SVG/PNG." />
+  <meta name="keywords" content="svg editor, in browser vector editor, svg drawing tool, svg canvas, svg to png, pen tool svg, vector graphic studio" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/svg-editor/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --accent-light: #f5f3ff;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #a78bfa;
+      --accent-hover: #8b5cf6;
+      --accent-light: rgba(167, 139, 250, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      background-color: rgba(var(--surface-rgb), 0.95);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    header .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      padding: 0 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Sub-Toolbar (Tools & Actions) */
+    .top-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      overflow-x: auto;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .tool-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all var(--transition);
+    }
+
+    .tool-btn:hover {
+      background: var(--surface-alt);
+      border-color: var(--line);
+    }
+
+    .tool-btn.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--line);
+      margin: 0 0.25rem;
+    }
+
+    /* Workspace Studio Layout */
+    .studio-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr 280px;
+      height: calc(100vh - 90px);
+      min-height: 0;
+      background: var(--bg);
+    }
+
+    /* Left Sidebar: Layers */
+    .sidebar-layers {
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .layers-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      padding: 0.25rem;
+    }
+
+    .layer-item {
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .layer-item:hover {
+      background: var(--surface-alt);
+    }
+
+    .layer-item.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Center Canvas Area */
+    .canvas-viewport {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: #cbd5e1;
+    }
+
+    html.dark .canvas-viewport {
+      background: #18181b;
+    }
+
+    .canvas-card {
+      background: #ffffff;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .canvas-card.bg-checkered {
+      background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f1f5f9 75%), linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+
+    .canvas-card.bg-dark {
+      background: #0f172a;
+    }
+
+    .canvas-card.bg-light {
+      background: #ffffff;
+    }
+
+    #svg-stage {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Transform Overlay */
+    #svg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .selection-box {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      stroke-dasharray: 4;
+      fill: none;
+    }
+
+    .handle-knob {
+      width: 8px;
+      height: 8px;
+      fill: #ffffff;
+      stroke: var(--accent);
+      stroke-width: 1.5;
+      pointer-events: all;
+      cursor: pointer;
+    }
+
+    /* Right Sidebar: Inspector */
+    .sidebar-inspector {
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.75rem;
+      gap: 0.85rem;
+    }
+
+    .inspector-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .inspector-section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .prop-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.775rem;
+    }
+
+    .prop-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+    }
+
+    .prop-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Bottom Drawer: Code View */
+    .bottom-code-drawer {
+      position: absolute;
+      bottom: 0;
+      left: 240px;
+      right: 280px;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      height: 180px;
+      z-index: 20;
+      box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+    }
+
+    .bottom-code-drawer.collapsed {
+      transform: translateY(calc(100% - 32px));
+    }
+
+    .drawer-header {
+      height: 32px;
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      background: var(--surface-alt);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .code-textarea {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      padding: 0.75rem;
+      border: none;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <a href="./" class="brand" aria-label="SVG Editor Studio">
+        <span class="brand-badge">STUDIO</span>
+        <span class="brand-title">SVG Vector Editor</span>
+      </a>
+
+      <div class="header-actions">
+        <button class="btn btn--sm" id="btn-new-canvas">📄 New</button>
+        <button class="btn btn--sm" id="btn-import-file">📂 Import</button>
+        <input type="file" id="file-import-input" accept=".svg" style="display:none;" />
+        <button class="btn btn--sm" id="btn-copy-svg">📋 Copy SVG</button>
+        <button class="btn btn--sm btn--primary" id="btn-export-svg">💾 Export SVG</button>
+        <button class="btn btn--sm" id="btn-export-png">🖼️ PNG</button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme" style="margin-left:0.5rem;">
+          <svg class="icon-sun" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sub-Toolbar (Drawing Tools & History) -->
+  <div class="top-toolbar">
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="select" title="Select / Move (V)">👆</button>
+      <button class="tool-btn" data-tool="rect" title="Rectangle (R)">⬛</button>
+      <button class="tool-btn" data-tool="circle" title="Circle (C)">⭕</button>
+      <button class="tool-btn" data-tool="line" title="Line (L)">📏</button>
+      <button class="tool-btn" data-tool="star" title="Star / Polygon (S)">⭐</button>
+      <button class="tool-btn" data-tool="pen" title="Pen / Path Tool (P)">🖋️</button>
+      <button class="tool-btn" data-tool="text" title="Text (T)">🔤</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="tool-group">
+      <button class="tool-btn" id="btn-undo" title="Undo (Ctrl+Z)">↩️</button>
+      <button class="tool-btn" id="btn-redo" title="Redo (Ctrl+Y)">↪️</button>
+      <button class="tool-btn" id="btn-delete" title="Delete selected">🗑️</button>
+      <button class="tool-btn" id="btn-duplicate" title="Duplicate">📑</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="tool-group">
+      <span style="font-size:0.75rem; font-weight:600; color:var(--muted);">Backdrop:</span>
+      <button class="btn btn--sm active" data-bg="bg-light">Light</button>
+      <button class="btn btn--sm" data-bg="bg-checkered">Checkered</button>
+      <button class="btn btn--sm" data-bg="bg-dark">Dark</button>
+    </div>
+  </div>
+
+  <!-- Studio Workspace -->
+  <div class="studio-workspace">
+    <!-- Left Sidebar: Layers -->
+    <aside class="sidebar-layers">
+      <div class="sidebar-header">
+        <span>Layers &amp; Elements</span>
+        <div style="display:flex; gap:0.2rem;">
+          <button class="btn btn--sm" id="btn-layer-up" title="Move Up">↑</button>
+          <button class="btn btn--sm" id="btn-layer-down" title="Move Down">↓</button>
+        </div>
+      </div>
+      <div class="layers-list" id="layers-container">
+        <!-- Injected Layers -->
+      </div>
+    </aside>
+
+    <!-- Center Canvas -->
+    <div class="canvas-viewport" id="canvas-viewport">
+      <div class="canvas-card bg-light" id="canvas-card" style="width:600px; height:450px;">
+        <svg id="svg-stage" viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+          <!-- Initial Sample Graphics -->
+          <rect id="rect_1" x="60" y="60" width="160" height="120" rx="16" fill="#8b5cf6" stroke="#4c1d95" stroke-width="2"></rect>
+          <circle id="circle_1" cx="360" cy="180" r="70" fill="#ec4899" stroke="#9d174d" stroke-width="2"></circle>
+          <text id="text_1" x="120" y="320" font-family="Inter, sans-serif" font-size="28" font-weight="700" fill="#1e293b">Vector Studio</text>
+        </svg>
+
+        <!-- SVG Selection & Resize Overlay -->
+        <svg id="svg-overlay">
+          <rect id="overlay-box" class="selection-box" style="display:none;"></rect>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Right Sidebar: Inspector -->
+    <aside class="sidebar-inspector" id="sidebar-inspector">
+      <div class="inspector-section-title">Shape Properties</div>
+
+      <div class="inspector-section">
+        <div class="prop-row">
+          <label>Fill</label>
+          <input type="color" id="prop-fill" class="prop-input" value="#8b5cf6" />
+        </div>
+        <div class="prop-row">
+          <label>Stroke</label>
+          <input type="color" id="prop-stroke" class="prop-input" value="#4c1d95" />
+        </div>
+        <div class="prop-row">
+          <label>Width</label>
+          <input type="number" id="prop-stroke-width" class="prop-input" value="2" min="0" max="50" />
+        </div>
+        <div class="prop-row">
+          <label>Opacity</label>
+          <input type="range" id="prop-opacity" class="slider-range" min="0" max="1" step="0.05" value="1" />
+        </div>
+      </div>
+
+      <div class="inspector-section-title" style="margin-top:0.5rem;">Geometry</div>
+      <div class="inspector-section">
+        <div class="prop-row">
+          <label>X / Left</label>
+          <input type="number" id="prop-x" class="prop-input" value="0" />
+        </div>
+        <div class="prop-row">
+          <label>Y / Top</label>
+          <input type="number" id="prop-y" class="prop-input" value="0" />
+        </div>
+        <div class="prop-row">
+          <label>Width</label>
+          <input type="number" id="prop-width" class="prop-input" value="0" />
+        </div>
+        <div class="prop-row">
+          <label>Height</label>
+          <input type="number" id="prop-height" class="prop-input" value="0" />
+        </div>
+      </div>
+
+      <div class="inspector-section-title" style="margin-top:0.5rem;">Text Content</div>
+      <div class="inspector-section">
+        <input type="text" id="prop-text-content" class="prop-input" placeholder="Type text..." />
+      </div>
+    </aside>
+  </div>
+
+  <!-- Bottom Drawer: Synced Code View -->
+  <div class="bottom-code-drawer collapsed" id="code-drawer">
+    <div class="drawer-header" id="drawer-toggle-btn">
+      <span>💻 Raw SVG Markup (Live Synced)</span>
+      <span id="drawer-toggle-icon">▲ Open</span>
+    </div>
+    <textarea id="svg-code-view" class="code-textarea" spellcheck="false"></textarea>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied SVG to clipboard!</span>
+  </div>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Application State
+    let currentTool = 'select';
+    let selectedElement = null;
+    let isDrawing = false;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let elementStart = { x: 0, y: 0 };
+    let history = [];
+    let historyIdx = -1;
+
+    // DOM Elements
+    const svgStage = document.getElementById('svg-stage');
+    const svgOverlay = document.getElementById('svg-overlay');
+    const overlayBox = document.getElementById('overlay-box');
+    const canvasCard = document.getElementById('canvas-card');
+    const layersContainer = document.getElementById('layers-container');
+    const svgCodeView = document.getElementById('svg-code-view');
+    const codeDrawer = document.getElementById('code-drawer');
+    const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
+    const drawerToggleIcon = document.getElementById('drawer-toggle-icon');
+
+    const propFill = document.getElementById('prop-fill');
+    const propStroke = document.getElementById('prop-stroke');
+    const propStrokeWidth = document.getElementById('prop-stroke-width');
+    const propOpacity = document.getElementById('prop-opacity');
+    const propX = document.getElementById('prop-x');
+    const propY = document.getElementById('prop-y');
+    const propWidth = document.getElementById('prop-width');
+    const propHeight = document.getElementById('prop-height');
+    const propTextContent = document.getElementById('prop-text-content');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- TOOL SELECTION ---
+    document.querySelectorAll('[data-tool]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+        if (currentTool !== 'select') deselectElement();
+      });
+    });
+
+    // --- BACKDROP SWITCHER ---
+    document.querySelectorAll('[data-bg]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-bg]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        canvasCard.className = `canvas-card ${btn.dataset.bg}`;
+      });
+    });
+
+    // --- CODE DRAWER TOGGLE ---
+    drawerToggleBtn.addEventListener('click', () => {
+      const isCollapsed = codeDrawer.classList.toggle('collapsed');
+      drawerToggleIcon.textContent = isCollapsed ? '▲ Open' : '▼ Close';
+    });
+
+    // --- HISTORY & SYNC ---
+    function recordHistory() {
+      const svgMarkup = svgStage.innerHTML;
+      if (historyIdx < history.length - 1) {
+        history = history.slice(0, historyIdx + 1);
+      }
+      history.push(svgMarkup);
+      historyIdx++;
+      updateCodeView();
+      renderLayers();
+      saveToLocalStorage();
+    }
+
+    function undo() {
+      if (historyIdx > 0) {
+        historyIdx--;
+        svgStage.innerHTML = history[historyIdx];
+        deselectElement();
+        updateCodeView();
+        renderLayers();
+        saveToLocalStorage();
+        showToast('Undo');
+      }
+    }
+
+    function redo() {
+      if (historyIdx < history.length - 1) {
+        historyIdx++;
+        svgStage.innerHTML = history[historyIdx];
+        deselectElement();
+        updateCodeView();
+        renderLayers();
+        saveToLocalStorage();
+        showToast('Redo');
+      }
+    }
+
+    document.getElementById('btn-undo').addEventListener('click', undo);
+    document.getElementById('btn-redo').addEventListener('click', redo);
+
+    function updateCodeView() {
+      const serializer = new XMLSerializer();
+      const code = serializer.serializeToString(svgStage);
+      svgCodeView.value = code;
+    }
+
+    svgCodeView.addEventListener('input', () => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgCodeView.value, 'image/svg+xml');
+        const rootSvg = doc.querySelector('svg');
+        if (rootSvg) {
+          svgStage.innerHTML = rootSvg.innerHTML;
+          deselectElement();
+          renderLayers();
+          saveToLocalStorage();
+        }
+      } catch (err) {
+        console.error('Invalid SVG code', err);
+      }
+    });
+
+    function saveToLocalStorage() {
+      localStorage.setItem('svg_editor_autosave', svgStage.innerHTML);
+    }
+
+    // --- SELECTION & INSPECTOR ---
+    function selectElement(el) {
+      if (!el || el === svgStage) {
+        deselectElement();
+        return;
+      }
+      selectedElement = el;
+      renderOverlayBox();
+      populateInspector();
+      renderLayers();
+    }
+
+    function deselectElement() {
+      selectedElement = null;
+      overlayBox.style.display = 'none';
+      renderLayers();
+    }
+
+    function renderOverlayBox() {
+      if (!selectedElement) {
+        overlayBox.style.display = 'none';
+        return;
+      }
+      try {
+        const bbox = selectedElement.getBBox();
+        overlayBox.setAttribute('x', bbox.x - 2);
+        overlayBox.setAttribute('y', bbox.y - 2);
+        overlayBox.setAttribute('width', bbox.width + 4);
+        overlayBox.setAttribute('height', bbox.height + 4);
+        overlayBox.style.display = 'block';
+      } catch(e) {
+        overlayBox.style.display = 'none';
+      }
+    }
+
+    function populateInspector() {
+      if (!selectedElement) return;
+      propFill.value = selectedElement.getAttribute('fill') || '#8b5cf6';
+      propStroke.value = selectedElement.getAttribute('stroke') || '#000000';
+      propStrokeWidth.value = selectedElement.getAttribute('stroke-width') || '1';
+      propOpacity.value = selectedElement.getAttribute('opacity') || '1';
+
+      if (selectedElement.tagName === 'rect') {
+        propX.value = selectedElement.getAttribute('x') || 0;
+        propY.value = selectedElement.getAttribute('y') || 0;
+        propWidth.value = selectedElement.getAttribute('width') || 0;
+        propHeight.value = selectedElement.getAttribute('height') || 0;
+      } else if (selectedElement.tagName === 'circle') {
+        propX.value = selectedElement.getAttribute('cx') || 0;
+        propY.value = selectedElement.getAttribute('cy') || 0;
+        propWidth.value = (selectedElement.getAttribute('r') || 0) * 2;
+        propHeight.value = (selectedElement.getAttribute('r') || 0) * 2;
+      } else if (selectedElement.tagName === 'text') {
+        propX.value = selectedElement.getAttribute('x') || 0;
+        propY.value = selectedElement.getAttribute('y') || 0;
+        propTextContent.value = selectedElement.textContent;
+      }
+    }
+
+    // Property Inspector Listeners
+    propFill.addEventListener('input', (e) => {
+      if (selectedElement) {
+        selectedElement.setAttribute('fill', e.target.value);
+        recordHistory();
+      }
+    });
+
+    propStroke.addEventListener('input', (e) => {
+      if (selectedElement) {
+        selectedElement.setAttribute('stroke', e.target.value);
+        recordHistory();
+      }
+    });
+
+    propStrokeWidth.addEventListener('input', (e) => {
+      if (selectedElement) {
+        selectedElement.setAttribute('stroke-width', e.target.value);
+        recordHistory();
+      }
+    });
+
+    propOpacity.addEventListener('input', (e) => {
+      if (selectedElement) {
+        selectedElement.setAttribute('opacity', e.target.value);
+        recordHistory();
+      }
+    });
+
+    propTextContent.addEventListener('input', (e) => {
+      if (selectedElement && selectedElement.tagName === 'text') {
+        selectedElement.textContent = e.target.value;
+        renderOverlayBox();
+        recordHistory();
+      }
+    });
+
+    // --- LAYERS LIST ---
+    function renderLayers() {
+      const children = Array.from(svgStage.children);
+      let html = '';
+      children.forEach((child, idx) => {
+        const isSel = child === selectedElement;
+        const tagName = child.tagName;
+        const idName = child.id || `${tagName}_${idx+1}`;
+        html += `
+          <div class="layer-item ${isSel ? 'active' : ''}" onclick="selectLayerById('${child.id}')">
+            <span>${tagName === 'rect' ? '⬛' : (tagName === 'circle' ? '⭕' : (tagName === 'text' ? '🔤' : '⚡'))} ${idName}</span>
+          </div>
+        `;
+      });
+      layersContainer.innerHTML = html;
+    }
+
+    window.selectLayerById = function(id) {
+      const el = document.getElementById(id);
+      if (el) selectElement(el);
+    };
+
+    // Layer Reordering
+    document.getElementById('btn-layer-up').addEventListener('click', () => {
+      if (selectedElement && selectedElement.nextElementSibling) {
+        svgStage.insertBefore(selectedElement.nextElementSibling, selectedElement);
+        renderLayers();
+        recordHistory();
+      }
+    });
+
+    document.getElementById('btn-layer-down').addEventListener('click', () => {
+      if (selectedElement && selectedElement.previousElementSibling) {
+        svgStage.insertBefore(selectedElement, selectedElement.previousElementSibling);
+        renderLayers();
+        recordHistory();
+      }
+    });
+
+    // --- CANVAS MOUSE INTERACTIONS ---
+    function getCanvasCoords(e) {
+      const rect = svgStage.getBoundingClientRect();
+      return {
+        x: Math.round(e.clientX - rect.left),
+        y: Math.round(e.clientY - rect.top)
+      };
+    }
+
+    canvasCard.addEventListener('mousedown', (e) => {
+      const pt = getCanvasCoords(e);
+      dragStart = pt;
+
+      if (currentTool === 'select') {
+        if (e.target !== svgStage && e.target.parentNode === svgStage) {
+          selectElement(e.target);
+          isDragging = true;
+          if (e.target.tagName === 'rect' || e.target.tagName === 'text') {
+            elementStart.x = parseFloat(e.target.getAttribute('x')) || 0;
+            elementStart.y = parseFloat(e.target.getAttribute('y')) || 0;
+          } else if (e.target.tagName === 'circle') {
+            elementStart.x = parseFloat(e.target.getAttribute('cx')) || 0;
+            elementStart.y = parseFloat(e.target.getAttribute('cy')) || 0;
+          }
+        } else {
+          deselectElement();
+        }
+      } else {
+        isDrawing = true;
+        const newId = `shape_${Date.now()}`;
+        if (currentTool === 'rect') {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('id', newId);
+          rect.setAttribute('x', pt.x);
+          rect.setAttribute('y', pt.y);
+          rect.setAttribute('width', 1);
+          rect.setAttribute('height', 1);
+          rect.setAttribute('rx', 8);
+          rect.setAttribute('fill', propFill.value);
+          rect.setAttribute('stroke', propStroke.value);
+          rect.setAttribute('stroke-width', propStrokeWidth.value);
+          svgStage.appendChild(rect);
+          selectedElement = rect;
+        } else if (currentTool === 'circle') {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('id', newId);
+          circle.setAttribute('cx', pt.x);
+          circle.setAttribute('cy', pt.y);
+          circle.setAttribute('r', 1);
+          circle.setAttribute('fill', propFill.value);
+          circle.setAttribute('stroke', propStroke.value);
+          circle.setAttribute('stroke-width', propStrokeWidth.value);
+          svgStage.appendChild(circle);
+          selectedElement = circle;
+        } else if (currentTool === 'text') {
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('id', newId);
+          text.setAttribute('x', pt.x);
+          text.setAttribute('y', pt.y);
+          text.setAttribute('font-family', 'Inter, sans-serif');
+          text.setAttribute('font-size', '20');
+          text.setAttribute('font-weight', '600');
+          text.setAttribute('fill', propFill.value);
+          text.textContent = 'Text';
+          svgStage.appendChild(text);
+          selectedElement = text;
+          isDrawing = false;
+          recordHistory();
+        }
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      const pt = getCanvasCoords(e);
+
+      if (isDragging && selectedElement) {
+        const dx = pt.x - dragStart.x;
+        const dy = pt.y - dragStart.y;
+        if (selectedElement.tagName === 'rect' || selectedElement.tagName === 'text') {
+          selectedElement.setAttribute('x', elementStart.x + dx);
+          selectedElement.setAttribute('y', elementStart.y + dy);
+        } else if (selectedElement.tagName === 'circle') {
+          selectedElement.setAttribute('cx', elementStart.x + dx);
+          selectedElement.setAttribute('cy', elementStart.y + dy);
+        }
+        renderOverlayBox();
+      } else if (isDrawing && selectedElement) {
+        const w = Math.abs(pt.x - dragStart.x);
+        const h = Math.abs(pt.y - dragStart.y);
+        const minX = Math.min(pt.x, dragStart.x);
+        const minY = Math.min(pt.y, dragStart.y);
+
+        if (selectedElement.tagName === 'rect') {
+          selectedElement.setAttribute('x', minX);
+          selectedElement.setAttribute('y', minY);
+          selectedElement.setAttribute('width', Math.max(2, w));
+          selectedElement.setAttribute('height', Math.max(2, h));
+        } else if (selectedElement.tagName === 'circle') {
+          selectedElement.setAttribute('r', Math.max(2, Math.round(Math.hypot(w, h) / 2)));
+        }
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDrawing || isDragging) {
+        isDrawing = false;
+        isDragging = false;
+        renderOverlayBox();
+        recordHistory();
+      }
+    });
+
+    // --- ACTIONS & EXPORTERS ---
+    document.getElementById('btn-delete').addEventListener('click', () => {
+      if (selectedElement && selectedElement !== svgStage) {
+        selectedElement.remove();
+        deselectElement();
+        recordHistory();
+        showToast('Deleted element');
+      }
+    });
+
+    document.getElementById('btn-duplicate').addEventListener('click', () => {
+      if (selectedElement && selectedElement !== svgStage) {
+        const clone = selectedElement.cloneNode(true);
+        clone.setAttribute('id', `shape_${Date.now()}`);
+        if (clone.getAttribute('x')) clone.setAttribute('x', parseFloat(clone.getAttribute('x')) + 15);
+        if (clone.getAttribute('y')) clone.setAttribute('y', parseFloat(clone.getAttribute('y')) + 15);
+        svgStage.appendChild(clone);
+        selectElement(clone);
+        recordHistory();
+        showToast('Duplicated element');
+      }
+    });
+
+    document.getElementById('btn-new-canvas').addEventListener('click', () => {
+      svgStage.innerHTML = '';
+      deselectElement();
+      recordHistory();
+      showToast('Created new canvas');
+    });
+
+    document.getElementById('btn-copy-svg').addEventListener('click', () => {
+      navigator.clipboard.writeText(svgCodeView.value).then(() => showToast('SVG code copied!'));
+    });
+
+    document.getElementById('btn-export-svg').addEventListener('click', () => {
+      const blob = new Blob([svgCodeView.value], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'artwork.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded artwork.svg');
+    });
+
+    document.getElementById('btn-export-png').addEventListener('click', () => {
+      const svgData = new XMLSerializer().serializeToString(svgStage);
+      const img = new Image();
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600 * 2; // 2x high res
+        canvas.height = 450 * 2;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = 'artwork.png';
+          a.click();
+          URL.revokeObjectURL(pngUrl);
+          showToast('Downloaded artwork.png (2x)');
+        });
+      };
+      img.src = url;
+    });
+
+    // Import File
+    const fileImportInput = document.getElementById('file-import-input');
+    document.getElementById('btn-import-file').addEventListener('click', () => fileImportInput.click());
+    fileImportInput.addEventListener('change', () => {
+      if (fileImportInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(e.target.result, 'image/svg+xml');
+          const rootSvg = doc.querySelector('svg');
+          if (rootSvg) {
+            svgStage.innerHTML = rootSvg.innerHTML;
+            deselectElement();
+            recordHistory();
+            showToast('Imported SVG file');
+          }
+        };
+        reader.readAsText(fileImportInput.files[0]);
+      }
+    });
+
+    // Initialize
+    const saved = localStorage.getItem('svg_editor_autosave');
+    if (saved) {
+      svgStage.innerHTML = saved;
+    }
+    recordHistory();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowchart Builder Studio — Visual Drag &amp; Connect with Synced Mermaid Code | sayandeep.dev</title>
+  <meta name="description" content="Free online flowchart builder. Visually create, connect, style, and arrange flowchart nodes with live bidirectional Mermaid.js code sync, templates, and PNG/SVG export." />
+  <meta name="keywords" content="flowchart builder, mermaid flowchart, visual flowchart creator, workflow diagram, process map, flowchart to png, flowchart to svg" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/flowchart-builder/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔀</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Mermaid.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: #eff6ff;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-light: rgba(96, 165, 250, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      background-color: rgba(var(--surface-rgb), 0.95);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    header .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      padding: 0 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger { color: var(--error); }
+    .btn--danger:hover { background: var(--error-bg); border-color: var(--error); }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Sub-Toolbar (Palette & Controls) */
+    .sub-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      overflow-x: auto;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--line);
+      margin: 0 0.2rem;
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Studio Workspace */
+    .studio-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      height: calc(100vh - 90px);
+      min-height: 0;
+      background: var(--bg);
+    }
+
+    /* Left Sidebar: Nodes & Edges */
+    .sidebar-left {
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.75rem;
+      gap: 1rem;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .item-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .item-card {
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.775rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .item-card:hover {
+      border-color: var(--accent);
+    }
+
+    .item-card.active {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Center Canvas Area */
+    .canvas-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      cursor: grab;
+    }
+
+    html.dark .canvas-viewport {
+      background: #18181b;
+    }
+
+    .canvas-viewport.grabbing {
+      cursor: grabbing;
+    }
+
+    .preview-stage {
+      transform-origin: center center;
+      transition: transform 0.1s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem;
+    }
+
+    .preview-stage svg {
+      max-width: 100%;
+      height: auto;
+      box-shadow: var(--shadow-md);
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 2rem;
+    }
+
+    html.dark .preview-stage svg {
+      background: #1c1917;
+    }
+
+    /* Right Sidebar: Inspector */
+    .sidebar-right {
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.75rem;
+      gap: 1rem;
+    }
+
+    .prop-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.775rem;
+    }
+
+    /* Bottom Code Drawer */
+    .bottom-code-drawer {
+      position: absolute;
+      bottom: 0;
+      left: 260px;
+      right: 280px;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      height: 180px;
+      z-index: 20;
+      box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+    }
+
+    .bottom-code-drawer.collapsed {
+      transform: translateY(calc(100% - 32px));
+    }
+
+    .drawer-header {
+      height: 32px;
+      padding: 0 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      background: var(--surface-alt);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .code-textarea {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      padding: 0.75rem;
+      border: none;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    /* Floating Zoom Controls */
+    .zoom-toolbar {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: var(--shadow-md);
+      z-index: 10;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <a href="./" class="brand" aria-label="Flowchart Builder Studio">
+        <span class="brand-badge">FLOWCHART</span>
+        <span class="brand-title">Flowchart Builder Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <select id="select-template" class="form-select">
+          <option value="" disabled selected>✨ Templates...</option>
+          <option value="auth">🔑 User Authentication</option>
+          <option value="decision">🌳 Decision Tree</option>
+          <option value="checkout">💳 Payment Checkout</option>
+          <option value="cicd">🚀 CI/CD Pipeline</option>
+          <option value="retry">⚠️ Error &amp; Retry Loop</option>
+        </select>
+        <button class="btn btn--sm" id="btn-new">📄 New</button>
+        <button class="btn btn--sm" id="btn-share-url">🔗 Share</button>
+        <button class="btn btn--sm" id="btn-copy-md">📋 Markdown</button>
+        <button class="btn btn--sm btn--primary" id="btn-export-svg">💾 SVG</button>
+        <button class="btn btn--sm" id="btn-export-png">🖼️ PNG (2x)</button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme" style="margin-left:0.4rem;">
+          <svg class="icon-sun" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sub-Toolbar (Shape Palette & Flow Direction) -->
+  <div class="sub-toolbar">
+    <div class="toolbar-group">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Add Node:</span>
+      <button class="btn btn--sm" onclick="addNode('rect')">⬛ Process</button>
+      <button class="btn btn--sm" onclick="addNode('diamond')">🔷 Decision</button>
+      <button class="btn btn--sm" onclick="addNode('round')">💊 Start / End</button>
+      <button class="btn btn--sm" onclick="addNode('io')">▰ I/O</button>
+      <button class="btn btn--sm" onclick="addNode('circle')">⭕ Connector</button>
+      <button class="btn btn--sm" onclick="addNode('db')">🗄️ Database</button>
+      <button class="btn btn--sm" onclick="addNode('sub')">🪟 Subroutine</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Flow:</span>
+      <select id="select-direction" class="form-select">
+        <option value="TD" selected>⬇️ Top-Down (TD)</option>
+        <option value="LR">➡️ Left-Right (LR)</option>
+        <option value="BT">⬆️ Bottom-Up (BT)</option>
+        <option value="RL">⬅️ Right-Left (RL)</option>
+      </select>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Theme:</span>
+      <select id="select-theme" class="form-select">
+        <option value="default" selected>Default</option>
+        <option value="neutral">Neutral</option>
+        <option value="dark">Dark</option>
+        <option value="forest">Forest</option>
+        <option value="base">Base</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Studio Workspace -->
+  <div class="studio-workspace">
+    <!-- Left Sidebar: Nodes & Edges -->
+    <aside class="sidebar-left">
+      <!-- Active Nodes -->
+      <div class="sidebar-section">
+        <span class="sidebar-title">Flowchart Nodes</span>
+        <div class="item-card-list" id="nodes-list">
+          <!-- Injected Nodes -->
+        </div>
+      </div>
+
+      <!-- Edge Connector Builder -->
+      <div class="sidebar-section" style="border-top:1px solid var(--line); padding-top:0.75rem;">
+        <span class="sidebar-title">Connect Nodes</span>
+        <div style="display:flex; flex-direction:column; gap:0.4rem;">
+          <select id="edge-source" class="form-select">
+            <option value="" disabled selected>From Node...</option>
+          </select>
+          <select id="edge-target" class="form-select">
+            <option value="" disabled selected>To Node...</option>
+          </select>
+          <select id="edge-type" class="form-select">
+            <option value="-->" selected>Solid Arrow (-->)</option>
+            <option value="-.->">Dotted Arrow (-.->)</option>
+            <option value="==>">Thick Arrow (==>)</option>
+            <option value="---">Open Line (---)</option>
+          </select>
+          <input type="text" id="edge-label" class="form-input" placeholder="Condition / Label (e.g. Yes)..." />
+          <button class="btn btn--primary" id="btn-add-edge" style="margin-top:0.25rem;">+ Connect</button>
+        </div>
+      </div>
+
+      <!-- Active Connections List -->
+      <div class="sidebar-section" style="border-top:1px solid var(--line); padding-top:0.75rem;">
+        <span class="sidebar-title">Active Connections</span>
+        <div class="item-card-list" id="edges-list">
+          <!-- Injected Edges -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Canvas Area -->
+    <div class="canvas-viewport" id="canvas-viewport">
+      <div class="preview-stage" id="preview-stage">
+        <div id="mermaid-render-target"></div>
+      </div>
+
+      <!-- Floating Zoom Controls -->
+      <div class="zoom-toolbar">
+        <button class="btn btn--sm" id="btn-zoom-out">−</button>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700; padding:0 0.3rem;" id="zoom-lbl">100%</span>
+        <button class="btn btn--sm" id="btn-zoom-in">+</button>
+        <button class="btn btn--sm" id="btn-zoom-reset">Fit</button>
+      </div>
+    </div>
+
+    <!-- Right Sidebar: Inspector -->
+    <aside class="sidebar-right">
+      <span class="sidebar-title">Selected Node Style</span>
+
+      <div style="display:flex; flex-direction:column; gap:0.6rem;" id="node-inspector">
+        <div class="prop-row">
+          <label>ID</label>
+          <input type="text" id="prop-node-id" class="form-input" readonly />
+        </div>
+        <div class="prop-row">
+          <label>Label</label>
+          <input type="text" id="prop-node-label" class="form-input" />
+        </div>
+        <div class="prop-row">
+          <label>Shape</label>
+          <select id="prop-node-shape" class="form-select">
+            <option value="rect">Process [ ]</option>
+            <option value="diamond">Decision { }</option>
+            <option value="round">Start / End ([ ])</option>
+            <option value="io">I/O [/ /]</option>
+            <option value="circle">Circle (( ))</option>
+            <option value="db">Database [( )]</option>
+            <option value="sub">Subroutine [[ ]]</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <label>Fill</label>
+          <input type="color" id="prop-node-fill" class="form-input" value="#eff6ff" />
+        </div>
+        <div class="prop-row">
+          <label>Stroke</label>
+          <input type="color" id="prop-node-stroke" class="form-input" value="#2563eb" />
+        </div>
+        <div class="prop-row">
+          <label>Width</label>
+          <input type="number" id="prop-node-width" class="form-input" min="1" max="10" value="2" />
+        </div>
+
+        <button class="btn btn--danger" id="btn-delete-node" style="margin-top:0.75rem;">🗑️ Delete Node</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Bottom Drawer: Synced Mermaid Code View -->
+  <div class="bottom-code-drawer collapsed" id="code-drawer">
+    <div class="drawer-header" id="drawer-toggle-btn">
+      <span>💻 Synced Mermaid Code</span>
+      <span id="drawer-toggle-icon">▲ Open</span>
+    </div>
+    <textarea id="code-textarea" class="code-textarea" spellcheck="false"></textarea>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- TEMPLATES ---
+    const TEMPLATES = {
+      auth: {
+        direction: 'TD',
+        nodes: [
+          { id: 'start', label: 'User visits App', shape: 'round', fill: '#dcfce7', stroke: '#16a34a', width: 2 },
+          { id: 'auth_check', label: 'Token Valid?', shape: 'diamond', fill: '#fef3c7', stroke: '#d97706', width: 2 },
+          { id: 'dash', label: 'Load Dashboard', shape: 'rect', fill: '#dbeafe', stroke: '#2563eb', width: 2 },
+          { id: 'login', label: 'Display Login Form', shape: 'rect', fill: '#f3e8ff', stroke: '#7c3aed', width: 2 },
+          { id: 'submit', label: 'POST /api/login', shape: 'io', fill: '#e0f2fe', stroke: '#0284c7', width: 2 },
+          { id: 'db', label: 'Verify User DB', shape: 'db', fill: '#fee2e2', stroke: '#dc2626', width: 2 }
+        ],
+        edges: [
+          { from: 'start', to: 'auth_check', type: '-->', label: '' },
+          { from: 'auth_check', to: 'dash', type: '-->', label: 'Yes' },
+          { from: 'auth_check', to: 'login', type: '-->', label: 'No' },
+          { from: 'login', to: 'submit', type: '-->', label: 'Submit' },
+          { from: 'submit', to: 'db', type: '-->', label: '' },
+          { from: 'db', to: 'dash', type: '-->', label: 'Valid Credentials' }
+        ]
+      },
+      decision: {
+        direction: 'TD',
+        nodes: [
+          { id: 'input', label: 'Receive Data Request', shape: 'round', fill: '#e0e7ff', stroke: '#4338ca', width: 2 },
+          { id: 'check', label: 'Cached in Redis?', shape: 'diamond', fill: '#fef3c7', stroke: '#d97706', width: 2 },
+          { id: 'cache_hit', label: 'Return 200 Cached', shape: 'rect', fill: '#dcfce7', stroke: '#16a34a', width: 2 },
+          { id: 'db_query', label: 'Execute SQL Query', shape: 'db', fill: '#fee2e2', stroke: '#dc2626', width: 2 },
+          { id: 'cache_write', label: 'Write to Redis', shape: 'rect', fill: '#f3e8ff', stroke: '#7c3aed', width: 2 }
+        ],
+        edges: [
+          { from: 'input', to: 'check', type: '-->', label: '' },
+          { from: 'check', to: 'cache_hit', type: '-->', label: 'Yes' },
+          { from: 'check', to: 'db_query', type: '-->', label: 'No' },
+          { from: 'db_query', to: 'cache_write', type: '-->', label: 'Fetch' },
+          { from: 'cache_write', to: 'cache_hit', type: '-->', label: 'Done' }
+        ]
+      },
+      checkout: {
+        direction: 'LR',
+        nodes: [
+          { id: 'cart', label: 'Review Cart', shape: 'round', fill: '#f1f5f9', stroke: '#475569', width: 2 },
+          { id: 'pay', label: 'Stripe Payment', shape: 'io', fill: '#dbeafe', stroke: '#2563eb', width: 2 },
+          { id: 'verify', label: 'Charge Success?', shape: 'diamond', fill: '#fef3c7', stroke: '#d97706', width: 2 },
+          { id: 'order', label: 'Create Order DB', shape: 'db', fill: '#dcfce7', stroke: '#16a34a', width: 2 },
+          { id: 'retry', label: 'Show Error Dialog', shape: 'rect', fill: '#fee2e2', stroke: '#dc2626', width: 2 }
+        ],
+        edges: [
+          { from: 'cart', to: 'pay', type: '-->', label: 'Checkout' },
+          { from: 'pay', to: 'verify', type: '-->', label: '' },
+          { from: 'verify', to: 'order', type: '-->', label: 'Yes' },
+          { from: 'verify', to: 'retry', type: '-->', label: 'Declined' }
+        ]
+      },
+      cicd: {
+        direction: 'LR',
+        nodes: [
+          { id: 'push', label: 'git push main', shape: 'round', fill: '#f3e8ff', stroke: '#7c3aed', width: 2 },
+          { id: 'test', label: 'Run Unit Tests', shape: 'sub', fill: '#dbeafe', stroke: '#2563eb', width: 2 },
+          { id: 'build', label: 'Docker Image Build', shape: 'rect', fill: '#e0f2fe', stroke: '#0284c7', width: 2 },
+          { id: 'deploy', label: 'Deploy to K8s', shape: 'rect', fill: '#dcfce7', stroke: '#16a34a', width: 2 }
+        ],
+        edges: [
+          { from: 'push', to: 'test', type: '-->', label: 'Trigger' },
+          { from: 'test', to: 'build', type: '-->', label: 'Passed' },
+          { from: 'build', to: 'deploy', type: '-->', label: 'Publish' }
+        ]
+      },
+      retry: {
+        direction: 'TD',
+        nodes: [
+          { id: 'call', label: 'External API Call', shape: 'round', fill: '#e0f2fe', stroke: '#0284c7', width: 2 },
+          { id: 'check', label: 'HTTP 200?', shape: 'diamond', fill: '#fef3c7', stroke: '#d97706', width: 2 },
+          { id: 'ok', label: 'Process Response', shape: 'rect', fill: '#dcfce7', stroke: '#16a34a', width: 2 },
+          { id: 'retry_count', label: 'Retries < 3?', shape: 'diamond', fill: '#fee2e2', stroke: '#dc2626', width: 2 },
+          { id: 'backoff', label: 'Exponential Backoff', shape: 'sub', fill: '#f3e8ff', stroke: '#7c3aed', width: 2 }
+        ],
+        edges: [
+          { from: 'call', to: 'check', type: '-->', label: '' },
+          { from: 'check', to: 'ok', type: '-->', label: 'Yes' },
+          { from: 'check', to: 'retry_count', type: '-->', label: 'No' },
+          { from: 'retry_count', to: 'backoff', type: '-->', label: 'Yes' },
+          { from: 'backoff', to: 'call', type: '-->', label: 'Retry' }
+        ]
+      }
+    };
+
+    // State
+    let flowState = JSON.parse(JSON.stringify(TEMPLATES.auth));
+    let selectedNodeId = null;
+    let currentZoom = 1;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let panOffset = { x: 0, y: 0 };
+
+    // DOM Elements
+    const nodesList = document.getElementById('nodes-list');
+    const edgesList = document.getElementById('edges-list');
+    const edgeSource = document.getElementById('edge-source');
+    const edgeTarget = document.getElementById('edge-target');
+    const edgeType = document.getElementById('edge-type');
+    const edgeLabel = document.getElementById('edge-label');
+    const selectDirection = document.getElementById('select-direction');
+    const selectTheme = document.getElementById('select-theme');
+    const selectTemplate = document.getElementById('select-template');
+
+    const renderTarget = document.getElementById('mermaid-render-target');
+    const previewStage = document.getElementById('preview-stage');
+    const canvasViewport = document.getElementById('canvas-viewport');
+    const codeTextarea = document.getElementById('code-textarea');
+    const codeDrawer = document.getElementById('code-drawer');
+    const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
+    const drawerToggleIcon = document.getElementById('drawer-toggle-icon');
+
+    const propNodeId = document.getElementById('prop-node-id');
+    const propNodeLabel = document.getElementById('prop-node-label');
+    const propNodeShape = document.getElementById('prop-node-shape');
+    const propNodeFill = document.getElementById('prop-node-fill');
+    const propNodeStroke = document.getElementById('prop-node-stroke');
+    const propNodeWidth = document.getElementById('prop-node-width');
+
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+    const zoomLbl = document.getElementById('zoom-lbl');
+
+    // --- COMPILE FLOWCHART TO MERMAID CODE ---
+    function compileToMermaid(state) {
+      let code = `flowchart ${state.direction}\n`;
+
+      // Format shape delimiters
+      const formatShape = (node) => {
+        const lbl = node.label.replace(/"/g, "'");
+        switch (node.shape) {
+          case 'diamond': return `${node.id}{"${lbl}"}`;
+          case 'round': return `${node.id}(["${lbl}"])`;
+          case 'io': return `${node.id}[/"${lbl}"/]`;
+          case 'circle': return `${node.id}(("${lbl}"))`;
+          case 'db': return `${node.id}[("${lbl}")]`;
+          case 'sub': return `${node.id}[["${lbl}"]]`;
+          default: return `${node.id}["${lbl}"]`;
+        }
+      };
+
+      // Node declarations
+      state.nodes.forEach(n => {
+        code += `  ${formatShape(n)}\n`;
+      });
+
+      // Connections / Edges
+      state.edges.forEach(e => {
+        if (e.label && e.label.trim()) {
+          code += `  ${e.from} ${e.type}|${e.label.trim()}| ${e.to}\n`;
+        } else {
+          code += `  ${e.from} ${e.type} ${e.to}\n`;
+        }
+      });
+
+      // Per-node styles
+      state.nodes.forEach(n => {
+        if (n.fill || n.stroke) {
+          const fill = n.fill || '#ffffff';
+          const stroke = n.stroke || '#2563eb';
+          const width = n.width || 2;
+          code += `  style ${n.id} fill:${fill},stroke:${stroke},stroke-width:${width}px\n`;
+        }
+      });
+
+      return code;
+    }
+
+    // --- RENDER DIAGRAM ---
+    async function renderFlowchart() {
+      const code = compileToMermaid(flowState);
+      codeTextarea.value = code;
+
+      try {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: selectTheme.value,
+          securityLevel: 'loose'
+        });
+
+        const id = `flowchart_${Date.now()}`;
+        const { svg } = await mermaid.render(id, code);
+        renderTarget.innerHTML = svg;
+      } catch (err) {
+        console.error('Mermaid render error', err);
+      }
+
+      renderSidebarLists();
+      populateDropdowns();
+      localStorage.setItem('flowchart_builder_autosave', JSON.stringify(flowState));
+    }
+
+    // --- SIDEBAR LISTS & INSPECTOR ---
+    function renderSidebarLists() {
+      // Nodes List
+      nodesList.innerHTML = flowState.nodes.map(n => `
+        <div class="item-card ${n.id === selectedNodeId ? 'active' : ''}" onclick="selectNode('${n.id}')">
+          <span><strong>${n.id}</strong>: ${n.label}</span>
+        </div>
+      `).join('');
+
+      // Edges List
+      edgesList.innerHTML = flowState.edges.map((e, idx) => `
+        <div class="item-card" style="cursor:default;">
+          <span>${e.from} ➔ ${e.to} ${e.label ? `<small>(${e.label})</small>` : ''}</span>
+          <button class="btn btn--sm btn--danger" onclick="deleteEdge(${idx})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function populateDropdowns() {
+      const opts = flowState.nodes.map(n => `<option value="${n.id}">${n.id} (${n.label})</option>`).join('');
+      edgeSource.innerHTML = '<option value="" disabled selected>From Node...</option>' + opts;
+      edgeTarget.innerHTML = '<option value="" disabled selected>To Node...</option>' + opts;
+    }
+
+    window.selectNode = function(id) {
+      selectedNodeId = id;
+      const node = flowState.nodes.find(n => n.id === id);
+      if (node) {
+        propNodeId.value = node.id;
+        propNodeLabel.value = node.label;
+        propNodeShape.value = node.shape || 'rect';
+        propNodeFill.value = node.fill || '#eff6ff';
+        propNodeStroke.value = node.stroke || '#2563eb';
+        propNodeWidth.value = node.width || 2;
+      }
+      renderSidebarLists();
+    };
+
+    window.addNode = function(shapeType) {
+      const count = flowState.nodes.length + 1;
+      const newId = `step_${count}`;
+      const defaultLabels = {
+        rect: 'Process Step',
+        diamond: 'Is Valid?',
+        round: 'Start / End',
+        io: 'Input / Output',
+        circle: 'Connector',
+        db: 'Data Storage',
+        sub: 'Sub-Process'
+      };
+
+      flowState.nodes.push({
+        id: newId,
+        label: defaultLabels[shapeType] || 'Step',
+        shape: shapeType,
+        fill: '#eff6ff',
+        stroke: '#2563eb',
+        width: 2
+      });
+
+      selectNode(newId);
+      renderFlowchart();
+      showToast(`Added node ${newId}`);
+    };
+
+    // Node Property Updates
+    propNodeLabel.addEventListener('input', (e) => {
+      const node = flowState.nodes.find(n => n.id === selectedNodeId);
+      if (node) {
+        node.label = e.target.value;
+        renderFlowchart();
+      }
+    });
+
+    propNodeShape.addEventListener('change', (e) => {
+      const node = flowState.nodes.find(n => n.id === selectedNodeId);
+      if (node) {
+        node.shape = e.target.value;
+        renderFlowchart();
+      }
+    });
+
+    propNodeFill.addEventListener('input', (e) => {
+      const node = flowState.nodes.find(n => n.id === selectedNodeId);
+      if (node) {
+        node.fill = e.target.value;
+        renderFlowchart();
+      }
+    });
+
+    propNodeStroke.addEventListener('input', (e) => {
+      const node = flowState.nodes.find(n => n.id === selectedNodeId);
+      if (node) {
+        node.stroke = e.target.value;
+        renderFlowchart();
+      }
+    });
+
+    propNodeWidth.addEventListener('input', (e) => {
+      const node = flowState.nodes.find(n => n.id === selectedNodeId);
+      if (node) {
+        node.width = parseInt(e.target.value, 10) || 2;
+        renderFlowchart();
+      }
+    });
+
+    document.getElementById('btn-delete-node').addEventListener('click', () => {
+      if (!selectedNodeId) return;
+      flowState.nodes = flowState.nodes.filter(n => n.id !== selectedNodeId);
+      flowState.edges = flowState.edges.filter(e => e.from !== selectedNodeId && e.to !== selectedNodeId);
+      selectedNodeId = null;
+      renderFlowchart();
+      showToast('Deleted node');
+    });
+
+    // Add Edge
+    document.getElementById('btn-add-edge').addEventListener('click', () => {
+      const from = edgeSource.value;
+      const to = edgeTarget.value;
+      const type = edgeType.value;
+      const label = edgeLabel.value.trim();
+
+      if (!from || !to) {
+        showToast('Please select source and target nodes');
+        return;
+      }
+
+      flowState.edges.push({ from, to, type, label });
+      edgeLabel.value = '';
+      renderFlowchart();
+      showToast(`Connected ${from} ➔ ${to}`);
+    });
+
+    window.deleteEdge = function(idx) {
+      flowState.edges.splice(idx, 1);
+      renderFlowchart();
+      showToast('Removed connection');
+    };
+
+    // Flow Direction
+    selectDirection.addEventListener('change', () => {
+      flowState.direction = selectDirection.value;
+      renderFlowchart();
+    });
+
+    selectTheme.addEventListener('change', renderFlowchart);
+
+    // Templates
+    selectTemplate.addEventListener('change', () => {
+      const tmpl = TEMPLATES[selectTemplate.value];
+      if (tmpl) {
+        flowState = JSON.parse(JSON.stringify(tmpl));
+        selectDirection.value = flowState.direction;
+        selectedNodeId = flowState.nodes[0]?.id || null;
+        if (selectedNodeId) selectNode(selectedNodeId);
+        renderFlowchart();
+        showToast(`Loaded ${selectTemplate.value} template`);
+      }
+    });
+
+    // Drawer Toggle
+    drawerToggleBtn.addEventListener('click', () => {
+      const isCollapsed = codeDrawer.classList.toggle('collapsed');
+      drawerToggleIcon.textContent = isCollapsed ? '▲ Open' : '▼ Close';
+    });
+
+    // Pan & Zoom
+    function applyTransform() {
+      previewStage.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${currentZoom})`;
+      zoomLbl.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+
+    btnZoomIn.addEventListener('click', () => {
+      currentZoom = Math.min(3, currentZoom + 0.2);
+      applyTransform();
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      currentZoom = Math.max(0.3, currentZoom - 0.2);
+      applyTransform();
+    });
+
+    btnZoomReset.addEventListener('click', () => {
+      currentZoom = 1;
+      panOffset = { x: 0, y: 0 };
+      applyTransform();
+      showToast('Reset viewport');
+    });
+
+    canvasViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+      applyTransform();
+    });
+
+    canvasViewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.zoom-toolbar')) return;
+      isPanning = true;
+      panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+      canvasViewport.classList.add('grabbing');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      panOffset.x = e.clientX - panStart.x;
+      panOffset.y = e.clientY - panStart.y;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanning = false;
+      canvasViewport.classList.remove('grabbing');
+    });
+
+    // Exporters
+    document.getElementById('btn-copy-md').addEventListener('click', () => {
+      const md = `\`\`\`mermaid\n${codeTextarea.value}\n\`\`\``;
+      navigator.clipboard.writeText(md).then(() => showToast('Copied Markdown code fence!'));
+    });
+
+    document.getElementById('btn-export-svg').addEventListener('click', () => {
+      const svgEl = renderTarget.querySelector('svg');
+      if (!svgEl) return;
+      const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'flowchart.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded flowchart.svg');
+    });
+
+    document.getElementById('btn-export-png').addEventListener('click', () => {
+      const svgEl = renderTarget.querySelector('svg');
+      if (!svgEl) return;
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const img = new Image();
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        const bbox = svgEl.getBoundingClientRect();
+        const canvas = document.createElement('canvas');
+        const scale = 2; // 2x Retina
+        canvas.width = (bbox.width || 800) * scale;
+        canvas.height = (bbox.height || 600) * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = 'flowchart.png';
+          a.click();
+          URL.revokeObjectURL(pngUrl);
+          showToast('Downloaded flowchart.png (2x)');
+        });
+      };
+      img.src = url;
+    });
+
+    document.getElementById('btn-share-url').addEventListener('click', () => {
+      const encoded = encodeURIComponent(JSON.stringify(flowState));
+      const url = `${window.location.origin}${window.location.pathname}#state=${encoded}`;
+      navigator.clipboard.writeText(url).then(() => showToast('Share link copied to clipboard!'));
+    });
+
+    document.getElementById('btn-new').addEventListener('click', () => {
+      flowState = {
+        direction: 'TD',
+        nodes: [
+          { id: 'start', label: 'Start Process', shape: 'round', fill: '#dcfce7', stroke: '#16a34a', width: 2 }
+        ],
+        edges: []
+      };
+      selectedNodeId = 'start';
+      selectNode('start');
+      renderFlowchart();
+      showToast('Created new flowchart');
+    });
+
+    // Initial Load & URL Hash Restorer
+    const hash = window.location.hash;
+    if (hash.startsWith('#state=')) {
+      try {
+        flowState = JSON.parse(decodeURIComponent(hash.substring(7)));
+      } catch(e) {}
+    } else {
+      const saved = localStorage.getItem('flowchart_builder_autosave');
+      if (saved) {
+        try {
+          flowState = JSON.parse(saved);
+        } catch(e) {}
+      }
+    }
+
+    selectDirection.value = flowState.direction || 'TD';
+    if (flowState.nodes.length > 0) {
+      selectNode(flowState.nodes[0].id);
+    }
+    renderFlowchart();
+  </script>
+</body>
+</html>

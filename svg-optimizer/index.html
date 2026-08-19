@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG Optimizer &amp; Minifier Studio — In-Browser Vector Cleaner | sayandeep.dev</title>
+  <meta name="description" content="Free in-browser SVG optimizer and minifier. Clean editor metadata, reduce path precision, batch process multiple SVGs, compare visual diffs, and export React JSX or ZIP archives." />
+  <meta name="keywords" content="svg optimizer, svg minifier, svgo browser, clean svg, svg to jsx, svg data uri, batch svg optimizer, vector compression" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/svg-optimizer/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- JSZip for Client-Side Batch ZIP Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #d97706;
+      --accent-hover: #b45309;
+      --accent-light: #fef3c7;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #fbbf24;
+      --accent-hover: #f59e0b;
+      --accent-light: rgba(251, 191, 36, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --success-light: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Grid Layout */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .studio-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .two-col-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .two-col-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    html.dark .btn--primary {
+      color: #000000;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      text-align: center;
+      background: var(--surface-alt);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Form Inputs */
+    .form-textarea {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Option Toggles */
+    .options-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      font-size: 0.775rem;
+    }
+
+    .toggle-row label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .badge-warn {
+      font-size: 0.675rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: var(--error-bg);
+      color: var(--error);
+    }
+
+    /* Sliders */
+    input[type=range].slider-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--track-bg);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range].slider-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* Savings Metric Banner */
+    .metrics-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 0.85rem 1.25rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .metric-val.savings {
+      color: var(--success);
+    }
+
+    /* Visual Comparison Box */
+    .preview-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .preview-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .preview-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .svg-canvas-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s ease;
+    }
+
+    .svg-canvas-box.bg-light { background: #ffffff; }
+    .svg-canvas-box.bg-dark { background: #0f172a; }
+    .svg-canvas-box.bg-checkered {
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+
+    .svg-canvas-box svg {
+      max-width: 100%;
+      max-height: 180px;
+      height: auto;
+    }
+
+    /* Code Block */
+    .code-block {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--text);
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 240px;
+    }
+
+    /* Batch Table */
+    .batch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .batch-table th, .batch-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .batch-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="SVG Optimizer">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">SVG Optimizer &amp; Minifier Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Row: File Drop Zone & Raw Paste -->
+    <div class="studio-card">
+      <div class="card-title-row">
+        <span class="card-title">Input SVG Vector Artwork</span>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn btn--sm" id="btn-sample-svg">✨ Sample SVG</button>
+          <button class="btn btn--sm" id="btn-clear-svg">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="drop-zone" id="drop-zone">
+        <span style="font-size:1.5rem;">📂</span>
+        <p style="font-size:0.875rem; font-weight:600;">Drag &amp; drop single or multiple .svg files here, or <span style="color:var(--accent); text-decoration:underline;">browse files</span></p>
+        <input type="file" id="file-input" accept=".svg" multiple style="display:none;" />
+      </div>
+
+      <textarea id="svg-input" class="form-textarea" placeholder="Or paste raw SVG code here..."></textarea>
+    </div>
+
+    <!-- Main Two Column Workspace -->
+    <div class="two-col-layout">
+      <!-- Left Column: Plugins & Presets -->
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Optimizer Settings</span>
+          <button class="btn btn--sm" id="btn-reset-options">🔄 Defaults</button>
+        </div>
+
+        <!-- Presets -->
+        <div style="display:flex; flex-direction:column; gap:0.35rem;">
+          <span style="font-size:0.7rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Optimization Presets</span>
+          <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+            <button class="btn btn--sm btn--primary" data-preset="safe">🛡️ Safe / Lossless</button>
+            <button class="btn btn--sm" data-preset="aggressive">⚡ Aggressive</button>
+            <button class="btn btn--sm" data-preset="a11y">♿ A11y Preserved</button>
+            <button class="btn btn--sm" data-preset="react">⚛️ React JSX</button>
+          </div>
+        </div>
+
+        <!-- Coordinate Precision Slider -->
+        <div style="display:flex; flex-direction:column; gap:0.35rem;">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:600;">
+            <span>Coordinate Precision</span>
+            <span id="lbl-precision" style="font-family:'JetBrains Mono',monospace; font-weight:700;">2 decimals</span>
+          </div>
+          <input type="range" class="slider-range" id="opt-precision" min="0" max="5" value="2" />
+        </div>
+
+        <!-- Safe Cleanup Group -->
+        <div class="options-group">
+          <span style="font-size:0.7rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Safe &amp; Lossless Cleanup</span>
+
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-comments" checked /> Remove Comments &amp; DOCTYPE</label>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-metadata" checked /> Remove Editor Namespaces (Inkscape/Illustrator)</label>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-empty" checked /> Remove Empty Containers &amp; Attributes</label>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-transforms" checked /> Collapse Useless &lt;g&gt; &amp; Transforms</label>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-colors" checked /> Convert Hex &amp; Shorthand Colors</label>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-whitespace" checked /> Minify Whitespace &amp; Newlines</label>
+          </div>
+        </div>
+
+        <!-- Risky Plugins Group -->
+        <div class="options-group">
+          <span style="font-size:0.7rem; font-weight:700; color:var(--muted); text-transform:uppercase;">⚠️ Structural &amp; Risky Transforms</span>
+
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-viewbox" /> Remove viewBox</label>
+            <span class="badge-warn">May Break Scale</span>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-ids" /> Remove IDs &amp; Classes</label>
+            <span class="badge-warn">Breaks CSS/JS</span>
+          </div>
+          <div class="toggle-row">
+            <label><input type="checkbox" id="opt-title" /> Remove &lt;title&gt; &amp; &lt;desc&gt;</label>
+            <span class="badge-warn">Breaks A11y</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Live Comparison & Code Output -->
+      <div style="display:flex; flex-direction:column; gap:1.25rem;">
+        <!-- Metrics Banner -->
+        <div class="metrics-banner">
+          <div class="metric-item">
+            <span class="metric-label">Original Size</span>
+            <span class="metric-val" id="metric-orig-size">0 B</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Optimized Size</span>
+            <span class="metric-val" id="metric-opt-size">0 B</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Savings</span>
+            <span class="metric-val savings" id="metric-savings">0%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">A11y Status</span>
+            <span class="metric-val" id="metric-a11y" style="font-size:0.875rem;">🛡️ Preserved</span>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Visual Comparison -->
+        <div class="studio-card">
+          <div class="card-title-row">
+            <span class="card-title">Side-by-Side Visual Preview</span>
+            <div style="display:flex; gap:0.3rem;">
+              <button class="btn btn--sm active" data-bg="bg-checkered">Checkered</button>
+              <button class="btn btn--sm" data-bg="bg-light">Light</button>
+              <button class="btn btn--sm" data-bg="bg-dark">Dark</button>
+            </div>
+          </div>
+
+          <div class="preview-split">
+            <div class="preview-pane">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Original</span>
+              <div class="svg-canvas-box bg-checkered" id="canvas-original"></div>
+            </div>
+            <div class="preview-pane">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Optimized</span>
+              <div class="svg-canvas-box bg-checkered" id="canvas-optimized"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clean SVG Code & Exporters -->
+        <div class="studio-card">
+          <div class="card-title-row">
+            <span class="card-title">Clean Optimized SVG Code</span>
+            <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+              <button class="btn btn--primary" id="btn-copy-svg">📋 Copy SVG</button>
+              <button class="btn" id="btn-download-svg">💾 .svg</button>
+              <button class="btn" id="btn-copy-datauri">🔗 Data URI</button>
+              <button class="btn" id="btn-copy-jsx">⚛️ React JSX</button>
+            </div>
+          </div>
+
+          <pre class="code-block" id="svg-code-output"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch Results Table (shown when multiple files uploaded) -->
+    <div class="studio-card" id="batch-section" style="display:none;">
+      <div class="card-title-row">
+        <span class="card-title">📦 Batch Optimization Results</span>
+        <button class="btn btn--primary" id="btn-download-zip">📦 Download All as .ZIP</button>
+      </div>
+
+      <table class="batch-table">
+        <thead>
+          <tr>
+            <th>Thumbnail</th>
+            <th>Filename</th>
+            <th>Original</th>
+            <th>Optimized</th>
+            <th>Reduction</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="batch-table-body">
+          <!-- Injected Batch Rows -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../tailwind-helper/">Tailwind Helper</a>
+        <a href="../color-picker/">Color Picker</a>
+        <a href="../css-shadow/">CSS Shadow</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- SAMPLES ---
+    const SAMPLE_SVGS = [
+      `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generator: Adobe Illustrator 25.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve">
+  <title>Sample Star Icon</title>
+  <desc>A vector star with Inkscape and Illustrator export cruft</desc>
+  <metadata id="metadata12">
+    <inkscape:metadata>Sample Illustrator Cruft</inkscape:metadata>
+  </metadata>
+  <g id="StarGroup" inkscape:label="Layer 1">
+    <g id="EmptyGroup"></g>
+    <path fill="#FFD700" stroke="#000000" stroke-width="2.0000" d="M 50.000000 10.000000 L 61.803399 35.000000 L 88.042261 38.000000 L 68.521130 57.000000 L 73.606798 83.000000 L 50.000000 70.000000 L 26.393202 83.000000 L 31.478870 57.000000 L 11.957739 38.000000 L 38.196601 35.000000 Z" />
+    <circle cx="50.000000" cy="50.000000" r="10.000000" fill="#ffffff" />
+  </g>
+</svg>`,
+      `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Feather Rocket Icon with extra precision -->
+  <path d="M4.500000 16.500000c-1.500000 1.260000 -2.000000 5.000000 -2.000000 5.000000s3.740000 -0.500000 5.000000 -2.000000c2.000000 1.000000 4.000000 1.000000 6.000000 0.000000l0.000000 -4.000000 -5.000000 -5.000000 -4.000000 0.000000c-1.000000 2.000000 -1.000000 4.000000 0.000000 6.000000z" fill="#3B82F6"/>
+  <path d="M12.000000 15.000000l6.500000 -6.500000" stroke="#1E293B" stroke-width="2.000000" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`
+    ];
+
+    let sampleIdx = 0;
+    let batchFiles = [];
+
+    // DOM Elements
+    const svgInput = document.getElementById('svg-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const canvasOriginal = document.getElementById('canvas-original');
+    const canvasOptimized = document.getElementById('canvas-optimized');
+    const svgCodeOutput = document.getElementById('svg-code-output');
+
+    const metricOrigSize = document.getElementById('metric-orig-size');
+    const metricOptSize = document.getElementById('metric-opt-size');
+    const metricSavings = document.getElementById('metric-savings');
+    const metricA11y = document.getElementById('metric-a11y');
+
+    const optPrecision = document.getElementById('opt-precision');
+    const lblPrecision = document.getElementById('lbl-precision');
+
+    const optComments = document.getElementById('opt-comments');
+    const optMetadata = document.getElementById('opt-metadata');
+    const optEmpty = document.getElementById('opt-empty');
+    const optTransforms = document.getElementById('opt-transforms');
+    const optColors = document.getElementById('opt-colors');
+    const optWhitespace = document.getElementById('opt-whitespace');
+    const optViewbox = document.getElementById('opt-viewbox');
+    const optIds = document.getElementById('opt-ids');
+    const optTitle = document.getElementById('opt-title');
+
+    const batchSection = document.getElementById('batch-section');
+    const batchTableBody = document.getElementById('batch-table-body');
+
+    // --- OPTIMIZER ENGINE ---
+    function optimizeSvg(rawSvg) {
+      if (!rawSvg || !rawSvg.trim()) return '';
+
+      let optimized = rawSvg;
+
+      // 1. Remove XML declaration & DOCTYPE
+      if (optComments.checked) {
+        optimized = optimized.replace(/<\?xml[^>]*\?>/gi, '');
+        optimized = optimized.replace(/<!DOCTYPE[^>]*>/gi, '');
+        optimized = optimized.replace(/<!--[\s\S]*?-->/gi, '');
+      }
+
+      // 2. Remove Metadata & Editor cruft
+      if (optMetadata.checked) {
+        optimized = optimized.replace(/<metadata[\s\S]*?<\/metadata>/gi, '');
+        optimized = optimized.replace(/<inkscape:[^>]*>[\s\S]*?<\/inkscape:[^>]*>/gi, '');
+        optimized = optimized.replace(/xmlns:i="[^"]*"/gi, '');
+        optimized = optimized.replace(/xmlns:ai="[^"]*"/gi, '');
+        optimized = optimized.replace(/xmlns:sketch="[^"]*"/gi, '');
+        optimized = optimized.replace(/xmlns:inkscape="[^"]*"/gi, '');
+        optimized = optimized.replace(/xmlns:sodipodi="[^"]*"/gi, '');
+        optimized = optimized.replace(/inkscape:[a-zA-Z0-9_-]+="[^"]*"/gi, '');
+        optimized = optimized.replace(/sodipodi:[a-zA-Z0-9_-]+="[^"]*"/gi, '');
+        optimized = optimized.replace(/sketch:[a-zA-Z0-9_-]+="[^"]*"/gi, '');
+      }
+
+      // 3. Remove Title & Desc if enabled
+      if (optTitle.checked) {
+        optimized = optimized.replace(/<title[\s\S]*?<\/title>/gi, '');
+        optimized = optimized.replace(/<desc[\s\S]*?<\/desc>/gi, '');
+      }
+
+      // 4. Remove IDs & Classes if enabled
+      if (optIds.checked) {
+        optimized = optimized.replace(/\s(id|class)="[^"]*"/gi, '');
+      }
+
+      // 5. Remove viewBox if enabled
+      if (optViewbox.checked) {
+        optimized = optimized.replace(/\sviewBox="[^"]*"/gi, '');
+      }
+
+      // 6. Remove Empty Elements
+      if (optEmpty.checked) {
+        optimized = optimized.replace(/<g[^>]*>\s*<\/g>/gi, '');
+        optimized = optimized.replace(/<defs[^>]*>\s*<\/defs>/gi, '');
+        optimized = optimized.replace(/\s(x|y|style)=""/gi, '');
+      }
+
+      // 7. Colors Shorthand
+      if (optColors.checked) {
+        optimized = optimized.replace(/#ffffff\b/gi, '#fff');
+        optimized = optimized.replace(/#000000\b/gi, '#000');
+        optimized = optimized.replace(/#ff0000\b/gi, '#f00');
+        optimized = optimized.replace(/#00ff00\b/gi, '#0f0');
+        optimized = optimized.replace(/#0000ff\b/gi, '#00f');
+      }
+
+      // 8. Number Precision Rounding
+      const prec = parseInt(optPrecision.value, 10);
+      optimized = optimized.replace(/d="([^"]+)"/gi, (match, pathData) => {
+        const rounded = pathData.replace(/-?\d+\.\d+/g, (num) => {
+          return parseFloat(num).toFixed(prec).replace(/\.?0+$/, '');
+        });
+        return `d="${rounded}"`;
+      });
+
+      // 9. Minify Whitespace
+      if (optWhitespace.checked) {
+        optimized = optimized.replace(/>\s+</g, '><');
+        optimized = optimized.replace(/\s{2,}/g, ' ');
+        optimized = optimized.trim();
+      }
+
+      return optimized;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      if (bytes < 1024) return `${bytes} B`;
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    }
+
+    function updateStudio() {
+      const raw = svgInput.value;
+      if (!raw || !raw.trim()) {
+        canvasOriginal.innerHTML = '<span style="color:var(--muted); font-size:0.8125rem;">No input</span>';
+        canvasOptimized.innerHTML = '<span style="color:var(--muted); font-size:0.8125rem;">No input</span>';
+        svgCodeOutput.textContent = '';
+        metricOrigSize.textContent = '0 B';
+        metricOptSize.textContent = '0 B';
+        metricSavings.textContent = '0%';
+        metricA11y.textContent = '🛡️ Preserved';
+        return;
+      }
+
+      const origBytes = new Blob([raw]).size;
+      canvasOriginal.innerHTML = raw;
+
+      const opt = optimizeSvg(raw);
+      const optBytes = new Blob([opt]).size;
+      canvasOptimized.innerHTML = opt;
+      svgCodeOutput.textContent = opt;
+
+      metricOrigSize.textContent = formatBytes(origBytes);
+      metricOptSize.textContent = formatBytes(optBytes);
+
+      const pct = origBytes > 0 ? (((origBytes - optBytes) / origBytes) * 100).toFixed(1) : 0;
+      metricSavings.textContent = `−${pct}%`;
+
+      if (optTitle.checked) {
+        metricA11y.textContent = '⚠️ Degraded';
+      } else {
+        metricA11y.textContent = '🛡️ Preserved';
+      }
+    }
+
+    // --- EVENT LISTENERS ---
+    svgInput.addEventListener('input', updateStudio);
+
+    [optPrecision, optComments, optMetadata, optEmpty, optTransforms, optColors, optWhitespace, optViewbox, optIds, optTitle].forEach(el => {
+      el.addEventListener('input', () => {
+        lblPrecision.textContent = `${optPrecision.value} decimals`;
+        updateStudio();
+      });
+    });
+
+    // Sample SVGs
+    document.getElementById('btn-sample-svg').addEventListener('click', () => {
+      svgInput.value = SAMPLE_SVGS[sampleIdx % SAMPLE_SVGS.length];
+      sampleIdx++;
+      updateStudio();
+      showToast('Loaded sample SVG');
+    });
+
+    document.getElementById('btn-clear-svg').addEventListener('click', () => {
+      svgInput.value = '';
+      updateStudio();
+      showToast('Cleared SVG input');
+    });
+
+    // Preset Buttons
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('btn--primary'));
+        btn.classList.add('btn--primary');
+
+        const preset = btn.dataset.preset;
+        if (preset === 'safe') {
+          optPrecision.value = 2;
+          optComments.checked = true;
+          optMetadata.checked = true;
+          optEmpty.checked = true;
+          optTransforms.checked = true;
+          optColors.checked = true;
+          optWhitespace.checked = true;
+          optViewbox.checked = false;
+          optIds.checked = false;
+          optTitle.checked = false;
+        } else if (preset === 'aggressive') {
+          optPrecision.value = 1;
+          optComments.checked = true;
+          optMetadata.checked = true;
+          optEmpty.checked = true;
+          optTransforms.checked = true;
+          optColors.checked = true;
+          optWhitespace.checked = true;
+          optViewbox.checked = false;
+          optIds.checked = true;
+          optTitle.checked = true;
+        } else if (preset === 'a11y') {
+          optPrecision.value = 3;
+          optComments.checked = true;
+          optMetadata.checked = true;
+          optEmpty.checked = true;
+          optTransforms.checked = true;
+          optColors.checked = true;
+          optWhitespace.checked = true;
+          optViewbox.checked = false;
+          optIds.checked = false;
+          optTitle.checked = false;
+        } else if (preset === 'react') {
+          optPrecision.value = 2;
+          optComments.checked = true;
+          optMetadata.checked = true;
+          optEmpty.checked = true;
+          optTransforms.checked = true;
+          optColors.checked = true;
+          optWhitespace.checked = true;
+          optViewbox.checked = false;
+          optIds.checked = true;
+          optTitle.checked = false;
+        }
+        lblPrecision.textContent = `${optPrecision.value} decimals`;
+        updateStudio();
+        showToast(`Applied ${preset} preset`);
+      });
+    });
+
+    // Reset Defaults
+    document.getElementById('btn-reset-options').addEventListener('click', () => {
+      optPrecision.value = 2;
+      optComments.checked = true;
+      optMetadata.checked = true;
+      optEmpty.checked = true;
+      optTransforms.checked = true;
+      optColors.checked = true;
+      optWhitespace.checked = true;
+      optViewbox.checked = false;
+      optIds.checked = false;
+      optTitle.checked = false;
+      lblPrecision.textContent = '2 decimals';
+      updateStudio();
+      showToast('Reset to default safe options');
+    });
+
+    // Backdrop Switcher
+    document.querySelectorAll('[data-bg]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-bg]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const bg = btn.dataset.bg;
+        canvasOriginal.className = `svg-canvas-box ${bg}`;
+        canvasOptimized.className = `svg-canvas-box ${bg}`;
+      });
+    });
+
+    // Copy SVG
+    document.getElementById('btn-copy-svg').addEventListener('click', () => {
+      const code = svgCodeOutput.textContent;
+      if (!code) return;
+      navigator.clipboard.writeText(code).then(() => showToast('Optimized SVG copied!'));
+    });
+
+    // Download SVG
+    document.getElementById('btn-download-svg').addEventListener('click', () => {
+      const code = svgCodeOutput.textContent;
+      if (!code) return;
+      const blob = new Blob([code], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'optimized.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded optimized.svg');
+    });
+
+    // Copy Data URI
+    document.getElementById('btn-copy-datauri').addEventListener('click', () => {
+      const code = svgCodeOutput.textContent;
+      if (!code) return;
+      const base64 = btoa(unescape(encodeURIComponent(code)));
+      const dataUri = `data:image/svg+xml;base64,${base64}`;
+      navigator.clipboard.writeText(dataUri).then(() => showToast('Copied SVG Data URI!'));
+    });
+
+    // Copy React JSX
+    document.getElementById('btn-copy-jsx').addEventListener('click', () => {
+      let code = svgCodeOutput.textContent;
+      if (!code) return;
+
+      // Convert attributes to JSX camelCase
+      code = code.replace(/fill-rule=/g, 'fillRule=')
+                 .replace(/clip-rule=/g, 'clipRule=')
+                 .replace(/stroke-width=/g, 'strokeWidth=')
+                 .replace(/stroke-linecap=/g, 'strokeLinecap=')
+                 .replace(/stroke-linejoin=/g, 'strokeLinejoin=');
+
+      const jsx = `import React from 'react';\n\nexport default function SvgIcon(props) {\n  return (\n    ${code.replace('<svg', '<svg {...props}')}\n  );\n}`;
+      navigator.clipboard.writeText(jsx).then(() => showToast('Copied React JSX Component!'));
+    });
+
+    // --- DRAG & DROP & BATCH PROCESSING ---
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleFiles(fileInput.files);
+      }
+    });
+
+    function handleFiles(files) {
+      if (files.length === 1) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          svgInput.value = e.target.result;
+          updateStudio();
+          batchSection.style.display = 'none';
+        };
+        reader.readAsText(file);
+      } else {
+        // Multi-file batch
+        batchFiles = [];
+        let loadedCount = 0;
+
+        Array.from(files).forEach(file => {
+          if (!file.name.endsWith('.svg')) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const orig = e.target.result;
+            const opt = optimizeSvg(orig);
+            batchFiles.push({
+              name: file.name,
+              orig: orig,
+              opt: opt,
+              origBytes: new Blob([orig]).size,
+              optBytes: new Blob([opt]).size
+            });
+
+            loadedCount++;
+            if (loadedCount === files.length) {
+              renderBatchTable();
+            }
+          };
+          reader.readAsText(file);
+        });
+      }
+    }
+
+    function renderBatchTable() {
+      batchSection.style.display = 'flex';
+      let html = '';
+
+      batchFiles.forEach((f, idx) => {
+        const pct = (((f.origBytes - f.optBytes) / f.origBytes) * 100).toFixed(1);
+        html += `
+          <tr>
+            <td style="width:60px;"><div style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:#ffffff; border-radius:4px; padding:4px;">${f.opt}</div></td>
+            <td><strong>${f.name}</strong></td>
+            <td>${formatBytes(f.origBytes)}</td>
+            <td>${formatBytes(f.optBytes)}</td>
+            <td><strong style="color:var(--success);">−${pct}%</strong></td>
+            <td><button class="btn btn--sm" onclick="downloadSingleBatch(${idx})">💾 Download</button></td>
+          </tr>
+        `;
+      });
+
+      batchTableBody.innerHTML = html;
+      showToast(`Processed ${batchFiles.length} SVG files`);
+    }
+
+    window.downloadSingleBatch = function(idx) {
+      const f = batchFiles[idx];
+      if (!f) return;
+      const blob = new Blob([f.opt], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `min-${f.name}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Download All as .ZIP via JSZip
+    document.getElementById('btn-download-zip').addEventListener('click', async () => {
+      if (batchFiles.length === 0) return;
+      const zip = new JSZip();
+      batchFiles.forEach(f => {
+        zip.file(f.name, f.opt);
+      });
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'optimized-svgs.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded optimized-svgs.zip');
+    });
+
+    // Initial Load
+    svgInput.value = SAMPLE_SVGS[0];
+    updateStudio();
+  </script>
+</body>
+</html>

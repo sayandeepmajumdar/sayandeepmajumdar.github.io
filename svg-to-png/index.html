@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG to PNG Converter — High-Resolution Vector Rasterizer | sayandeep.dev</title>
+  <meta name="description" content="Free online in-browser SVG to PNG converter. Convert vector SVGs to high-resolution raster PNG images with 1x-4x retina scaling, transparent or solid backgrounds, and batch ZIP export." />
+  <meta name="keywords" content="svg to png, svg converter, svg to high res png, svg to webp, retina svg png, batch svg to png, client side rasterizer" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/svg-to-png/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- JSZip for Client-Side Batch ZIP Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #059669;
+      --accent-hover: #047857;
+      --accent-light: #d1fae5;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #34d399;
+      --accent-hover: #10b981;
+      --accent-light: rgba(52, 211, 153, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Layout */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .studio-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .two-col-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .two-col-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      text-align: center;
+      background: var(--surface-alt);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    html.dark .btn--primary {
+      color: #000000;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .form-textarea, .form-input, .form-select {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+    }
+
+    .form-textarea:focus, .form-input:focus, .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Controls Grid */
+    .settings-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .control-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* Sliders */
+    input[type=range].slider-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--track-bg);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range].slider-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* Preview Stage */
+    .preview-stage {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      overflow: auto;
+      transition: background 0.2s ease;
+    }
+
+    .preview-stage.bg-checkered {
+      background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+
+    .preview-stage.bg-light { background: #ffffff; }
+    .preview-stage.bg-dark { background: #0f172a; }
+
+    #preview-canvas {
+      max-width: 100%;
+      max-height: 400px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+
+    /* Batch Table */
+    .batch-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .batch-table th, .batch-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .batch-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    /* Info Alert */
+    .info-alert {
+      background: var(--surface-alt);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.775rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="SVG to PNG Converter">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">SVG → PNG Converter</span>
+      </a>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Row: Drop Zone & Raw Paste -->
+    <div class="studio-card">
+      <div class="card-title-row">
+        <span class="card-title">Input SVG Vector Artwork</span>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn btn--sm" id="btn-sample-svg">✨ Sample SVG</button>
+          <button class="btn btn--sm" id="btn-clear-svg">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="drop-zone" id="drop-zone">
+        <span style="font-size:1.5rem;">📂</span>
+        <p style="font-size:0.875rem; font-weight:600;">Drag &amp; drop single or multiple .svg files here, or <span style="color:var(--accent); text-decoration:underline;">browse files</span></p>
+        <input type="file" id="file-input" accept=".svg" multiple style="display:none;" />
+      </div>
+
+      <textarea id="svg-input" class="form-textarea" rows="3" placeholder="Or paste raw SVG code here..."></textarea>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="two-col-layout">
+      <!-- Left Column: Settings -->
+      <div class="studio-card">
+        <span class="card-title">Rasterization Settings</span>
+
+        <div class="settings-grid">
+          <!-- Scale Multipliers -->
+          <div class="control-row">
+            <label class="control-label">Scale Preset</label>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn--sm" data-scale="1">1x</button>
+              <button class="btn btn--sm btn--primary" data-scale="2">2x (Retina)</button>
+              <button class="btn btn--sm" data-scale="3">3x</button>
+              <button class="btn btn--sm" data-scale="4">4x (UHD)</button>
+            </div>
+          </div>
+
+          <!-- Custom Scale Multiplier -->
+          <div class="control-row">
+            <div class="control-label">
+              <span>Custom Multiplier</span>
+              <span id="lbl-custom-scale" style="font-family:'JetBrains Mono',monospace; font-weight:700;">2.0x</span>
+            </div>
+            <input type="range" class="slider-range" id="scale-slider" min="0.5" max="8" step="0.25" value="2" />
+          </div>
+
+          <!-- Dimension Overrides -->
+          <div class="control-row">
+            <div class="control-label">
+              <span>Pixel Dimensions</span>
+              <label style="font-size:0.7rem; display:flex; align-items:center; gap:0.25rem; cursor:pointer;">
+                <input type="checkbox" id="chk-lock-aspect" checked /> 🔒 Lock Aspect
+              </label>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+              <input type="number" id="dim-width" class="form-input" placeholder="Width (px)" />
+              <input type="number" id="dim-height" class="form-input" placeholder="Height (px)" />
+            </div>
+          </div>
+
+          <!-- Background Settings -->
+          <div class="control-row">
+            <div class="control-label">
+              <span>Background</span>
+              <label style="font-size:0.7rem; display:flex; align-items:center; gap:0.25rem; cursor:pointer;">
+                <input type="checkbox" id="chk-transparent-bg" checked /> Transparent
+              </label>
+            </div>
+            <input type="color" id="bg-color-picker" class="form-input" value="#ffffff" disabled />
+          </div>
+
+          <!-- Format & Filename -->
+          <div class="control-row">
+            <label class="control-label">Export Format</label>
+            <select id="export-format" class="form-select">
+              <option value="image/png" selected>PNG (Lossless 32-bit Alpha)</option>
+              <option value="image/webp">WebP (Compressed)</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label class="control-label">Filename</label>
+            <input type="text" id="export-filename" class="form-input" value="rasterized-vector" />
+          </div>
+        </div>
+
+        <!-- Font Notice -->
+        <div class="info-alert">
+          💡 <strong>Font Rendering Notice:</strong> SVGs with custom text rely on fonts installed on the viewer's system. For 100% pixel-perfect fidelity, convert text to vector path outlines in your design tool.
+        </div>
+      </div>
+
+      <!-- Right Column: Live Raster Preview -->
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Live Raster Output Preview</span>
+          <div style="display:flex; gap:0.3rem;">
+            <button class="btn btn--sm active" data-bg="bg-checkered">Checkered</button>
+            <button class="btn btn--sm" data-bg="bg-light">Light</button>
+            <button class="btn btn--sm" data-bg="bg-dark">Dark</button>
+          </div>
+        </div>
+
+        <div class="preview-stage bg-checkered" id="preview-stage">
+          <canvas id="preview-canvas"></canvas>
+        </div>
+
+        <div class="card-title-row" style="border-top:1px solid var(--line); padding-top:0.75rem;">
+          <div style="display:flex; gap:1rem; font-family:'JetBrains Mono',monospace; font-size:0.775rem;">
+            <span>Size: <strong id="lbl-out-dim">0 × 0 px</strong></span>
+            <span>Est: <strong id="lbl-out-bytes">0 KB</strong></span>
+          </div>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn" id="btn-copy-png">📋 Copy PNG Image</button>
+            <button class="btn btn--primary" id="btn-download-png">💾 Download PNG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch Results Table (shown when multiple files uploaded) -->
+    <div class="studio-card" id="batch-section" style="display:none;">
+      <div class="card-title-row">
+        <span class="card-title">📦 Batch Conversion Queue</span>
+        <button class="btn btn--primary" id="btn-download-zip">📦 Download All as .ZIP</button>
+      </div>
+
+      <table class="batch-table">
+        <thead>
+          <tr>
+            <th>Preview</th>
+            <th>Filename</th>
+            <th>Output Resolution</th>
+            <th>PNG Size</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="batch-table-body">
+          <!-- Injected Batch Rows -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied image to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../svg-editor/">SVG Editor</a>
+        <a href="../svg-optimizer/">SVG Optimizer</a>
+        <a href="../color-picker/">Color Picker</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- SAMPLES ---
+    const SAMPLE_SVGS = [
+      `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="80" height="80" rx="20" fill="url(#grad1)" />
+  <circle cx="50" cy="50" r="22" fill="#ffffff" />
+  <polygon points="50,35 55,46 67,46 57,54 61,65 50,58 39,65 43,54 33,46 45,46" fill="#8b5cf6" />
+</svg>`,
+      `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="120" rx="16" fill="#0f172a" />
+  <circle cx="60" cy="60" r="30" fill="#38bdf8" />
+  <text x="105" y="68" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#ffffff">DevLab</text>
+</svg>`
+    ];
+
+    let sampleIdx = 0;
+    let baseWidth = 100;
+    let baseHeight = 100;
+    let currentScale = 2;
+    let batchFiles = [];
+
+    // DOM Elements
+    const svgInput = document.getElementById('svg-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewStage = document.getElementById('preview-stage');
+
+    const scaleSlider = document.getElementById('scale-slider');
+    const lblCustomScale = document.getElementById('lbl-custom-scale');
+    const dimWidth = document.getElementById('dim-width');
+    const dimHeight = document.getElementById('dim-height');
+    const chkLockAspect = document.getElementById('chk-lock-aspect');
+
+    const chkTransparentBg = document.getElementById('chk-transparent-bg');
+    const bgColorPicker = document.getElementById('bg-color-picker');
+    const exportFormat = document.getElementById('export-format');
+    const exportFilename = document.getElementById('export-filename');
+
+    const lblOutDim = document.getElementById('lbl-out-dim');
+    const lblOutBytes = document.getElementById('lbl-out-bytes');
+
+    const batchSection = document.getElementById('batch-section');
+    const batchTableBody = document.getElementById('batch-table-body');
+
+    // --- PARSE SVG DIMENSIONS ---
+    function parseSvgDimensions(svgStr) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+        const svg = doc.querySelector('svg');
+        if (!svg) return { w: 300, h: 300 };
+
+        let w = parseFloat(svg.getAttribute('width'));
+        let h = parseFloat(svg.getAttribute('height'));
+
+        if (isNaN(w) || isNaN(h)) {
+          const vb = svg.getAttribute('viewBox');
+          if (vb) {
+            const parts = vb.split(/[\s,]+/).map(parseFloat);
+            if (parts.length === 4) {
+              w = parts[2];
+              h = parts[3];
+            }
+          }
+        }
+
+        return {
+          w: w > 0 ? w : 300,
+          h: h > 0 ? h : 300
+        };
+      } catch(e) {
+        return { w: 300, h: 300 };
+      }
+    }
+
+    // --- RENDER RASTER CANVAS ---
+    function renderRasterPreview() {
+      const svgStr = svgInput.value.trim();
+      if (!svgStr) {
+        previewCanvas.width = 0;
+        previewCanvas.height = 0;
+        lblOutDim.textContent = '0 × 0 px';
+        lblOutBytes.textContent = '0 KB';
+        return;
+      }
+
+      const dims = parseSvgDimensions(svgStr);
+      baseWidth = dims.w;
+      baseHeight = dims.h;
+
+      const targetW = Math.round(parseFloat(dimWidth.value) || (baseWidth * currentScale));
+      const targetH = Math.round(parseFloat(dimHeight.value) || (baseHeight * currentScale));
+
+      previewCanvas.width = targetW;
+      previewCanvas.height = targetH;
+      const ctx = previewCanvas.getContext('2d');
+      ctx.clearRect(0, 0, targetW, targetH);
+
+      if (!chkTransparentBg.checked) {
+        ctx.fillStyle = bgColorPicker.value;
+        ctx.fillRect(0, 0, targetW, targetH);
+      }
+
+      const img = new Image();
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        URL.revokeObjectURL(url);
+
+        lblOutDim.textContent = `${targetW} × ${targetH} px`;
+
+        previewCanvas.toBlob((blob) => {
+          if (blob) {
+            lblOutBytes.textContent = `${(blob.size / 1024).toFixed(1)} KB`;
+          }
+        }, exportFormat.value);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        showToast('Error parsing SVG');
+      };
+
+      img.src = url;
+    }
+
+    // --- EVENT LISTENERS ---
+    svgInput.addEventListener('input', () => {
+      const dims = parseSvgDimensions(svgInput.value);
+      dimWidth.value = Math.round(dims.w * currentScale);
+      dimHeight.value = Math.round(dims.h * currentScale);
+      renderRasterPreview();
+    });
+
+    // Scale Presets
+    document.querySelectorAll('[data-scale]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-scale]').forEach(b => b.classList.remove('btn--primary'));
+        btn.classList.add('btn--primary');
+        currentScale = parseFloat(btn.dataset.scale);
+        scaleSlider.value = currentScale;
+        lblCustomScale.textContent = `${currentScale.toFixed(1)}x`;
+
+        dimWidth.value = Math.round(baseWidth * currentScale);
+        dimHeight.value = Math.round(baseHeight * currentScale);
+        renderRasterPreview();
+      });
+    });
+
+    scaleSlider.addEventListener('input', () => {
+      currentScale = parseFloat(scaleSlider.value);
+      lblCustomScale.textContent = `${currentScale.toFixed(1)}x`;
+      document.querySelectorAll('[data-scale]').forEach(b => b.classList.remove('btn--primary'));
+
+      dimWidth.value = Math.round(baseWidth * currentScale);
+      dimHeight.value = Math.round(baseHeight * currentScale);
+      renderRasterPreview();
+    });
+
+    dimWidth.addEventListener('input', () => {
+      if (chkLockAspect.checked && baseWidth > 0) {
+        const aspect = baseHeight / baseWidth;
+        dimHeight.value = Math.round(parseFloat(dimWidth.value) * aspect) || '';
+      }
+      renderRasterPreview();
+    });
+
+    dimHeight.addEventListener('input', () => {
+      if (chkLockAspect.checked && baseHeight > 0) {
+        const aspect = baseWidth / baseHeight;
+        dimWidth.value = Math.round(parseFloat(dimHeight.value) * aspect) || '';
+      }
+      renderRasterPreview();
+    });
+
+    chkTransparentBg.addEventListener('change', () => {
+      bgColorPicker.disabled = chkTransparentBg.checked;
+      renderRasterPreview();
+    });
+
+    bgColorPicker.addEventListener('input', renderRasterPreview);
+    exportFormat.addEventListener('change', renderRasterPreview);
+
+    // Backdrop
+    document.querySelectorAll('[data-bg]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-bg]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        previewStage.className = `preview-stage ${btn.dataset.bg}`;
+      });
+    });
+
+    // Sample SVGs
+    document.getElementById('btn-sample-svg').addEventListener('click', () => {
+      svgInput.value = SAMPLE_SVGS[sampleIdx % SAMPLE_SVGS.length];
+      sampleIdx++;
+      const dims = parseSvgDimensions(svgInput.value);
+      baseWidth = dims.w;
+      baseHeight = dims.h;
+      dimWidth.value = Math.round(baseWidth * currentScale);
+      dimHeight.value = Math.round(baseHeight * currentScale);
+      renderRasterPreview();
+      showToast('Loaded sample SVG');
+    });
+
+    document.getElementById('btn-clear-svg').addEventListener('click', () => {
+      svgInput.value = '';
+      renderRasterPreview();
+      showToast('Cleared input');
+    });
+
+    // Copy PNG Image to Clipboard
+    document.getElementById('btn-copy-png').addEventListener('click', () => {
+      previewCanvas.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]).then(() => showToast('Copied PNG image to clipboard!'))
+            .catch(() => showToast('Clipboard image copy not supported in this browser'));
+        } catch(e) {
+          showToast('Clipboard error');
+        }
+      }, 'image/png');
+    });
+
+    // Download PNG File
+    document.getElementById('btn-download-png').addEventListener('click', () => {
+      const format = exportFormat.value;
+      const ext = format === 'image/webp' ? 'webp' : 'png';
+      const filename = `${exportFilename.value.trim() || 'rasterized-vector'}.${ext}`;
+
+      previewCanvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`Downloaded ${filename}`);
+      }, format);
+    });
+
+    // --- DRAG & DROP & BATCH PROCESSING ---
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleFiles(fileInput.files);
+      }
+    });
+
+    function handleFiles(files) {
+      if (files.length === 1) {
+        const file = files[0];
+        exportFilename.value = file.name.replace(/\.svg$/i, '');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          svgInput.value = e.target.result;
+          const dims = parseSvgDimensions(svgInput.value);
+          baseWidth = dims.w;
+          baseHeight = dims.h;
+          dimWidth.value = Math.round(baseWidth * currentScale);
+          dimHeight.value = Math.round(baseHeight * currentScale);
+          renderRasterPreview();
+          batchSection.style.display = 'none';
+        };
+        reader.readAsText(file);
+      } else {
+        // Multi-file batch
+        batchFiles = [];
+        let loadedCount = 0;
+
+        Array.from(files).forEach(file => {
+          if (!file.name.endsWith('.svg')) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const svgContent = e.target.result;
+            const dims = parseSvgDimensions(svgContent);
+
+            batchFiles.push({
+              name: file.name.replace(/\.svg$/i, ''),
+              svg: svgContent,
+              width: Math.round(dims.w * currentScale),
+              height: Math.round(dims.h * currentScale)
+            });
+
+            loadedCount++;
+            if (loadedCount === files.length) {
+              renderBatchGrid();
+            }
+          };
+          reader.readAsText(file);
+        });
+      }
+    }
+
+    function renderBatchGrid() {
+      batchSection.style.display = 'flex';
+      let html = '';
+
+      batchFiles.forEach((f, idx) => {
+        html += `
+          <tr>
+            <td style="width:60px;"><div style="width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:#ffffff; border-radius:4px; padding:4px;">${f.svg}</div></td>
+            <td><strong>${f.name}.png</strong></td>
+            <td><code>${f.width} × ${f.height} px</code></td>
+            <td id="batch-size-${idx}">Converting...</td>
+            <td><button class="btn btn--sm" onclick="downloadSingleBatchPng(${idx})">💾 Download</button></td>
+          </tr>
+        `;
+      });
+
+      batchTableBody.innerHTML = html;
+      showToast(`Processed ${batchFiles.length} SVG files`);
+
+      // Compute sizes
+      batchFiles.forEach((f, idx) => {
+        rasterizeSvgToBlob(f.svg, f.width, f.height, (blob) => {
+          f.blob = blob;
+          const sizeTd = document.getElementById(`batch-size-${idx}`);
+          if (sizeTd && blob) {
+            sizeTd.textContent = `${(blob.size / 1024).toFixed(1)} KB`;
+          }
+        });
+      });
+    }
+
+    function rasterizeSvgToBlob(svgStr, w, h, callback) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      if (!chkTransparentBg.checked) {
+        ctx.fillStyle = bgColorPicker.value;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      const img = new Image();
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(callback, exportFormat.value);
+      };
+      img.src = url;
+    }
+
+    window.downloadSingleBatchPng = function(idx) {
+      const f = batchFiles[idx];
+      if (!f || !f.blob) return;
+      const url = URL.createObjectURL(f.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${f.name}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Download All as .ZIP via JSZip
+    document.getElementById('btn-download-zip').addEventListener('click', async () => {
+      if (batchFiles.length === 0) return;
+      const zip = new JSZip();
+      batchFiles.forEach(f => {
+        if (f.blob) {
+          zip.file(`${f.name}.png`, f.blob);
+        }
+      });
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rasterized-pngs.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded rasterized-pngs.zip');
+    });
+
+    // Initial Load
+    svgInput.value = SAMPLE_SVGS[0];
+    const initDims = parseSvgDimensions(svgInput.value);
+    baseWidth = initDims.w;
+    baseHeight = initDims.h;
+    dimWidth.value = Math.round(baseWidth * currentScale);
+    dimHeight.value = Math.round(baseHeight * currentScale);
+    renderRasterPreview();
+  </script>
+</body>
+</html>

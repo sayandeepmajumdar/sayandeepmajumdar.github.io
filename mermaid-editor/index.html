@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mermaid Diagram Editor — Live Split-Pane Visualizer &amp; Studio | sayandeep.dev</title>
+  <meta name="description" content="Free online Mermaid diagram editor and visualizer. Live split-pane editing, 14+ diagram types (Flowcharts, Sequences, ERDs, Mindmaps, Git Graphs), pan/zoom canvas, and SVG/PNG/Markdown export." />
+  <meta name="keywords" content="mermaid editor, mermaid live preview, mermaid to png, mermaid to svg, flowchart generator, sequence diagram editor, erd diagram mermaid" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/mermaid-editor/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧜‍♀️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Mermaid.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-light: #e0f2fe;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --accent-light: rgba(56, 189, 248, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      background-color: rgba(var(--surface-rgb), 0.95);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    header .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      padding: 0 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Sub-Toolbar */
+    .sub-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      overflow-x: auto;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--line);
+      margin: 0 0.2rem;
+    }
+
+    /* Workspace Split Panes */
+    .studio-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: calc(100vh - 90px);
+      min-height: 0;
+      background: var(--bg);
+    }
+
+    .studio-workspace.view-editor-only {
+      grid-template-columns: 1fr 0;
+    }
+
+    .studio-workspace.view-preview-only {
+      grid-template-columns: 0 1fr;
+    }
+
+    /* Editor Pane */
+    .editor-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+      background: var(--surface);
+      position: relative;
+      min-width: 0;
+      height: 100%;
+    }
+
+    .editor-header {
+      height: 32px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .editor-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .line-numbers {
+      width: 42px;
+      padding: 0.75rem 0.5rem;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      text-align: right;
+      user-select: none;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .code-textarea {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      padding: 0.75rem;
+      border: none;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      overflow: auto;
+      white-space: pre;
+      tab-size: 2;
+    }
+
+    /* Error Diagnostics Callout */
+    .error-banner {
+      background: var(--error-bg);
+      border-top: 1px solid var(--error);
+      color: var(--error);
+      padding: 0.5rem 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .error-banner.show {
+      display: block;
+    }
+
+    /* Preview Pane */
+    .preview-pane {
+      display: flex;
+      flex-direction: column;
+      background: #f1f5f9;
+      position: relative;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    html.dark .preview-pane {
+      background: #18181b;
+    }
+
+    .preview-header {
+      height: 32px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .stale-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: var(--warning-bg);
+      color: var(--warning);
+      display: none;
+    }
+
+    .stale-badge.show {
+      display: inline-block;
+    }
+
+    .preview-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+    }
+
+    .preview-viewport.grabbing {
+      cursor: grabbing;
+    }
+
+    .preview-stage {
+      transform-origin: center center;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .preview-stage.stale {
+      opacity: 0.5;
+    }
+
+    .preview-stage svg {
+      max-width: 100%;
+      height: auto;
+      box-shadow: var(--shadow-md);
+      background: #ffffff;
+      border-radius: var(--radius-sm);
+      padding: 1.5rem;
+    }
+
+    html.dark .preview-stage svg {
+      background: #1c1917;
+    }
+
+    /* Floating Zoom Controls */
+    .zoom-toolbar {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: var(--shadow-md);
+      z-index: 20;
+    }
+
+    /* Library Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      width: 480px;
+      max-width: 90%;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .diagram-list {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .diagram-list-item {
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+
+    .diagram-list-item:hover {
+      border-color: var(--accent);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 110;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <a href="./" class="brand" aria-label="Mermaid Editor Studio">
+        <span class="brand-badge">MERMAID</span>
+        <span class="brand-title">Mermaid Diagram Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <button class="btn btn--sm" id="btn-library">📚 Library</button>
+        <button class="btn btn--sm" id="btn-save-diagram">💾 Save</button>
+        <button class="btn btn--sm" id="btn-share-url">🔗 Share Link</button>
+        <button class="btn btn--sm" id="btn-copy-md">📋 Markdown</button>
+        <button class="btn btn--sm" id="btn-copy-svg">📋 Copy SVG</button>
+        <button class="btn btn--sm btn--primary" id="btn-export-svg">💾 SVG</button>
+        <button class="btn btn--sm" id="btn-export-png">🖼️ PNG (2x)</button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme" style="margin-left:0.4rem;">
+          <svg class="icon-sun" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sub-Toolbar -->
+  <div class="sub-toolbar">
+    <div class="toolbar-group">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Template:</span>
+      <select id="select-template" class="form-select">
+        <option value="flowchart" selected>🔀 Flowchart</option>
+        <option value="sequence">💬 Sequence Diagram</option>
+        <option value="class">🏛️ Class Diagram</option>
+        <option value="state">🔄 State Diagram</option>
+        <option value="erd">🗄️ Entity Relationship (ERD)</option>
+        <option value="gantt">📊 Gantt Chart</option>
+        <option value="pie">🥧 Pie Chart</option>
+        <option value="journey">🗺️ User Journey</option>
+        <option value="git">🌿 Git Graph</option>
+        <option value="mindmap">🧠 Mindmap</option>
+        <option value="timeline">⏱️ Timeline</option>
+        <option value="quadrant">🧭 Quadrant Chart</option>
+        <option value="sankey">🌊 Sankey</option>
+      </select>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Theme:</span>
+      <select id="select-theme" class="form-select">
+        <option value="default" selected>Default</option>
+        <option value="neutral">Neutral</option>
+        <option value="dark">Dark</option>
+        <option value="forest">Forest</option>
+        <option value="base">Base (Custom)</option>
+      </select>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button class="btn btn--sm" id="btn-format-code">✨ Format</button>
+      <button class="btn btn--sm" id="btn-wrap-toggle">↩️ Wrap</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group" style="margin-left:auto;">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Layout:</span>
+      <button class="btn btn--sm active" data-view="split">Split</button>
+      <button class="btn btn--sm" data-view="editor">Code</button>
+      <button class="btn btn--sm" data-view="preview">Preview</button>
+    </div>
+  </div>
+
+  <!-- Studio Workspace -->
+  <div class="studio-workspace" id="studio-workspace">
+    <!-- Left Editor Pane -->
+    <div class="editor-pane">
+      <div class="editor-header">
+        <span>Mermaid Code Editor</span>
+        <span id="char-count">0 chars</span>
+      </div>
+
+      <div class="editor-body">
+        <div class="line-numbers" id="line-numbers">1</div>
+        <textarea id="code-input" class="code-textarea" spellcheck="false" placeholder="Enter Mermaid code..."></textarea>
+      </div>
+
+      <!-- Syntax Error Banner -->
+      <div class="error-banner" id="error-banner"></div>
+    </div>
+
+    <!-- Right Preview Pane -->
+    <div class="preview-pane">
+      <div class="preview-header">
+        <span>Live Diagram Preview</span>
+        <span class="stale-badge" id="stale-badge">⚠️ Syntax Error — Stale Preview</span>
+      </div>
+
+      <div class="preview-viewport" id="preview-viewport">
+        <div class="preview-stage" id="preview-stage">
+          <div id="mermaid-render-target"></div>
+        </div>
+      </div>
+
+      <!-- Floating Pan/Zoom Controls -->
+      <div class="zoom-toolbar">
+        <button class="btn btn--sm" id="btn-zoom-out">−</button>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700; padding:0 0.3rem;" id="zoom-lbl">100%</span>
+        <button class="btn btn--sm" id="btn-zoom-in">+</button>
+        <button class="btn btn--sm" id="btn-zoom-reset">Fit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Library Modal -->
+  <div class="modal-overlay" id="library-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:0.95rem; font-weight:700;">📚 Saved Diagrams Library</h3>
+        <button class="btn btn--sm" id="btn-close-modal">✕</button>
+      </div>
+      <div class="diagram-list" id="saved-diagrams-list">
+        <!-- Injected Saved Diagrams -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- TEMPLATES ---
+    const TEMPLATES = {
+      flowchart: `graph TD
+  A[Start Application] --> B{User Logged In?}
+  B -- Yes --> C[Dashboard View]
+  B -- No --> D[Login Page]
+  D --> E[Submit Credentials]
+  E --> B
+  C --> F[API Query Engine]
+  F --> G[(PostgreSQL DB)]`,
+
+      sequence: `sequenceDiagram
+  autonumber
+  actor User
+  participant Client as Web Client
+  participant Server as API Gateway
+  participant DB as Database
+
+  User->>Client: Click "Submit Order"
+  Client->>Server: POST /api/orders
+  Server->>DB: BEGIN TRANSACTION
+  DB-->>Server: OK
+  Server->>DB: INSERT order_items
+  DB-->>Server: OK (id: 4891)
+  Server->>DB: COMMIT
+  Server-->>Client: 201 Created
+  Client-->>User: Show Confirmation Modal`,
+
+      class: `classDiagram
+  class Animal {
+    +String name
+    +int age
+    +makeSound() void
+  }
+  class Dog {
+    +String breed
+    +bark() void
+  }
+  class Cat {
+    +boolean isLazy
+    +meow() void
+  }
+  Animal <|-- Dog
+  Animal <|-- Cat`,
+
+      state: `stateDiagram-v2
+  [*] --> Idle
+  Idle --> Processing: Submit Job
+  Processing --> Success: 200 OK
+  Processing --> Failed: Error Timeout
+  Failed --> Processing: Retry
+  Success --> [*]`,
+
+      erd: `erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  CUSTOMER {
+    string id PK
+    string name
+    string email
+  }
+  ORDER {
+    int id PK
+    string customer_id FK
+    date order_date
+    decimal total
+  }`,
+
+      gantt: `gantt
+  title Q3 Product Development Roadmap
+  dateFormat YYYY-MM-DD
+  section Architecture
+  System Design      :done, a1, 2026-07-01, 14d
+  Security Audit     :active, a2, 2026-07-15, 10d
+  section Core Build
+  Backend APIs       :crit, b1, 2026-07-20, 20d
+  Frontend Web App   :crit, b2, 2026-07-25, 25d
+  section Release
+  Staging Beta       :c1, 2026-08-15, 10d
+  Production Launch  :milestone, 2026-08-25, 0d`,
+
+      pie: `pie title Tech Stack Distribution
+  "TypeScript / React" : 45
+  "Go Microservices" : 25
+  "PostgreSQL / Redis" : 18
+  "Docker / K8s" : 12`,
+
+      journey: `journey
+  title Customer Onboarding Flow
+  section Discovery
+    Search on Google: 5: Customer
+    View Landing Page: 4: Customer
+  section Registration
+    Fill Signup Form: 3: Customer
+    Verify Email: 2: Customer, System
+  section First Action
+    Create Project: 5: Customer
+    Invite Team Members: 4: Customer`,
+
+      git: `gitGraph
+  commit id: "Initial commit"
+  commit id: "Add core scaffold"
+  branch feature/auth
+  checkout feature/auth
+  commit id: "Add JWT auth"
+  commit id: "Add password hash"
+  checkout main
+  merge feature/auth
+  commit id: "Release v1.0.0" tag: "v1.0.0"`,
+
+      mindmap: `mindmap
+  root((Cloud Architecture))
+    Compute
+      Kubernetes
+      Serverless
+      VM Instances
+    Storage
+      S3 Bucket
+      Block Storage
+    Security
+      IAM Roles
+      mTLS Encryption
+      WAF Firewall`,
+
+      timeline: `timeline
+  title Evolution of Web Standards
+  2015 : ES6 Released : HTTP/2 Standard
+  2018 : WebAssembly 1.0 : Web Components
+  2022 : Baseline View Transitions : CSS Subgrid
+  2026 : WebGPU Native : AI On-Device APIs`,
+
+      quadrant: `quadrantChart
+  title Project Feature Prioritization
+  x-axis Low Effort --> High Effort
+  y-axis Low Value --> High Value
+  quadrant-1 Quick Wins
+  quadrant-2 Strategic Bets
+  quadrant-3 Re-evaluate
+  quadrant-4 Low Priority
+  Dark Mode: [0.2, 0.8]
+  Vector Search: [0.75, 0.9]
+  Custom Themes: [0.35, 0.45]
+  Blockchain Integration: [0.85, 0.15]`,
+
+      sankey: `sankey-beta
+  Total Revenue,Engineering,40
+  Total Revenue,Marketing,25
+  Total Revenue,Sales,20
+  Total Revenue,Operations,15`
+    };
+
+    // DOM Elements
+    const codeInput = document.getElementById('code-input');
+    const lineNumbers = document.getElementById('line-numbers');
+    const charCount = document.getElementById('char-count');
+    const errorBanner = document.getElementById('error-banner');
+    const staleBadge = document.getElementById('stale-badge');
+    const previewStage = document.getElementById('preview-stage');
+    const previewViewport = document.getElementById('preview-viewport');
+    const renderTarget = document.getElementById('mermaid-render-target');
+    const selectTemplate = document.getElementById('select-template');
+    const selectTheme = document.getElementById('select-theme');
+    const studioWorkspace = document.getElementById('studio-workspace');
+
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+    const zoomLbl = document.getElementById('zoom-lbl');
+
+    const libraryModal = document.getElementById('library-modal');
+    const savedDiagramsList = document.getElementById('saved-diagrams-list');
+
+    // Pan & Zoom State
+    let currentZoom = 1;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let panOffset = { x: 0, y: 0 };
+    let debounceTimer = null;
+    let lastValidSvg = '';
+
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+
+    // Line Numbers Generator
+    function updateLineNumbers() {
+      const lines = codeInput.value.split('\n').length;
+      lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+      charCount.textContent = `${codeInput.value.length} chars`;
+    }
+
+    // Render Diagram
+    async function renderDiagram() {
+      const source = codeInput.value.trim();
+      if (!source) {
+        renderTarget.innerHTML = '';
+        errorBanner.classList.remove('show');
+        staleBadge.classList.remove('show');
+        previewStage.classList.remove('stale');
+        return;
+      }
+
+      try {
+        const theme = selectTheme.value;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: theme,
+          securityLevel: 'loose'
+        });
+
+        const id = `mermaid_${Date.now()}`;
+        const { svg } = await mermaid.render(id, source);
+
+        renderTarget.innerHTML = svg;
+        lastValidSvg = svg;
+
+        errorBanner.classList.remove('show');
+        staleBadge.classList.remove('show');
+        previewStage.classList.remove('stale');
+
+        localStorage.setItem('mermaid_editor_autosave', source);
+      } catch (err) {
+        errorBanner.textContent = `Parse Error: ${err.message || 'Syntax error in Mermaid code'}`;
+        errorBanner.classList.add('show');
+
+        if (lastValidSvg) {
+          staleBadge.classList.add('show');
+          previewStage.classList.add('stale');
+        }
+      }
+    }
+
+    function triggerDebouncedRender() {
+      updateLineNumbers();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderDiagram, 250);
+    }
+
+    codeInput.addEventListener('input', triggerDebouncedRender);
+    selectTheme.addEventListener('change', renderDiagram);
+
+    selectTemplate.addEventListener('change', () => {
+      const t = TEMPLATES[selectTemplate.value];
+      if (t) {
+        codeInput.value = t;
+        triggerDebouncedRender();
+        showToast(`Loaded ${selectTemplate.value} template`);
+      }
+    });
+
+    // Format Code
+    document.getElementById('btn-format-code').addEventListener('click', () => {
+      const lines = codeInput.value.split('\n').map(l => l.trimEnd());
+      codeInput.value = lines.join('\n');
+      triggerDebouncedRender();
+      showToast('Formatted Mermaid code');
+    });
+
+    // Word Wrap Toggle
+    let isWrapped = false;
+    document.getElementById('btn-wrap-toggle').addEventListener('click', () => {
+      isWrapped = !isWrapped;
+      codeInput.style.whiteSpace = isWrapped ? 'pre-wrap' : 'pre';
+      showToast(`Word wrap ${isWrapped ? 'ON' : 'OFF'}`);
+    });
+
+    // Layout View Switcher
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        studioWorkspace.className = 'studio-workspace' + (view === 'editor' ? ' view-editor-only' : (view === 'preview' ? ' view-preview-only' : ''));
+      });
+    });
+
+    // Pan & Zoom
+    function applyTransform() {
+      previewStage.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${currentZoom})`;
+      zoomLbl.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+
+    btnZoomIn.addEventListener('click', () => {
+      currentZoom = Math.min(3, currentZoom + 0.2);
+      applyTransform();
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      currentZoom = Math.max(0.3, currentZoom - 0.2);
+      applyTransform();
+    });
+
+    btnZoomReset.addEventListener('click', () => {
+      currentZoom = 1;
+      panOffset = { x: 0, y: 0 };
+      applyTransform();
+      showToast('Reset viewport');
+    });
+
+    previewViewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+      applyTransform();
+    });
+
+    previewViewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.zoom-toolbar')) return;
+      isPanning = true;
+      panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+      previewViewport.classList.add('grabbing');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      panOffset.x = e.clientX - panStart.x;
+      panOffset.y = e.clientY - panStart.y;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanning = false;
+      previewViewport.classList.remove('grabbing');
+    });
+
+    // Copy & Export Handlers
+    document.getElementById('btn-copy-md').addEventListener('click', () => {
+      const md = `\`\`\`mermaid\n${codeInput.value}\n\`\`\``;
+      navigator.clipboard.writeText(md).then(() => showToast('Copied Markdown code fence!'));
+    });
+
+    document.getElementById('btn-copy-svg').addEventListener('click', () => {
+      const svgEl = renderTarget.querySelector('svg');
+      if (!svgEl) return;
+      navigator.clipboard.writeText(svgEl.outerHTML).then(() => showToast('Copied SVG markup!'));
+    });
+
+    document.getElementById('btn-export-svg').addEventListener('click', () => {
+      const svgEl = renderTarget.querySelector('svg');
+      if (!svgEl) return;
+      const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'diagram.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded diagram.svg');
+    });
+
+    document.getElementById('btn-export-png').addEventListener('click', () => {
+      const svgEl = renderTarget.querySelector('svg');
+      if (!svgEl) return;
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const img = new Image();
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        const bbox = svgEl.getBoundingClientRect();
+        const canvas = document.createElement('canvas');
+        const scale = 2; // 2x Retina
+        canvas.width = (bbox.width || 800) * scale;
+        canvas.height = (bbox.height || 600) * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = 'diagram.png';
+          a.click();
+          URL.revokeObjectURL(pngUrl);
+          showToast('Downloaded diagram.png (2x)');
+        });
+      };
+      img.src = url;
+    });
+
+    // Share URL Link
+    document.getElementById('btn-share-url').addEventListener('click', () => {
+      const encoded = encodeURIComponent(codeInput.value);
+      const url = `${window.location.origin}${window.location.pathname}#code=${encoded}`;
+      navigator.clipboard.writeText(url).then(() => showToast('Share link copied to clipboard!'));
+    });
+
+    // Save & Library Modal
+    document.getElementById('btn-save-diagram').addEventListener('click', () => {
+      const name = prompt('Enter diagram title:', `Diagram ${new Date().toLocaleTimeString()}`);
+      if (!name) return;
+      const saved = JSON.parse(localStorage.getItem('mermaid_saved_library') || '[]');
+      saved.push({ name, code: codeInput.value, date: new Date().toLocaleDateString() });
+      localStorage.setItem('mermaid_saved_library', JSON.stringify(saved));
+      showToast(`Saved "${name}"`);
+    });
+
+    document.getElementById('btn-library').addEventListener('click', () => {
+      const saved = JSON.parse(localStorage.getItem('mermaid_saved_library') || '[]');
+      if (saved.length === 0) {
+        savedDiagramsList.innerHTML = '<p style="font-size:0.8125rem; color:var(--muted); text-align:center;">No saved diagrams yet.</p>';
+      } else {
+        savedDiagramsList.innerHTML = saved.map((d, idx) => `
+          <div class="diagram-list-item" onclick="loadSavedDiagram(${idx})">
+            <div>
+              <strong>${d.name}</strong>
+              <div style="font-size:0.7rem; color:var(--muted);">${d.date}</div>
+            </div>
+            <button class="btn btn--sm" onclick="event.stopPropagation(); deleteSavedDiagram(${idx})">🗑️</button>
+          </div>
+        `).join('');
+      }
+      libraryModal.classList.add('show');
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      libraryModal.classList.remove('show');
+    });
+
+    window.loadSavedDiagram = function(idx) {
+      const saved = JSON.parse(localStorage.getItem('mermaid_saved_library') || '[]');
+      if (saved[idx]) {
+        codeInput.value = saved[idx].code;
+        libraryModal.classList.remove('show');
+        triggerDebouncedRender();
+        showToast(`Loaded "${saved[idx].name}"`);
+      }
+    };
+
+    window.deleteSavedDiagram = function(idx) {
+      let saved = JSON.parse(localStorage.getItem('mermaid_saved_library') || '[]');
+      saved.splice(idx, 1);
+      localStorage.setItem('mermaid_saved_library', JSON.stringify(saved));
+      document.getElementById('btn-library').click();
+    };
+
+    // Initial Load & URL Hash Restorer
+    const hash = window.location.hash;
+    if (hash.startsWith('#code=')) {
+      codeInput.value = decodeURIComponent(hash.substring(6));
+    } else {
+      const saved = localStorage.getItem('mermaid_editor_autosave');
+      codeInput.value = saved || TEMPLATES.flowchart;
+    }
+
+    updateLineNumbers();
+    renderDiagram();
+  </script>
+</body>
+</html>

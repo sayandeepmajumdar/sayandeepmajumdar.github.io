@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tailwind Class Helper &amp; Studio — Class to CSS, Reverse Lookup &amp; Palette | sayandeep.dev</title>
+  <meta name="description" content="Free online Tailwind CSS Class Helper. Convert Tailwind classes to CSS, reverse lookup CSS to Tailwind, visual class builder, responsive preview, and 50-950 color palette reference." />
+  <meta name="keywords" content="tailwind class helper, tailwind to css, css to tailwind, tailwind cheatsheet, tailwind color palette, tailwind visual builder, tailwind play cdn" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/tailwind-helper/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS Play CDN for In-Browser Utility Resolution -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-light: #e0f2fe;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --accent-light: rgba(56, 189, 248, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Tabs Bar */
+    .tabs-nav-bar {
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      padding: 0.5rem 1.25rem;
+    }
+
+    .tabs-wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      transition: all var(--transition);
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: var(--surface-alt);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Card Panels */
+    .studio-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Layout Grids */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .two-col-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .form-input, .form-textarea {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Code Blocks */
+    .code-block {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--text);
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Interactive Preview Frame */
+    .preview-stage {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #f1f5f9;
+      padding: 2rem;
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s ease;
+    }
+
+    /* Color Grid */
+    .color-palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .color-family-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .color-swatch-row {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      gap: 2px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .color-swatch-cell {
+      height: 28px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .color-swatch-cell:hover {
+      transform: scale(1.15);
+      z-index: 10;
+      box-shadow: 0 0 4px rgba(0,0,0,0.5);
+      border-radius: 2px;
+    }
+
+    /* Spacing Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .data-table th, .data-table td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .data-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="Tailwind Helper">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Tailwind Class Helper &amp; Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-nav-bar">
+    <div class="tabs-wrap">
+      <button class="tab-btn active" data-tab="tab-inspector">🔍 Class → CSS Inspector</button>
+      <button class="tab-btn" data-tab="tab-reverse">🔄 CSS → Tailwind Reverse</button>
+      <button class="tab-btn" data-tab="tab-builder">🛠️ Visual Class Builder</button>
+      <button class="tab-btn" data-tab="tab-palette">🎨 Colors Reference (50–950)</button>
+      <button class="tab-btn" data-tab="tab-spacing">📏 Spacing Scale</button>
+    </div>
+  </div>
+
+  <main>
+    <!-- TAB 1: Class -> CSS Inspector -->
+    <section class="tab-content active" id="tab-inspector">
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Tailwind Class Input</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn--sm" id="btn-sample-classes">✨ Sample Classes</button>
+          </div>
+        </div>
+
+        <input type="text" id="inspector-input" class="form-input" placeholder="Type or paste Tailwind classes (e.g. flex items-center justify-between p-6 bg-slate-900 text-white rounded-2xl shadow-xl hover:scale-105 transition-all w-[340px])..." value="flex items-center justify-between p-6 bg-slate-900 text-white rounded-2xl shadow-xl hover:scale-105 transition-all w-[340px]" />
+      </div>
+
+      <div class="two-col-grid">
+        <!-- Compiled CSS & Explain -->
+        <div class="studio-card">
+          <div class="card-title-row">
+            <span class="card-title">Compiled CSS Rules</span>
+            <button class="btn btn--primary" id="btn-copy-compiled-css">📋 Copy CSS</button>
+          </div>
+          <pre class="code-block" id="inspector-css-output"></pre>
+
+          <div style="border-top:1px solid var(--line); padding-top:0.75rem;">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Plain-Language Breakdown:</span>
+            <p style="font-size:0.8125rem; line-height:1.6; margin-top:0.35rem;" id="inspector-explain-output"></p>
+          </div>
+        </div>
+
+        <!-- Live Element Preview -->
+        <div class="studio-card">
+          <div class="card-title-row">
+            <span class="card-title">Live Play Preview</span>
+            <div style="display:flex; gap:0.3rem;">
+              <button class="btn btn--sm active" data-view="auto">Responsive</button>
+              <button class="btn btn--sm" data-view="375">Mobile (375)</button>
+              <button class="btn btn--sm" data-view="768">Tablet (768)</button>
+            </div>
+          </div>
+
+          <div class="preview-stage" id="inspector-preview-stage">
+            <div id="inspector-preview-el">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">⚡</span>
+                <div>
+                  <h4 class="font-bold text-base">Tailwind Card</h4>
+                  <p class="text-xs opacity-75">Live Play CDN Rendered</p>
+                </div>
+              </div>
+              <button class="px-3 py-1 bg-sky-500 text-white rounded-md text-xs font-semibold hover:bg-sky-600">Action</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CSS -> Tailwind Reverse -->
+    <section class="tab-content" id="tab-reverse">
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Raw CSS Input</span>
+          <button class="btn btn--primary" id="btn-convert-css">🔄 Convert to Tailwind</button>
+        </div>
+        <textarea id="reverse-css-input" class="form-textarea" rows="6" placeholder="Paste standard CSS declarations here...
+margin-top: 24px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+background-color: #4f46e5;
+border-radius: 12px;
+color: #ffffff;
+padding: 16px;"></textarea>
+      </div>
+
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Generated Tailwind Classes</span>
+          <button class="btn btn--primary" id="btn-copy-reverse-classes">📋 Copy Class String</button>
+        </div>
+        <pre class="code-block" id="reverse-tailwind-output"></pre>
+      </div>
+    </section>
+
+    <!-- TAB 3: Visual Class Builder -->
+    <section class="tab-content" id="tab-builder">
+      <div class="two-col-grid">
+        <div class="studio-card">
+          <span class="card-title">Visual Property Controls</span>
+
+          <!-- Builder Controls -->
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <!-- Display & Flex -->
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Display &amp; Flexbox</span>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn--sm" data-build="flex">flex</button>
+                <button class="btn btn--sm" data-build="grid">grid</button>
+                <button class="btn btn--sm" data-build="block">block</button>
+                <button class="btn btn--sm" data-build="items-center">items-center</button>
+                <button class="btn btn--sm" data-build="justify-between">justify-between</button>
+                <button class="btn btn--sm" data-build="gap-4">gap-4</button>
+              </div>
+            </div>
+
+            <!-- Spacing -->
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Padding &amp; Margin</span>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn--sm" data-build="p-4">p-4</button>
+                <button class="btn btn--sm" data-build="p-6">p-6</button>
+                <button class="btn btn--sm" data-build="px-4 py-2">px-4 py-2</button>
+                <button class="btn btn--sm" data-build="m-4">m-4</button>
+                <button class="btn btn--sm" data-build="mt-6">mt-6</button>
+              </div>
+            </div>
+
+            <!-- Background & Colors -->
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Colors &amp; Background</span>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn--sm" data-build="bg-indigo-600">bg-indigo-600</button>
+                <button class="btn btn--sm" data-build="bg-slate-900">bg-slate-900</button>
+                <button class="btn btn--sm" data-build="bg-white">bg-white</button>
+                <button class="btn btn--sm" data-build="text-white">text-white</button>
+                <button class="btn btn--sm" data-build="text-slate-800">text-slate-800</button>
+              </div>
+            </div>
+
+            <!-- Rounded & Shadow -->
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Borders &amp; Shadows</span>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button class="btn btn--sm" data-build="rounded-lg">rounded-lg</button>
+                <button class="btn btn--sm" data-build="rounded-2xl">rounded-2xl</button>
+                <button class="btn btn--sm" data-build="rounded-full">rounded-full</button>
+                <button class="btn btn--sm" data-build="shadow-md">shadow-md</button>
+                <button class="btn btn--sm" data-build="shadow-xl">shadow-xl</button>
+                <button class="btn btn--sm" data-build="border border-slate-200">border</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Built Class & Preview -->
+        <div class="studio-card">
+          <div class="card-title-row">
+            <span class="card-title">Built Class String</span>
+            <button class="btn btn--primary" id="btn-copy-built">📋 Copy</button>
+          </div>
+          <input type="text" id="builder-class-output" class="form-input" value="flex items-center justify-between p-6 bg-indigo-600 text-white rounded-2xl shadow-xl" />
+
+          <div class="preview-stage" style="margin-top:1rem;">
+            <div id="builder-preview-el">
+              <span style="font-weight:700;">Live Interactive Preview</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Color Palette Reference (50–950) -->
+    <section class="tab-content" id="tab-palette">
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Default Tailwind CSS Color Palette (50–950)</span>
+          <input type="text" id="palette-search" class="form-input" style="max-width:260px;" placeholder="Filter colors (e.g. blue, slate)..." />
+        </div>
+
+        <div class="color-palette-grid" id="palette-grid">
+          <!-- Injected Color Families -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Spacing Scale Reference -->
+    <section class="tab-content" id="tab-spacing">
+      <div class="studio-card">
+        <span class="card-title">Default Spacing &amp; Sizing Scale (0 – 96)</span>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Class Token</th>
+              <th>rem</th>
+              <th>Pixels (px)</th>
+              <th>Visual Scale Indicator</th>
+            </tr>
+          </thead>
+          <tbody id="spacing-table-body">
+            <!-- Injected Spacing Rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../color-picker/">Color Picker</a>
+        <a href="../css-shadow/">CSS Shadow</a>
+        <a href="../border-radius/">Border Radius</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Tabs Navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(btn.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- TAILWIND COLOR PALETTE REFERENCE DATA ---
+    const PALETTE_DATA = {
+      slate: ["#f8fafc","#f1f5f9","#e2e8f0","#cbd5e1","#94a3b8","#64748b","#475569","#334155","#1e293b","#0f172a","#020617"],
+      gray: ["#f9fafb","#f3f4f6","#e5e7eb","#d1d5db","#9ca3af","#6b7280","#4b5563","#374151","#1f2937","#111827","#030712"],
+      zinc: ["#fafafa","#f4f4f5","#e4e4e7","#d4d4d8","#a1a1aa","#71717a","#52525b","#3f3f46","#27272a","#18181b","#09090b"],
+      red: ["#fef2f2","#fee2e2","#fecaca","#fca5a5","#f87171","#ef4444","#dc2626","#b91c1c","#991b1b","#7f1d1d","#450a0a"],
+      orange: ["#fff7ed","#ffedd5","#fed7aa","#fdba74","#fb923c","#f97316","#ea580c","#c2410c","#9a3412","#7c2d12","#431407"],
+      amber: ["#fffbeb","#fef3c7","#fde68a","#fcd34d","#fbbf24","#f59e0b","#d97706","#b45309","#92400e","#78350f","#451a03"],
+      yellow: ["#fefce8","#fef9c3","#fef08a","#fde047","#facc15","#eab308","#ca8a04","#a16207","#854d0e","#713f12","#422006"],
+      green: ["#f0fdf4","#dcfce7","#bbf7d0","#86efac","#4ade80","#22c55e","#16a34a","#15803d","#166534","#14532d","#052e16"],
+      emerald: ["#ecfdf5","#d1fae5","#a7f3d0","#6ee7b7","#34d399","#10b981","#059669","#047857","#065f46","#064e3b","#022c22"],
+      teal: ["#f0fdfa","#ccfbf1","#99f6e4","#5eead4","#2dd4bf","#14b8a6","#0d9488","#0f766e","#115e59","#134e4a","#042f2e"],
+      cyan: ["#ecfeff","#cffafe","#a5f3fc","#67e8f9","#22d3ee","#06b6d4","#0891b2","#0e7490","#155e75","#164e63","#083344"],
+      sky: ["#f0f9ff","#e0f2fe","#bae6fd","#7dd3fc","#38bdf8","#0ea5e9","#0284c7","#0369a1","#075985","#0c4a6e","#082f49"],
+      blue: ["#eff6ff","#dbeafe","#bfdbfe","#93c5fd","#60a5fa","#3b82f6","#2563eb","#1d4ed8","#1e40af","#1e3a8a","#172554"],
+      indigo: ["#eef2ff","#e0e7ff","#c7d2fe","#a5b4fc","#818cf8","#6366f1","#4f46e5","#4338ca","#3730a3","#312e81","#1e1b4b"],
+      violet: ["#f5f3ff","#ede9fe","#ddd6fe","#c4b5fd","#a78bfa","#8b5cf6","#7c3aed","#6d28d9","#5b21b6","#4c1d95","#2e1065"],
+      purple: ["#faf5ff","#f3e8ff","#e9d5ff","#d8b4fe","#c084fc","#a855f7","#9333ea","#7e22ce","#6b21a8","#581c87","#3b0764"],
+      fuchsia: ["#fdf4ff","#fae8ff","#f5d0fe","#f0abfc","#e879f9","#d946ef","#c026d3","#a21caf","#86198f","#701a75","#4a044e"],
+      pink: ["#fdf2f8","#fce7f3","#fbcfe8","#f9a8d4","#f472b6","#ec4899","#db2777","#be185d","#9d174d","#831843","#500724"],
+      rose: ["#fff1f2","#ffe4e6","#fecdd3","#fda4af","#fb7185","#f43f5e","#e11d48","#be123c","#9f1239","#881337","#4c0519"]
+    };
+
+    const SHADE_STEPS = ["50","100","200","300","400","500","600","700","800","900","950"];
+
+    // Render Color Palette
+    function renderPaletteGrid() {
+      const grid = document.getElementById('palette-grid');
+      let html = '';
+      for (const [name, hexes] of Object.entries(PALETTE_DATA)) {
+        html += `
+          <div class="color-family-card" data-family="${name}">
+            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.8rem; text-transform:capitalize;">
+              <span>${name}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--muted);">${hexes[5]}</span>
+            </div>
+            <div class="color-swatch-row">
+              ${hexes.map((hex, idx) => `
+                <div class="color-swatch-cell" style="background-color:${hex};" title="bg-${name}-${SHADE_STEPS[idx]} (${hex})" onclick="copyPaletteColor('bg-${name}-${SHADE_STEPS[idx]}')"></div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    window.copyPaletteColor = function(cls) {
+      navigator.clipboard.writeText(cls).then(() => showToast(`Copied ${cls}`));
+    };
+
+    // --- SPACING SCALE REFERENCE DATA ---
+    const SPACING_DATA = [
+      { step: "0", rem: "0rem", px: "0px" },
+      { step: "0.5", rem: "0.125rem", px: "2px" },
+      { step: "1", rem: "0.25rem", px: "4px" },
+      { step: "1.5", rem: "0.375rem", px: "6px" },
+      { step: "2", rem: "0.5rem", px: "8px" },
+      { step: "2.5", rem: "0.625rem", px: "10px" },
+      { step: "3", rem: "0.75rem", px: "12px" },
+      { step: "3.5", rem: "0.875rem", px: "14px" },
+      { step: "4", rem: "1rem", px: "16px" },
+      { step: "5", rem: "1.25rem", px: "20px" },
+      { step: "6", rem: "1.5rem", px: "24px" },
+      { step: "8", rem: "2rem", px: "32px" },
+      { step: "10", rem: "2.5rem", px: "40px" },
+      { step: "12", rem: "3rem", px: "48px" },
+      { step: "16", rem: "4rem", px: "64px" },
+      { step: "20", rem: "5rem", px: "80px" },
+      { step: "24", rem: "6rem", px: "96px" },
+      { step: "32", rem: "8rem", px: "128px" },
+      { step: "48", rem: "12rem", px: "192px" },
+      { step: "64", rem: "16rem", px: "256px" },
+      { step: "96", rem: "24rem", px: "384px" }
+    ];
+
+    function renderSpacingTable() {
+      const tbody = document.getElementById('spacing-table-body');
+      let html = '';
+      SPACING_DATA.forEach(row => {
+        const pxNum = parseInt(row.px, 10);
+        const barWidth = Math.min(200, Math.max(4, pxNum * 1.5));
+        html += `
+          <tr>
+            <td><code style="font-weight:700; color:var(--accent);">p-${row.step} / m-${row.step} / w-${row.step}</code></td>
+            <td style="font-family:'JetBrains Mono',monospace;">${row.rem}</td>
+            <td style="font-family:'JetBrains Mono',monospace; font-weight:700;">${row.px}</td>
+            <td><div style="width:${barWidth}px; height:8px; background:var(--accent); border-radius:4px;"></div></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // --- CLASS TO CSS INSPECTOR ---
+    const inspectorInput = document.getElementById('inspector-input');
+    const inspectorCssOutput = document.getElementById('inspector-css-output');
+    const inspectorExplainOutput = document.getElementById('inspector-explain-output');
+    const inspectorPreviewEl = document.getElementById('inspector-preview-el');
+
+    function resolveTailwindClass(cls) {
+      // Decompose modifier
+      const parts = cls.split(':');
+      const base = parts.pop();
+      const modifiers = parts;
+
+      let cssRule = `/* ${cls} */\n`;
+
+      if (base.startsWith('p-')) {
+        const val = base.replace('p-', '');
+        cssRule += `padding: ${val * 0.25}rem; /* ${val * 4}px */`;
+      } else if (base.startsWith('px-')) {
+        const val = base.replace('px-', '');
+        cssRule += `padding-left: ${val * 0.25}rem;\npadding-right: ${val * 0.25}rem;`;
+      } else if (base.startsWith('py-')) {
+        const val = base.replace('py-', '');
+        cssRule += `padding-top: ${val * 0.25}rem;\npadding-bottom: ${val * 0.25}rem;`;
+      } else if (base.startsWith('m-')) {
+        const val = base.replace('m-', '');
+        cssRule += `margin: ${val * 0.25}rem; /* ${val * 4}px */`;
+      } else if (base.startsWith('mt-')) {
+        const val = base.replace('mt-', '');
+        cssRule += `margin-top: ${val * 0.25}rem;`;
+      } else if (base.startsWith('mb-')) {
+        const val = base.replace('mb-', '');
+        cssRule += `margin-bottom: ${val * 0.25}rem;`;
+      } else if (base.startsWith('w-[')) {
+        const val = base.match(/w-\[(.*)\]/)?.[1] || '';
+        cssRule += `width: ${val};`;
+      } else if (base.startsWith('h-[')) {
+        const val = base.match(/h-\[(.*)\]/)?.[1] || '';
+        cssRule += `height: ${val};`;
+      } else if (base.startsWith('bg-[')) {
+        const val = base.match(/bg-\[(.*)\]/)?.[1] || '';
+        cssRule += `background-color: ${val};`;
+      } else if (base.startsWith('bg-')) {
+        cssRule += `background-color: var(--tw-${base});`;
+      } else if (base.startsWith('text-white')) {
+        cssRule += `color: #ffffff;`;
+      } else if (base === 'flex') {
+        cssRule += `display: flex;`;
+      } else if (base === 'grid') {
+        cssRule += `display: grid;`;
+      } else if (base === 'items-center') {
+        cssRule += `align-items: center;`;
+      } else if (base === 'justify-between') {
+        cssRule += `justify-content: space-between;`;
+      } else if (base.startsWith('rounded-')) {
+        cssRule += `border-radius: ${base === 'rounded-full' ? '9999px' : (base === 'rounded-2xl' ? '1rem' : '0.5rem')};`;
+      } else if (base.startsWith('shadow-')) {
+        cssRule += `box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);`;
+      } else if (base === 'transition-all') {
+        cssRule += `transition-property: all;\ntransition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);\ntransition-duration: 150ms;`;
+      } else {
+        cssRule += `/* Utility ${base} */`;
+      }
+
+      if (modifiers.length > 0) {
+        return `/* Variant: ${modifiers.join(':')} */\n${modifiers.includes('dark') ? '@media (prefers-color-scheme: dark) {\n  ' : ''}${cssRule}${modifiers.includes('dark') ? '\n}' : ''}`;
+      }
+
+      return cssRule;
+    }
+
+    function updateInspector() {
+      const classStr = inspectorInput.value.trim();
+      const classes = classStr.split(/\s+/).filter(Boolean);
+
+      inspectorPreviewEl.className = classStr;
+
+      const rules = classes.map(c => resolveTailwindClass(c));
+      inspectorCssOutput.textContent = rules.join('\n\n');
+
+      // Human explanation
+      let explain = [];
+      if (classes.includes('flex')) explain.push('flex container');
+      if (classes.includes('items-center')) explain.push('items aligned center on cross-axis');
+      if (classes.includes('justify-between')) explain.push('space distributed between items');
+      if (classes.some(c => c.startsWith('p-') || c.startsWith('px-'))) explain.push('inner padding applied');
+      if (classes.some(c => c.startsWith('bg-'))) explain.push('custom background color');
+      if (classes.some(c => c.startsWith('rounded-'))) explain.push('rounded border curvature');
+      if (classes.some(c => c.startsWith('shadow-'))) explain.push('elevation box shadow');
+      if (classes.some(c => c.includes('hover:'))) explain.push('interactive hover transitions');
+
+      inspectorExplainOutput.textContent = explain.length > 0
+        ? `This element is configured as a ${explain.join(', ')}.`
+        : 'Applies basic styling declarations.';
+    }
+
+    inspectorInput.addEventListener('input', updateInspector);
+
+    // --- REVERSE CSS TO TAILWIND ---
+    const reverseCssInput = document.getElementById('reverse-css-input');
+    const reverseTailwindOutput = document.getElementById('reverse-tailwind-output');
+
+    const DEFAULT_SAMPLE_CSS = `margin-top: 24px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+background-color: #4f46e5;
+border-radius: 12px;
+color: #ffffff;
+padding: 16px;
+box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);`;
+
+    function convertCssToTailwind() {
+      let rawText = reverseCssInput.value.trim();
+      if (!rawText) {
+        rawText = DEFAULT_SAMPLE_CSS;
+        reverseCssInput.value = DEFAULT_SAMPLE_CSS;
+      }
+
+      // Strip CSS selector wrappers if present e.g. .class { ... }
+      rawText = rawText.replace(/^[^{]*\{/, '').replace(/\}[^}]*$/, '');
+
+      // Split declarations by semicolon or newline
+      const declarations = rawText.split(/[;\n]+/).map(s => s.trim()).filter(Boolean);
+      const tailwindClasses = [];
+
+      declarations.forEach(decl => {
+        if (!decl.includes(':')) return;
+        const colonIdx = decl.indexOf(':');
+        const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+        let val = decl.substring(colonIdx + 1).trim().toLowerCase();
+        val = val.replace(/!important/, '').trim();
+
+        // Helper: pixel / rem to tailwind spacing step
+        const getSpacingStep = (v) => {
+          if (v === '0' || v === '0px' || v === '0rem') return '0';
+          if (v.endsWith('px')) {
+            const px = parseFloat(v);
+            const step = px / 4;
+            return Number.isInteger(step) ? `${step}` : `[${v}]`;
+          }
+          if (v.endsWith('rem')) {
+            const rem = parseFloat(v);
+            const step = rem * 4;
+            return Number.isInteger(step) ? `${step}` : `[${v}]`;
+          }
+          if (v === 'auto') return 'auto';
+          if (v === '100%') return 'full';
+          return `[${v}]`;
+        };
+
+        // Layout / Display
+        if (prop === 'display') {
+          if (val === 'flex') tailwindClasses.push('flex');
+          else if (val === 'inline-flex') tailwindClasses.push('inline-flex');
+          else if (val === 'grid') tailwindClasses.push('grid');
+          else if (val === 'inline-grid') tailwindClasses.push('inline-grid');
+          else if (val === 'block') tailwindClasses.push('block');
+          else if (val === 'inline-block') tailwindClasses.push('inline-block');
+          else if (val === 'inline') tailwindClasses.push('inline');
+          else if (val === 'none') tailwindClasses.push('hidden');
+        }
+        // Flexbox & Grid
+        else if (prop === 'flex-direction') {
+          if (val === 'column') tailwindClasses.push('flex-col');
+          else if (val === 'column-reverse') tailwindClasses.push('flex-col-reverse');
+          else if (val === 'row') tailwindClasses.push('flex-row');
+          else if (val === 'row-reverse') tailwindClasses.push('flex-row-reverse');
+        }
+        else if (prop === 'flex-wrap') {
+          if (val === 'wrap') tailwindClasses.push('flex-wrap');
+          else if (val === 'nowrap') tailwindClasses.push('flex-nowrap');
+        }
+        else if (prop === 'align-items') {
+          if (val === 'center') tailwindClasses.push('items-center');
+          else if (val === 'flex-start' || val === 'start') tailwindClasses.push('items-start');
+          else if (val === 'flex-end' || val === 'end') tailwindClasses.push('items-end');
+          else if (val === 'baseline') tailwindClasses.push('items-baseline');
+          else if (val === 'stretch') tailwindClasses.push('items-stretch');
+        }
+        else if (prop === 'justify-content') {
+          if (val === 'center') tailwindClasses.push('justify-center');
+          else if (val === 'space-between') tailwindClasses.push('justify-between');
+          else if (val === 'space-around') tailwindClasses.push('justify-around');
+          else if (val === 'space-evenly') tailwindClasses.push('justify-evenly');
+          else if (val === 'flex-start' || val === 'start') tailwindClasses.push('justify-start');
+          else if (val === 'flex-end' || val === 'end') tailwindClasses.push('justify-end');
+        }
+        else if (prop === 'gap') {
+          tailwindClasses.push(`gap-${getSpacingStep(val)}`);
+        }
+        else if (prop === 'row-gap') {
+          tailwindClasses.push(`gap-y-${getSpacingStep(val)}`);
+        }
+        else if (prop === 'column-gap') {
+          tailwindClasses.push(`gap-x-${getSpacingStep(val)}`);
+        }
+        // Spacing: Margin
+        else if (prop === 'margin') {
+          const parts = val.split(/\s+/);
+          if (parts.length === 1) tailwindClasses.push(`m-${getSpacingStep(parts[0])}`);
+          else if (parts.length === 2) {
+            tailwindClasses.push(`my-${getSpacingStep(parts[0])}`);
+            tailwindClasses.push(`mx-${getSpacingStep(parts[1])}`);
+          } else if (parts.length === 4) {
+            tailwindClasses.push(`mt-${getSpacingStep(parts[0])}`);
+            tailwindClasses.push(`mr-${getSpacingStep(parts[1])}`);
+            tailwindClasses.push(`mb-${getSpacingStep(parts[2])}`);
+            tailwindClasses.push(`ml-${getSpacingStep(parts[3])}`);
+          }
+        }
+        else if (prop === 'margin-top') tailwindClasses.push(`mt-${getSpacingStep(val)}`);
+        else if (prop === 'margin-bottom') tailwindClasses.push(`mb-${getSpacingStep(val)}`);
+        else if (prop === 'margin-left') tailwindClasses.push(`ml-${getSpacingStep(val)}`);
+        else if (prop === 'margin-right') tailwindClasses.push(`mr-${getSpacingStep(val)}`);
+        else if (prop === 'margin-inline') tailwindClasses.push(`mx-${getSpacingStep(val)}`);
+        else if (prop === 'margin-block') tailwindClasses.push(`my-${getSpacingStep(val)}`);
+        // Spacing: Padding
+        else if (prop === 'padding') {
+          const parts = val.split(/\s+/);
+          if (parts.length === 1) tailwindClasses.push(`p-${getSpacingStep(parts[0])}`);
+          else if (parts.length === 2) {
+            tailwindClasses.push(`py-${getSpacingStep(parts[0])}`);
+            tailwindClasses.push(`px-${getSpacingStep(parts[1])}`);
+          } else if (parts.length === 4) {
+            tailwindClasses.push(`pt-${getSpacingStep(parts[0])}`);
+            tailwindClasses.push(`pr-${getSpacingStep(parts[1])}`);
+            tailwindClasses.push(`pb-${getSpacingStep(parts[2])}`);
+            tailwindClasses.push(`pl-${getSpacingStep(parts[3])}`);
+          }
+        }
+        else if (prop === 'padding-top') tailwindClasses.push(`pt-${getSpacingStep(val)}`);
+        else if (prop === 'padding-bottom') tailwindClasses.push(`pb-${getSpacingStep(val)}`);
+        else if (prop === 'padding-left') tailwindClasses.push(`pl-${getSpacingStep(val)}`);
+        else if (prop === 'padding-right') tailwindClasses.push(`pr-${getSpacingStep(val)}`);
+        else if (prop === 'padding-inline') tailwindClasses.push(`px-${getSpacingStep(val)}`);
+        else if (prop === 'padding-block') tailwindClasses.push(`py-${getSpacingStep(val)}`);
+        // Sizing
+        else if (prop === 'width') {
+          if (val === '100%') tailwindClasses.push('w-full');
+          else if (val === '100vw') tailwindClasses.push('w-screen');
+          else if (val === 'auto') tailwindClasses.push('w-auto');
+          else tailwindClasses.push(`w-${getSpacingStep(val)}`);
+        }
+        else if (prop === 'height') {
+          if (val === '100%') tailwindClasses.push('h-full');
+          else if (val === '100vh') tailwindClasses.push('h-screen');
+          else if (val === 'auto') tailwindClasses.push('h-auto');
+          else tailwindClasses.push(`h-${getSpacingStep(val)}`);
+        }
+        else if (prop === 'max-width') {
+          if (val === '100%') tailwindClasses.push('max-w-full');
+          else tailwindClasses.push(`max-w-${getSpacingStep(val)}`);
+        }
+        // Border Radius
+        else if (prop === 'border-radius') {
+          if (val === '9999px' || val === '50%') tailwindClasses.push('rounded-full');
+          else if (val === '0' || val === '0px') tailwindClasses.push('rounded-none');
+          else if (val === '2px') tailwindClasses.push('rounded-sm');
+          else if (val === '4px' || val === '0.25rem') tailwindClasses.push('rounded');
+          else if (val === '6px' || val === '0.375rem') tailwindClasses.push('rounded-md');
+          else if (val === '8px' || val === '0.5rem') tailwindClasses.push('rounded-lg');
+          else if (val === '12px' || val === '0.75rem') tailwindClasses.push('rounded-xl');
+          else if (val === '16px' || val === '1rem') tailwindClasses.push('rounded-2xl');
+          else if (val === '24px' || val === '1.5rem') tailwindClasses.push('rounded-3xl');
+          else tailwindClasses.push(`rounded-[${val}]`);
+        }
+        // Background & Colors
+        else if (prop === 'background-color' || prop === 'background') {
+          if (val === '#ffffff' || val === 'white' || val === '#fff') tailwindClasses.push('bg-white');
+          else if (val === '#000000' || val === 'black' || val === '#000') tailwindClasses.push('bg-black');
+          else if (val === 'transparent') tailwindClasses.push('bg-transparent');
+          else if (val === '#4f46e5') tailwindClasses.push('bg-indigo-600');
+          else if (val === '#0f172a') tailwindClasses.push('bg-slate-900');
+          else if (val === '#3b82f6') tailwindClasses.push('bg-blue-500');
+          else if (val === '#10b981') tailwindClasses.push('bg-emerald-500');
+          else if (val === '#ef4444') tailwindClasses.push('bg-red-500');
+          else tailwindClasses.push(`bg-[${val}]`);
+        }
+        else if (prop === 'color') {
+          if (val === '#ffffff' || val === 'white' || val === '#fff') tailwindClasses.push('text-white');
+          else if (val === '#000000' || val === 'black' || val === '#000') tailwindClasses.push('text-black');
+          else if (val === '#4f46e5') tailwindClasses.push('text-indigo-600');
+          else if (val === '#0f172a') tailwindClasses.push('text-slate-900');
+          else if (val === '#64748b') tailwindClasses.push('text-slate-500');
+          else tailwindClasses.push(`text-[${val}]`);
+        }
+        // Typography
+        else if (prop === 'font-size') {
+          if (val === '12px' || val === '0.75rem') tailwindClasses.push('text-xs');
+          else if (val === '14px' || val === '0.875rem') tailwindClasses.push('text-sm');
+          else if (val === '16px' || val === '1rem') tailwindClasses.push('text-base');
+          else if (val === '18px' || val === '1.125rem') tailwindClasses.push('text-lg');
+          else if (val === '20px' || val === '1.25rem') tailwindClasses.push('text-xl');
+          else if (val === '24px' || val === '1.5rem') tailwindClasses.push('text-2xl');
+          else if (val === '30px' || val === '1.875rem') tailwindClasses.push('text-3xl');
+          else tailwindClasses.push(`text-[${val}]`);
+        }
+        else if (prop === 'font-weight') {
+          if (val === '100' || val === 'thin') tailwindClasses.push('font-thin');
+          else if (val === '300' || val === 'light') tailwindClasses.push('font-light');
+          else if (val === '400' || val === 'normal') tailwindClasses.push('font-normal');
+          else if (val === '500' || val === 'medium') tailwindClasses.push('font-medium');
+          else if (val === '600' || val === 'semibold') tailwindClasses.push('font-semibold');
+          else if (val === '700' || val === 'bold') tailwindClasses.push('font-bold');
+          else if (val === '800' || val === 'extrabold') tailwindClasses.push('font-extrabold');
+          else if (val === '900' || val === 'black') tailwindClasses.push('font-black');
+        }
+        else if (prop === 'text-align') {
+          if (val === 'center') tailwindClasses.push('text-center');
+          else if (val === 'left') tailwindClasses.push('text-left');
+          else if (val === 'right') tailwindClasses.push('text-right');
+          else if (val === 'justify') tailwindClasses.push('text-justify');
+        }
+        // Shadows & Effects
+        else if (prop === 'box-shadow') {
+          if (val.includes('0 1px 2px')) tailwindClasses.push('shadow-sm');
+          else if (val.includes('0 4px 6px')) tailwindClasses.push('shadow-md');
+          else if (val.includes('0 10px 15px')) tailwindClasses.push('shadow-lg');
+          else if (val.includes('0 20px 25px')) tailwindClasses.push('shadow-xl');
+          else if (val.includes('0 25px 50px')) tailwindClasses.push('shadow-2xl');
+          else if (val === 'none') tailwindClasses.push('shadow-none');
+          else tailwindClasses.push(`shadow-[${val.replace(/\s+/g, '_')}]`);
+        }
+        else if (prop === 'opacity') {
+          const num = parseFloat(val);
+          if (!isNaN(num)) tailwindClasses.push(`opacity-${Math.round(num * 100)}`);
+        }
+        else if (prop === 'cursor') {
+          if (val === 'pointer') tailwindClasses.push('cursor-pointer');
+          else if (val === 'not-allowed') tailwindClasses.push('cursor-not-allowed');
+          else if (val === 'default') tailwindClasses.push('cursor-default');
+        }
+        else if (prop === 'position') {
+          if (val === 'relative') tailwindClasses.push('relative');
+          else if (val === 'absolute') tailwindClasses.push('absolute');
+          else if (val === 'fixed') tailwindClasses.push('fixed');
+          else if (val === 'sticky') tailwindClasses.push('sticky');
+        }
+        else if (prop === 'overflow') {
+          if (val === 'hidden') tailwindClasses.push('overflow-hidden');
+          else if (val === 'auto') tailwindClasses.push('overflow-auto');
+          else if (val === 'scroll') tailwindClasses.push('overflow-scroll');
+        }
+      });
+
+      const uniqueClasses = Array.from(new Set(tailwindClasses));
+      reverseTailwindOutput.textContent = uniqueClasses.length > 0
+        ? uniqueClasses.join(' ')
+        : '/* No matching Tailwind classes found for the provided properties */';
+    }
+
+    const btnConvertCss = document.getElementById('btn-convert-css');
+    if (btnConvertCss) {
+      btnConvertCss.addEventListener('click', () => {
+        convertCssToTailwind();
+        showToast('Converted CSS to Tailwind');
+      });
+    }
+
+    if (reverseCssInput) {
+      reverseCssInput.addEventListener('input', convertCssToTailwind);
+    }
+
+    // --- VISUAL CLASS BUILDER ---
+    const builderOutput = document.getElementById('builder-class-output');
+    const builderPreviewEl = document.getElementById('builder-preview-el');
+
+    document.querySelectorAll('[data-build]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cls = btn.dataset.build;
+        let current = builderOutput.value.split(/\s+/).filter(Boolean);
+        if (!current.includes(cls)) {
+          current.push(cls);
+        } else {
+          current = current.filter(c => c !== cls);
+        }
+        builderOutput.value = current.join(' ');
+        builderPreviewEl.className = builderOutput.value;
+      });
+    });
+
+    builderOutput.addEventListener('input', () => {
+      builderPreviewEl.className = builderOutput.value;
+    });
+
+    // Copy Buttons
+    document.getElementById('btn-copy-compiled-css').addEventListener('click', () => {
+      navigator.clipboard.writeText(inspectorCssOutput.textContent).then(() => showToast('CSS copied!'));
+    });
+
+    document.getElementById('btn-copy-reverse-classes').addEventListener('click', () => {
+      navigator.clipboard.writeText(reverseTailwindOutput.textContent).then(() => showToast('Classes copied!'));
+    });
+
+    document.getElementById('btn-copy-built').addEventListener('click', () => {
+      navigator.clipboard.writeText(builderOutput.value).then(() => showToast('Class string copied!'));
+    });
+
+    // --- SAMPLE CLASSES CYCLER ---
+    const SAMPLE_CLASS_SETS = [
+      "flex items-center justify-between p-6 bg-slate-900 text-white rounded-2xl shadow-xl hover:scale-105 transition-all w-[340px]",
+      "grid grid-cols-1 md:grid-cols-3 gap-6 p-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl shadow-2xl text-white",
+      "inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-semibold text-sm rounded-xl shadow-lg transition-all",
+      "max-w-md mx-auto p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow",
+      "relative flex flex-col items-start gap-4 p-6 bg-sky-50 dark:bg-sky-950/40 border-l-4 border-sky-500 rounded-r-xl text-sky-900 dark:text-sky-100"
+    ];
+    let sampleIndex = 0;
+
+    const btnSampleClasses = document.getElementById('btn-sample-classes');
+    if (btnSampleClasses) {
+      btnSampleClasses.addEventListener('click', () => {
+        sampleIndex = (sampleIndex + 1) % SAMPLE_CLASS_SETS.length;
+        inspectorInput.value = SAMPLE_CLASS_SETS[sampleIndex];
+        updateInspector();
+        showToast('Loaded sample classes');
+      });
+    }
+
+    // --- VIEWPORT SIZING ---
+    const inspectorPreviewStage = document.getElementById('inspector-preview-stage');
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        if (view === 'auto') {
+          inspectorPreviewStage.style.maxWidth = '100%';
+        } else {
+          inspectorPreviewStage.style.maxWidth = `${view}px`;
+          inspectorPreviewStage.style.margin = '0 auto';
+        }
+      });
+    });
+
+    // --- PALETTE SEARCH FILTER ---
+    const paletteSearch = document.getElementById('palette-search');
+    if (paletteSearch) {
+      paletteSearch.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.color-family-card').forEach(card => {
+          const family = card.dataset.family || '';
+          if (!query || family.includes(query)) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // Initial Load
+    renderPaletteGrid();
+    renderSpacingTable();
+    updateInspector();
+    convertCssToTailwind();
+    builderPreviewEl.className = builderOutput.value;
+  </script>
+</body>
+</html>

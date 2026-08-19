@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS Animation Generator — Visual Keyframes &amp; Cubic-Bezier Studio | sayandeep.dev</title>
+  <meta name="description" content="Free online CSS Animation and @keyframes generator. Visually build multi-track timelines, custom cubic-bezier easing curves, live playback scrubbing, presets, and export CSS/Tailwind code." />
+  <meta name="keywords" content="css animation generator, keyframes generator, cubic bezier generator, css keyframes visual editor, css animation scrubber, tailwind keyframes" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/css-animation/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --track-bg: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s ease;
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --track-bg: #44403c;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container-fluid {
+      width: 100%;
+      padding: 0 1.25rem;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 1.25rem;
+      padding: 1rem 1.25rem 2rem;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Controls Column */
+    .controls-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .studio-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger { color: var(--error); }
+    .btn--danger:hover { background: var(--error-bg); border-color: var(--error); }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.775rem;
+      font-weight: 600;
+      padding: 0.35rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      min-width: 0;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Presets Wrap */
+    .presets-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .preset-pill {
+      font-size: 0.725rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .preset-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Global Parameters Grid */
+    .params-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1rem;
+      min-width: 0;
+    }
+
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+
+    .control-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .control-label .val-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Styled Range Inputs */
+    input[type=range].slider-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--track-bg);
+      outline: none;
+      cursor: pointer;
+      min-width: 0;
+      flex: 1;
+    }
+
+    input[type=range].slider-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    input[type=range].slider-range::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* Cubic-Bezier Canvas Box */
+    .bezier-editor-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .bezier-canvas {
+      width: 200px;
+      height: 200px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      cursor: crosshair;
+    }
+
+    /* Right Preview Column */
+    .preview-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    /* Preview Stage */
+    .preview-stage {
+      min-height: 280px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      padding: 2.5rem;
+      background: #f1f5f9;
+    }
+
+    .preview-target-box {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 20px;
+      box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1.75rem;
+      user-select: none;
+    }
+
+    /* Playback & Scrubber Bar */
+    .playback-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .scrubber-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    /* Timeline Tracks Container */
+    .timeline-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+
+    .track-row {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .stops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .stop-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.4rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.725rem;
+    }
+
+    /* Code Output Box */
+    .code-output-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .code-block {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--text);
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.25rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+
+  <!-- Dynamic Animation Style Tag -->
+  <style id="dynamic-animation-style"></style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container-fluid">
+      <a href="./" class="brand" aria-label="CSS Animation Generator">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">CSS Animation Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Controls & Presets -->
+    <div class="controls-column">
+      <!-- Global Parameters Card -->
+      <div class="studio-card">
+        <div class="card-title-row">
+          <span class="card-title">Animation Settings</span>
+          <div style="display:flex; gap:0.35rem;">
+            <button id="btn-reset" class="btn" title="Reset animation">🗑️ Reset</button>
+          </div>
+        </div>
+
+        <!-- Presets Wrap -->
+        <div style="display:flex; flex-direction:column; gap:0.4rem;">
+          <span style="font-size:0.7rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Curated Presets</span>
+          <div class="presets-wrap" id="presets-wrap">
+            <!-- Injected presets -->
+          </div>
+        </div>
+
+        <!-- Parameters Grid -->
+        <div class="params-grid">
+          <div class="control-row">
+            <label class="control-label" for="anim-name">Name</label>
+            <input type="text" id="anim-name" class="form-input" value="customPulse" />
+          </div>
+
+          <div class="control-row">
+            <div class="control-label"><span>Duration</span><span class="val-tag" id="lbl-duration">1.5s</span></div>
+            <input type="range" class="slider-range" id="anim-duration" min="0.2" max="5" step="0.1" value="1.5" />
+          </div>
+
+          <div class="control-row">
+            <label class="control-label" for="anim-easing">Timing Function</label>
+            <select id="anim-easing" class="form-select">
+              <option value="ease" selected>ease</option>
+              <option value="linear">linear</option>
+              <option value="ease-in">ease-in</option>
+              <option value="ease-out">ease-out</option>
+              <option value="ease-in-out">ease-in-out</option>
+              <option value="cubic-bezier">custom cubic-bezier</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label class="control-label" for="anim-iteration">Iteration</label>
+            <select id="anim-iteration" class="form-select">
+              <option value="infinite" selected>infinite</option>
+              <option value="1">1 time</option>
+              <option value="2">2 times</option>
+              <option value="3">3 times</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label class="control-label" for="anim-direction">Direction</label>
+            <select id="anim-direction" class="form-select">
+              <option value="normal" selected>normal</option>
+              <option value="reverse">reverse</option>
+              <option value="alternate">alternate</option>
+              <option value="alternate-reverse">alternate-reverse</option>
+            </select>
+          </div>
+
+          <div class="control-row">
+            <label class="control-label" for="anim-fill-mode">Fill Mode</label>
+            <select id="anim-fill-mode" class="form-select">
+              <option value="both" selected>both</option>
+              <option value="forwards">forwards</option>
+              <option value="backwards">backwards</option>
+              <option value="none">none</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cubic-Bezier Visual Canvas (shown when cubic-bezier selected) -->
+        <div class="bezier-editor-box" id="bezier-box" style="display:none;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Cubic-Bezier Easing Curve</div>
+          <canvas class="bezier-canvas" id="bezier-canvas" width="200" height="200"></canvas>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;" id="bezier-string">cubic-bezier(0.25, 0.1, 0.25, 1)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Preview, Scrubber & Timeline Tracks -->
+    <div class="preview-column">
+      <!-- Live Stage -->
+      <div class="preview-stage" id="preview-stage">
+        <div class="preview-target-box" id="target-box">
+          <span>✨</span>
+        </div>
+      </div>
+
+      <!-- Playback Controls & Progress Scrubber -->
+      <div class="playback-card">
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+          <button id="btn-play-pause" class="btn btn--primary">⏸️ Pause</button>
+          <button id="btn-restart" class="btn">🔄 Restart</button>
+        </div>
+
+        <div class="scrubber-wrap">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">Scrub:</span>
+          <input type="range" id="anim-scrubber" class="slider-range" min="0" max="100" value="0" />
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700;" id="scrubber-val">0%</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.3rem;">
+          <button class="btn btn--sm" data-speed="0.25">0.25x</button>
+          <button class="btn btn--sm" data-speed="0.5">0.5x</button>
+          <button class="btn btn--sm active" data-speed="1">1x</button>
+          <button class="btn btn--sm" data-speed="2">2x</button>
+        </div>
+      </div>
+
+      <!-- Keyframe Tracks -->
+      <div class="timeline-card">
+        <div class="card-title-row">
+          <span class="card-title">Keyframe Property Tracks</span>
+          <div style="display:flex; gap:0.4rem; align-items:center;">
+            <select id="add-track-select" class="form-select">
+              <option value="" disabled selected>+ Add Track...</option>
+              <option value="scale">Scale</option>
+              <option value="translateY">Translate Y</option>
+              <option value="translateX">Translate X</option>
+              <option value="rotate">Rotate</option>
+              <option value="opacity">Opacity</option>
+              <option value="borderRadius">Border Radius</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="tracks-container" style="display:flex; flex-direction:column; gap:0.75rem;">
+          <!-- Injected Keyframe Tracks -->
+        </div>
+      </div>
+
+      <!-- Generated CSS Code -->
+      <div class="code-output-card">
+        <div class="card-title-row">
+          <span class="card-title">Generated CSS Code</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button id="btn-download-css" class="btn">💾 .css</button>
+            <button id="btn-copy-css" class="btn btn--primary">📋 Copy CSS</button>
+          </div>
+        </div>
+
+        <pre class="code-block" id="css-code-output"></pre>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <footer>
+    <div class="container-fluid">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="../tools/" style="font-weight:600; color:var(--accent);">🛠️ All Tools</a>
+        <a href="../border-radius/">Border Radius</a>
+        <a href="../css-shadow/">CSS Shadow</a>
+        <a href="../color-picker/">Color Picker</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Switcher
+    let isDarkMode = false;
+
+    (function initTheme() {
+      const mode = localStorage.getItem('theme-mode');
+      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDarkMode) document.documentElement.classList.add('dark');
+
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDarkMode = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+        });
+      }
+    })();
+
+    // Application State
+    let isPlaying = true;
+    let playbackSpeed = 1;
+    let bezierPoints = { p1x: 0.25, p1y: 0.1, p2x: 0.25, p2y: 1.0 };
+
+    let tracks = {
+      scale: [
+        { stop: 0, val: 1 },
+        { stop: 50, val: 1.15 },
+        { stop: 100, val: 1 }
+      ],
+      opacity: [
+        { stop: 0, val: 1 },
+        { stop: 50, val: 0.8 },
+        { stop: 100, val: 1 }
+      ]
+    };
+
+    // Presets
+    const PRESETS = [
+      {
+        name: 'Pulse / Heartbeat',
+        duration: 1.2,
+        easing: 'ease-in-out',
+        tracks: {
+          scale: [{ stop: 0, val: 1 }, { stop: 50, val: 1.2 }, { stop: 100, val: 1 }],
+          opacity: [{ stop: 0, val: 1 }, { stop: 50, val: 0.85 }, { stop: 100, val: 1 }]
+        }
+      },
+      {
+        name: 'Bounce',
+        duration: 1.0,
+        easing: 'ease',
+        tracks: {
+          translateY: [{ stop: 0, val: 0 }, { stop: 40, val: -40 }, { stop: 60, val: 0 }, { stop: 80, val: -15 }, { stop: 100, val: 0 }]
+        }
+      },
+      {
+        name: 'Spin 360',
+        duration: 2.0,
+        easing: 'linear',
+        tracks: {
+          rotate: [{ stop: 0, val: 0 }, { stop: 100, val: 360 }]
+        }
+      },
+      {
+        name: 'Fade In Up',
+        duration: 1.0,
+        easing: 'ease-out',
+        tracks: {
+          translateY: [{ stop: 0, val: 40 }, { stop: 100, val: 0 }],
+          opacity: [{ stop: 0, val: 0 }, { stop: 100, val: 1 }]
+        }
+      },
+      {
+        name: 'Shake / Jitter',
+        duration: 0.6,
+        easing: 'linear',
+        tracks: {
+          translateX: [{ stop: 0, val: 0 }, { stop: 25, val: -15 }, { stop: 50, val: 15 }, { stop: 75, val: -10 }, { stop: 100, val: 0 }]
+        }
+      },
+      {
+        name: 'Wiggle',
+        duration: 1.0,
+        easing: 'ease-in-out',
+        tracks: {
+          rotate: [{ stop: 0, val: 0 }, { stop: 25, val: -15 }, { stop: 75, val: 15 }, { stop: 100, val: 0 }]
+        }
+      }
+    ];
+
+    // DOM Elements
+    const animNameInput = document.getElementById('anim-name');
+    const animDuration = document.getElementById('anim-duration');
+    const lblDuration = document.getElementById('lbl-duration');
+    const animEasing = document.getElementById('anim-easing');
+    const animIteration = document.getElementById('anim-iteration');
+    const animDirection = document.getElementById('anim-direction');
+    const animFillMode = document.getElementById('anim-fill-mode');
+    const bezierBox = document.getElementById('bezier-box');
+    const bezierCanvas = document.getElementById('bezier-canvas');
+    const bezierString = document.getElementById('bezier-string');
+
+    const targetBox = document.getElementById('target-box');
+    const btnPlayPause = document.getElementById('btn-play-pause');
+    const btnRestart = document.getElementById('btn-restart');
+    const animScrubber = document.getElementById('anim-scrubber');
+    const scrubberVal = document.getElementById('scrubber-val');
+    const presetsWrap = document.getElementById('presets-wrap');
+    const tracksContainer = document.getElementById('tracks-container');
+    const addTrackSelect = document.getElementById('add-track-select');
+    const cssCodeOutput = document.getElementById('css-code-output');
+    const btnCopyCss = document.getElementById('btn-copy-css');
+    const btnDownloadCss = document.getElementById('btn-download-css');
+    const dynamicStyle = document.getElementById('dynamic-animation-style');
+
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- INITIALIZATION ---
+    function initApp() {
+      renderPresets();
+      renderTracks();
+      updateDynamicCss();
+      initBezierCanvas();
+    }
+
+    // --- PRESETS ---
+    function renderPresets() {
+      let html = '';
+      PRESETS.forEach((p, idx) => {
+        html += `<button class="preset-pill" onclick="applyPreset(${idx})">${p.name}</button>`;
+      });
+      presetsWrap.innerHTML = html;
+    }
+
+    window.applyPreset = function(idx) {
+      const p = PRESETS[idx];
+      if (!p) return;
+      animDuration.value = p.duration;
+      lblDuration.textContent = `${p.duration}s`;
+      animEasing.value = p.easing;
+      tracks = JSON.parse(JSON.stringify(p.tracks));
+      renderTracks();
+      updateDynamicCss();
+      showToast(`Applied preset "${p.name}"`);
+    };
+
+    // --- RENDER TRACKS ---
+    function renderTracks() {
+      let html = '';
+      for (const [trackKey, stops] of Object.entries(tracks)) {
+        html += `
+          <div class="track-row">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.8rem; text-transform:uppercase; color:var(--accent);">${trackKey}</span>
+              <div style="display:flex; gap:0.3rem;">
+                <button class="btn btn--sm" onclick="addStopToTrack('${trackKey}')">+ Add Stop</button>
+                <button class="btn btn--sm btn--danger" onclick="removeTrack('${trackKey}')">✕ Remove Track</button>
+              </div>
+            </div>
+
+            <div class="stops-grid">
+              ${stops.map((st, idx) => `
+                <div class="stop-card">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700;">${st.stop}%</span>
+                    ${(st.stop !== 0 && st.stop !== 100) ? `<button onclick="deleteStop('${trackKey}', ${idx})" style="background:none; border:none; cursor:pointer; color:var(--error);">✕</button>` : ''}
+                  </div>
+                  <input type="number" class="num-box" style="width:100%; text-align:left;" value="${st.val}" step="${trackKey === 'scale' || trackKey === 'opacity' ? '0.05' : '1'}" onchange="updateStopVal('${trackKey}', ${idx}, this.value)" />
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      tracksContainer.innerHTML = html;
+    }
+
+    window.updateStopVal = function(trackKey, idx, val) {
+      tracks[trackKey][idx].val = parseFloat(val) || 0;
+      updateDynamicCss();
+    };
+
+    window.addStopToTrack = function(trackKey) {
+      const stops = tracks[trackKey];
+      const newStopPct = Math.round((stops[0].stop + stops[stops.length - 1].stop) / 2) || 50;
+      stops.push({ stop: newStopPct, val: stops[0].val });
+      stops.sort((a, b) => a.stop - b.stop);
+      renderTracks();
+      updateDynamicCss();
+    };
+
+    window.deleteStop = function(trackKey, idx) {
+      tracks[trackKey].splice(idx, 1);
+      renderTracks();
+      updateDynamicCss();
+    };
+
+    window.removeTrack = function(trackKey) {
+      delete tracks[trackKey];
+      renderTracks();
+      updateDynamicCss();
+    };
+
+    addTrackSelect.addEventListener('change', () => {
+      const prop = addTrackSelect.value;
+      if (!tracks[prop]) {
+        let defVal = 0;
+        if (prop === 'scale' || prop === 'opacity') defVal = 1;
+        tracks[prop] = [
+          { stop: 0, val: defVal },
+          { stop: 100, val: defVal }
+        ];
+        renderTracks();
+        updateDynamicCss();
+        showToast(`Added track ${prop}`);
+      }
+      addTrackSelect.value = '';
+    });
+
+    // --- COMPOSE @KEYFRAMES & CSS ---
+    function updateDynamicCss() {
+      const animName = animNameInput.value.trim() || 'myAnimation';
+      const duration = `${animDuration.value}s`;
+      let easing = animEasing.value;
+      if (easing === 'cubic-bezier') {
+        easing = `cubic-bezier(${bezierPoints.p1x.toFixed(2)}, ${bezierPoints.p1y.toFixed(2)}, ${bezierPoints.p2x.toFixed(2)}, ${bezierPoints.p2y.toFixed(2)})`;
+      }
+      const iteration = animIteration.value;
+      const direction = animDirection.value;
+      const fillMode = animFillMode.value;
+
+      // Collect all unique stop percentages
+      const allStops = new Set();
+      for (const trackKey in tracks) {
+        tracks[trackKey].forEach(st => allStops.add(st.stop));
+      }
+      const sortedStops = Array.from(allStops).sort((a, b) => a - b);
+
+      let keyframesContent = '';
+      sortedStops.forEach(stopPct => {
+        const rules = [];
+        const transforms = [];
+
+        for (const [trackKey, stops] of Object.entries(tracks)) {
+          // Find stop value at this percentage (or interpolated)
+          const found = stops.find(s => s.stop === stopPct);
+          if (found !== undefined) {
+            if (trackKey === 'scale') transforms.push(`scale(${found.val})`);
+            else if (trackKey === 'translateX') transforms.push(`translateX(${found.val}px)`);
+            else if (trackKey === 'translateY') transforms.push(`translateY(${found.val}px)`);
+            else if (trackKey === 'rotate') transforms.push(`rotate(${found.val}deg)`);
+            else if (trackKey === 'opacity') rules.push(`opacity: ${found.val};`);
+            else if (trackKey === 'borderRadius') rules.push(`border-radius: ${found.val}%;`);
+          }
+        }
+
+        if (transforms.length > 0) {
+          rules.unshift(`transform: ${transforms.join(' ')};`);
+        }
+
+        if (rules.length > 0) {
+          keyframesContent += `  ${stopPct}% {\n    ${rules.join('\n    ')}\n  }\n`;
+        }
+      });
+
+      const keyframesBlock = `@keyframes ${animName} {\n${keyframesContent}}`;
+      const animationProp = `${animName} ${duration} ${easing} ${iteration} ${direction} ${fillMode}`;
+      const cssRule = `.animated-element {\n  animation: ${animationProp};\n}`;
+
+      // Inject into DOM style
+      dynamicStyle.textContent = `
+        ${keyframesBlock}
+        .preview-running {
+          animation: ${animationProp} !important;
+        }
+      `;
+
+      targetBox.className = 'preview-target-box' + (isPlaying ? ' preview-running' : '');
+
+      cssCodeOutput.textContent = `${keyframesBlock}\n\n${cssRule}`;
+    }
+
+    // --- PLAYBACK CONTROLS ---
+    btnPlayPause.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      btnPlayPause.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+      targetBox.classList.toggle('preview-running', isPlaying);
+    });
+
+    btnRestart.addEventListener('click', () => {
+      targetBox.classList.remove('preview-running');
+      void targetBox.offsetWidth; // Trigger reflow
+      if (isPlaying) targetBox.classList.add('preview-running');
+      showToast('Restarted animation');
+    });
+
+    // Speed controls
+    document.querySelectorAll('[data-speed]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-speed]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        playbackSpeed = parseFloat(btn.dataset.speed);
+        animDuration.value = (1.5 / playbackSpeed).toFixed(1);
+        lblDuration.textContent = `${animDuration.value}s`;
+        updateDynamicCss();
+      });
+    });
+
+    // Scrubber
+    animScrubber.addEventListener('input', () => {
+      isPlaying = false;
+      btnPlayPause.textContent = '▶️ Play';
+      targetBox.classList.remove('preview-running');
+      const val = animScrubber.value;
+      scrubberVal.textContent = `${val}%`;
+
+      // Scrub interpolation
+      const pct = parseInt(val, 10);
+      const transforms = [];
+      if (tracks.scale) {
+        const st = tracks.scale[Math.floor((pct / 100) * (tracks.scale.length - 1))];
+        if (st) transforms.push(`scale(${st.val})`);
+      }
+      if (tracks.translateY) {
+        const st = tracks.translateY[Math.floor((pct / 100) * (tracks.translateY.length - 1))];
+        if (st) transforms.push(`translateY(${st.val}px)`);
+      }
+      if (tracks.rotate) {
+        const st = tracks.rotate[Math.floor((pct / 100) * (tracks.rotate.length - 1))];
+        if (st) transforms.push(`rotate(${st.val}deg)`);
+      }
+      if (transforms.length > 0) targetBox.style.transform = transforms.join(' ');
+    });
+
+    // --- CUBIC-BEZIER CANVAS ---
+    function initBezierCanvas() {
+      const ctx = bezierCanvas.getContext('2d');
+      let draggingHandle = null;
+
+      function drawBezier() {
+        const w = bezierCanvas.width;
+        const h = bezierCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Grid lines
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        ctx.lineTo(w, 0);
+        ctx.stroke();
+
+        // Control point lines
+        const x1 = bezierPoints.p1x * w;
+        const y1 = (1 - bezierPoints.p1y) * h;
+        const x2 = bezierPoints.p2x * w;
+        const y2 = (1 - bezierPoints.p2y) * h;
+
+        ctx.strokeStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        ctx.lineTo(x1, y1);
+        ctx.moveTo(w, 0);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Curve
+        ctx.strokeStyle = '#4f46e5';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        ctx.bezierCurveTo(x1, y1, x2, y2, w, 0);
+        ctx.stroke();
+
+        // Handles
+        drawHandle(x1, y1, '#4f46e5');
+        drawHandle(x2, y2, '#ec4899');
+      }
+
+      function drawHandle(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      drawBezier();
+
+      bezierCanvas.addEventListener('mousedown', (e) => {
+        const rect = bezierCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const x1 = bezierPoints.p1x * 200;
+        const y1 = (1 - bezierPoints.p1y) * 200;
+        const x2 = bezierPoints.p2x * 200;
+        const y2 = (1 - bezierPoints.p2y) * 200;
+
+        if (Math.hypot(mouseX - x1, mouseY - y1) < 15) draggingHandle = 'p1';
+        else if (Math.hypot(mouseX - x2, mouseY - y2) < 15) draggingHandle = 'p2';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!draggingHandle) return;
+        const rect = bezierCanvas.getBoundingClientRect();
+        const mouseX = Math.max(0, Math.min(200, e.clientX - rect.left));
+        const mouseY = Math.max(0, Math.min(200, e.clientY - rect.top));
+
+        if (draggingHandle === 'p1') {
+          bezierPoints.p1x = mouseX / 200;
+          bezierPoints.p1y = 1 - (mouseY / 200);
+        } else if (draggingHandle === 'p2') {
+          bezierPoints.p2x = mouseX / 200;
+          bezierPoints.p2y = 1 - (mouseY / 200);
+        }
+
+        drawBezier();
+        const bStr = `cubic-bezier(${bezierPoints.p1x.toFixed(2)}, ${bezierPoints.p1y.toFixed(2)}, ${bezierPoints.p2x.toFixed(2)}, ${bezierPoints.p2y.toFixed(2)})`;
+        bezierString.textContent = bStr;
+        updateDynamicCss();
+      });
+
+      window.addEventListener('mouseup', () => {
+        draggingHandle = null;
+      });
+    }
+
+    animEasing.addEventListener('change', () => {
+      bezierBox.style.display = animEasing.value === 'cubic-bezier' ? 'flex' : 'none';
+      updateDynamicCss();
+    });
+
+    [animNameInput, animDuration, animIteration, animDirection, animFillMode].forEach(el => {
+      el.addEventListener('input', () => {
+        lblDuration.textContent = `${animDuration.value}s`;
+        updateDynamicCss();
+      });
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      tracks = {
+        scale: [{ stop: 0, val: 1 }, { stop: 100, val: 1 }]
+      };
+      renderTracks();
+      updateDynamicCss();
+      showToast('Reset animation');
+    });
+
+    btnCopyCss.addEventListener('click', () => {
+      navigator.clipboard.writeText(cssCodeOutput.textContent).then(() => {
+        showToast('CSS copied to clipboard!');
+      });
+    });
+
+    btnDownloadCss.addEventListener('click', () => {
+      const blob = new Blob([cssCodeOutput.textContent], { type: 'text/css;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'animation.css';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded animation.css');
+    });
+
+    // Run init
+    initApp();
+  </script>
+</body>
+</html>
