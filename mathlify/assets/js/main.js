@@ -70,8 +70,8 @@ function buildHomepage() {
                   <span class="card__icon">💰</span>
                   <div class="card__title">Financial</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/mortgage-calculator">Mortgage Calculator</a>
-                    <a class="card__link" href="#/amortization-calculator">Amortization Calculator</a>
+                    <a class="card__link" href="tools/mortgage-calculator.html">Mortgage Calculator</a>
+                    <a class="card__link" href="tools/amortization-calculator.html">Amortization Calculator</a>
                   </div>
                 </div>
 
@@ -79,8 +79,8 @@ function buildHomepage() {
                   <span class="card__icon">🏃</span>
                   <div class="card__title">Health &amp; Fitness</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/bmi-calculator">BMI Calculator</a>
-                    <a class="card__link" href="#/age-calculator">Age Calculator</a>
+                    <a class="card__link" href="tools/bmi-calculator.html">BMI Calculator</a>
+                    <a class="card__link" href="tools/age-calculator.html">Age Calculator</a>
                   </div>
                 </div>
 
@@ -88,12 +88,12 @@ function buildHomepage() {
                   <span class="card__icon">📐</span>
                   <div class="card__title">Math</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/scientific-calculator">Scientific Calculator</a>
-                    <a class="card__link" href="#/percentage-calculator">Percentage Calculator</a>
-                    <a class="card__link" href="#/exponent-calculator">Exponent Calculator</a>
-                    <a class="card__link" href="#/root-calculator">Root Calculator</a>
-                    <a class="card__link" href="#/log-calculator">Log Calculator</a>
-                    <a class="card__link" href="#/quadratic-calculator">Quadratic Formula</a>
+                    <a class="card__link" href="tools/scientific-calculator.html">Scientific Calculator</a>
+                    <a class="card__link" href="tools/percentage-calculator.html">Percentage Calculator</a>
+                    <a class="card__link" href="tools/exponent-calculator.html">Exponent Calculator</a>
+                    <a class="card__link" href="tools/root-calculator.html">Root Calculator</a>
+                    <a class="card__link" href="tools/log-calculator.html">Log Calculator</a>
+                    <a class="card__link" href="tools/quadratic-calculator.html">Quadratic Formula</a>
                   </div>
                 </div>
 
@@ -101,10 +101,10 @@ function buildHomepage() {
                   <span class="card__icon">🔢</span>
                   <div class="card__title">Number Theory</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/factor-calculator">Factor Calculator</a>
-                    <a class="card__link" href="#/lcm-calculator">LCM Calculator</a>
-                    <a class="card__link" href="#/gcf-calculator">GCF Calculator</a>
-                    <a class="card__link" href="#/ratio-calculator">Ratio Calculator</a>
+                    <a class="card__link" href="tools/factor-calculator.html">Factor Calculator</a>
+                    <a class="card__link" href="tools/lcm-calculator.html">LCM Calculator</a>
+                    <a class="card__link" href="tools/gcf-calculator.html">GCF Calculator</a>
+                    <a class="card__link" href="tools/ratio-calculator.html">Ratio Calculator</a>
                   </div>
                 </div>
 
@@ -112,8 +112,8 @@ function buildHomepage() {
                   <span class="card__icon">💻</span>
                   <div class="card__title">Base Conversion</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/binary-calculator">Binary Calculator</a>
-                    <a class="card__link" href="#/hex-calculator">Hex Calculator</a>
+                    <a class="card__link" href="tools/binary-calculator.html">Binary Calculator</a>
+                    <a class="card__link" href="tools/hex-calculator.html">Hex Calculator</a>
                   </div>
                 </div>
 
@@ -121,8 +121,8 @@ function buildHomepage() {
                   <span class="card__icon">🧪</span>
                   <div class="card__title">Science</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/percent-error-calculator">Percent Error</a>
-                    <a class="card__link" href="#/half-life-calculator">Half-Life Calculator</a>
+                    <a class="card__link" href="tools/percent-error-calculator.html">Percent Error</a>
+                    <a class="card__link" href="tools/half-life-calculator.html">Half-Life Calculator</a>
                   </div>
                 </div>
 
@@ -130,9 +130,9 @@ function buildHomepage() {
                   <span class="card__icon">🎲</span>
                   <div class="card__title">Random & Stats</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/random-calculator">Random Number Generator</a>
-                    <a class="card__link" href="#/scientific-notation-calculator">Scientific Notation</a>
-                    <a class="card__link" href="#/big-number-calculator">Big Number Calculator</a>
+                    <a class="card__link" href="tools/random-calculator.html">Random Number Generator</a>
+                    <a class="card__link" href="tools/scientific-notation-calculator.html">Scientific Notation</a>
+                    <a class="card__link" href="tools/big-number-calculator.html">Big Number Calculator</a>
                   </div>
                 </div>
 
@@ -140,8 +140,8 @@ function buildHomepage() {
                   <span class="card__icon">📊</span>
                   <div class="card__title">Advanced</div>
                   <div class="card__links">
-                    <a class="card__link" href="#/matrix-calculator">Matrix Calculator</a>
-                    <a class="card__link" href="#/round-calculator">Rounding Calculator</a>
+                    <a class="card__link" href="tools/matrix-calculator.html">Matrix Calculator</a>
+                    <a class="card__link" href="tools/round-calculator.html">Rounding Calculator</a>
                   </div>
                 </div>
 
@@ -237,23 +237,35 @@ function initMobileMenu() {
   });
 }
 
+/* ---------- Safe Email Obfuscation --------------------------- */
+function initSafeEmailLinks() {
+  const el = document.getElementById('footer-support-email');
+  if (!el) return;
+
+  const assemble = () => {
+    const user = el.getAttribute('data-user');
+    const domain = el.getAttribute('data-domain');
+    if (!user || !domain) return;
+    const email = `${user}@${domain}`;
+    const subject = encodeURIComponent('Mathlify Issue / Feedback');
+    el.href = `mailto:${email}?subject=${subject}`;
+    const span = el.querySelector('.email-display');
+    if (span) span.textContent = email;
+  };
+
+  el.addEventListener('mouseenter', assemble, { once: true });
+  el.addEventListener('focus', assemble, { once: true });
+  el.addEventListener('touchstart', assemble, { once: true, passive: true });
+  el.addEventListener('click', () => {
+    assemble();
+  });
+}
+
 /* ---------- Boot ---------------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
-  // Expose home renderer so router can call it
-  window._renderHome = buildHomepage;
-
   initTheme();
   initRouter();
   initMobileMenu();
-
-  // After router renders a page, load the matching calc module
-  document.addEventListener('page:loaded', (e) => {
-    loadCalcPage(e.detail.hash);
-  });
-
-  // If landing on home, render immediately
-  const hash = window.location.hash || '#/';
-  if (hash === '#/' || hash === '' || hash === '#') {
-    buildHomepage();
-  }
+  initSafeEmailLinks();
+  buildHomepage();
 });

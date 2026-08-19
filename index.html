@@ -9,13 +9,8 @@
     (function () {
       try {
         var mode = localStorage.getItem("theme-mode");
-        var scheme = localStorage.getItem("theme-scheme") || "ocean";
-        if (!mode) {
-          mode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-        var root = document.documentElement;
-        root.setAttribute("data-theme", scheme);
-        if (mode === "dark") root.classList.add("dark");
+        var isDark = mode ? mode === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (isDark) document.documentElement.classList.add("dark");
       } catch (e) {}
     })();
   </script>
@@ -96,28 +91,14 @@
         <a href="#contact" class="nav-link">Contact</a>
       </div>
       <div class="flex items-center gap-2">
-        <div class="relative">
-          <button id="theme-toggle" type="button" class="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors" style="border-color: rgb(var(--color-line)); color: rgb(var(--color-text));" aria-expanded="false" aria-label="Theme switcher">
-            <span id="theme-label">Ocean</span>
-            <svg class="inline-block ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </button>
-          <div id="theme-menu" class="absolute right-0 mt-1 hidden w-40 rounded-lg border shadow-lg" style="border-color: rgb(var(--color-line)); background-color: rgb(var(--color-surface));">
-            <div class="p-1">
-              <button class="theme-menu-item rounded-md" data-theme="vivid" aria-checked="false">Vivid<span class="ml-auto h-3 w-3 rounded-full" style="background: #ec4899;"></span></button>
-              <button class="theme-menu-item rounded-md" data-theme="ocean" aria-checked="true">Ocean<span class="ml-auto h-3 w-3 rounded-full" style="background: #06b6d4;"></span></button>
-              <button class="theme-menu-item rounded-md" data-theme="forest" aria-checked="false">Forest<span class="ml-auto h-3 w-3 rounded-full" style="background: #22c55e;"></span></button>
-              <button class="theme-menu-item rounded-md" data-theme="earth" aria-checked="false">Earth<span class="ml-auto h-3 w-3 rounded-full" style="background: #a855f7;"></span></button>
-              <button class="theme-menu-item rounded-md" data-theme="fire" aria-checked="false">Fire<span class="ml-auto h-3 w-3 rounded-full" style="background: #ef4444;"></span></button>
-              <button class="theme-menu-item rounded-md" data-theme="air" aria-checked="false">Air<span class="ml-auto h-3 w-3 rounded-full" style="background: #3b82f6;"></span></button>
-              <div class="my-1 h-px" style="background-color: rgb(var(--color-line));"></div>
-              <button id="dark-mode-toggle" class="theme-menu-item rounded-md">
-                <span id="dark-mode-label">Dark mode</span>
-                <svg class="ml-auto h-4 w-4 hidden dark:block" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-                <svg class="ml-auto h-4 w-4 block dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <button id="theme-toggle" type="button" class="inline-flex items-center justify-center rounded-md border border-line p-2 text-ink transition-colors hover:border-accent hover:text-accent" aria-label="Toggle dark mode">
+          <svg class="h-4 w-4 hidden dark:block" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="h-4 w-4 block dark:hidden" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
         <a href="mailto:sayandeepmajumdar.official@gmail.com" class="hidden rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent md:inline-flex">Get in touch</a>
         <button id="menu-toggle" type="button" class="rounded-md border border-line px-3 py-1.5 text-sm font-medium text-ink md:hidden" aria-expanded="false" aria-controls="mobile-menu">Menu</button>
       </div>
@@ -257,10 +238,6 @@
     const navLinks = document.querySelectorAll(".nav-link");
     const revealElements = document.querySelectorAll(".reveal");
     const themeToggle = document.getElementById("theme-toggle");
-    const themeMenu = document.getElementById("theme-menu");
-    const themeLabel = document.getElementById("theme-label");
-    const themeMenuItems = document.querySelectorAll('.theme-menu-item[data-theme]');
-    const darkModeToggle = document.getElementById("dark-mode-toggle");
 
     menuToggle.addEventListener("click", function () {
       const isOpen = mobileMenu.classList.toggle("hidden") === false;
@@ -274,39 +251,13 @@
       });
     });
 
-    themeToggle.addEventListener("click", function (e) {
-      e.stopPropagation();
-      themeMenu.classList.toggle("hidden");
-      themeToggle.setAttribute("aria-expanded", themeMenu.classList.contains("hidden") ? "false" : "true");
-    });
-
-    document.addEventListener("click", function () {
-      if (!themeMenu.classList.contains("hidden")) {
-        themeMenu.classList.add("hidden");
-        themeToggle.setAttribute("aria-expanded", "false");
-      }
-    });
-
-    themeMenu.addEventListener("click", function (e) {
-      e.stopPropagation();
-    });
-
-    themeMenuItems.forEach(function (item) {
-      item.addEventListener("click", function () {
-        var scheme = this.getAttribute("data-theme");
-        localStorage.setItem("theme-scheme", scheme);
-        document.documentElement.setAttribute("data-theme", scheme);
-        themeLabel.textContent = this.textContent.trim().split(/\s+/)[0];
-        themeMenuItems.forEach(function (btn) { btn.setAttribute("aria-checked", "false"); });
-        this.setAttribute("aria-checked", "true");
+    if (themeToggle) {
+      themeToggle.addEventListener("click", function () {
+        var root = document.documentElement;
+        var isDark = root.classList.toggle("dark");
+        localStorage.setItem("theme-mode", isDark ? "dark" : "light");
       });
-    });
-
-    darkModeToggle.addEventListener("click", function () {
-      var root = document.documentElement;
-      var isDark = root.classList.toggle("dark");
-      localStorage.setItem("theme-mode", isDark ? "dark" : "light");
-    });
+    }
 
     const revealObserver = new IntersectionObserver(
       function (entries, observer) {
@@ -322,13 +273,6 @@
 
     revealElements.forEach(function (element) {
       revealObserver.observe(element);
-    });
-
-    var currentScheme = localStorage.getItem("theme-scheme") || "ocean";
-    var schemeNames = { vivid: "Vivid", ocean: "Ocean", forest: "Forest", earth: "Earth", fire: "Fire", air: "Air" };
-    themeLabel.textContent = schemeNames[currentScheme] || "Ocean";
-    themeMenuItems.forEach(function (item) {
-      item.setAttribute("aria-checked", item.getAttribute("data-theme") === currentScheme ? "true" : "false");
     });
   </script>
 </body>
