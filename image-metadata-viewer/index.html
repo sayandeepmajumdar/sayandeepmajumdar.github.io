@@ -1,0 +1,2670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Image Metadata Viewer — EXIF, IPTC, XMP, GPS Map & Privacy Audit | sayandeep.dev</title>
+  <meta name="description" content="Free, fast, and 100% private in-browser Image Metadata & EXIF Viewer. Inspect camera settings, GPS location on map, dates, IPTC/XMP, embedded thumbnails, privacy audit, and 1-click metadata stripper." />
+  <meta name="keywords" content="exif viewer, image metadata viewer, photo metadata, gps photo location, iptc viewer, xmp viewer, metadata stripper, remove exif, photo privacy audit, embedded thumbnail" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/image-metadata-viewer/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS & JS for OpenStreetMap Preview (No API Key Required) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- exifr for Complete Client-Side EXIF, IPTC, XMP, GPS, ICC Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+
+  <!-- JSZip for Batch Metadata-Stripped ZIP Export & ZIP Upload Unpacking -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* ====================================================
+       DESIGN SYSTEM & CSS TOKENS (DARK/LIGHT MODE)
+       ==================================================== */
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f1f5f9;
+      --surface-hover: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: rgba(37, 99, 235, 0.08);
+      --accent-border: rgba(37, 99, 235, 0.25);
+      --success: #10b981;
+      --success-light: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-light: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-light: rgba(239, 68, 68, 0.1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --touch-min: 44px;
+    }
+
+    html.dark {
+      --bg: #090d16;
+      --surface: #0f172a;
+      --surface-rgb: 15, 23, 42;
+      --surface-alt: #1e293b;
+      --surface-hover: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --line: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --accent-light: rgba(59, 130, 246, 0.15);
+      --accent-border: rgba(59, 130, 246, 0.3);
+      --success: #34d399;
+      --success-light: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-light: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-light: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.has-mobile-bar {
+      padding-bottom: 84px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .container {
+        padding: 0 1.5rem;
+      }
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 54px;
+      height: auto;
+      padding: 0.4rem 1rem;
+      gap: 0.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 520px) {
+      .brand-title {
+        display: none;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover, .btn-icon:active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--surface-alt);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 40px;
+      white-space: nowrap;
+      transition: all var(--transition);
+    }
+
+    .nav-back-link:hover, .nav-back-link:active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--surface-alt);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      padding: 1.25rem 0 0.85rem;
+      text-align: center;
+    }
+
+    .hero-title {
+      font-size: clamp(1.4rem, 4vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.3rem;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: clamp(0.825rem, 2.2vw, 0.95rem);
+      max-width: 680px;
+      margin: 0 auto 0.75rem;
+      line-height: 1.5;
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--success);
+      background: var(--success-light);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ====================================================
+       WORKSPACE LAYOUT (2-COL DESKTOP, 1-COL MOBILE)
+       ==================================================== */
+    .app-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .workspace-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .workspace-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .app-workspace {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 1.75rem;
+        align-items: start;
+      }
+      .workspace-sidebar {
+        position: sticky;
+        top: 70px;
+        z-index: 10;
+      }
+    }
+
+    /* ====================================================
+       DROPZONE (THUMB-FRIENDLY & COMPACT)
+       ==================================================== */
+    .dropzone {
+      background: var(--surface);
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag-active {
+      border-color: var(--accent);
+      background-color: var(--accent-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .dropzone-icon-wrap {
+      width: 44px;
+      height: 44px;
+      background: var(--surface-alt);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+      transition: transform var(--transition);
+    }
+
+    .dropzone:hover .dropzone-icon-wrap {
+      transform: scale(1.1);
+    }
+
+    .dropzone-primary-text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+
+    .dropzone-subtext {
+      font-size: 0.775rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      max-width: 320px;
+    }
+
+    .dropzone-actions {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: inherit;
+      font-size: 0.825rem;
+      font-weight: 600;
+      min-height: var(--touch-min);
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .btn:hover, .btn:active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--surface-alt);
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn--primary:hover, .btn--primary:active {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--success {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn--success:hover, .btn--success:active {
+      filter: brightness(0.92);
+      color: #ffffff;
+    }
+
+    .btn--warning {
+      background: var(--warning);
+      color: #000000;
+      border-color: var(--warning);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+    }
+
+    .btn--danger {
+      color: var(--error);
+      background: var(--error-light);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn--danger:hover, .btn--danger:active {
+      background: var(--error);
+      color: #ffffff;
+    }
+
+    .btn--sm {
+      min-height: 36px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.775rem;
+    }
+
+    /* Uploaded Items List in Sidebar */
+    .file-list-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .file-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .file-items-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 0.2rem;
+    }
+
+    .file-item-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .file-item-chip:hover {
+      border-color: var(--accent);
+      background: var(--surface-hover);
+    }
+
+    .file-item-chip.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .file-item-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #e2e8f0;
+      flex-shrink: 0;
+    }
+
+    .file-item-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .file-item-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-item-meta {
+      font-size: 0.685rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .file-item-del {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem;
+      border-radius: 4px;
+    }
+
+    .file-item-del:hover {
+      color: var(--error);
+      background: var(--error-light);
+    }
+
+    /* ====================================================
+       PRIVACY & SECURITY AUDIT BANNER
+       ==================================================== */
+    .privacy-audit-card {
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--line);
+      transition: all var(--transition);
+    }
+
+    .privacy-audit-card--danger {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .privacy-audit-card--warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    .privacy-audit-card--clean {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .audit-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .audit-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .audit-risk-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .audit-risk-badge--danger {
+      background: var(--error);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+
+    .audit-risk-badge--warning {
+      background: var(--warning);
+      color: #000000;
+    }
+
+    .audit-risk-badge--clean {
+      background: var(--success);
+      color: #ffffff;
+    }
+
+    .audit-title {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .audit-desc {
+      font-size: 0.825rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .audit-tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .sensitive-tag-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.725rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .sensitive-tag-pill--gps {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .sensitive-tag-pill--identity {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .sensitive-tag-pill--device {
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .audit-action-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+    }
+
+    /* ====================================================
+       NAVIGATION TABS
+       ==================================================== */
+    .view-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface-alt);
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .view-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      min-height: 38px;
+      padding: 0.35rem 0.85rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.825rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--line);
+    }
+
+    /* ====================================================
+       CATEGORIZED METADATA PANELS & GRID
+       ==================================================== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 768px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .meta-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .meta-card--full {
+      grid-column: 1 / -1;
+    }
+
+    .meta-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--line);
+      gap: 0.5rem;
+    }
+
+    .meta-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--text);
+    }
+
+    /* Key-Value Pair Rows */
+    .meta-props-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .meta-prop-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      font-size: 0.825rem;
+      gap: 0.75rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .meta-prop-row:last-child {
+      border-bottom: none;
+    }
+
+    .meta-prop-row.highlight-danger {
+      background: rgba(239, 68, 68, 0.08);
+      padding: 0.35rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border-bottom: none;
+      border-left: 3px solid var(--error);
+    }
+
+    .meta-prop-row.highlight-warning {
+      background: rgba(245, 158, 11, 0.08);
+      padding: 0.35rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border-bottom: none;
+      border-left: 3px solid var(--warning);
+    }
+
+    .meta-prop-label {
+      color: var(--text-muted);
+      font-weight: 600;
+      min-width: 110px;
+      flex-shrink: 0;
+    }
+
+    .meta-prop-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-all;
+      text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.35rem;
+    }
+
+    .btn-copy-val {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.15rem;
+      border-radius: 4px;
+      opacity: 0.6;
+      transition: opacity var(--transition);
+      display: inline-flex;
+    }
+
+    .btn-copy-val:hover {
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    /* Date Discrepancy Box */
+    .date-compare-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.5rem;
+      background: var(--surface-alt);
+      padding: 0.65rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+    }
+
+    .date-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .date-label {
+      font-size: 0.675rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .date-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .date-alert-tag {
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: var(--warning);
+      background: var(--warning-light);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      margin-top: 0.35rem;
+    }
+
+    /* GPS Map Container */
+    .map-preview-wrap {
+      width: 100%;
+      height: 240px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      margin-top: 0.5rem;
+      z-index: 1;
+    }
+
+    /* Embedded Thumbnail vs Full View */
+    .thumb-compare-wrap {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      margin-top: 0.5rem;
+    }
+
+    .thumb-preview-box {
+      width: 130px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .thumb-img-container {
+      width: 130px;
+      height: 130px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      background-image: 
+        linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+      background-size: 12px 12px;
+    }
+
+    html.dark .thumb-img-container {
+      background-color: #1e293b;
+      background-image: 
+        linear-gradient(45deg, #334155 25%, transparent 25%), 
+        linear-gradient(-45deg, #334155 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #334155 75%), 
+        linear-gradient(-45deg, transparent 75%, #334155 75%);
+    }
+
+    .thumb-img-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .thumb-caption {
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ====================================================
+       RAW TAGS TABLE
+       ==================================================== */
+    .raw-tags-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .raw-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      font-family: inherit;
+      font-size: 0.825rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      min-width: 220px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .category-select {
+      font-family: inherit;
+      font-size: 0.825rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .raw-table-wrapper {
+      max-height: 480px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+    }
+
+    .raw-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    .raw-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-alt);
+      padding: 0.55rem 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--line);
+      z-index: 2;
+    }
+
+    .raw-table td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .raw-table tr:hover {
+      background: var(--surface-hover);
+    }
+
+    .tag-category-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.675rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: var(--surface-alt);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    /* ====================================================
+       COMPARISON / DIFF MODE
+       ==================================================== */
+    .compare-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .compare-selectors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .compare-selectors {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .compare-select-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .compare-select-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .compare-table th, .compare-table td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--line);
+    }
+
+    .compare-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
+    }
+
+    .compare-row-diff {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .compare-row-same {
+      background: transparent;
+    }
+
+    /* Empty state */
+    .empty-state-card {
+      background: var(--surface);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-lg);
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+      min-height: 280px;
+    }
+
+    .empty-state-icon {
+      width: 52px;
+      height: 52px;
+      background: var(--surface-alt);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+
+    .empty-state-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .empty-state-desc {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      max-width: 400px;
+      line-height: 1.5;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .toast {
+      background: var(--surface);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--line);
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Sticky Mobile Action Bar */
+    .mobile-bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background-color: rgba(var(--surface-rgb), 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      padding: 0.6rem 1rem env(safe-area-inset-bottom, 0.6rem);
+      box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .mobile-bottom-bar.active {
+      display: flex;
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-bottom-bar,
+      .mobile-bottom-bar.active {
+        display: none !important;
+      }
+      body,
+      body.has-mobile-bar {
+        padding-bottom: 0 !important;
+      }
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div class="header-inner">
+        <a href="./" class="brand" aria-label="Image Metadata Viewer">
+          <span class="brand-badge">EXIF AUDIT</span>
+          <span class="brand-title">Image Metadata Viewer</span>
+        </a>
+
+        <div class="header-actions">
+          <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+            <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+            <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+          </button>
+          <a href="../tools/" class="nav-back-link">← Tools</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <h1 class="hero-title">Image Metadata &amp; EXIF Viewer</h1>
+      <p class="hero-desc">
+        Inspect embedded EXIF, IPTC, XMP, and GPS coordinates on an interactive map. Audit sensitive location and identity data, and strip metadata with 1 click.
+      </p>
+      <div class="privacy-badge">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+        100% Client-Side Privacy — No Image or GPS Data Leaves Your Browser
+      </div>
+    </div>
+
+    <!-- App Workspace (2-Column Grid on Desktop, 1-Column on Mobile) -->
+    <div class="app-workspace">
+      
+      <!-- Sidebar Column: Upload Zone & Image List -->
+      <aside class="workspace-sidebar">
+        <!-- Hidden native file picker (Supports camera / photo library on mobile, and .zip archives) -->
+        <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/jpg,image/webp,image/tiff,image/heic,image/avif,image/*,.zip,application/zip,application/x-zip-compressed" style="display: none;" />
+
+        <!-- Drop Zone -->
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon-wrap">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <div class="dropzone-primary-text">Tap or drop photos / .ZIP archive</div>
+          <div class="dropzone-subtext">Supports JPEG, PNG, TIFF, WebP, HEIC, and ZIP archives of images.</div>
+          <div class="dropzone-actions">
+            <button type="button" class="btn btn--primary btn--sm" id="btn-browse-files">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              Choose Photos / ZIP
+            </button>
+            <button type="button" class="btn btn--sm" id="btn-paste-clipboard" title="Paste image from clipboard">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Paste (Ctrl+V)
+            </button>
+          </div>
+        </div>
+
+        <!-- File List / Batch Selector (Appears when files are loaded) -->
+        <div class="file-list-card" id="file-list-card" style="display: none;">
+          <div class="file-list-header">
+            <span>UPLOADED PHOTOS (<span id="file-count">0</span>)</span>
+            <button type="button" class="btn btn--danger btn--sm" onclick="clearAllFiles()" style="min-height: 28px; padding: 0.15rem 0.5rem; font-size: 0.7rem;">
+              Clear All
+            </button>
+          </div>
+          <div class="file-items-scroll" id="file-items-scroll">
+            <!-- Dynamically populated file chips -->
+          </div>
+        </div>
+
+        <!-- Sidebar Batch Actions -->
+        <div class="file-list-card" id="batch-actions-card" style="display: none;">
+          <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">BATCH ACTIONS</div>
+          <button type="button" class="btn btn--warning btn--sm" onclick="batchStripAllZip()" style="width: 100%;">
+            🛡️ Strip All &amp; Download ZIP
+          </button>
+          <button type="button" class="btn btn--sm" onclick="batchExportAllJSON()" style="width: 100%; margin-top: 0.35rem;">
+            💾 Export All Metadata (JSON)
+          </button>
+        </div>
+
+      </aside>
+
+      <!-- Main Workspace Column -->
+      <section class="workspace-main" id="workspace-main">
+        
+        <!-- Empty State Indicator -->
+        <div class="empty-state-card" id="empty-state">
+          <div class="empty-state-icon">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div class="empty-state-title">No image selected yet</div>
+          <p class="empty-state-desc">Select or drop a photo on the left to inspect its camera settings, GPS location, timestamps, IPTC tags, and privacy audit.</p>
+        </div>
+
+        <!-- Active Inspection Dashboard (Visible when file is loaded) -->
+        <div id="inspection-dashboard" style="display: none; flex-direction: column; gap: 1.25rem;">
+          
+          <!-- Privacy & Security Audit Banner -->
+          <div class="privacy-audit-card" id="privacy-audit-card">
+            <div class="audit-header-row">
+              <div class="audit-title-wrap">
+                <span class="audit-risk-badge" id="audit-badge">AUDITING</span>
+                <span class="audit-title" id="audit-title">Privacy Assessment</span>
+              </div>
+              <div class="audit-action-row">
+                <button type="button" class="btn btn--warning btn--sm" onclick="downloadStrippedCurrent()">
+                  🛡️ Download Stripped Photo
+                </button>
+                <button type="button" class="btn btn--sm" onclick="downloadCurrentJSON()">
+                  💾 Export JSON
+                </button>
+              </div>
+            </div>
+
+            <p class="audit-desc" id="audit-desc">
+              Checking for embedded GPS location, camera serial numbers, and creator identity tags...
+            </p>
+
+            <div class="audit-tags-list" id="audit-tags-list">
+              <!-- Dynamically populated sensitive tags -->
+            </div>
+          </div>
+
+          <!-- View Switcher Tabs -->
+          <div class="view-tabs">
+            <button type="button" class="tab-btn active" id="tab-btn-curated" onclick="switchViewTab('curated')">
+              📊 Categorized View
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-raw" onclick="switchViewTab('raw')">
+              📋 Raw Tags Explorer (<span id="raw-count">0</span>)
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-compare" onclick="switchViewTab('compare')">
+              ⚖️ Diff / Compare
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-batch" onclick="switchViewTab('batch')">
+              📦 Batch Summary
+            </button>
+          </div>
+
+          <!-- TAB 1: Categorized View -->
+          <div id="tab-view-curated" class="cards-grid">
+            
+            <!-- Camera & Exposure Settings Card -->
+            <div class="meta-card">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  📷 Camera &amp; Optics
+                </div>
+              </div>
+              <div class="meta-props-list" id="props-camera">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Date & Timeline Card -->
+            <div class="meta-card">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  📅 Dates &amp; Timeline
+                </div>
+              </div>
+              <div class="meta-props-list" id="props-dates">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- GPS & Map Location Card (Full Width) -->
+            <div class="meta-card meta-card--full" id="card-gps">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  📍 GPS Location &amp; Coordinates
+                </div>
+                <div id="gps-unit-toggle-wrap">
+                  <button type="button" class="btn btn--sm" id="btn-toggle-gps-unit" onclick="toggleGpsFormat()">
+                    DMS / Decimal Toggle
+                  </button>
+                </div>
+              </div>
+              <div class="meta-props-list" id="props-gps">
+                <!-- Injected via JS -->
+              </div>
+              <div class="map-preview-wrap" id="map-container">
+                <!-- Leaflet interactive map -->
+              </div>
+            </div>
+
+            <!-- Image Properties Card -->
+            <div class="meta-card">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  🖼️ Image Properties
+                </div>
+              </div>
+              <div class="meta-props-list" id="props-image">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Creator, Copyright & Software Card -->
+            <div class="meta-card">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  ✍️ Creator, Copyright &amp; IPTC
+                </div>
+              </div>
+              <div class="meta-props-list" id="props-software">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Embedded Thumbnail vs Full Image Card (Full Width) -->
+            <div class="meta-card meta-card--full" id="card-thumbnail-inspector">
+              <div class="meta-card-header">
+                <div class="meta-card-title">
+                  🔍 Embedded EXIF Thumbnail Inspector
+                </div>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--text-muted);">
+                Discrepancies between the embedded EXIF thumbnail and the full photo can reveal post-capture cropping or alterations.
+              </p>
+              <div class="thumb-compare-wrap" id="thumbnail-inspector-content">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAB 2: Raw Tags Explorer Table -->
+          <div id="tab-view-raw" class="raw-tags-card" style="display: none;">
+            <div class="raw-toolbar">
+              <input type="text" id="raw-search-input" class="search-input" placeholder="Search tag name or value..." oninput="filterRawTags()" />
+              <select id="raw-category-filter" class="category-select" onchange="filterRawTags()">
+                <option value="all">All Categories</option>
+                <option value="exif">EXIF / Camera</option>
+                <option value="gps">GPS Location</option>
+                <option value="iptc">IPTC</option>
+                <option value="xmp">XMP</option>
+                <option value="tiff">TIFF / File</option>
+                <option value="icc">ICC Color Profile</option>
+              </select>
+            </div>
+
+            <div class="raw-table-wrapper">
+              <table class="raw-table">
+                <thead>
+                  <tr>
+                    <th style="width: 110px;">Category</th>
+                    <th style="width: 220px;">Tag Name</th>
+                    <th>Value</th>
+                    <th style="width: 60px; text-align: center;">Copy</th>
+                  </tr>
+                </thead>
+                <tbody id="raw-tags-tbody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 3: Diff / Compare Mode -->
+          <div id="tab-view-compare" class="compare-card" style="display: none;">
+            <div class="compare-selectors">
+              <div class="compare-select-wrap">
+                <label for="compare-select-a" class="compare-select-label">Photo A:</label>
+                <select id="compare-select-a" class="category-select" onchange="renderCompareTable()"></select>
+              </div>
+              <div class="compare-select-wrap">
+                <label for="compare-select-b" class="compare-select-label">Photo B:</label>
+                <select id="compare-select-b" class="category-select" onchange="renderCompareTable()"></select>
+              </div>
+            </div>
+
+            <div class="raw-table-wrapper">
+              <table class="compare-table">
+                <thead>
+                  <tr>
+                    <th style="width: 200px;">Property</th>
+                    <th>Photo A Value</th>
+                    <th>Photo B Value</th>
+                  </tr>
+                </thead>
+                <tbody id="compare-tbody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB 4: Batch Summary Table -->
+          <div id="tab-view-batch" class="raw-tags-card" style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700;">ALL LOADED PHOTOS SUMMARY</span>
+              <button type="button" class="btn btn--warning btn--sm" onclick="batchStripAllZip()">
+                🛡️ Strip All &amp; Download ZIP
+              </button>
+            </div>
+
+            <div class="raw-table-wrapper">
+              <table class="raw-table">
+                <thead>
+                  <tr>
+                    <th>Thumbnail</th>
+                    <th>Filename</th>
+                    <th>Camera Model</th>
+                    <th>Date Taken</th>
+                    <th>GPS Coordinates</th>
+                    <th>Dimensions</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="batch-summary-tbody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Sticky Mobile Action Bar -->
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <button type="button" class="btn btn--warning btn--sm" onclick="downloadStrippedCurrent()" style="flex: 1;">
+      🛡️ Strip &amp; Save
+    </button>
+    <button type="button" class="btn btn--primary btn--sm" onclick="fileInput.click()" style="flex: 1;">
+      📷 Add Photo
+    </button>
+  </div>
+
+  <!-- Toast Notification Area -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>Image Metadata &amp; EXIF Viewer Studio — 100% In-Browser Inspection. Powered by exifr, Leaflet, and JSZip.</p>
+      <p style="margin-top: 0.35rem;">
+        <a href="../tools/">← Developer Tools Hub</a> &bull; <a href="../jpg-png-converter/">JPG ⇄ PNG Converter</a> &bull; <a href="../">Portfolio</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ====================================================
+       CLIENT-SIDE JAVASCRIPT ENGINE
+       ==================================================== */ -->
+  <script>
+    // State
+    let items = []; // Array of parsed image items
+    let selectedId = null;
+    let leafletMap = null;
+    let mapMarker = null;
+    let gpsFormatDecimal = true; // true = decimal, false = DMS
+
+    // DOM Elements
+    const fileInput = document.getElementById('file-input');
+    const dropzone = document.getElementById('dropzone');
+    const btnBrowse = document.getElementById('btn-browse-files');
+    const btnPaste = document.getElementById('btn-paste-clipboard');
+    const emptyState = document.getElementById('empty-state');
+    const inspectionDashboard = document.getElementById('inspection-dashboard');
+    const fileListCard = document.getElementById('file-list-card');
+    const batchActionsCard = document.getElementById('batch-actions-card');
+    const fileItemsScroll = document.getElementById('file-items-scroll');
+    const fileCount = document.getElementById('file-count');
+    const mobileBottomBar = document.getElementById('mobile-bottom-bar');
+
+    // Theme Initialization
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+    }
+
+    // Toast Utility
+    function showToast(message, icon = '✅') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Byte Formatter
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Convert Decimal degrees to DMS
+    function decimalToDMS(deg, isLat) {
+      if (deg === undefined || deg === null || isNaN(deg)) return 'N/A';
+      const absolute = Math.abs(deg);
+      const degrees = Math.floor(absolute);
+      const minutesNotTruncated = (absolute - degrees) * 60;
+      const minutes = Math.floor(minutesNotTruncated);
+      const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
+      let direction = '';
+      if (isLat) {
+        direction = deg >= 0 ? 'N' : 'S';
+      } else {
+        direction = deg >= 0 ? 'E' : 'W';
+      }
+      return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+    }
+
+    // Copy to Clipboard
+    async function copyText(text, label = 'Value') {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(`${label} copied to clipboard!`, '📋');
+      } catch (err) {
+        showToast('Clipboard copy failed', '⚠️');
+      }
+    }
+
+    // Extract Images from ZIP
+    async function extractImagesFromZip(zipFile) {
+      const extractedFiles = [];
+      try {
+        const zip = await JSZip.loadAsync(zipFile);
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.tif', '.heic', '.avif'];
+
+        const entries = Object.keys(zip.files).map(k => zip.files[k]);
+        for (const entry of entries) {
+          if (entry.dir) continue;
+          if (entry.name.includes('__MACOSX') || entry.name.includes('.DS_Store') || entry.name.startsWith('.')) continue;
+
+          const lowerName = entry.name.toLowerCase();
+          const isImage = imageExtensions.some(ext => lowerName.endsWith(ext));
+          if (!isImage) continue;
+
+          const cleanFileName = entry.name.split('/').pop();
+          if (!cleanFileName) continue;
+
+          let mimeType = 'image/jpeg';
+          if (lowerName.endsWith('.png')) mimeType = 'image/png';
+          else if (lowerName.endsWith('.webp')) mimeType = 'image/webp';
+          else if (lowerName.endsWith('.tiff') || lowerName.endsWith('.tif')) mimeType = 'image/tiff';
+
+          const blob = await entry.async('blob');
+          const file = new File([blob], cleanFileName, { type: mimeType });
+          extractedFiles.push(file);
+        }
+      } catch (err) {
+        console.error('ZIP extraction failed:', err);
+        showToast(`Could not extract ${zipFile.name}`, '❌');
+      }
+      return extractedFiles;
+    }
+
+    // Upload & Drag-Drop Listeners
+    function initUploadListeners() {
+      btnBrowse.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('click', (e) => {
+        if (e.target !== btnPaste && !btnPaste.contains(e.target)) {
+          fileInput.click();
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFiles(Array.from(e.target.files));
+          fileInput.value = '';
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('drag-active');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('drag-active');
+        });
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          handleFiles(Array.from(dt.files));
+        }
+      });
+
+      // Paste from clipboard
+      btnPaste.addEventListener('click', async () => {
+        try {
+          const clipboardItems = await navigator.clipboard.read();
+          let found = false;
+          for (const item of clipboardItems) {
+            for (const type of item.types) {
+              if (type.startsWith('image/')) {
+                const blob = await item.getType(type);
+                const ext = type === 'image/png' ? 'png' : 'jpg';
+                const file = new File([blob], `clipboard-image-${Date.now()}.${ext}`, { type });
+                handleFiles([file]);
+                found = true;
+              }
+            }
+          }
+          if (!found) showToast('No image found in clipboard', 'ℹ️');
+        } catch (err) {
+          showToast('Clipboard access denied or unsupported. Use Ctrl+V on desktop.', '⚠️');
+        }
+      });
+
+      window.addEventListener('paste', (e) => {
+        const clipboardData = e.clipboardData;
+        if (!clipboardData || !clipboardData.items) return;
+        const imageFiles = [];
+        for (let i = 0; i < clipboardData.items.length; i++) {
+          const item = clipboardData.items[i];
+          if (item.type.indexOf('image') !== -1) {
+            const file = item.getAsFile();
+            if (file) imageFiles.push(file);
+          }
+        }
+        if (imageFiles.length > 0) {
+          handleFiles(imageFiles);
+          showToast(`Pasted ${imageFiles.length} image(s) from clipboard!`, '📋');
+        }
+      });
+    }
+
+    // Process Uploaded Files
+    async function handleFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+
+      const zipFiles = fileList.filter(f => f.name.toLowerCase().endsWith('.zip') || f.type === 'application/zip' || f.type === 'application/x-zip-compressed');
+      const directImages = fileList.filter(f => f.type.startsWith('image/') || /\.(jpe?g|png|webp|tiff?|heic|avif)$/i.test(f.name));
+
+      let allFiles = [...directImages];
+
+      if (zipFiles.length > 0) {
+        showToast(`Unpacking ${zipFiles.length} ZIP archive(s)...`, '📦');
+        for (const zipFile of zipFiles) {
+          const extracted = await extractImagesFromZip(zipFile);
+          allFiles.push(...extracted);
+        }
+      }
+
+      if (allFiles.length === 0) {
+        showToast('No supported image files found', '⚠️');
+        return;
+      }
+
+      showToast(`Parsing metadata for ${allFiles.length} photo(s)...`, '🔍');
+
+      for (const file of allFiles) {
+        const item = await parseImageMetadata(file);
+        items.push(item);
+      }
+
+      if (!selectedId && items.length > 0) {
+        selectedId = items[0].id;
+      }
+
+      renderSidebarList();
+      renderDashboard();
+      showToast(`Loaded ${allFiles.length} photo(s)`, '🖼️');
+    }
+
+    // Deep Parse Metadata with exifr
+    async function parseImageMetadata(file) {
+      const id = 'img_' + Math.random().toString(36).substring(2, 9);
+      const url = URL.createObjectURL(file);
+
+      let parsed = null;
+      let thumbnailBlobUrl = null;
+      let rawTags = [];
+      let gpsData = null;
+
+      try {
+        if (typeof exifr !== 'undefined') {
+          // Parse all segments
+          parsed = await exifr.parse(file, {
+            tiff: true,
+            xmp: true,
+            icc: true,
+            iptc: true,
+            jfif: true,
+            ihdr: true,
+            gps: true,
+            multiSegment: true,
+            mergeOutput: true,
+            reviveValues: true,
+            translateKeys: true,
+            translateValues: true
+          });
+
+          // Parse GPS directly
+          try {
+            gpsData = await exifr.gps(file);
+          } catch (e) {
+            gpsData = null;
+          }
+
+          // Extract embedded thumbnail if present
+          try {
+            const thumbBuffer = await exifr.thumbnail(file);
+            if (thumbBuffer && thumbBuffer.length > 0) {
+              const thumbBlob = new Blob([thumbBuffer], { type: 'image/jpeg' });
+              thumbnailBlobUrl = URL.createObjectURL(thumbBlob);
+            }
+          } catch (e) {
+            thumbnailBlobUrl = null;
+          }
+        }
+      } catch (err) {
+        console.warn('exifr parse error for', file.name, err);
+      }
+
+      // Convert parsed object to flat rawTags array
+      if (parsed && typeof parsed === 'object') {
+        for (const [key, val] of Object.entries(parsed)) {
+          if (val === undefined || val === null || typeof val === 'function') continue;
+          let category = 'exif';
+          const kLower = key.toLowerCase();
+          if (kLower.includes('gps') || kLower.includes('latitude') || kLower.includes('longitude') || kLower.includes('altitude')) category = 'gps';
+          else if (kLower.includes('iptc') || kLower.includes('headline') || kLower.includes('credit') || kLower.includes('caption')) category = 'iptc';
+          else if (kLower.includes('xmp')) category = 'xmp';
+          else if (kLower.includes('icc') || kLower.includes('profile')) category = 'icc';
+          else if (kLower.includes('tiff') || kLower.includes('compression') || kLower.includes('photometric')) category = 'tiff';
+
+          let displayVal = val;
+          if (val instanceof Date) displayVal = val.toLocaleString();
+          else if (typeof val === 'object') {
+            try { displayVal = JSON.stringify(val); } catch (e) { displayVal = String(val); }
+          } else {
+            displayVal = String(val);
+          }
+
+          rawTags.push({ category, name: key, value: displayVal });
+        }
+      }
+
+      // Get natural dimensions
+      let width = 0;
+      let height = 0;
+      try {
+        const img = new Image();
+        await new Promise((res) => {
+          img.onload = () => {
+            width = img.naturalWidth;
+            height = img.naturalHeight;
+            res();
+          };
+          img.onerror = res;
+          img.src = url;
+        });
+      } catch (e) {}
+
+      // Calculate Privacy Risk Level
+      const sensitiveFlags = [];
+      let riskLevel = 'clean'; // 'clean' | 'warning' | 'danger'
+
+      if (gpsData && gpsData.latitude !== undefined && gpsData.longitude !== undefined) {
+        sensitiveFlags.push({ type: 'gps', label: `Exact GPS (${gpsData.latitude.toFixed(4)}, ${gpsData.longitude.toFixed(4)})` });
+        riskLevel = 'danger';
+      }
+
+      if (parsed) {
+        if (parsed.SerialNumber || parsed.CameraSerialNumber || parsed.BodySerialNumber) {
+          sensitiveFlags.push({ type: 'device', label: `Camera Serial: ${parsed.SerialNumber || parsed.CameraSerialNumber || parsed.BodySerialNumber}` });
+          if (riskLevel !== 'danger') riskLevel = 'warning';
+        }
+        if (parsed.Artist || parsed.Creator || parsed.OwnerName || parsed.CameraOwnerName) {
+          sensitiveFlags.push({ type: 'identity', label: `Author/Owner: ${parsed.Artist || parsed.Creator || parsed.OwnerName || parsed.CameraOwnerName}` });
+          if (riskLevel !== 'danger') riskLevel = 'warning';
+        }
+        if (parsed.Copyright) {
+          sensitiveFlags.push({ type: 'identity', label: `Copyright: ${parsed.Copyright}` });
+        }
+        if (parsed.Software) {
+          sensitiveFlags.push({ type: 'device', label: `Software: ${parsed.Software}` });
+        }
+      }
+
+      return {
+        id,
+        file,
+        name: file.name,
+        size: file.size,
+        type: file.type || 'image/jpeg',
+        url,
+        width,
+        height,
+        parsed: parsed || {},
+        gpsData,
+        thumbnailBlobUrl,
+        rawTags,
+        sensitiveFlags,
+        riskLevel,
+        hasMetadata: rawTags.length > 0
+      };
+    }
+
+    // Render Sidebar List
+    function renderSidebarList() {
+      if (items.length === 0) {
+        fileListCard.style.display = 'none';
+        batchActionsCard.style.display = 'none';
+        emptyState.style.display = 'flex';
+        inspectionDashboard.style.display = 'none';
+        mobileBottomBar.classList.remove('active');
+        document.body.classList.remove('has-mobile-bar');
+        return;
+      }
+
+      fileListCard.style.display = 'flex';
+      batchActionsCard.style.display = 'flex';
+      emptyState.style.display = 'none';
+      inspectionDashboard.style.display = 'flex';
+      fileCount.textContent = items.length;
+      mobileBottomBar.classList.add('active');
+      document.body.classList.add('has-mobile-bar');
+
+      fileItemsScroll.innerHTML = items.map(item => {
+        const isActive = item.id === selectedId;
+        const riskEmoji = item.riskLevel === 'danger' ? '🔴 GPS' : (item.riskLevel === 'warning' ? '🟡 ID' : '🟢 Clean');
+        return `
+          <div class="file-item-chip ${isActive ? 'active' : ''}" onclick="selectItem('${item.id}')">
+            <img src="${item.url}" alt="${item.name}" class="file-item-thumb" />
+            <div class="file-item-info">
+              <span class="file-item-name" title="${item.name}">${item.name}</span>
+              <span class="file-item-meta">
+                <span>${formatBytes(item.size)}</span> &bull; <span>${riskEmoji}</span>
+              </span>
+            </div>
+            <button type="button" class="file-item-del" onclick="removeFile(event, '${item.id}')" title="Remove photo">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Select Item
+    function selectItem(id) {
+      selectedId = id;
+      renderSidebarList();
+      renderDashboard();
+    }
+
+    // Remove Single File
+    function removeFile(e, id) {
+      e.stopPropagation();
+      const idx = items.findIndex(it => it.id === id);
+      if (idx !== -1) {
+        const it = items[idx];
+        if (it.url) URL.revokeObjectURL(it.url);
+        if (it.thumbnailBlobUrl) URL.revokeObjectURL(it.thumbnailBlobUrl);
+        items.splice(idx, 1);
+        if (selectedId === id) {
+          selectedId = items.length > 0 ? items[0].id : null;
+        }
+        renderSidebarList();
+        renderDashboard();
+        showToast('Photo removed', '🗑️');
+      }
+    }
+
+    // Clear All Files
+    function clearAllFiles() {
+      items.forEach(it => {
+        if (it.url) URL.revokeObjectURL(it.url);
+        if (it.thumbnailBlobUrl) URL.revokeObjectURL(it.thumbnailBlobUrl);
+      });
+      items = [];
+      selectedId = null;
+      renderSidebarList();
+      renderDashboard();
+      showToast('Cleared all photos', '🧹');
+    }
+
+    // Switch View Tabs
+    function switchViewTab(tab) {
+      ['curated', 'raw', 'compare', 'batch'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const view = document.getElementById(`tab-view-${t}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+        if (view) view.style.display = (t === tab) ? (t === 'curated' ? 'grid' : 'flex') : 'none';
+      });
+
+      if (tab === 'compare') {
+        populateCompareSelectors();
+        renderCompareTable();
+      } else if (tab === 'batch') {
+        renderBatchSummaryTable();
+      } else if (tab === 'curated' && leafletMap) {
+        setTimeout(() => leafletMap.invalidateSize(), 200);
+      }
+    }
+
+    // Render Full Dashboard for Selected Item
+    function renderDashboard() {
+      const item = items.find(it => it.id === selectedId);
+      if (!item) {
+        inspectionDashboard.style.display = 'none';
+        emptyState.style.display = 'flex';
+        return;
+      }
+
+      inspectionDashboard.style.display = 'flex';
+      emptyState.style.display = 'none';
+
+      // 1. Render Privacy Audit Banner
+      renderPrivacyBanner(item);
+
+      // 2. Render Camera & Optics
+      renderCameraPanel(item);
+
+      // 3. Render Dates & Timeline
+      renderDatesPanel(item);
+
+      // 4. Render GPS & Location Map
+      renderGpsPanel(item);
+
+      // 5. Render Image Properties
+      renderImagePropsPanel(item);
+
+      // 6. Render Software & IPTC
+      renderSoftwarePanel(item);
+
+      // 7. Render Thumbnail Inspector
+      renderThumbnailInspector(item);
+
+      // 8. Render Raw Tags Table
+      renderRawTagsTable(item);
+    }
+
+    // 1. Privacy Banner Renderer
+    function renderPrivacyBanner(item) {
+      const card = document.getElementById('privacy-audit-card');
+      const badge = document.getElementById('audit-badge');
+      const title = document.getElementById('audit-title');
+      const desc = document.getElementById('audit-desc');
+      const tagsList = document.getElementById('audit-tags-list');
+
+      card.className = `privacy-audit-card privacy-audit-card--${item.riskLevel}`;
+      badge.className = `audit-risk-badge audit-risk-badge--${item.riskLevel}`;
+
+      if (item.riskLevel === 'danger') {
+        badge.textContent = '🚨 HIGH RISK (GPS EXPOSED)';
+        title.textContent = 'Precise Geolocation & Identity Embedded';
+        desc.textContent = 'This image contains exact GPS coordinates that pinpoint where this photo was taken, as well as device identifiers. Sharing this file directly can expose your physical location and identity.';
+      } else if (item.riskLevel === 'warning') {
+        badge.textContent = '⚠️ IDENTITY / DEVICE DATA';
+        title.textContent = 'Device & Author Identifiers Found';
+        desc.textContent = 'This photo contains camera serial numbers, author/artist names, or editing software history that could be used to identify your equipment or workflow.';
+      } else {
+        badge.textContent = '✅ CLEAN / MINIMAL';
+        title.textContent = 'No Sensitive Personal Location Found';
+        desc.textContent = item.hasMetadata 
+          ? 'Standard technical image metadata is present, but no sensitive GPS coordinates or personal owner identifiers were detected.'
+          : 'No embedded EXIF or IPTC metadata found. This image is completely stripped or is a clean screenshot.';
+      }
+
+      if (item.sensitiveFlags.length > 0) {
+        tagsList.innerHTML = item.sensitiveFlags.map(f => `
+          <span class="sensitive-tag-pill sensitive-tag-pill--${f.type}">
+            <span>${f.type === 'gps' ? '📍' : (f.type === 'identity' ? '👤' : '📷')}</span>
+            <span>${f.label}</span>
+          </span>
+        `).join('');
+      } else {
+        tagsList.innerHTML = `<span style="font-size:0.75rem; color:var(--text-muted);">No sensitive location or owner tags identified.</span>`;
+      }
+    }
+
+    // Helper to generate a Key-Value row
+    function createPropRow(label, value, isHighlight = false, highlightType = 'danger') {
+      if (value === undefined || value === null || value === '' || value === 'undefined') {
+        value = '<span style="color:var(--text-muted); font-weight:normal;">Not recorded</span>';
+      }
+      const rawVal = String(value).replace(/<[^>]*>?/gm, '');
+      const highlightClass = isHighlight ? `highlight-${highlightType}` : '';
+      return `
+        <div class="meta-prop-row ${highlightClass}">
+          <span class="meta-prop-label">${label}</span>
+          <span class="meta-prop-val">
+            <span>${value}</span>
+            ${rawVal !== 'Not recorded' ? `<button type="button" class="btn-copy-val" onclick="copyText('${rawVal.replace(/'/g, "\\'")}', '${label}')" title="Copy value">📋</button>` : ''}
+          </span>
+        </div>
+      `;
+    }
+
+    // 2. Camera Panel Renderer
+    function renderCameraPanel(item) {
+      const p = item.parsed || {};
+      const container = document.getElementById('props-camera');
+
+      let shutterStr = p.ExposureTime ? (p.ExposureTime < 1 ? `1/${Math.round(1 / p.ExposureTime)}s` : `${p.ExposureTime}s`) : p.ShutterSpeedValue;
+      let apertureStr = p.FNumber ? `f/${p.FNumber}` : p.ApertureValue;
+      let focalStr = p.FocalLength ? `${p.FocalLength} mm` : null;
+      if (p.FocalLengthIn35mmFormat) focalStr += ` (35mm eq: ${p.FocalLengthIn35mmFormat} mm)`;
+
+      container.innerHTML = `
+        ${createPropRow('Camera Make', p.Make)}
+        ${createPropRow('Camera Model', p.Model)}
+        ${createPropRow('Lens Model', p.LensModel || p.Lens)}
+        ${createPropRow('Focal Length', focalStr)}
+        ${createPropRow('Aperture', apertureStr)}
+        ${createPropRow('Shutter Speed', shutterStr)}
+        ${createPropRow('ISO Speed', p.ISO || p.ISOSpeedRatings)}
+        ${createPropRow('Exposure Program', p.ExposureProgram)}
+        ${createPropRow('Exposure Bias', p.ExposureBiasValue ? `${p.ExposureBiasValue} EV` : null)}
+        ${createPropRow('Metering Mode', p.MeteringMode)}
+        ${createPropRow('Flash', p.Flash)}
+        ${createPropRow('White Balance', p.WhiteBalance)}
+        ${createPropRow('Orientation', p.Orientation)}
+      `;
+    }
+
+    // 3. Dates Panel Renderer
+    function renderDatesPanel(item) {
+      const p = item.parsed || {};
+      const container = document.getElementById('props-dates');
+
+      const dateOrig = p.DateTimeOriginal ? new Date(p.DateTimeOriginal).toLocaleString() : null;
+      const dateDigitized = p.DateTimeDigitized ? new Date(p.DateTimeDigitized).toLocaleString() : null;
+      const dateModify = p.ModifyDate ? new Date(p.ModifyDate).toLocaleString() : null;
+      const dateFile = item.file.lastModified ? new Date(item.file.lastModified).toLocaleString() : null;
+
+      let discrepancyHtml = '';
+      if (dateOrig && dateModify && dateOrig !== dateModify) {
+        discrepancyHtml = `
+          <div class="date-alert-tag">
+            ⚠️ Discrepancy Detected: Capture date (${dateOrig}) differs from file modification date (${dateModify}), indicating subsequent editing or re-export.
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="date-compare-box">
+          <div class="date-cell">
+            <span class="date-label">Original Capture</span>
+            <span class="date-value">${dateOrig || 'N/A'}</span>
+          </div>
+          <div class="date-cell">
+            <span class="date-label">Digitized</span>
+            <span class="date-value">${dateDigitized || 'N/A'}</span>
+          </div>
+          <div class="date-cell">
+            <span class="date-label">Modified Date</span>
+            <span class="date-value">${dateModify || 'N/A'}</span>
+          </div>
+          <div class="date-cell">
+            <span class="date-label">File System Date</span>
+            <span class="date-value">${dateFile || 'N/A'}</span>
+          </div>
+        </div>
+        ${discrepancyHtml}
+        ${createPropRow('Offset Time', p.OffsetTime || p.OffsetTimeOriginal)}
+      `;
+    }
+
+    // 4. GPS & Map Panel Renderer
+    function renderGpsPanel(item) {
+      const container = document.getElementById('props-gps');
+      const mapWrap = document.getElementById('map-container');
+      const gps = item.gpsData || {};
+      const p = item.parsed || {};
+
+      const hasGps = gps.latitude !== undefined && gps.longitude !== undefined;
+
+      if (!hasGps) {
+        mapWrap.style.display = 'none';
+        container.innerHTML = `
+          <div style="padding: 1rem 0; color: var(--text-muted); font-size: 0.85rem;">
+            🟢 No GPS location data embedded in this image.
+          </div>
+        `;
+        return;
+      }
+
+      mapWrap.style.display = 'block';
+
+      const latDec = gps.latitude;
+      const lonDec = gps.longitude;
+      const latDMS = decimalToDMS(latDec, true);
+      const lonDMS = decimalToDMS(lonDec, false);
+
+      const latDisplay = gpsFormatDecimal ? `${latDec.toFixed(6)}°` : latDMS;
+      const lonDisplay = gpsFormatDecimal ? `${lonDec.toFixed(6)}°` : lonDMS;
+
+      const osmLink = `https://www.openstreetmap.org/?mlat=${latDec}&mlon=${lonDec}#map=16/${latDec}/${lonDec}`;
+      const gmapsLink = `https://www.google.com/maps?q=${latDec},${lonDec}`;
+
+      container.innerHTML = `
+        ${createPropRow('Latitude', latDisplay, true, 'danger')}
+        ${createPropRow('Longitude', lonDisplay, true, 'danger')}
+        ${createPropRow('Altitude', gps.altitude ? `${gps.altitude.toFixed(1)} meters (${(gps.altitude * 3.28084).toFixed(1)} ft)` : p.GPSAltitude)}
+        ${createPropRow('Compass Bearing', p.GPSImgDirection ? `${p.GPSImgDirection}° (${p.GPSImgDirectionRef || 'True'})` : null)}
+        ${createPropRow('Map Services', `
+          <a href="${osmLink}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-weight:700; text-decoration:none; margin-right:0.5rem;">OpenStreetMap ↗</a>
+          <a href="${gmapsLink}" target="_blank" rel="noopener noreferrer" style="color:var(--accent); font-weight:700; text-decoration:none;">Google Maps ↗</a>
+        `)}
+      `;
+
+      // Initialize or update Leaflet Map
+      initLeafletMap(latDec, lonDec);
+    }
+
+    function initLeafletMap(lat, lon) {
+      const mapContainer = document.getElementById('map-container');
+      if (!mapContainer) return;
+
+      if (!leafletMap) {
+        leafletMap = L.map('map-container').setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(leafletMap);
+        mapMarker = L.marker([lat, lon]).addTo(leafletMap);
+      } else {
+        leafletMap.setView([lat, lon], 15);
+        if (mapMarker) mapMarker.setLatLng([lat, lon]);
+        else mapMarker = L.marker([lat, lon]).addTo(leafletMap);
+      }
+
+      setTimeout(() => leafletMap.invalidateSize(), 200);
+    }
+
+    function toggleGpsFormat() {
+      gpsFormatDecimal = !gpsFormatDecimal;
+      const item = items.find(it => it.id === selectedId);
+      if (item) renderGpsPanel(item);
+    }
+
+    // 5. Image Properties Panel Renderer
+    function renderImagePropsPanel(item) {
+      const p = item.parsed || {};
+      const container = document.getElementById('props-image');
+
+      const width = item.width || p.ImageWidth || p.ExifImageWidth;
+      const height = item.height || p.ImageHeight || p.ExifImageHeight;
+      let megapixels = null;
+      let aspect = null;
+      if (width && height) {
+        megapixels = ((width * height) / 1000000).toFixed(2) + ' MP';
+        const gcdVal = (a, b) => b === 0 ? a : gcdVal(b, a % b);
+        const r = gcdVal(width, height);
+        aspect = `${Math.round(width / r)}:${Math.round(height / r)}`;
+      }
+
+      container.innerHTML = `
+        ${createPropRow('File Name', item.name)}
+        ${createPropRow('File Size', formatBytes(item.size))}
+        ${createPropRow('MIME Type', item.type)}
+        ${createPropRow('Dimensions', width && height ? `${width} × ${height} px` : null)}
+        ${createPropRow('Megapixels', megapixels)}
+        ${createPropRow('Aspect Ratio', aspect)}
+        ${createPropRow('Resolution / DPI', p.XResolution && p.YResolution ? `${p.XResolution} × ${p.YResolution} ${p.ResolutionUnit || 'dpi'}` : null)}
+        ${createPropRow('Color Space', p.ColorSpace || p.ProfileDescription)}
+        ${createPropRow('Bits Per Sample', p.BitsPerSample ? `${p.BitsPerSample} bits` : null)}
+      `;
+    }
+
+    // 6. Creator & Software Panel Renderer
+    function renderSoftwarePanel(item) {
+      const p = item.parsed || {};
+      const container = document.getElementById('props-software');
+
+      container.innerHTML = `
+        ${createPropRow('Software / Tool', p.Software || p.CreatorTool, !!p.Software, 'warning')}
+        ${createPropRow('Artist / Creator', p.Artist || p.Creator, !!(p.Artist || p.Creator), 'warning')}
+        ${createPropRow('Copyright', p.Copyright, !!p.Copyright, 'warning')}
+        ${createPropRow('IPTC Headline', p.Headline)}
+        ${createPropRow('IPTC Caption', p.Caption || p.ImageDescription || p.description)}
+        ${createPropRow('Keywords', Array.isArray(p.Keywords) ? p.Keywords.join(', ') : p.Keywords)}
+        ${createPropRow('Credit / Source', p.Credit || p.Source)}
+        ${createPropRow('City / Location', [p.City, p.State, p.Country].filter(Boolean).join(', '))}
+      `;
+    }
+
+    // 7. Embedded Thumbnail Inspector Renderer
+    function renderThumbnailInspector(item) {
+      const container = document.getElementById('thumbnail-inspector-content');
+
+      if (!item.thumbnailBlobUrl) {
+        container.innerHTML = `
+          <div style="font-size:0.8rem; color:var(--text-muted); padding:0.5rem 0;">
+            ℹ️ No embedded EXIF thumbnail detected inside this image file.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="thumb-preview-box">
+          <div class="thumb-img-container">
+            <img src="${item.thumbnailBlobUrl}" alt="Embedded EXIF Thumbnail" />
+          </div>
+          <span class="thumb-caption">Embedded EXIF Thumbnail</span>
+        </div>
+
+        <div class="thumb-preview-box">
+          <div class="thumb-img-container">
+            <img src="${item.url}" alt="Full Loaded Photo" />
+          </div>
+          <span class="thumb-caption">Full Image (${item.width}×${item.height})</span>
+        </div>
+
+        <div style="flex:1; min-width:200px; font-size:0.8rem; line-height:1.5;">
+          <div style="font-weight:700; color:var(--success); margin-bottom:0.25rem;">
+            ✅ Embedded Thumbnail Extracted Successfully
+          </div>
+          <p style="color:var(--text-muted);">
+            This thumbnail was embedded inside the raw EXIF header by the camera sensor at capture time. If this thumbnail differs in framing, color, or content from the full image, it reveals that the photo was cropped or retouched after initial capture.
+          </p>
+        </div>
+      `;
+    }
+
+    // 8. Raw Tags Table Renderer
+    function renderRawTagsTable(item) {
+      document.getElementById('raw-count').textContent = item.rawTags.length;
+      filterRawTags();
+    }
+
+    function filterRawTags() {
+      const item = items.find(it => it.id === selectedId);
+      if (!item) return;
+
+      const query = (document.getElementById('raw-search-input').value || '').toLowerCase().trim();
+      const category = document.getElementById('raw-category-filter').value;
+      const tbody = document.getElementById('raw-tags-tbody');
+
+      const filtered = item.rawTags.filter(tag => {
+        const matchCat = category === 'all' || tag.category === category;
+        const matchQuery = !query || tag.name.toLowerCase().includes(query) || tag.value.toLowerCase().includes(query);
+        return matchCat && matchQuery;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">No matching metadata tags found</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(tag => {
+        const safeVal = tag.value.replace(/'/g, "\\'");
+        return `
+          <tr>
+            <td><span class="tag-category-badge">${tag.category.toUpperCase()}</span></td>
+            <td style="font-family:'JetBrains Mono', monospace; font-weight:700;">${tag.name}</td>
+            <td style="font-family:'JetBrains Mono', monospace; word-break:break-all;">${tag.value}</td>
+            <td style="text-align:center;">
+              <button type="button" class="btn-copy-val" onclick="copyText('${safeVal}', '${tag.name}')" title="Copy tag value">📋</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Comparison Mode
+    function populateCompareSelectors() {
+      const selectA = document.getElementById('compare-select-a');
+      const selectB = document.getElementById('compare-select-b');
+
+      const options = items.map((it, idx) => `<option value="${it.id}">${idx + 1}. ${it.name} (${formatBytes(it.size)})</option>`).join('');
+      selectA.innerHTML = options;
+      selectB.innerHTML = options;
+
+      if (items.length > 1) {
+        selectB.selectedIndex = 1;
+      }
+    }
+
+    function renderCompareTable() {
+      const idA = document.getElementById('compare-select-a').value;
+      const idB = document.getElementById('compare-select-b').value;
+      const itemA = items.find(it => it.id === idA);
+      const itemB = items.find(it => it.id === idB);
+      const tbody = document.getElementById('compare-tbody');
+
+      if (!itemA || !itemB) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:2rem;">Select two photos to compare</td></tr>`;
+        return;
+      }
+
+      // Collect union of all tag names
+      const mapA = new Map(itemA.rawTags.map(t => [t.name, t.value]));
+      const mapB = new Map(itemB.rawTags.map(t => [t.name, t.value]));
+      const allKeys = Array.from(new Set([...mapA.keys(), ...mapB.keys()])).sort();
+
+      if (allKeys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:2rem;">No metadata tags found in either photo</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = allKeys.map(key => {
+        const valA = mapA.get(key) || '<span style="color:var(--text-muted);">-</span>';
+        const valB = mapB.get(key) || '<span style="color:var(--text-muted);">-</span>';
+        const isDiff = valA !== valB;
+        return `
+          <tr class="${isDiff ? 'compare-row-diff' : 'compare-row-same'}">
+            <td style="font-weight:700; font-family:'JetBrains Mono', monospace;">${key}</td>
+            <td style="font-family:'JetBrains Mono', monospace; word-break:break-all;">${valA}</td>
+            <td style="font-family:'JetBrains Mono', monospace; word-break:break-all;">${valB}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Batch Summary Table Renderer
+    function renderBatchSummaryTable() {
+      const tbody = document.getElementById('batch-summary-tbody');
+      tbody.innerHTML = items.map((it, idx) => {
+        const p = it.parsed || {};
+        const dateStr = p.DateTimeOriginal ? new Date(p.DateTimeOriginal).toLocaleDateString() : 'N/A';
+        const gpsStr = it.gpsData ? `📍 ${it.gpsData.latitude.toFixed(4)}, ${it.gpsData.longitude.toFixed(4)}` : '🟢 None';
+        return `
+          <tr>
+            <td><img src="${it.url}" alt="${it.name}" style="width:36px; height:36px; object-fit:cover; border-radius:4px;" /></td>
+            <td style="font-weight:700;">${it.name}</td>
+            <td>${p.Model || p.Make || 'N/A'}</td>
+            <td>${dateStr}</td>
+            <td style="${it.gpsData ? 'color:var(--error); font-weight:700;' : 'color:var(--success);'}">${gpsStr}</td>
+            <td>${it.width}×${it.height}</td>
+            <td>
+              <button type="button" class="btn btn--sm" onclick="selectItem('${it.id}'); switchViewTab('curated');">Inspect</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 1-Click Metadata Stripper (Re-encodes via Canvas to drop all EXIF/IPTC/XMP chunks)
+    async function stripMetadata(item) {
+      return new Promise(async (resolve, reject) => {
+        try {
+          let drawable = null;
+          let isBmp = false;
+
+          if (typeof createImageBitmap === 'function' && item.file) {
+            try {
+              drawable = await createImageBitmap(item.file);
+              isBmp = true;
+            } catch (e) {}
+          }
+
+          if (!drawable) {
+            const img = new Image();
+            await new Promise((res, rej) => {
+              img.onload = res;
+              img.onerror = rej;
+              img.src = item.url;
+            });
+            drawable = img;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = drawable.width || drawable.naturalWidth || item.width;
+          canvas.height = drawable.height || drawable.naturalHeight || item.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(drawable, 0, 0);
+
+          const mime = item.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          canvas.toBlob((blob) => {
+            if (isBmp && drawable && typeof drawable.close === 'function') {
+              drawable.close();
+            }
+            resolve(blob);
+          }, mime, 0.92);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    // Download Stripped Single Image
+    async function downloadStrippedCurrent() {
+      const item = items.find(it => it.id === selectedId);
+      if (!item) return;
+
+      showToast('Removing all metadata & re-encoding...', '🛡️');
+      try {
+        const cleanBlob = await stripMetadata(item);
+        const ext = item.type === 'image/png' ? 'png' : 'jpg';
+        const cleanName = item.name.replace(/\.[^/.]+$/, '') + '-clean.' + ext;
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(cleanBlob);
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showToast(`Downloaded metadata-stripped copy: ${cleanName}`, '✅');
+      } catch (err) {
+        console.error('Stripping failed:', err);
+        showToast('Failed to strip metadata', '❌');
+      }
+    }
+
+    // Download Metadata as JSON
+    function downloadCurrentJSON() {
+      const item = items.find(it => it.id === selectedId);
+      if (!item) return;
+
+      const exportObj = {
+        fileName: item.name,
+        fileSize: item.size,
+        mimeType: item.type,
+        dimensions: { width: item.width, height: item.height },
+        riskAssessment: { level: item.riskLevel, sensitiveFlags: item.sensitiveFlags },
+        gps: item.gpsData || null,
+        parsedMetadata: item.parsed,
+        allTags: item.rawTags
+      };
+
+      const jsonStr = JSON.stringify(exportObj, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = item.name.replace(/\.[^/.]+$/, '') + '-metadata.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showToast('Metadata exported as JSON!', '💾');
+    }
+
+    // Batch Strip All to ZIP
+    async function batchStripAllZip() {
+      if (items.length === 0) return;
+      showToast(`Stripping metadata from ${items.length} photo(s)...`, '🛡️');
+
+      try {
+        const zip = new JSZip();
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          const cleanBlob = await stripMetadata(it);
+          const ext = it.type === 'image/png' ? 'png' : 'jpg';
+          const cleanName = it.name.replace(/\.[^/.]+$/, '') + '-clean.' + ext;
+          zip.file(cleanName, cleanBlob);
+        }
+
+        const zipContent = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipContent);
+        a.download = `stripped-photos-${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showToast(`Downloaded ZIP with ${items.length} clean photos!`, '📦');
+      } catch (err) {
+        console.error('Batch strip failed:', err);
+        showToast('Batch metadata stripping failed', '❌');
+      }
+    }
+
+    // Batch Export All JSON
+    function batchExportAllJSON() {
+      if (items.length === 0) return;
+      const exportArray = items.map(it => ({
+        fileName: it.name,
+        fileSize: it.size,
+        mimeType: it.type,
+        dimensions: { width: it.width, height: it.height },
+        riskAssessment: { level: it.riskLevel, sensitiveFlags: it.sensitiveFlags },
+        gps: it.gpsData || null,
+        parsedMetadata: it.parsed,
+        allTags: it.rawTags
+      }));
+
+      const blob = new Blob([JSON.stringify(exportArray, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `all-photos-metadata-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showToast('Exported all metadata as JSON!', '💾');
+    }
+
+    // Init on DOM Ready
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initUploadListeners();
+    });
+  </script>
+</body>
+</html>
