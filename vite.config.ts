@@ -11,6 +11,7 @@ export default defineConfig({
     react(),
     {
       name: 'tools-route-rewrite',
+      enforce: 'pre',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           const url = req.url?.split('?')[0] || '';
@@ -25,17 +26,28 @@ export default defineConfig({
           next();
         });
       },
-      transformIndexHtml(html, ctx) {
-        if (ctx.server) {
-          // In Vite dev server mode, dynamically inject /src/main.tsx for HMR
-          if (!html.includes('/src/main.tsx')) {
-            return html.replace(
-              /<script\s+type="module"[^>]*src="\/assets\/toolbox\/[^"]*"[^>]*><\/script>/,
-              '<script type="module" src="/src/main.tsx"></script>'
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html) {
+          // In both dev and build mode, if tools/index.html has previously built asset links/scripts,
+          // replace them with /src/main.tsx so Vite compiles from source!
+          let result = html;
+          result = result.replace(
+            /\s*<script\s+type="module"[^>]*src="\/assets\/toolbox\/[^"]*"[^>]*><\/script>/g,
+            ''
+          );
+          result = result.replace(
+            /\s*<link\s+rel="stylesheet"[^>]*href="\/assets\/toolbox\/[^"]*"[^>]*>/g,
+            ''
+          );
+          if (!result.includes('/src/main.tsx')) {
+            result = result.replace(
+              '</head>',
+              '  <script type="module" src="/src/main.tsx"></script>\n</head>'
             );
           }
-        }
-        return html;
+          return result;
+        },
       },
     },
   ],
