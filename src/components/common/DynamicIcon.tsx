@@ -28,6 +28,7 @@ import {
   Sparkles,
   Layers,
   Network,
+  Radio,
   FolderTree,
   Globe,
   Zap,
@@ -85,9 +86,13 @@ import {
   ArrowRightLeft,
   Keyboard,
   Gauge,
+  Atom,
+  Play,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.FC<any>> = {
+  Atom,
+  Play,
   Keyboard,
   Gauge,
   Scale,
@@ -136,6 +141,7 @@ const ICON_MAP: Record<string, React.FC<any>> = {
   Sparkles,
   Layers,
   Network,
+  Radio,
   FolderTree,
   Globe,
   Zap,

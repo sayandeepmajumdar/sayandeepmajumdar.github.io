@@ -15,6 +15,7 @@ export default {
       colors: {
         paper: "rgb(var(--color-bg) / <alpha-value>)",
         surface: "rgb(var(--color-surface) / <alpha-value>)",
+        "surface-alt": "rgb(var(--color-surface-alt, var(--color-surface)) / <alpha-value>)",
         ink: "rgb(var(--color-text) / <alpha-value>)",
         muted: "rgb(var(--color-muted) / <alpha-value>)",
         line: "rgb(var(--color-line) / <alpha-value>)",

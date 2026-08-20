@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Sparkles, Star, Clock, Grid } from 'lucide-react';
 import { HeroSearch } from '../components/home/HeroSearch';
 import { CategoryNav } from '../components/home/CategoryNav';
 import { ToolCard } from '../components/common/ToolCard';
 import { EmptyState } from '../components/common/EmptyState';
+import { Pagination } from '../components/common/Pagination';
 import { TOOLS } from '../data/tools';
 import { CATEGORY_MAP } from '../data/categories';
 import { Category } from '../types';
@@ -21,6 +22,11 @@ export const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'popular' | 'favorites' | 'recent'>('all');
   const [favorites, setFavorites] = useState<string[]>(getFavorites());
   const [recent, setRecent] = useState<string[]>(getRecentTools());
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const toolsSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -45,6 +51,11 @@ export const HomePage: React.FC = () => {
       window.removeEventListener('toolbox:recents-updated', handleRecentChange);
     };
   }, []);
+
+  // Reset to page 1 whenever any filter or search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, selectedCategory, activeTab, sortBy, localOnly, selectedTag]);
 
   const filteredTools = useMemo(() => {
     let list = [...TOOLS];
@@ -96,6 +107,21 @@ export const HomePage: React.FC = () => {
     return list;
   }, [query, selectedCategory, activeTab, favorites, recent, sortBy, localOnly, selectedTag]);
 
+  // Paginated slice
+  const totalPages = Math.ceil(filteredTools.length / itemsPerPage);
+  const paginatedTools = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTools.slice(start, start + itemsPerPage);
+  }, [filteredTools, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (toolsSectionRef.current) {
+      const topOffset = toolsSectionRef.current.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: topOffset, behavior: 'smooth' });
+    }
+  };
+
   const handleTabChange = (tab: 'all' | 'popular' | 'favorites' | 'recent') => {
     setActiveTab(tab);
     if (tab === 'all') {
@@ -131,7 +157,7 @@ export const HomePage: React.FC = () => {
       />
 
       {/* Tools Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
+      <div ref={toolsSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 mt-4 scroll-mt-20">
         {/* Category Header info if specific category is selected */}
         {selectedCategoryInfo && (
           <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-surface border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -230,10 +256,23 @@ export const HomePage: React.FC = () => {
 
         {/* Tools Grid or Empty State */}
         {filteredTools.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredTools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} />
-            ))}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {paginatedTools.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredTools.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={setItemsPerPage}
+              itemsPerPageOptions={[12, 24, 48]}
+            />
           </div>
         ) : (
           <EmptyState

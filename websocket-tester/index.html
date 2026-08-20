@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket Tester — Live Client-Side WebSocket Testing Suite — Toolzy</title>
+  <meta name="description" content="Free client-side WebSocket tester and debugger. Connect to ws:// and wss:// endpoints, inspect sent and received messages, format JSON payloads, measure latency, test heartbeats, and manage connection tabs." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #4f46e5;
+      --color-accent-hover: #4338ca;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #818cf8;
+      --color-accent-hover: #6366f1;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* JSON Syntax Highlighting */
+    .json-key { color: #818cf8; font-weight: 600; }
+    .json-string { color: #34d399; }
+    .json-number { color: #fbbf24; }
+    .json-boolean { color: #f472b6; font-weight: bold; }
+    .json-null { color: #9ca3af; font-style: italic; }
+
+    html:not(.dark) .json-key { color: #4338ca; }
+    html:not(.dark) .json-string { color: #059669; }
+    html:not(.dark) .json-number { color: #d97706; }
+    html:not(.dark) .json-boolean { color: #db2777; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/20 selection:text-indigo-500">
+
+  <!-- Top App Bar -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-black text-sm">
+          ⚡
+        </span>
+        <span class="font-bold text-sm tracking-tight hidden sm:inline">WebSocket Studio</span>
+      </a>
+
+      <!-- Environment / Status Pill -->
+      <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-[11px] font-mono">
+        <span id="global-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="global-status-text" class="text-theme-muted font-medium">Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Quick Actions & Theme Toggle -->
+    <div class="flex items-center gap-2">
+      <!-- Preset Quick Load -->
+      <div class="relative">
+        <select id="quick-endpoints" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[140px] sm:max-w-[200px] truncate">
+          <option value="">⚡ Quick Demo Endpoints</option>
+          <option value="wss://echo.websocket.events">Postman/Events Echo</option>
+          <option value="wss://ws.postman-echo.com/raw">Postman Raw Echo</option>
+          <option value="wss://socketsbay.com/wss/v2/1/demo/">SocketsBay Demo</option>
+          <option value="wss://stream.binance.com:9443/ws/btcusdt@trade">Binance BTC/USDT Stream</option>
+          <option value="wss://ws.kraken.com">Kraken Crypto Feed</option>
+          <option value="mock://echo">🧪 Local Mock Echo (Offline)</option>
+        </select>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex items-center gap-1">
+        <span>Tools Hub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Connection Tabs Bar -->
+  <div class="border-b border-theme-line bg-theme-surface-alt/50 px-4 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shrink-0">
+    <div id="tabs-list" class="flex items-center gap-1 py-1.5">
+      <!-- Dynamic Tabs inserted here -->
+    </div>
+
+    <button id="btn-add-tab" type="button" class="p-1.5 rounded-lg text-theme-muted hover:text-theme-ink hover:bg-theme-surface border border-theme-line text-xs font-semibold shrink-0 transition-colors flex items-center gap-1" title="Open New WebSocket Connection Tab">
+      <span>+</span>
+      <span class="text-[11px] hidden md:inline">New Tab</span>
+    </button>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Left / Top Column: Connection Config & Message Composer -->
+    <section class="w-full lg:w-[420px] xl:w-[460px] border-b lg:border-b-0 lg:border-r border-theme-line bg-theme-surface flex flex-col shrink-0 overflow-y-auto">
+      
+      <!-- Connection URL Box -->
+      <div class="p-4 border-b border-theme-line space-y-3">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <span class="text-theme-muted uppercase tracking-wider font-mono text-[10px]">WebSocket Endpoint</span>
+          <button id="btn-toggle-adv" type="button" class="text-indigo-500 hover:underline text-xs flex items-center gap-1">
+            <span>Advanced Options</span>
+            <span id="adv-arrow">▼</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <input
+              id="ws-url-input"
+              type="text"
+              placeholder="wss://echo.websocket.events"
+              value="wss://echo.websocket.events"
+              class="w-full pl-3 pr-8 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+              spellcheck="false"
+            />
+            <button id="btn-clear-url" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-ink text-xs px-1">
+              ×
+            </button>
+          </div>
+
+          <button
+            id="btn-connect"
+            type="button"
+            class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-xs shrink-0 flex items-center gap-1.5"
+          >
+            <span id="connect-spinner" class="hidden animate-spin">⟳</span>
+            <span id="connect-btn-text">Connect</span>
+          </button>
+        </div>
+
+        <!-- Connection Stats Mini-Bar -->
+        <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-theme-surface-alt text-[11px] font-mono text-theme-muted">
+          <div class="flex items-center gap-2">
+            <span>Uptime: <strong id="stat-uptime" class="text-theme-ink font-bold">00:00</strong></span>
+            <span>•</span>
+            <span>RTT: <strong id="stat-latency" class="text-emerald-500 font-bold">-- ms</strong></span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span title="Total Sent">▲ <span id="stat-sent-count">0</span></span>
+            <span title="Total Received">▼ <span id="stat-recv-count">0</span></span>
+          </div>
+        </div>
+
+        <!-- Advanced Options Panel (Collapsible) -->
+        <div id="adv-options-panel" class="hidden pt-2 space-y-3 text-xs border-t border-theme-line/60">
+          <div>
+            <label class="block text-[10px] font-mono text-theme-muted uppercase mb-1">Subprotocols (comma separated)</label>
+            <input
+              id="ws-protocols"
+              type="text"
+              placeholder="e.g. graphql-ws, soap, chat.v1"
+              class="w-full px-2.5 py-1.5 rounded-lg bg-theme-surface-alt border border-theme-line text-xs font-mono text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <!-- Heartbeat / Ping Settings -->
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt/70 border border-theme-line space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="font-semibold text-theme-ink flex items-center gap-1.5 cursor-pointer">
+                <input id="chk-heartbeat" type="checkbox" class="rounded border-theme-line text-indigo-600 focus:ring-0" />
+                <span>Auto Heartbeat / Ping</span>
+              </label>
+              <span class="text-[10px] font-mono text-theme-muted">Measures Latency</span>
+            </div>
+
+            <div id="heartbeat-config" class="grid grid-cols-2 gap-2 hidden pt-1">
+              <div>
+                <label class="text-[10px] text-theme-muted block mb-0.5">Interval (seconds)</label>
+                <input id="heartbeat-interval" type="number" value="15" min="2" max="300" class="w-full px-2 py-1 rounded bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink" />
+              </div>
+              <div>
+                <label class="text-[10px] text-theme-muted block mb-0.5">Payload</label>
+                <input id="heartbeat-payload" type="text" value='{"type":"ping"}' class="w-full px-2 py-1 rounded bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Auto Reconnect -->
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-theme-surface-alt/70 border border-theme-line">
+            <label class="font-semibold text-theme-ink flex items-center gap-1.5 cursor-pointer">
+              <input id="chk-reconnect" type="checkbox" class="rounded border-theme-line text-indigo-600 focus:ring-0" checked />
+              <span>Auto Reconnect on Drop</span>
+            </label>
+            <div class="flex items-center gap-1 text-[11px]">
+              <span class="text-theme-muted font-mono">every</span>
+              <input id="reconnect-interval" type="number" value="3" min="1" max="60" class="w-12 px-1.5 py-0.5 text-center rounded bg-theme-surface border border-theme-line font-mono text-xs text-theme-ink" />
+              <span class="text-theme-muted font-mono">s</span>
+            </div>
+          </div>
+
+          <!-- Browser Header Limitation Notice -->
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] leading-relaxed">
+            ℹ️ <strong>Note:</strong> Browsers do not permit setting arbitrary HTTP request headers during the native WebSocket handshake due to CORS/security restrictions. Use query parameters or subprotocols if your server requires authentication.
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Composer Box -->
+      <div class="flex-1 flex flex-col p-4 space-y-3 min-h-[300px]">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-theme-ink">Message Composer</span>
+            <div class="flex items-center p-0.5 rounded-lg bg-theme-surface-alt border border-theme-line text-[10px] font-semibold">
+              <button id="btn-mode-json" type="button" class="px-2 py-0.5 rounded-md bg-indigo-600 text-white shadow-2xs">JSON</button>
+              <button id="btn-mode-text" type="button" class="px-2 py-0.5 rounded-md text-theme-muted hover:text-theme-ink">Text</button>
+            </div>
+          </div>
+
+          <!-- Templates & Tools -->
+          <div class="flex items-center gap-1">
+            <button id="btn-format-json" type="button" class="px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink transition-colors" title="Prettify JSON">
+              Format
+            </button>
+            <button id="btn-minify-json" type="button" class="px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink transition-colors" title="Minify JSON">
+              Minify
+            </button>
+            <button id="btn-save-preset" type="button" class="px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink transition-colors" title="Save as Template">
+              💾 Save
+            </button>
+          </div>
+        </div>
+
+        <!-- Saved Presets Bar -->
+        <div id="presets-container" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+          <!-- Preset chips rendered dynamically -->
+        </div>
+
+        <!-- Composer Textarea -->
+        <div class="flex-1 relative flex flex-col min-h-[140px]">
+          <textarea
+            id="message-input"
+            class="w-full flex-1 p-3 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
+            placeholder='{\n  "event": "ping",\n  "data": "Hello WebSocket"\n}'
+            spellcheck="false"
+          >{\n  "event": "message",\n  "data": "Hello Toolzy WebSocket Studio!",\n  "timestamp": 1700000000\n}</textarea>
+
+          <div id="json-valid-indicator" class="absolute right-3 bottom-3 text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 pointer-events-none">
+            Valid JSON
+          </div>
+        </div>
+
+        <!-- Send Actions Bar -->
+        <div class="flex items-center justify-between pt-1">
+          <div class="text-[11px] font-mono text-theme-muted">
+            <kbd class="px-1.5 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[10px]">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[10px]">Enter</kbd> to Send
+          </div>
+
+          <button
+            id="btn-send-message"
+            type="button"
+            class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:pointer-events-none text-white font-bold text-xs transition-all shadow-xs flex items-center gap-1.5"
+          >
+            <span>Send Message</span>
+            <span>➤</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right / Bottom Column: Live Message Log Stream -->
+    <section class="flex-1 flex flex-col bg-theme-bg overflow-hidden">
+      
+      <!-- Message Stream Toolbar -->
+      <div class="h-12 border-b border-theme-line bg-theme-surface px-4 flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-theme-ink">Live Traffic Log</span>
+          <span id="log-count-badge" class="px-2 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-[10px] font-mono font-bold text-theme-muted">
+            0 msgs
+          </span>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="flex items-center gap-2 flex-1 max-w-md justify-end">
+          <!-- Filter type -->
+          <select id="filter-log-type" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+            <option value="all">All Events</option>
+            <option value="sent">Sent Only (▲)</option>
+            <option value="recv">Received Only (▼)</option>
+            <option value="sys">System / Errors</option>
+          </select>
+
+          <!-- Search Query -->
+          <div class="relative w-32 sm:w-44">
+            <input
+              id="search-log-input"
+              type="text"
+              placeholder="Search in log..."
+              class="w-full pl-6 pr-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-xs text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-indigo-500"
+            />
+            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-theme-muted text-[10px]">🔍</span>
+          </div>
+
+          <!-- Clear Log -->
+          <button id="btn-clear-log" type="button" class="p-1.5 rounded-lg text-theme-muted hover:text-rose-500 hover:bg-theme-surface-alt border border-theme-line text-xs transition-colors" title="Clear Message Log">
+            🗑️
+          </button>
+
+          <!-- Export Log -->
+          <button id="btn-export-log" type="button" class="p-1.5 rounded-lg text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line text-xs transition-colors" title="Export Log (JSON / TXT)">
+            📥
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream Container -->
+      <div id="messages-stream" class="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
+        <!-- Messages rendered dynamically -->
+        <div id="empty-log-placeholder" class="h-full flex flex-col items-center justify-center text-center p-8 text-theme-muted">
+          <div class="w-12 h-12 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-center text-2xl mb-3">
+            📡
+          </div>
+          <h3 class="text-sm font-bold text-theme-ink">WebSocket Log Empty</h3>
+          <p class="text-xs text-theme-muted max-w-xs mt-1">
+            Connect to an endpoint and send messages to inspect real-time frames and payloads.
+          </p>
+        </div>
+      </div>
+
+      <!-- Auto-scroll paused indicator -->
+      <div id="autoscroll-banner" class="hidden bg-indigo-600/90 text-white text-xs font-semibold px-4 py-2 flex items-center justify-between shadow-lg">
+        <span>Auto-scroll paused while scrolling</span>
+        <button id="btn-resume-scroll" type="button" class="px-2.5 py-0.5 rounded bg-white/20 hover:bg-white/30 text-[11px] font-bold">
+          Resume Auto-scroll ↓
+        </button>
+      </div>
+
+      <!-- Traffic Summary Footer -->
+      <div class="h-8 border-t border-theme-line bg-theme-surface px-4 flex items-center justify-between text-[11px] font-mono text-theme-muted shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            <span>Sent: <strong id="bytes-sent" class="text-theme-ink">0 B</strong></span>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Received: <strong id="bytes-recv" class="text-theme-ink">0 B</strong></span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span>Client-Side WebSocket V2</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // Tab Model
+    class WSTab {
+      constructor(id, name, url = 'wss://echo.websocket.events') {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.protocols = '';
+        this.ws = null;
+        this.mockInterval = null;
+        this.status = 'disconnected'; // disconnected, connecting, connected, error
+        this.messages = [];
+        this.heartbeatTimer = null;
+        this.reconnectTimer = null;
+        this.reconnectAttempts = 0;
+        this.startTime = null;
+        this.uptimeTimer = null;
+        this.uptimeSeconds = 0;
+        this.totalSentBytes = 0;
+        this.totalRecvBytes = 0;
+        this.sentCount = 0;
+        this.recvCount = 0;
+        this.lastPingTime = null;
+        this.lastLatency = null;
+        this.composerContent = '{\\n  "event": "message",\\n  "data": "Hello Toolzy WebSocket Studio!",\\n  "timestamp": ' + Date.now() + '\\n}';
+        this.isJson = true;
+      }
+    }
+
+    // App State
+    let tabs = [new WSTab('tab-1', 'Echo Server', 'wss://echo.websocket.events')];
+    let activeTabId = 'tab-1';
+    let autoScroll = true;
+    let savedPresets = [];
+
+    // Load presets from LocalStorage
+    try {
+      const stored = localStorage.getItem('toolzy:ws_presets');
+      if (stored) {
+        savedPresets = JSON.parse(stored);
+      } else {
+        savedPresets = [
+          { name: 'Ping Event', content: '{\\n  "type": "ping",\\n  "timestamp": ' + Date.now() + '\\n}' },
+          { name: 'Subscribe Channel', content: '{\\n  "action": "subscribe",\\n  "channel": "trades",\\n  "pair": "BTC-USD"\\n}' },
+          { name: 'Auth Handshake', content: '{\\n  "type": "auth",\\n  "token": "bearer-mock-token-xyz"\\n}' }
+        ];
+      }
+    } catch (e) {
+      savedPresets = [];
+    }
+
+    function savePresetsToStorage() {
+      try {
+        localStorage.setItem('toolzy:ws_presets', JSON.stringify(savedPresets));
+      } catch (e) {}
+    }
+
+    function getActiveTab() {
+      return tabs.find(t => t.id === activeTabId) || tabs[0];
+    }
+
+    // Format bytes
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Format Timestamp
+    function formatTime(date = new Date()) {
+      const h = String(date.getHours()).padStart(2, '0');
+      const m = String(date.getMinutes()).padStart(2, '0');
+      const s = String(date.getSeconds()).padStart(2, '0');
+      const ms = String(date.getMilliseconds()).padStart(3, '0');
+      return `${h}:${m}:${s}.${ms}`;
+    }
+
+    // Format JSON with colored spans
+    function syntaxHighlightJSON(jsonStr) {
+      try {
+        const obj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        const formatted = JSON.stringify(obj, null, 2);
+        return formatted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'json-number';
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) {
+                cls = 'json-key';
+              } else {
+                cls = 'json-string';
+              }
+            } else if (/true|false/.test(match)) {
+              cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+              cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+          });
+      } catch (e) {
+        return jsonStr;
+      }
+    }
+
+    // UI RENDERERS
+    function renderTabs() {
+      const container = document.getElementById('tabs-list');
+      container.innerHTML = '';
+
+      tabs.forEach((tab) => {
+        const isActive = tab.id === activeTabId;
+        const btn = document.createElement('div');
+        btn.className = `group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer border transition-all ${
+          isActive
+            ? 'bg-theme-surface text-theme-ink border-theme-line shadow-xs'
+            : 'bg-transparent text-theme-muted hover:text-theme-ink border-transparent'
+        }`;
+
+        let statusColor = 'bg-stone-400';
+        if (tab.status === 'connected') statusColor = 'bg-emerald-500';
+        else if (tab.status === 'connecting') statusColor = 'bg-amber-500 animate-pulse';
+        else if (tab.status === 'error') statusColor = 'bg-rose-500';
+
+        btn.innerHTML = `
+          <span class="w-2 h-2 rounded-full ${statusColor}"></span>
+          <span class="truncate max-w-[120px]">${tab.name}</span>
+          ${tabs.length > 1 ? `<button class="tab-close opacity-0 group-hover:opacity-100 hover:text-rose-500 text-xs px-1">×</button>` : ''}
+        `;
+
+        btn.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tab-close')) {
+            e.stopPropagation();
+            closeTab(tab.id);
+            return;
+          }
+          activeTabId = tab.id;
+          renderTabs();
+          syncTabStateToUI();
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    function renderPresets() {
+      const container = document.getElementById('presets-container');
+      container.innerHTML = '';
+
+      savedPresets.forEach((preset, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'group flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink hover:border-indigo-500/40 cursor-pointer shrink-0 transition-colors';
+        chip.innerHTML = `
+          <span>${preset.name}</span>
+          <button class="preset-del opacity-0 group-hover:opacity-100 hover:text-rose-500 text-[10px] ml-0.5">×</button>
+        `;
+
+        chip.addEventListener('click', (e) => {
+          if (e.target.classList.contains('preset-del')) {
+            e.stopPropagation();
+            savedPresets.splice(idx, 1);
+            savePresetsToStorage();
+            renderPresets();
+            return;
+          }
+          document.getElementById('message-input').value = preset.content;
+          validateJSON();
+        });
+
+        container.appendChild(chip);
+      });
+    }
+
+    function syncTabStateToUI() {
+      const tab = getActiveTab();
+      document.getElementById('ws-url-input').value = tab.url;
+      document.getElementById('ws-protocols').value = tab.protocols;
+      document.getElementById('message-input').value = tab.composerContent;
+
+      updateStatusUI(tab.status);
+      updateStatsUI();
+      renderMessages();
+      validateJSON();
+    }
+
+    function updateStatusUI(status) {
+      const tab = getActiveTab();
+      tab.status = status;
+
+      const dot = document.getElementById('global-status-dot');
+      const text = document.getElementById('global-status-text');
+      const btn = document.getElementById('btn-connect');
+      const btnText = document.getElementById('connect-btn-text');
+      const spinner = document.getElementById('connect-spinner');
+
+      if (status === 'connected') {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        text.innerText = 'Connected';
+        text.className = 'text-emerald-600 dark:text-emerald-400 font-bold';
+        btn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-all shadow-xs shrink-0 flex items-center gap-1.5';
+        btnText.innerText = 'Disconnect';
+        spinner.classList.add('hidden');
+      } else if (status === 'connecting') {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-ping';
+        text.innerText = 'Connecting...';
+        text.className = 'text-amber-600 dark:text-amber-400 font-bold';
+        btn.className = 'px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-all shadow-xs shrink-0 flex items-center gap-1.5';
+        btnText.innerText = 'Cancel';
+        spinner.classList.remove('hidden');
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-stone-400';
+        text.innerText = 'Disconnected';
+        text.className = 'text-theme-muted font-medium';
+        btn.className = 'px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-xs shrink-0 flex items-center gap-1.5';
+        btnText.innerText = 'Connect';
+        spinner.classList.add('hidden');
+      }
+
+      renderTabs();
+    }
+
+    function updateStatsUI() {
+      const tab = getActiveTab();
+      document.getElementById('stat-uptime').innerText = formatUptime(tab.uptimeSeconds);
+      document.getElementById('stat-latency').innerText = tab.lastLatency !== null ? `${tab.lastLatency} ms` : '-- ms';
+      document.getElementById('stat-sent-count').innerText = tab.sentCount;
+      document.getElementById('stat-recv-count').innerText = tab.recvCount;
+      document.getElementById('bytes-sent').innerText = formatBytes(tab.totalSentBytes);
+      document.getElementById('bytes-recv').innerText = formatBytes(tab.totalRecvBytes);
+      document.getElementById('log-count-badge').innerText = `${tab.messages.length} msgs`;
+    }
+
+    function formatUptime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function addLogMessage(tab, type, data, meta = {}) {
+      const msgObj = {
+        id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        type, // 'sent', 'recv', 'sys', 'error', 'ping', 'pong'
+        data,
+        time: new Date(),
+        size: typeof data === 'string' ? new Blob([data]).size : 0,
+        ...meta
+      };
+
+      tab.messages.push(msgObj);
+
+      if (tab.id === activeTabId) {
+        renderSingleMessage(msgObj);
+        updateStatsUI();
+      }
+    }
+
+    function renderMessages() {
+      const tab = getActiveTab();
+      const stream = document.getElementById('messages-stream');
+      const placeholder = document.getElementById('empty-log-placeholder');
+      
+      const filterType = document.getElementById('filter-log-type').value;
+      const searchQ = document.getElementById('search-log-input').value.toLowerCase();
+
+      stream.innerHTML = '';
+
+      const filtered = tab.messages.filter((m) => {
+        if (filterType === 'sent' && m.type !== 'sent') return false;
+        if (filterType === 'recv' && m.type !== 'recv') return false;
+        if (filterType === 'sys' && (m.type === 'sent' || m.type === 'recv')) return false;
+        if (searchQ && !String(m.data).toLowerCase().includes(searchQ)) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        stream.appendChild(placeholder);
+        placeholder.classList.remove('hidden');
+      } else {
+        placeholder.classList.add('hidden');
+        filtered.forEach((m) => renderSingleMessage(m, false));
+        if (autoScroll) {
+          stream.scrollTop = stream.scrollHeight;
+        }
+      }
+    }
+
+    function renderSingleMessage(m, doScroll = true) {
+      const stream = document.getElementById('messages-stream');
+      const placeholder = document.getElementById('empty-log-placeholder');
+      if (placeholder) placeholder.classList.add('hidden');
+
+      const card = document.createElement('div');
+      const timeStr = formatTime(m.time);
+
+      if (m.type === 'sys' || m.type === 'error') {
+        const isErr = m.type === 'error';
+        card.className = 'flex justify-center my-2';
+        card.innerHTML = `
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono border ${
+            isErr
+              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+              : 'bg-theme-surface-alt text-theme-muted border-theme-line'
+          }">
+            <span>${isErr ? '❌' : 'ℹ️'}</span>
+            <span>${m.data}</span>
+            <span class="text-[10px] opacity-60">${timeStr}</span>
+          </div>
+        `;
+      } else if (m.type === 'sent') {
+        const isJSON = isJsonString(m.data);
+        const formattedContent = isJSON ? syntaxHighlightJSON(m.data) : escapeHTML(m.data);
+
+        card.className = 'flex flex-col items-end my-2';
+        card.innerHTML = `
+          <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 bg-indigo-600/10 border border-indigo-500/30 text-theme-ink shadow-xs">
+            <div class="flex items-center justify-between gap-4 mb-1.5 pb-1 border-b border-indigo-500/20 text-[11px] font-mono text-indigo-500 font-bold">
+              <span class="flex items-center gap-1">
+                <span>▲ Sent</span>
+                <span class="text-[10px] font-normal text-theme-muted">(${formatBytes(m.size)})</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-normal text-theme-muted">${timeStr}</span>
+                <button class="btn-copy-msg hover:text-indigo-400 text-xs" title="Copy message">📋</button>
+              </div>
+            </div>
+            <pre class="text-xs font-mono whitespace-pre-wrap break-all leading-relaxed overflow-x-auto">${formattedContent}</pre>
+          </div>
+        `;
+      } else {
+        // Received message
+        const isJSON = isJsonString(m.data);
+        const formattedContent = isJSON ? syntaxHighlightJSON(m.data) : escapeHTML(m.data);
+
+        card.className = 'flex flex-col items-start my-2';
+        card.innerHTML = `
+          <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-theme-ink shadow-xs">
+            <div class="flex items-center justify-between gap-4 mb-1.5 pb-1 border-b border-emerald-500/20 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+              <span class="flex items-center gap-1">
+                <span>▼ Received</span>
+                <span class="text-[10px] font-normal text-theme-muted">(${formatBytes(m.size)})</span>
+              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-normal text-theme-muted">${timeStr}</span>
+                <button class="btn-copy-msg hover:text-emerald-500 text-xs" title="Copy message">📋</button>
+              </div>
+            </div>
+            <pre class="text-xs font-mono whitespace-pre-wrap break-all leading-relaxed overflow-x-auto">${formattedContent}</pre>
+          </div>
+        `;
+      }
+
+      // Attach copy button handler
+      const copyBtn = card.querySelector('.btn-copy-msg');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(m.data);
+          copyBtn.innerText = '✓';
+          setTimeout(() => { copyBtn.innerText = '📋'; }, 1500);
+        });
+      }
+
+      stream.appendChild(card);
+
+      if (doScroll && autoScroll) {
+        stream.scrollTop = stream.scrollHeight;
+      }
+    }
+
+    function isJsonString(str) {
+      if (typeof str !== 'string') return false;
+      try {
+        const o = JSON.parse(str);
+        return o && typeof o === 'object';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // WEBSOCKET LIFECYCLE
+    function connectTab(tab) {
+      if (tab.status === 'connected' || tab.status === 'connecting') {
+        disconnectTab(tab);
+        return;
+      }
+
+      const rawUrl = document.getElementById('ws-url-input').value.trim();
+      const protocolsStr = document.getElementById('ws-protocols').value.trim();
+
+      if (!rawUrl) {
+        alert('Please enter a valid WebSocket URL (e.g. wss://echo.websocket.events)');
+        return;
+      }
+
+      tab.url = rawUrl;
+      tab.protocols = protocolsStr;
+
+      updateStatusUI('connecting');
+      addLogMessage(tab, 'sys', `Connecting to ${rawUrl}...`);
+
+      // Check if Local Mock Echo
+      if (rawUrl.startsWith('mock://')) {
+        setTimeout(() => {
+          tab.status = 'connected';
+          updateStatusUI('connected');
+          startUptime(tab);
+          addLogMessage(tab, 'sys', 'Connected to in-browser Virtual Mock Echo Server.');
+        }, 300);
+        return;
+      }
+
+      try {
+        const protocols = protocolsStr ? protocolsStr.split(',').map(p => p.trim()).filter(Boolean) : undefined;
+        tab.ws = protocols && protocols.length > 0 ? new WebSocket(rawUrl, protocols) : new WebSocket(rawUrl);
+
+        tab.ws.onopen = (e) => {
+          tab.status = 'connected';
+          tab.reconnectAttempts = 0;
+          updateStatusUI('connected');
+          startUptime(tab);
+          startHeartbeat(tab);
+          addLogMessage(tab, 'sys', `Connected to ${rawUrl} (protocol: ${tab.ws.protocol || 'none'})`);
+        };
+
+        tab.ws.onmessage = (e) => {
+          const payload = e.data;
+          const size = typeof payload === 'string' ? new Blob([payload]).size : payload.byteLength || 0;
+          tab.totalRecvBytes += size;
+          tab.recvCount++;
+
+          // Check if ping response to measure RTT latency
+          if (tab.lastPingTime) {
+            tab.lastLatency = Date.now() - tab.lastPingTime;
+            tab.lastPingTime = null;
+          }
+
+          addLogMessage(tab, 'recv', payload);
+        };
+
+        tab.ws.onerror = (e) => {
+          addLogMessage(tab, 'error', `WebSocket Error event triggered. Check server CORS/Origin settings.`);
+        };
+
+        tab.ws.onclose = (e) => {
+          const wasConnected = tab.status === 'connected';
+          stopUptime(tab);
+          stopHeartbeat(tab);
+          updateStatusUI('disconnected');
+          addLogMessage(tab, 'sys', `Connection closed (Code: ${e.code}, Reason: ${e.reason || 'No reason provided'})`);
+
+          // Auto-reconnect if enabled
+          const autoReconnect = document.getElementById('chk-reconnect').checked;
+          if (autoReconnect && wasConnected && tab.reconnectAttempts < 5) {
+            const interval = Math.max(1, Number(document.getElementById('reconnect-interval').value || 3)) * 1000;
+            tab.reconnectAttempts++;
+            addLogMessage(tab, 'sys', `Auto-reconnect attempt ${tab.reconnectAttempts}/5 in ${interval / 1000}s...`);
+            tab.reconnectTimer = setTimeout(() => {
+              connectTab(tab);
+            }, interval);
+          }
+        };
+
+      } catch (err) {
+        updateStatusUI('error');
+        addLogMessage(tab, 'error', `Connection initialization failed: ${err.message}`);
+      }
+    }
+
+    function disconnectTab(tab) {
+      if (tab.reconnectTimer) clearTimeout(tab.reconnectTimer);
+      stopUptime(tab);
+      stopHeartbeat(tab);
+
+      if (tab.ws) {
+        try {
+          tab.ws.close(1000, 'User initiated disconnect');
+        } catch (e) {}
+        tab.ws = null;
+      }
+
+      tab.status = 'disconnected';
+      updateStatusUI('disconnected');
+    }
+
+    function sendMessage() {
+      const tab = getActiveTab();
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      if (tab.status !== 'connected') {
+        alert('WebSocket is not connected. Connect first to transmit messages.');
+        return;
+      }
+
+      const size = new Blob([text]).size;
+      tab.totalSentBytes += size;
+      tab.sentCount++;
+
+      // If Mock Server
+      if (tab.url.startsWith('mock://')) {
+        addLogMessage(tab, 'sent', text);
+        setTimeout(() => {
+          tab.totalRecvBytes += size;
+          tab.recvCount++;
+          addLogMessage(tab, 'recv', text);
+        }, 120);
+        return;
+      }
+
+      if (tab.ws && tab.ws.readyState === WebSocket.OPEN) {
+        tab.ws.send(text);
+        addLogMessage(tab, 'sent', text);
+      } else {
+        addLogMessage(tab, 'error', 'Failed to send: WebSocket readyState is not OPEN.');
+      }
+    }
+
+    function startUptime(tab) {
+      stopUptime(tab);
+      tab.uptimeSeconds = 0;
+      tab.uptimeTimer = setInterval(() => {
+        tab.uptimeSeconds++;
+        if (tab.id === activeTabId) {
+          document.getElementById('stat-uptime').innerText = formatUptime(tab.uptimeSeconds);
+        }
+      }, 1000);
+    }
+
+    function stopUptime(tab) {
+      if (tab.uptimeTimer) {
+        clearInterval(tab.uptimeTimer);
+        tab.uptimeTimer = null;
+      }
+    }
+
+    function startHeartbeat(tab) {
+      stopHeartbeat(tab);
+      const isEnabled = document.getElementById('chk-heartbeat').checked;
+      if (!isEnabled) return;
+
+      const sec = Math.max(2, Number(document.getElementById('heartbeat-interval').value || 15));
+      const payload = document.getElementById('heartbeat-payload').value || '{"type":"ping"}';
+
+      tab.heartbeatTimer = setInterval(() => {
+        if (tab.ws && tab.ws.readyState === WebSocket.OPEN) {
+          tab.lastPingTime = Date.now();
+          tab.ws.send(payload);
+          tab.sentCount++;
+          tab.totalSentBytes += new Blob([payload]).size;
+          addLogMessage(tab, 'sent', payload, { isPing: true });
+        }
+      }, sec * 1000);
+    }
+
+    function stopHeartbeat(tab) {
+      if (tab.heartbeatTimer) {
+        clearInterval(tab.heartbeatTimer);
+        tab.heartbeatTimer = null;
+      }
+    }
+
+    function addNewTab() {
+      const newIndex = tabs.length + 1;
+      const newTab = new WSTab(`tab-${Date.now()}`, `Endpoint #${newIndex}`, 'wss://echo.websocket.events');
+      tabs.push(newTab);
+      activeTabId = newTab.id;
+      renderTabs();
+      syncTabStateToUI();
+    }
+
+    function closeTab(tabId) {
+      const idx = tabs.findIndex(t => t.id === tabId);
+      if (idx < 0) return;
+      const tab = tabs[idx];
+      disconnectTab(tab);
+      tabs.splice(idx, 1);
+      if (activeTabId === tabId) {
+        activeTabId = tabs[Math.max(0, idx - 1)].id;
+      }
+      renderTabs();
+      syncTabStateToUI();
+    }
+
+    function validateJSON() {
+      const val = document.getElementById('message-input').value.trim();
+      const indicator = document.getElementById('json-valid-indicator');
+      if (!val) {
+        indicator.classList.add('hidden');
+        return;
+      }
+      try {
+        JSON.parse(val);
+        indicator.className = 'absolute right-3 bottom-3 text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 pointer-events-none';
+        indicator.innerText = 'Valid JSON';
+        indicator.classList.remove('hidden');
+      } catch (e) {
+        indicator.className = 'absolute right-3 bottom-3 text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 pointer-events-none';
+        indicator.innerText = 'Raw Text';
+        indicator.classList.remove('hidden');
+      }
+    }
+
+    // EVENT LISTENERS
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme initial setup
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').innerText = '☀️';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').innerText = '🌙';
+      }
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+      });
+
+      // Quick Endpoints
+      document.getElementById('quick-endpoints').addEventListener('change', (e) => {
+        if (!e.target.value) return;
+        document.getElementById('ws-url-input').value = e.target.value;
+        const tab = getActiveTab();
+        tab.url = e.target.value;
+        e.target.value = '';
+      });
+
+      // Advanced panel toggle
+      document.getElementById('btn-toggle-adv').addEventListener('click', () => {
+        const panel = document.getElementById('adv-options-panel');
+        panel.classList.toggle('hidden');
+        document.getElementById('adv-arrow').innerText = panel.classList.contains('hidden') ? '▼' : '▲';
+      });
+
+      // Heartbeat toggle
+      document.getElementById('chk-heartbeat').addEventListener('change', (e) => {
+        document.getElementById('heartbeat-config').classList.toggle('hidden', !e.target.checked);
+        const tab = getActiveTab();
+        if (tab.status === 'connected') {
+          if (e.target.checked) startHeartbeat(tab);
+          else stopHeartbeat(tab);
+        }
+      });
+
+      // Connect button
+      document.getElementById('btn-connect').addEventListener('click', () => {
+        connectTab(getActiveTab());
+      });
+
+      // Clear URL button
+      document.getElementById('btn-clear-url').addEventListener('click', () => {
+        document.getElementById('ws-url-input').value = '';
+        document.getElementById('ws-url-input').focus();
+      });
+
+      // Send Message Button
+      document.getElementById('btn-send-message').addEventListener('click', sendMessage);
+
+      // Keyboard Shortcut Ctrl+Enter / Cmd+Enter
+      document.getElementById('message-input').addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      document.getElementById('message-input').addEventListener('input', () => {
+        const tab = getActiveTab();
+        tab.composerContent = document.getElementById('message-input').value;
+        validateJSON();
+      });
+
+      // Format JSON
+      document.getElementById('btn-format-json').addEventListener('click', () => {
+        const input = document.getElementById('message-input');
+        try {
+          const parsed = JSON.parse(input.value);
+          input.value = JSON.stringify(parsed, null, 2);
+          validateJSON();
+        } catch (e) {
+          alert('Invalid JSON: ' + e.message);
+        }
+      });
+
+      // Minify JSON
+      document.getElementById('btn-minify-json').addEventListener('click', () => {
+        const input = document.getElementById('message-input');
+        try {
+          const parsed = JSON.parse(input.value);
+          input.value = JSON.stringify(parsed);
+          validateJSON();
+        } catch (e) {
+          alert('Invalid JSON: ' + e.message);
+        }
+      });
+
+      // Save Preset
+      document.getElementById('btn-save-preset').addEventListener('click', () => {
+        const content = document.getElementById('message-input').value.trim();
+        if (!content) return;
+        const name = prompt('Enter a name for this message template:', 'Custom Event');
+        if (name) {
+          savedPresets.push({ name, content });
+          savePresetsToStorage();
+          renderPresets();
+        }
+      });
+
+      // Tabs
+      document.getElementById('btn-add-tab').addEventListener('click', addNewTab);
+
+      // Filters & Search
+      document.getElementById('filter-log-type').addEventListener('change', renderMessages);
+      document.getElementById('search-log-input').addEventListener('input', renderMessages);
+
+      // Clear Log
+      document.getElementById('btn-clear-log').addEventListener('click', () => {
+        const tab = getActiveTab();
+        tab.messages = [];
+        tab.totalSentBytes = 0;
+        tab.totalRecvBytes = 0;
+        tab.sentCount = 0;
+        tab.recvCount = 0;
+        renderMessages();
+        updateStatsUI();
+      });
+
+      // Export Log
+      document.getElementById('btn-export-log').addEventListener('click', () => {
+        const tab = getActiveTab();
+        if (tab.messages.length === 0) {
+          alert('No messages in the log to export.');
+          return;
+        }
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tab.messages, null, 2));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `websocket-log-${Date.now()}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      // Scroll Detection for auto-scroll pause
+      const stream = document.getElementById('messages-stream');
+      const banner = document.getElementById('autoscroll-banner');
+      
+      stream.addEventListener('scroll', () => {
+        const isAtBottom = stream.scrollHeight - stream.scrollTop - stream.clientHeight < 40;
+        if (!isAtBottom) {
+          autoScroll = false;
+          banner.classList.remove('hidden');
+        } else {
+          autoScroll = true;
+          banner.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('btn-resume-scroll').addEventListener('click', () => {
+        autoScroll = true;
+        banner.classList.add('hidden');
+        stream.scrollTop = stream.scrollHeight;
+      });
+
+      // Initial Render
+      renderTabs();
+      renderPresets();
+      syncTabStateToUI();
+    });
+  </script>
+</body>
+</html>

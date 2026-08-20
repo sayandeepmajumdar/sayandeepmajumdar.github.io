@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>React Playground — In-Browser Live JSX Component Studio — Toolzy</title>
+  <meta name="description" content="Free in-browser React playground. Write JSX, preview live components in real-time, inspect console logs, format with Prettier, and share snippets with 100% client-side Babel compilation." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- CodeMirror 5 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-ocean.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/nord.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/jsx/jsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <!-- Babel Standalone for In-Browser JSX Compilation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
+
+  <!-- Prettier Standalone for Code Formatting -->
+  <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+  <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
+
+  <!-- LZ-String for Compact URL Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #0ea5e9;
+      --color-accent-hover: #0284c7;
+    }
+    .dark {
+      --color-bg: #0b0f19;
+      --color-surface: #111827;
+      --color-surface-alt: #1f2937;
+      --color-ink: #f9fafb;
+      --color-muted: #9ca3af;
+      --color-line: #1f2937;
+      --color-accent: #38bdf8;
+      --color-accent-hover: #0ea5e9;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* CodeMirror Custom Overrides */
+    .CodeMirror {
+      height: 100% !important;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 13.5px !important;
+      line-height: 1.6 !important;
+      background: transparent !important;
+    }
+    .dark .CodeMirror {
+      color: #e2e8f0 !important;
+    }
+    .dark .CodeMirror-gutters {
+      background: #0f172a !important;
+      border-right: 1px solid #1e293b !important;
+    }
+    .dark .CodeMirror-linenumber {
+      color: #475569 !important;
+    }
+    .dark .CodeMirror-activeline-background {
+      background: rgba(30, 41, 59, 0.5) !important;
+    }
+    .dark .CodeMirror-cursor {
+      border-left: 2px solid #38bdf8 !important;
+    }
+
+    /* Split Pane Resizer */
+    .resizer-handle {
+      width: 6px;
+      cursor: col-resize;
+      background-color: var(--color-line);
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .resizer-handle:hover, .resizer-handle.resizing {
+      background-color: var(--color-accent);
+    }
+    .resizer-handle-v {
+      height: 6px;
+      cursor: row-resize;
+      background-color: var(--color-line);
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .resizer-handle-v:hover, .resizer-handle-v.resizing {
+      background-color: var(--color-accent);
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="h-screen flex flex-col justify-between overflow-hidden">
+
+  <!-- Top Header Navigation Bar -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface flex items-center justify-between px-4 gap-3 shrink-0 z-20">
+    
+    <!-- Brand / Title -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-sky-500/20">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(30 12 12)" />
+          <ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(90 12 12)" />
+          <ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(150 12 12)" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+        </svg>
+      </div>
+      <div class="hidden sm:block">
+        <h1 class="text-sm font-bold tracking-tight text-theme-ink flex items-center gap-2">
+          <span>React Playground</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-500 border border-sky-500/20 font-mono font-semibold">React 18 + JSX</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Center Controls: Template Selector & Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Starter Templates Dropdown -->
+      <div class="flex items-center gap-1.5 bg-theme-surface-alt px-2 py-1 rounded-xl border border-theme-line text-xs">
+        <span class="text-theme-muted font-medium hidden md:inline">Template:</span>
+        <select id="select-template" class="bg-transparent text-theme-ink font-semibold focus:outline-none cursor-pointer text-xs">
+          <option value="counter">Counter & Timer (useState)</option>
+          <option value="todo">Kanban & Todo Board (CRUD)</option>
+          <option value="async">Async Data Fetch (useEffect)</option>
+          <option value="form">Form Validation (useRef)</option>
+          <option value="tailwind">Tailwind UI Cards (Glassmorphism)</option>
+          <option value="blank">Blank Component</option>
+        </select>
+      </div>
+
+      <!-- Run Button -->
+      <button
+        id="btn-run"
+        type="button"
+        class="px-3 py-1.5 rounded-xl bg-theme-accent text-slate-950 hover:bg-theme-accent-hover font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs shadow-sky-500/20 active:scale-95"
+        title="Execute code (Ctrl+Enter)"
+      >
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span>Run</span>
+      </button>
+
+      <!-- Format Code (Prettier) -->
+      <button
+        id="btn-format"
+        type="button"
+        class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink hover:border-theme-accent/40 font-medium text-xs flex items-center gap-1 transition-all"
+        title="Format Code with Prettier (Ctrl+Shift+F)"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+        <span class="hidden lg:inline">Format</span>
+      </button>
+    </div>
+
+    <!-- Right Controls: Share, Snippets, Export -->
+    <div class="flex items-center gap-1.5 text-xs">
+      
+      <!-- Auto Run Toggle -->
+      <label class="hidden xl:flex items-center gap-1.5 text-theme-muted text-xs cursor-pointer select-none px-2">
+        <input id="toggle-autorun" type="checkbox" checked class="rounded border-theme-line text-sky-500 focus:ring-0" />
+        <span>Live Run</span>
+      </label>
+
+      <!-- Snippets Manager Button -->
+      <button
+        id="btn-open-snippets"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Saved Snippets"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+        <span class="hidden md:inline">Snippets</span>
+      </button>
+
+      <!-- Share URL Button -->
+      <button
+        id="btn-share-url"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Copy Shareable Link"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+        <span class="hidden md:inline">Share</span>
+      </button>
+
+      <!-- Download JSX -->
+      <button
+        id="btn-download-jsx"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Download .jsx file"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span class="hidden md:inline">Export</span>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- Mobile Segmented Tab Switcher (Visible on mobile only) -->
+  <div class="flex md:hidden items-center justify-around border-b border-theme-line bg-theme-surface-alt p-1 text-xs font-semibold shrink-0">
+    <button id="tab-btn-editor" class="flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs">Code Editor</button>
+    <button id="tab-btn-preview" class="flex-1 py-1.5 rounded-lg text-theme-muted">Live Preview</button>
+    <button id="tab-btn-console" class="flex-1 py-1.5 rounded-lg text-theme-muted flex items-center justify-center gap-1">
+      <span>Console</span>
+      <span id="mobile-console-badge" class="px-1.5 py-0.2 rounded-full bg-theme-accent/20 text-theme-accent text-[10px]">0</span>
+    </button>
+  </div>
+
+  <!-- Main Workspace (Editor + Split + Preview + Console) -->
+  <div id="workspace-container" class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- LEFT PANE: CODE EDITOR (50% default) -->
+    <div id="pane-editor" class="flex-1 flex flex-col h-full bg-theme-surface border-r border-theme-line overflow-hidden min-w-[300px]">
+      
+      <!-- Editor Subheader -->
+      <div class="h-9 border-b border-theme-line bg-theme-surface-alt/60 px-4 flex items-center justify-between text-xs text-theme-muted font-mono shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="font-bold text-theme-ink">App.jsx</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span id="editor-status" class="text-[11px] text-theme-muted">Ready</span>
+          <button id="btn-copy-code" class="hover:text-theme-ink transition-colors flex items-center gap-1" title="Copy code">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CodeMirror Textarea Container -->
+      <div class="flex-1 relative overflow-hidden">
+        <textarea id="code-editor-textarea" class="hidden"></textarea>
+      </div>
+
+      <!-- Transpilation / Syntax Error Banner (Non-blocking) -->
+      <div id="error-banner" class="p-3 bg-red-500/10 border-t border-red-500/30 text-red-500 text-xs font-mono max-h-32 overflow-y-auto scrollbar-thin hidden shrink-0 flex items-start gap-2">
+        <svg class="w-4 h-4 shrink-0 mt-0.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div class="flex-1 space-y-1">
+          <span class="font-bold block">Syntax / Compilation Error</span>
+          <pre id="error-message-text" class="whitespace-pre-wrap font-mono text-[11px] leading-relaxed"></pre>
+        </div>
+        <button id="btn-dismiss-error" class="text-red-400 hover:text-red-200">✕</button>
+      </div>
+
+    </div>
+
+    <!-- Draggable Resizer Bar (Desktop) -->
+    <div id="resizer-drag-bar" class="hidden md:block resizer-handle"></div>
+
+    <!-- RIGHT PANE: LIVE PREVIEW & DOCKABLE CONSOLE -->
+    <div id="pane-preview" class="flex-1 flex flex-col h-full bg-theme-bg overflow-hidden min-w-[300px]">
+
+      <!-- Preview Subheader / Viewport Width Controls -->
+      <div class="h-9 border-b border-theme-line bg-theme-surface px-4 flex items-center justify-between text-xs text-theme-muted shrink-0 z-10">
+        
+        <!-- Viewport Size Presets -->
+        <div class="flex items-center gap-1 font-mono text-[11px]">
+          <button data-width="100%" class="btn-viewport px-2 py-0.5 rounded-md bg-theme-accent/10 text-theme-accent font-bold border border-theme-accent/20">Full</button>
+          <button data-width="768px" class="btn-viewport px-2 py-0.5 rounded-md text-theme-muted hover:text-theme-ink">Tablet (768px)</button>
+          <button data-width="375px" class="btn-viewport px-2 py-0.5 rounded-md text-theme-muted hover:text-theme-ink">Mobile (375px)</button>
+        </div>
+
+        <!-- Preview Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Toggle Console Drawer -->
+          <button
+            id="btn-toggle-console"
+            type="button"
+            class="px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink text-xs flex items-center gap-1 font-mono transition-colors"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>Console</span>
+            <span id="console-logs-count-badge" class="px-1.5 py-0.2 rounded-full bg-theme-accent/20 text-theme-accent font-bold text-[10px]">0</span>
+          </button>
+
+          <!-- Refresh Preview -->
+          <button id="btn-reload-preview" class="p-1 rounded-lg text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt transition-colors" title="Reload iframe">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Preview Iframe Canvas Container -->
+      <div id="iframe-viewport-wrapper" class="flex-1 w-full bg-slate-900/10 dark:bg-black/30 flex items-center justify-center p-0 overflow-hidden relative">
+        <div id="iframe-responsive-shell" class="w-full h-full transition-all duration-300 flex items-center justify-center">
+          <iframe
+            id="preview-iframe"
+            sandbox="allow-scripts allow-modals"
+            class="w-full h-full border-0 bg-white"
+            title="React Live Component Preview"
+          ></iframe>
+        </div>
+      </div>
+
+      <!-- DOCKABLE CONSOLE PANEL (Collapsible) -->
+      <div id="console-drawer" class="h-44 border-t border-theme-line bg-theme-surface flex flex-col shrink-0 z-10 transition-all duration-200">
+        
+        <!-- Console Header -->
+        <div class="h-8 border-b border-theme-line bg-theme-surface-alt/60 px-4 flex items-center justify-between text-xs font-mono shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-theme-ink">Terminal / Console</span>
+            <div class="flex items-center gap-1 text-[11px]">
+              <button data-filter="all" class="btn-console-filter px-1.5 py-0.2 rounded font-bold text-theme-accent">All</button>
+              <button data-filter="error" class="btn-console-filter px-1.5 py-0.2 rounded text-theme-muted hover:text-red-400">Errors</button>
+              <button data-filter="warn" class="btn-console-filter px-1.5 py-0.2 rounded text-theme-muted hover:text-amber-400">Warnings</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-clear-console" class="text-[11px] text-theme-muted hover:text-theme-ink transition-colors">Clear</button>
+            <button id="btn-close-console-drawer" class="text-theme-muted hover:text-theme-ink">✕</button>
+          </div>
+        </div>
+
+        <!-- Console Log Output List -->
+        <div id="console-log-list" class="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-thin font-mono text-xs">
+          <p class="text-theme-muted text-[11px] py-2 px-1">Console is ready. Logs from component will output here.</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SNIPPET MANAGER MODAL (Hidden by default) -->
+  <div id="modal-snippets" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-lg rounded-3xl bg-theme-surface border border-theme-line p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="text-base font-bold text-theme-ink">Saved React Snippets</h3>
+        <button id="btn-close-snippets-modal" class="text-theme-muted hover:text-theme-ink">✕</button>
+      </div>
+
+      <!-- Save Current Snippet Form -->
+      <div class="flex items-center gap-2">
+        <input
+          id="input-snippet-name"
+          type="text"
+          placeholder="Snippet title (e.g. Animated Modal)..."
+          class="flex-1 px-3 py-2 rounded-xl text-xs bg-theme-surface-alt border border-theme-line text-theme-ink focus:outline-none focus:border-theme-accent"
+        />
+        <button
+          id="btn-save-current-snippet"
+          type="button"
+          class="px-4 py-2 rounded-xl bg-theme-accent text-slate-950 font-bold text-xs hover:bg-theme-accent-hover transition-colors"
+        >
+          Save Current
+        </button>
+      </div>
+
+      <!-- Snippets List Container -->
+      <div id="snippets-list-container" class="max-h-60 overflow-y-auto scrollbar-thin space-y-2 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-950 text-xs font-semibold shadow-2xl flex items-center gap-2 border border-theme-line">
+    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <!-- Toolzy Footer Brand Line -->
+  <footer class="h-8 border-t border-theme-line bg-theme-surface flex items-center justify-between px-4 text-[11px] font-mono text-theme-muted shrink-0 z-20">
+    <div class="flex items-center gap-2">
+      <a href="/tools/" class="hover:underline flex items-center gap-1.5 font-bold">
+        <span class="tracking-tight text-xs font-black">
+          <span style="color:#4285F4">T</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">l</span><span style="color:#34A853">z</span><span style="color:#EA4335">y</span>
+        </span>
+        <span class="text-theme-muted font-normal">• In-Browser React JSX Sandbox</span>
+      </a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy" class="text-theme-accent hover:underline">Request a Tool</a>
+      <span>•</span>
+      <a href="/index.html" class="hover:text-theme-ink transition-colors">Portfolio</a>
+      <span>•</span>
+      <a href="/tools/" class="hover:text-theme-ink transition-colors">All Tools</a>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // STARTER TEMPLATES
+    // =========================================================================
+    const TEMPLATES = {
+      counter: `// Counter & Auto-Timer (useState + useEffect)
+import React, { useState, useEffect } from 'react';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  const [step, setStep] = useState(1);
+  const [isAuto, setIsAuto] = useState(false);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    let interval = null;
+    if (isAuto) {
+      interval = setInterval(() => {
+        setCount(c => c + step);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAuto, step]);
+
+  const handleUpdate = (delta) => {
+    const next = count + delta;
+    setCount(next);
+    setHistory(prev => [next, ...prev.slice(0, 4)]);
+    console.log('Count updated to:', next);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 font-sans">
+      <div className="w-full max-w-md p-8 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-md space-y-6">
+        
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-sky-400">useState + useEffect</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            Step: +{step}
+          </span>
+        </div>
+
+        <div className="text-center py-6 space-y-2 bg-slate-950/60 rounded-2xl border border-slate-800/80">
+          <span className="text-xs text-slate-400 font-mono">CURRENT VALUE</span>
+          <div className="text-6xl font-black font-mono tracking-tight text-white">{count}</div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => handleUpdate(-step)}
+            className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-lg font-black transition-all"
+          >
+            -{step}
+          </button>
+          <button
+            onClick={() => { setCount(0); setHistory([]); }}
+            className="py-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 active:scale-95 text-xs font-mono font-bold text-slate-400 hover:text-white transition-all"
+          >
+            RESET
+          </button>
+          <button
+            onClick={() => handleUpdate(step)}
+            className="py-3 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 text-lg font-black transition-all shadow-lg shadow-sky-500/20"
+          >
+            +{step}
+          </button>
+        </div>
+
+        {/* Step & Auto Controls */}
+        <div className="flex items-center justify-between pt-4 border-t border-slate-800 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Step:</span>
+            {[1, 5, 10].map(s => (
+              <button
+                key={s}
+                onClick={() => setStep(s)}
+                className={\`px-2.5 py-1 rounded-lg font-mono font-bold transition-colors \${
+                  step === s ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }\`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setIsAuto(!isAuto)}
+            className={\`px-3 py-1.5 rounded-xl font-bold font-mono transition-all flex items-center gap-1.5 \${
+              isAuto ? 'bg-emerald-500 text-slate-950 animate-pulse' : 'bg-slate-800 text-slate-300 hover:text-white'
+            }\`}
+          >
+            <span>{isAuto ? '● Auto-Tick ON' : '○ Auto-Tick'}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}`,
+
+      todo: `// Kanban & Todo Board (CRUD + Filters)
+import React, { useState } from 'react';
+
+export default function App() {
+  const [tasks, setTasks] = useState([
+    { id: 1, text: 'Master React 18 Concurrency', tag: 'Architecture', completed: true },
+    { id: 2, text: 'Build interactive Web Audio synthesizer', tag: 'Creative', completed: false },
+    { id: 3, text: 'Optimize bundle size & tree-shaking', tag: 'Performance', completed: false }
+  ]);
+  const [inputVal, setInputVal] = useState('');
+  const [selectedTag, setSelectedTag] = useState('Frontend');
+  const [filter, setFilter] = useState('all');
+
+  const addTask = (e) => {
+    e.preventDefault();
+    if (!inputVal.trim()) return;
+    const newTask = {
+      id: Date.now(),
+      text: inputVal.trim(),
+      tag: selectedTag,
+      completed: false
+    };
+    setTasks([newTask, ...tasks]);
+    setInputVal('');
+    console.log('Added task:', newTask.text);
+  };
+
+  const toggleTask = (id) => {
+    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const deleteTask = (id) => {
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  const filteredTasks = tasks.filter(t => {
+    if (filter === 'active') return !t.completed;
+    if (filter === 'completed') return t.completed;
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-10 font-sans flex flex-col items-center">
+      <div className="w-full max-w-lg space-y-6">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-white">Sprint Tasks</h2>
+            <p className="text-xs text-slate-400 font-mono">{tasks.filter(t => t.completed).length} of {tasks.length} completed</p>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            CRUD State
+          </span>
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={addTask} className="space-y-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
+          <input
+            type="text"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            placeholder="Add new engineering task..."
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-sky-500 font-medium"
+          />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xs">
+              {['Frontend', 'Architecture', 'Performance'].map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(tag)}
+                  className={\`px-2.5 py-1 rounded-lg font-mono text-[11px] \${
+                    selectedTag === tag ? 'bg-sky-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+                  }\`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs"
+            >
+              + Add
+            </button>
+          </div>
+        </form>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2 text-xs font-mono">
+          {['all', 'active', 'completed'].map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={\`px-3 py-1.5 rounded-xl capitalize font-semibold \${
+                filter === f ? 'bg-slate-800 text-white border border-slate-700' : 'text-slate-500 hover:text-slate-300'
+              }\`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Tasks List */}
+        <div className="space-y-2">
+          {filteredTasks.map(t => (
+            <div
+              key={t.id}
+              className={\`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 \${
+                t.completed ? 'bg-slate-900/40 border-slate-800/60 opacity-60' : 'bg-slate-900 border-slate-800'
+              }\`}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  checked={t.completed}
+                  onChange={() => toggleTask(t.id)}
+                  className="w-4 h-4 rounded border-slate-700 text-sky-500 focus:ring-0 cursor-pointer"
+                />
+                <span className={\`text-sm font-medium truncate \${t.completed ? 'line-through text-slate-500' : 'text-slate-100'}\`}>
+                  {t.text}
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700/50">
+                  {t.tag}
+                </span>
+              </div>
+              <button
+                onClick={() => deleteTask(t.id)}
+                className="text-slate-500 hover:text-red-400 text-xs px-2 py-1"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}`,
+
+      async: `// Async Data Fetching & Search (useEffect)
+import React, { useState, useEffect } from 'react';
+
+export default function App() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    // Mock Async API Call
+    const timer = setTimeout(() => {
+      const data = [
+        { id: 1, name: 'Alex Rivera', role: 'Staff Frontend Architect', team: 'Design Systems', status: 'Online' },
+        { id: 2, name: 'Elena Rostova', role: 'Distributed Systems Lead', team: 'Core Infrastructure', status: 'In Meeting' },
+        { id: 3, name: 'Marcus Chen', role: 'AI / Compiler Engineer', team: 'Machine Learning', status: 'Online' },
+        { id: 4, name: 'Sarah Jenkins', role: 'Security & Cryptography', team: 'InfoSec', status: 'Offline' }
+      ];
+      setUsers(data);
+      setLoading(false);
+      console.log('Fetched team members:', data.length);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const filtered = users.filter(u => 
+    u.name.toLowerCase().includes(search.toLowerCase()) || 
+    u.role.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-10 font-sans flex flex-col items-center">
+      <div className="w-full max-w-xl space-y-6">
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-white">Engineering Directory</h2>
+            <p className="text-xs text-slate-400 font-mono">Live Async State & Client Filtering</p>
+          </div>
+          <button
+            onClick={() => { setLoading(true); setUsers([]); setTimeout(() => setLoading(false), 500); }}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300"
+          >
+            Refetch
+          </button>
+        </div>
+
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Filter by name or role..."
+          className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-sm text-white focus:outline-none focus:border-sky-500 font-medium"
+        />
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 animate-pulse flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-slate-800 rounded"></div>
+                  <div className="h-3 w-48 bg-slate-800 rounded"></div>
+                </div>
+                <div className="h-6 w-16 bg-slate-800 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map(user => (
+              <div key={user.id} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-white">{user.name}</h4>
+                  <p className="text-xs text-slate-400">{user.role} • <span className="text-sky-400 font-mono">{user.team}</span></p>
+                </div>
+                <span className={\`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold \${
+                  user.status === 'Online' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                  user.status === 'In Meeting' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                  'bg-slate-800 text-slate-400'
+                }\`}>
+                  {user.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}`,
+
+      form: `// Form Validation & Controlled State (useRef)
+import React, { useState } from 'react';
+
+export default function App() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    tier: 'Pro ($29/mo)',
+    agreed: false
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    console.log('Form submission payload:', formData);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 font-sans">
+      <div className="w-full max-w-md p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6">
+        
+        <div className="space-y-1">
+          <h2 className="text-xl font-black text-white">Join Toolzy Cloud</h2>
+          <p className="text-xs text-slate-400 font-mono">Client-side form state & validation</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-slate-300 block">Username</label>
+            <input
+              type="text"
+              required
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              placeholder="e.g. sayandeep_dev"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-sky-500 font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-slate-300 block">Work Email</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="developer@company.com"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-sky-500 font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="font-mono font-bold text-slate-300 block">Subscription Tier</label>
+            <select
+              value={formData.tier}
+              onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-sky-500 font-mono"
+            >
+              <option>Starter (Free Forever)</option>
+              <option>Pro ($29/mo)</option>
+              <option>Enterprise Custom</option>
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 pt-2 cursor-pointer">
+            <input
+              type="checkbox"
+              required
+              checked={formData.agreed}
+              onChange={(e) => setFormData({ ...formData, agreed: e.target.checked })}
+              className="rounded border-slate-700 text-sky-500 focus:ring-0"
+            />
+            <span className="text-slate-400 text-[11px]">I agree to the privacy policy (zero server storage)</span>
+          </label>
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black uppercase tracking-wider text-xs transition-all shadow-lg shadow-sky-500/20"
+          >
+            Submit Registration
+          </button>
+        </form>
+
+        {submitted && (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono space-y-1">
+            <span className="font-bold block">✓ Form successfully submitted!</span>
+            <p className="text-[11px] text-slate-400">Welcome, {formData.username} ({formData.tier})</p>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}`,
+
+      tailwind: `// Tailwind Glassmorphic UI Showcase
+import React, { useState } from 'react';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('metrics');
+
+  const stats = [
+    { label: 'Latency', val: '1.2ms', change: '-42%', positive: true },
+    { label: 'Transpiled', val: '14.8k', change: '+18%', positive: true },
+    { label: 'RAM Usage', val: '28 MB', change: 'O(1)', positive: true }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 text-slate-100 p-6 sm:p-10 font-sans flex flex-col items-center justify-center">
+      <div className="w-full max-w-xl p-8 rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl space-y-6">
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-sky-500/30">
+              ⚛
+            </div>
+            <div>
+              <h3 className="font-black text-lg text-white">Glassmorphism Studio</h3>
+              <p className="text-xs text-sky-300 font-mono">Tailwind CSS 3.4 CDN</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-mono bg-sky-400/10 text-sky-300 border border-sky-400/20">
+            Live Preview
+          </span>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          {stats.map((s, idx) => (
+            <div key={idx} className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1 text-center">
+              <span className="text-[10px] uppercase font-mono text-slate-400">{s.label}</span>
+              <div className="text-xl font-black font-mono text-white">{s.val}</div>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold">{s.change}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Interactive Gradient CTA */}
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-sky-500/30 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <h4 className="font-bold text-sm text-white">Full Client-Side Runtime</h4>
+            <p className="text-xs text-slate-400">Zero backend servers. Everything compiles locally.</p>
+          </div>
+          <button
+            onClick={() => alert('React + Tailwind running seamlessly in-browser!')}
+            className="px-4 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/25 transition-all"
+          >
+            Explore
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}`,
+
+      blank: `// Blank React Component
+import React, { useState } from 'react';
+
+export default function App() {
+  const [message, setMessage] = useState('Hello from React Playground!');
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 font-sans">
+      <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4">
+        <h1 className="text-2xl font-black text-sky-400">{message}</h1>
+        <p className="text-xs text-slate-400 font-mono">Start editing App.jsx to see live updates.</p>
+        <button
+          onClick={() => setMessage('State updated at ' + new Date().toLocaleTimeString())}
+          className="px-4 py-2 rounded-xl bg-sky-500 text-slate-950 font-bold text-xs"
+        >
+          Click Me
+        </button>
+      </div>
+    </div>
+  );
+}`
+    };
+
+    // State
+    let editor = null;
+    let autoRunTimer = null;
+    let consoleLogs = [];
+    let activeConsoleFilter = 'all';
+
+    const STORAGE_SNIPPETS_KEY = 'toolbox:react_playground_snippets';
+
+    // DOM Elements
+    const codeEditorTextarea = document.getElementById('code-editor-textarea');
+    const previewIframe = document.getElementById('preview-iframe');
+    const selectTemplate = document.getElementById('select-template');
+    const btnRun = document.getElementById('btn-run');
+    const btnFormat = document.getElementById('btn-format');
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const btnShareUrl = document.getElementById('btn-share-url');
+    const btnDownloadJsx = document.getElementById('btn-download-jsx');
+    const toggleAutorun = document.getElementById('toggle-autorun');
+    const editorStatus = document.getElementById('editor-status');
+    const errorBanner = document.getElementById('error-banner');
+    const errorMessageText = document.getElementById('error-message-text');
+    const btnDismissError = document.getElementById('btn-dismiss-error');
+    const consoleDrawer = document.getElementById('console-drawer');
+    const btnToggleConsole = document.getElementById('btn-toggle-console');
+    const btnCloseConsoleDrawer = document.getElementById('btn-close-console-drawer');
+    const consoleLogList = document.getElementById('console-log-list');
+    const consoleLogsCountBadge = document.getElementById('console-logs-count-badge');
+    const mobileConsoleBadge = document.getElementById('mobile-console-badge');
+    const btnClearConsole = document.getElementById('btn-clear-console');
+    const btnReloadPreview = document.getElementById('btn-reload-preview');
+    const iframeResponsiveShell = document.getElementById('iframe-responsive-shell');
+
+    // Snippet Modal
+    const modalSnippets = document.getElementById('modal-snippets');
+    const btnOpenSnippets = document.getElementById('btn-open-snippets');
+    const btnCloseSnippetsModal = document.getElementById('btn-close-snippets-modal');
+    const inputSnippetName = document.getElementById('input-snippet-name');
+    const btnSaveCurrentSnippet = document.getElementById('btn-save-current-snippet');
+    const snippetsListContainer = document.getElementById('snippets-list-container');
+
+    // Resizer
+    const resizerDragBar = document.getElementById('resizer-drag-bar');
+    const paneEditor = document.getElementById('pane-editor');
+    const panePreview = document.getElementById('pane-preview');
+    const workspaceContainer = document.getElementById('workspace-container');
+
+    // Mobile Tabs
+    const tabBtnEditor = document.getElementById('tab-btn-editor');
+    const tabBtnPreview = document.getElementById('tab-btn-preview');
+    const tabBtnConsole = document.getElementById('tab-btn-console');
+
+    // =========================================================================
+    // INITIALIZE CODEMIRROR EDITOR
+    // =========================================================================
+    function initEditor() {
+      editor = CodeMirror.fromTextArea(codeEditorTextarea, {
+        mode: 'jsx',
+        theme: document.documentElement.classList.contains('dark') ? 'material-ocean' : 'nord',
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        styleActiveLine: true,
+        tabSize: 2,
+        indentWithTabs: false,
+        lineWrapping: false
+      });
+
+      // Check URL for shared code
+      const urlCode = loadCodeFromURL();
+      if (urlCode) {
+        editor.setValue(urlCode);
+      } else {
+        editor.setValue(TEMPLATES.counter);
+      }
+
+      editor.on('change', () => {
+        editorStatus.innerText = 'Edited';
+        if (toggleAutorun.checked) {
+          clearTimeout(autoRunTimer);
+          autoRunTimer = setTimeout(() => {
+            executeCode();
+          }, 450);
+        }
+      });
+
+      // Keyboard shortcuts
+      editor.setOption('extraKeys', {
+        'Ctrl-Enter': () => executeCode(),
+        'Cmd-Enter': () => executeCode(),
+        'Ctrl-S': (cm) => { saveCurrentSnippetPrompt(); },
+        'Cmd-S': (cm) => { saveCurrentSnippetPrompt(); },
+        'Shift-Ctrl-F': () => formatCode(),
+        'Shift-Cmd-F': () => formatCode()
+      });
+    }
+
+    // =========================================================================
+    // IN-BROWSER JSX TRANSPILATION & IFRAME RUNTIME
+    // =========================================================================
+    function executeCode() {
+      if (!editor) return;
+      const rawCode = editor.getValue();
+      editorStatus.innerText = 'Compiling...';
+      hideError();
+
+      try {
+        // Strip out import statements for React since React is provided globally in the sandbox
+        const cleanCode = rawCode
+          .replace(/import\s+React\s*,\s*\{[^}]*\}\s+from\s+['"][^'"]+['"];?/g, '')
+          .replace(/import\s+React\s+from\s+['"][^'"]+['"];?/g, '')
+          .replace(/import\s+\{[^}]*\}\s+from\s+['"][^'"]+['"];?/g, '')
+          .replace(/export\s+default\s+/g, 'window.__AppRootComponent = ');
+
+        // Transpile JSX via Babel Standalone
+        const transformed = Babel.transform(cleanCode, {
+          presets: ['react', 'env'],
+          filename: 'App.jsx'
+        }).code;
+
+        // Build Sandboxed Iframe HTML
+        const iframeHTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+  <script>
+    // Console Interceptor
+    (function() {
+      const origLog = console.log;
+      const origWarn = console.warn;
+      const origError = console.error;
+      const origInfo = console.info;
+
+      function sendToParent(type, args) {
+        try {
+          const serialized = Array.from(args).map(arg => {
+            if (arg === null) return 'null';
+            if (arg === undefined) return 'undefined';
+            if (typeof arg === 'object') {
+              try { return JSON.stringify(arg); } catch(e) { return String(arg); }
+            }
+            return String(arg);
+          }).join(' ');
+
+          window.parent.postMessage({
+            type: 'SANDBOX_CONSOLE',
+            level: type,
+            message: serialized,
+            time: new Date().toLocaleTimeString()
+          }, '*');
+        } catch(e) {}
+      }
+
+      console.log = function(...args) { origLog.apply(console, args); sendToParent('log', args); };
+      console.warn = function(...args) { origWarn.apply(console, args); sendToParent('warn', args); };
+      console.error = function(...args) { origError.apply(console, args); sendToParent('error', args); };
+      console.info = function(...args) { origInfo.apply(console, args); sendToParent('info', args); };
+
+      window.onerror = function(msg, url, line, col, error) {
+        window.parent.postMessage({
+          type: 'SANDBOX_ERROR',
+          message: msg + ' (Line ' + line + ':' + col + ')'
+        }, '*');
+        return false;
+      };
+
+      window.addEventListener('unhandledrejection', function(e) {
+        window.parent.postMessage({
+          type: 'SANDBOX_ERROR',
+          message: 'Unhandled Promise Rejection: ' + (e.reason ? (e.reason.message || String(e.reason)) : 'Unknown')
+        }, '*');
+      });
+    })();
+  <\/script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const { useState, useEffect, useRef, useMemo, useCallback, useReducer, useContext, createContext } = React;
+
+    try {
+      ${transformed}
+
+      const RootComp = window.__AppRootComponent || (typeof App !== 'undefined' ? App : null);
+      if (RootComp) {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(RootComp));
+      } else {
+        document.getElementById('root').innerHTML = '<div style="padding: 24px; color: #ef4444; font-family: monospace;">No default export or App component found. Please export a default React component (e.g. export default function App() { ... })</div>';
+      }
+    } catch(err) {
+      window.parent.postMessage({
+        type: 'SANDBOX_ERROR',
+        message: err.message
+      }, '*');
+    }
+  <\/script>
+</body>
+</html>
+        `;
+
+        previewIframe.srcdoc = iframeHTML;
+        editorStatus.innerText = 'Live';
+      } catch (err) {
+        showError(err.message);
+        editorStatus.innerText = 'Error';
+      }
+    }
+
+    // =========================================================================
+    // ERROR HANDLING & CONSOLE RECEIVER
+    // =========================================================================
+    function showError(msg) {
+      errorMessageText.innerText = msg;
+      errorBanner.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBanner.classList.add('hidden');
+      errorMessageText.innerText = '';
+    }
+
+    btnDismissError.addEventListener('click', hideError);
+
+    window.addEventListener('message', (e) => {
+      if (!e.data) return;
+
+      if (e.data.type === 'SANDBOX_ERROR') {
+        showError(e.data.message);
+      } else if (e.data.type === 'SANDBOX_CONSOLE') {
+        addConsoleLog(e.data.level, e.data.message, e.data.time);
+      }
+    });
+
+    function addConsoleLog(level, msg, time) {
+      const entry = { id: Date.now() + Math.random(), level, msg, time };
+      consoleLogs.push(entry);
+      if (consoleLogs.length > 50) consoleLogs.shift();
+      renderConsoleLogs();
+    }
+
+    function renderConsoleLogs() {
+      consoleLogsCountBadge.innerText = consoleLogs.length;
+      mobileConsoleBadge.innerText = consoleLogs.length;
+
+      const filtered = consoleLogs.filter(log => {
+        if (activeConsoleFilter === 'all') return true;
+        if (activeConsoleFilter === 'error') return log.level === 'error';
+        if (activeConsoleFilter === 'warn') return log.level === 'warn';
+        return true;
+      });
+
+      consoleLogList.innerHTML = '';
+      if (filtered.length === 0) {
+        consoleLogList.innerHTML = '<p class="text-theme-muted text-[11px] py-2 px-1">No console logs.</p>';
+        return;
+      }
+
+      filtered.forEach(log => {
+        const div = document.createElement('div');
+        const isError = log.level === 'error';
+        const isWarn = log.level === 'warn';
+
+        div.className = `p-1.5 rounded-lg flex items-start gap-2 text-[11px] font-mono leading-relaxed ${
+          isError ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+          isWarn ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+          'bg-theme-surface-alt/60 text-theme-ink hover:bg-theme-surface-alt'
+        }`;
+
+        div.innerHTML = `
+          <span class="text-[10px] text-theme-muted shrink-0">${log.time}</span>
+          <span class="px-1 py-0.2 rounded text-[9px] uppercase font-bold shrink-0 ${
+            isError ? 'bg-red-500 text-white' : isWarn ? 'bg-amber-500 text-slate-950' : 'bg-slate-700 text-slate-200'
+          }">${log.level}</span>
+          <span class="whitespace-pre-wrap break-all flex-1">${escapeHtml(log.msg)}</span>
+        `;
+        consoleLogList.appendChild(div);
+      });
+
+      consoleLogList.scrollTop = consoleLogList.scrollHeight;
+    }
+
+    btnClearConsole.addEventListener('click', () => {
+      consoleLogs = [];
+      renderConsoleLogs();
+    });
+
+    btnToggleConsole.addEventListener('click', () => {
+      consoleDrawer.classList.toggle('hidden');
+    });
+
+    btnCloseConsoleDrawer.addEventListener('click', () => {
+      consoleDrawer.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.btn-console-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-console-filter').forEach(b => {
+          b.className = 'btn-console-filter px-1.5 py-0.2 rounded text-theme-muted';
+        });
+        btn.className = 'btn-console-filter px-1.5 py-0.2 rounded font-bold text-theme-accent';
+        activeConsoleFilter = btn.dataset.filter;
+        renderConsoleLogs();
+      });
+    });
+
+    // =========================================================================
+    // PRETTIER FORMATTING & ACTIONS
+    // =========================================================================
+    function formatCode() {
+      if (!editor || !window.prettier) return;
+      try {
+        const unformatted = editor.getValue();
+        const plugins = window.prettierPlugins ? [window.prettierPlugins.babel] : (typeof prettierPlugins !== 'undefined' ? [prettierPlugins.babel] : []);
+        const formatted = prettier.format(unformatted, {
+          parser: 'babel',
+          plugins: plugins,
+          semi: true,
+          singleQuote: true,
+          tabWidth: 2
+        });
+        editor.setValue(formatted);
+        showToast('Code formatted with Prettier!');
+      } catch (err) {
+        showToast('Format error: ' + err.message);
+      }
+    }
+
+    btnFormat.addEventListener('click', formatCode);
+    btnRun.addEventListener('click', executeCode);
+    btnReloadPreview.addEventListener('click', executeCode);
+
+    // Template Selector
+    selectTemplate.addEventListener('change', (e) => {
+      const key = e.target.value;
+      if (TEMPLATES[key]) {
+        editor.setValue(TEMPLATES[key]);
+        executeCode();
+        showToast(`Loaded ${e.target.options[e.target.selectedIndex].text}`);
+      }
+    });
+
+    // Copy Code
+    btnCopyCode.addEventListener('click', async () => {
+      if (!editor) return;
+      try {
+        await navigator.clipboard.writeText(editor.getValue());
+        showToast('Code copied to clipboard!');
+      } catch (e) {
+        showToast('Failed to copy code.');
+      }
+    });
+
+    // Download JSX
+    btnDownloadJsx.addEventListener('click', () => {
+      if (!editor) return;
+      const code = editor.getValue();
+      const blob = new Blob([code], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'App.jsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded App.jsx!');
+    });
+
+    // Share URL (Compressed via LZ-String)
+    btnShareUrl.addEventListener('click', async () => {
+      if (!editor || !window.LZString) return;
+      try {
+        const code = editor.getValue();
+        const compressed = LZString.compressToEncodedURIComponent(code);
+        const shareUrl = `${window.location.origin}${window.location.pathname}#code=${compressed}`;
+        await navigator.clipboard.writeText(shareUrl);
+        showToast('Shareable URL copied to clipboard!');
+      } catch (e) {
+        showToast('Failed to generate share link.');
+      }
+    });
+
+    function loadCodeFromURL() {
+      try {
+        const hash = window.location.hash;
+        if (hash.startsWith('#code=') && window.LZString) {
+          const compressed = hash.substring(6);
+          const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
+          if (decompressed) return decompressed;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    // Viewport Width Presets
+    document.querySelectorAll('.btn-viewport').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-viewport').forEach(b => {
+          b.className = 'btn-viewport px-2 py-0.5 rounded-md text-theme-muted hover:text-theme-ink';
+        });
+        btn.className = 'btn-viewport px-2 py-0.5 rounded-md bg-theme-accent/10 text-theme-accent font-bold border border-theme-accent/20';
+
+        const width = btn.dataset.width;
+        iframeResponsiveShell.style.maxWidth = width;
+      });
+    });
+
+    // =========================================================================
+    // SNIPPET MANAGER MODAL (localStorage)
+    // =========================================================================
+    function getSavedSnippets() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_SNIPPETS_KEY) || '[]');
+      } catch (e) { return []; }
+    }
+
+    function saveSnippets(list) {
+      try {
+        localStorage.setItem(STORAGE_SNIPPETS_KEY, JSON.stringify(list));
+      } catch (e) {}
+    }
+
+    function renderSnippetsList() {
+      const snippets = getSavedSnippets();
+      snippetsListContainer.innerHTML = '';
+
+      if (snippets.length === 0) {
+        snippetsListContainer.innerHTML = '<p class="text-theme-muted text-center py-6">No saved snippets yet. Save your current component above!</p>';
+        return;
+      }
+
+      snippets.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between gap-3 hover:border-theme-accent/40 transition-colors';
+        div.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-theme-ink truncate">${escapeHtml(s.name)}</h4>
+            <span class="text-[10px] font-mono text-theme-muted">${s.date}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn-load-snippet px-3 py-1 rounded-xl bg-theme-accent/10 text-theme-accent font-bold hover:bg-theme-accent hover:text-slate-950 transition-colors" data-id="${s.id}">
+              Load
+            </button>
+            <button class="btn-delete-snippet text-theme-muted hover:text-red-400 p-1" data-id="${s.id}">
+              ✕
+            </button>
+          </div>
+        `;
+        snippetsListContainer.appendChild(div);
+      });
+    }
+
+    btnOpenSnippets.addEventListener('click', () => {
+      renderSnippetsList();
+      modalSnippets.classList.remove('hidden');
+    });
+
+    btnCloseSnippetsModal.addEventListener('click', () => {
+      modalSnippets.classList.add('hidden');
+    });
+
+    btnSaveCurrentSnippet.addEventListener('click', () => {
+      const name = inputSnippetName.value.trim();
+      if (!name) {
+        showToast('Please enter a snippet title.');
+        return;
+      }
+
+      const snippets = getSavedSnippets();
+      const newSnippet = {
+        id: Date.now(),
+        name,
+        code: editor.getValue(),
+        date: new Date().toLocaleDateString()
+      };
+
+      snippets.unshift(newSnippet);
+      saveSnippets(snippets);
+      inputSnippetName.value = '';
+      renderSnippetsList();
+      showToast('Snippet saved!');
+    });
+
+    snippetsListContainer.addEventListener('click', (e) => {
+      const loadBtn = e.target.closest('.btn-load-snippet');
+      if (loadBtn) {
+        const id = Number(loadBtn.dataset.id);
+        const snippets = getSavedSnippets();
+        const found = snippets.find(s => s.id === id);
+        if (found) {
+          editor.setValue(found.code);
+          executeCode();
+          modalSnippets.classList.add('hidden');
+          showToast(`Loaded snippet: ${found.name}`);
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-delete-snippet');
+      if (delBtn) {
+        const id = Number(delBtn.dataset.id);
+        let snippets = getSavedSnippets();
+        snippets = snippets.filter(s => s.id !== id);
+        saveSnippets(snippets);
+        renderSnippetsList();
+        showToast('Snippet deleted.');
+      }
+    });
+
+    function saveCurrentSnippetPrompt() {
+      btnOpenSnippets.click();
+    }
+
+    // =========================================================================
+    // DRAGGABLE RESIZER BAR (DESKTOP)
+    // =========================================================================
+    let isResizing = false;
+    resizerDragBar.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      resizerDragBar.classList.add('resizing');
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const containerRect = workspaceContainer.getBoundingClientRect();
+      const newWidth = e.clientX - containerRect.left;
+      const percentage = (newWidth / containerRect.width) * 100;
+
+      if (percentage > 20 && percentage < 80) {
+        paneEditor.style.flex = `0 0 ${percentage}%`;
+        panePreview.style.flex = `0 0 ${100 - percentage}%`;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        resizerDragBar.classList.remove('resizing');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        if (editor) editor.refresh();
+      }
+    });
+
+    // =========================================================================
+    // MOBILE TABS
+    // =========================================================================
+    tabBtnEditor.addEventListener('click', () => {
+      paneEditor.classList.remove('hidden');
+      panePreview.classList.add('hidden');
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs';
+      tabBtnPreview.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnConsole.className = 'flex-1 py-1.5 rounded-lg text-theme-muted flex items-center justify-center gap-1';
+      if (editor) editor.refresh();
+    });
+
+    tabBtnPreview.addEventListener('click', () => {
+      paneEditor.classList.add('hidden');
+      panePreview.classList.remove('hidden');
+      consoleDrawer.classList.add('hidden');
+      tabBtnPreview.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs';
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnConsole.className = 'flex-1 py-1.5 rounded-lg text-theme-muted flex items-center justify-center gap-1';
+    });
+
+    tabBtnConsole.addEventListener('click', () => {
+      paneEditor.classList.add('hidden');
+      panePreview.classList.remove('hidden');
+      consoleDrawer.classList.remove('hidden');
+      tabBtnConsole.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs flex items-center justify-center gap-1';
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnPreview.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+    });
+
+    // Toast Helper
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    initEditor();
+    executeCode();
+  </script>
+</body>
+</html>

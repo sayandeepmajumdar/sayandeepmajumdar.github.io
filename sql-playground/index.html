@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL Playground — In-Browser SQLite WebAssembly Database Studio — Toolzy</title>
+  <meta name="description" content="Free in-browser SQLite playground powered by WebAssembly. Execute live SQL queries, inspect table schemas, analyze query plans, import/export .sqlite files, and share queries with 100% client-side execution." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- CodeMirror 5 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-ocean.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/nord.min.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <!-- sql.js (SQLite WebAssembly) CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js"></script>
+
+  <!-- LZ-String for Compact URL Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #0284c7;
+      --color-accent-hover: #0369a1;
+    }
+    .dark {
+      --color-bg: #0b0f19;
+      --color-surface: #111827;
+      --color-surface-alt: #1f2937;
+      --color-ink: #f9fafb;
+      --color-muted: #9ca3af;
+      --color-line: #1f2937;
+      --color-accent: #38bdf8;
+      --color-accent-hover: #0ea5e9;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* CodeMirror Custom Overrides */
+    .CodeMirror {
+      height: 100% !important;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 13.5px !important;
+      line-height: 1.6 !important;
+      background: transparent !important;
+    }
+    .dark .CodeMirror {
+      color: #e2e8f0 !important;
+    }
+    .dark .CodeMirror-gutters {
+      background: #0f172a !important;
+      border-right: 1px solid #1e293b !important;
+    }
+    .dark .CodeMirror-linenumber {
+      color: #475569 !important;
+    }
+    .dark .CodeMirror-activeline-background {
+      background: rgba(30, 41, 59, 0.5) !important;
+    }
+    .dark .CodeMirror-cursor {
+      border-left: 2px solid #38bdf8 !important;
+    }
+
+    /* Split Resizer */
+    .resizer-handle {
+      width: 6px;
+      cursor: col-resize;
+      background-color: var(--color-line);
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .resizer-handle:hover, .resizer-handle.resizing {
+      background-color: var(--color-accent);
+    }
+    .resizer-handle-v {
+      height: 6px;
+      cursor: row-resize;
+      background-color: var(--color-line);
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .resizer-handle-v:hover, .resizer-handle-v.resizing {
+      background-color: var(--color-accent);
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="h-screen flex flex-col justify-between overflow-hidden">
+
+  <!-- Top Header Navigation Bar -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface flex items-center justify-between px-4 gap-3 shrink-0 z-20">
+    
+    <!-- Brand / Title -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-sky-500/20">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+        </svg>
+      </div>
+      <div class="hidden sm:block">
+        <h1 class="text-sm font-bold tracking-tight text-theme-ink">
+          <span>SQL Playground</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Center Controls: Sample Dataset, Run, Explain -->
+    <div class="flex items-center gap-2">
+      
+      <!-- Sample Datasets Dropdown -->
+      <div class="flex items-center gap-1.5 bg-theme-surface-alt px-2 py-1 rounded-xl border border-theme-line text-xs">
+        <span class="text-theme-muted font-medium hidden md:inline">Schema:</span>
+        <select id="select-dataset" class="bg-transparent text-theme-ink font-semibold focus:outline-none cursor-pointer text-xs">
+          <option value="ecommerce">E-Commerce & Retail Store</option>
+          <option value="hr">Tech Company HR & Projects</option>
+          <option value="university">University & Courses</option>
+          <option value="music">Music & Streaming Catalog</option>
+          <option value="blank">Blank Database (Empty)</option>
+        </select>
+      </div>
+
+      <!-- Run Query Button -->
+      <button
+        id="btn-run-query"
+        type="button"
+        class="px-3.5 py-1.5 rounded-xl bg-theme-accent text-slate-950 hover:bg-theme-accent-hover font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs shadow-sky-500/20 active:scale-95"
+        title="Execute Query (Ctrl+Enter)"
+      >
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span>Run Query</span>
+      </button>
+
+      <!-- Explain Query Plan -->
+      <button
+        id="btn-explain-query"
+        type="button"
+        class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink hover:border-theme-accent/40 font-medium text-xs flex items-center gap-1 transition-all"
+        title="Analyze Query Plan (EXPLAIN QUERY PLAN)"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="hidden lg:inline">Explain</span>
+      </button>
+
+      <!-- Format SQL -->
+      <button
+        id="btn-format-sql"
+        type="button"
+        class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink hover:border-theme-accent/40 font-medium text-xs flex items-center gap-1 transition-all"
+        title="Format SQL Keywords (Ctrl+Shift+F)"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+        <span class="hidden xl:inline">Format</span>
+      </button>
+
+    </div>
+
+    <!-- Right Controls: Import, Export, Share -->
+    <div class="flex items-center gap-1.5 text-xs">
+      
+      <!-- Query History Button -->
+      <button
+        id="btn-open-history"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Query Execution History"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="hidden md:inline">History</span>
+      </button>
+
+      <!-- Import DB / SQL File -->
+      <label
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1 cursor-pointer"
+        title="Import .sqlite / .db or .sql file"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <span class="hidden md:inline">Import</span>
+        <input id="input-import-file" type="file" accept=".sqlite,.db,.sql" class="hidden" />
+      </label>
+
+      <!-- Export .sqlite DB Button -->
+      <button
+        id="btn-export-db"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Download Database as .sqlite file"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span class="hidden md:inline">Export DB</span>
+      </button>
+
+      <!-- Share URL Button -->
+      <button
+        id="btn-share-url"
+        type="button"
+        class="p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1"
+        title="Copy Shareable Link"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+        <span class="hidden md:inline">Share</span>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- Mobile Segmented Tab Switcher -->
+  <div class="flex md:hidden items-center justify-around border-b border-theme-line bg-theme-surface-alt p-1 text-xs font-semibold shrink-0">
+    <button id="tab-btn-editor" class="flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs">SQL Editor</button>
+    <button id="tab-btn-results" class="flex-1 py-1.5 rounded-lg text-theme-muted">Results</button>
+    <button id="tab-btn-schema" class="flex-1 py-1.5 rounded-lg text-theme-muted">Schema</button>
+  </div>
+
+  <!-- Main Workspace (Schema Sidebar + SQL Editor + Query Results) -->
+  <div id="workspace-container" class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- LEFT SIDEBAR: LIVE SCHEMA BROWSER (260px) -->
+    <aside id="sidebar-schema" class="w-full md:w-64 border-r border-theme-line bg-theme-surface flex flex-col shrink-0 h-full overflow-hidden hidden md:flex">
+      
+      <!-- Schema Sidebar Header -->
+      <div class="h-9 border-b border-theme-line bg-theme-surface-alt/60 px-3 flex items-center justify-between text-xs text-theme-muted font-mono shrink-0">
+        <div class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          </svg>
+          <span class="font-bold text-theme-ink">Tables & Schema</span>
+        </div>
+        <button id="btn-refresh-schema" class="p-1 hover:text-theme-ink transition-colors" title="Refresh Schema">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+      </div>
+
+      <!-- Schema Tables List -->
+      <div id="schema-tree-container" class="flex-1 p-2 space-y-1.5 overflow-y-auto scrollbar-thin text-xs">
+        <div class="p-4 text-center text-theme-muted text-xs font-mono">Loading schema...</div>
+      </div>
+
+      <!-- Database Info Footer -->
+      <div class="p-2 border-t border-theme-line bg-theme-surface-alt/40 text-[11px] font-mono text-theme-muted flex items-center justify-between">
+        <span id="schema-tables-count">0 Tables</span>
+        <button id="btn-reset-db" class="text-red-400 hover:text-red-300 transition-colors">Reset DB</button>
+      </div>
+
+    </aside>
+
+    <!-- CENTER & RIGHT: SPLIT SQL EDITOR & RESULTS TABLE -->
+    <div id="pane-main-content" class="flex-1 flex flex-col h-full overflow-hidden">
+
+      <!-- TOP HALF: QUERY TABS & SQL CODEMIRROR EDITOR (45% default) -->
+      <div id="pane-editor-container" class="h-1/2 flex flex-col bg-theme-surface border-b border-theme-line overflow-hidden min-h-[160px]">
+        
+        <!-- Tabs Header Bar -->
+        <div class="h-9 border-b border-theme-line bg-theme-surface-alt/60 px-2 flex items-center justify-between text-xs text-theme-muted font-mono shrink-0">
+          <div id="query-tabs-list" class="flex items-center gap-1 overflow-x-auto scrollbar-thin">
+            <!-- Tabs rendered dynamically -->
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="btn-new-tab" class="p-1 rounded-md bg-theme-surface border border-theme-line hover:text-theme-ink text-[11px] flex items-center gap-1" title="New Query Tab">
+              <span>+ Tab</span>
+            </button>
+            <button id="btn-clear-sql" class="hover:text-theme-ink text-[11px]" title="Clear Editor">Clear</button>
+          </div>
+        </div>
+
+        <!-- CodeMirror Textarea Wrapper -->
+        <div class="flex-1 relative overflow-hidden">
+          <textarea id="sql-editor-textarea" class="hidden"></textarea>
+        </div>
+
+        <!-- Inline SQL Error Banner (Non-blocking) -->
+        <div id="sql-error-banner" class="p-3 bg-red-500/10 border-t border-red-500/30 text-red-500 text-xs font-mono max-h-32 overflow-y-auto scrollbar-thin hidden shrink-0 flex items-start gap-2">
+          <svg class="w-4 h-4 shrink-0 mt-0.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="flex-1 space-y-1">
+            <span class="font-bold block">SQL Execution Error</span>
+            <pre id="sql-error-message" class="whitespace-pre-wrap font-mono text-[11px] leading-relaxed"></pre>
+          </div>
+          <button id="btn-dismiss-error" class="text-red-400 hover:text-red-200">✕</button>
+        </div>
+
+      </div>
+
+      <!-- Draggable Resizer Bar (Vertical) -->
+      <div id="resizer-drag-v" class="resizer-handle-v"></div>
+
+      <!-- BOTTOM HALF: DATA RESULTS & EXPORT CONTROLS (55% default) -->
+      <div id="pane-results-container" class="flex-1 flex flex-col bg-theme-bg overflow-hidden min-h-[160px]">
+        
+        <!-- Results Subheader / Metrics -->
+        <div class="h-9 border-b border-theme-line bg-theme-surface px-4 flex items-center justify-between text-xs text-theme-muted font-mono shrink-0">
+          
+          <div class="flex items-center gap-3">
+            <span id="results-status-badge" class="font-bold text-theme-ink flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Query Results</span>
+            </span>
+            <span id="results-metrics-text" class="text-[11px] text-theme-muted">Ready</span>
+          </div>
+
+          <!-- Export Actions -->
+          <div id="results-export-group" class="flex items-center gap-2">
+            <button id="btn-copy-csv" class="p-1 rounded-md hover:bg-theme-surface-alt hover:text-theme-ink text-[11px] transition-colors" title="Copy results as CSV">Copy CSV</button>
+            <button id="btn-copy-json" class="p-1 rounded-md hover:bg-theme-surface-alt hover:text-theme-ink text-[11px] transition-colors" title="Copy results as JSON">Copy JSON</button>
+            <button id="btn-download-csv" class="px-2 py-0.5 rounded-md bg-theme-surface-alt border border-theme-line hover:text-theme-ink text-[11px] transition-colors font-bold" title="Download .csv file">Export CSV</button>
+          </div>
+
+        </div>
+
+        <!-- Table Viewport -->
+        <div id="results-table-wrapper" class="flex-1 overflow-auto scrollbar-thin p-0 relative">
+          <div id="results-empty-placeholder" class="h-full flex flex-col items-center justify-center p-8 text-center text-theme-muted space-y-2">
+            <svg class="w-10 h-10 stroke-1 text-theme-muted/60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+            </svg>
+            <p class="text-xs font-mono">Run a query or click a table from the sidebar to inspect data.</p>
+          </div>
+          <table id="results-data-table" class="w-full text-left text-xs font-mono border-collapse hidden">
+            <thead id="results-table-head" class="sticky top-0 bg-theme-surface-alt border-b border-theme-line z-10"></thead>
+            <tbody id="results-table-body" class="divide-y divide-theme-line"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- QUERY HISTORY MODAL (Hidden by default) -->
+  <div id="modal-history" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-xl rounded-3xl bg-theme-surface border border-theme-line p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="text-base font-bold text-theme-ink">Query Execution History</h3>
+        <button id="btn-close-history-modal" class="text-theme-muted hover:text-theme-ink">✕</button>
+      </div>
+
+      <div id="history-list-container" class="max-h-80 overflow-y-auto scrollbar-thin space-y-2 text-xs font-mono">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs font-mono">
+        <button id="btn-clear-history" class="text-red-400 hover:text-red-300">Clear History</button>
+        <span class="text-theme-muted">Session queries only</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-950 text-xs font-semibold shadow-2xl flex items-center gap-2 border border-theme-line">
+    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <!-- Toolzy Footer Brand Line -->
+  <footer class="h-8 border-t border-theme-line bg-theme-surface flex items-center justify-between px-4 text-[11px] font-mono text-theme-muted shrink-0 z-20">
+    <div class="flex items-center gap-2">
+      <a href="/tools/" class="hover:underline flex items-center gap-1.5 font-bold">
+        <span class="tracking-tight text-xs font-black">
+          <span style="color:#4285F4">T</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">l</span><span style="color:#34A853">z</span><span style="color:#EA4335">y</span>
+        </span>
+        <span class="text-theme-muted font-normal">• In-Browser SQLite WASM Database Studio</span>
+      </a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy" class="text-theme-accent hover:underline">Request a Tool</a>
+      <span>•</span>
+      <a href="/index.html" class="hover:text-theme-ink transition-colors">Portfolio</a>
+      <span>•</span>
+      <a href="/tools/" class="hover:text-theme-ink transition-colors">All Tools</a>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // SAMPLE DATABASE SCHEMAS & SEED SCRIPTS
+    // =========================================================================
+    const SCHEMAS = {
+      ecommerce: {
+        name: 'E-Commerce & Retail Store',
+        sql: `
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  country TEXT NOT NULL,
+  created_at DATE DEFAULT CURRENT_DATE
+);
+
+CREATE TABLE categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  category_id INTEGER REFERENCES categories(id),
+  price REAL NOT NULL,
+  stock_quantity INTEGER NOT NULL,
+  rating REAL DEFAULT 4.5
+);
+
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customer_id INTEGER REFERENCES customers(id),
+  order_date DATE DEFAULT CURRENT_DATE,
+  status TEXT CHECK(status IN ('pending', 'processing', 'completed', 'cancelled')),
+  total_amount REAL NOT NULL
+);
+
+CREATE TABLE order_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER REFERENCES orders(id),
+  product_id INTEGER REFERENCES products(id),
+  quantity INTEGER NOT NULL,
+  unit_price REAL NOT NULL
+);
+
+-- Seed Data
+INSERT INTO customers (name, email, country) VALUES
+  ('Alex Rivera', 'alex.rivera@example.com', 'United States'),
+  ('Emma Watson', 'emma.w@example.co.uk', 'United Kingdom'),
+  ('Kenji Sato', 'kenji.sato@example.jp', 'Japan'),
+  ('Sophia Muller', 'sophia.m@example.de', 'Germany'),
+  ('Aarav Patel', 'aarav.p@example.in', 'India');
+
+INSERT INTO categories (name, slug) VALUES
+  ('Electronics', 'electronics'),
+  ('Audio & Headphones', 'audio'),
+  ('Office & Desk', 'office'),
+  ('Wearables', 'wearables');
+
+INSERT INTO products (name, category_id, price, stock_quantity, rating) VALUES
+  ('Mechanical Keyboard Pro', 1, 149.99, 45, 4.8),
+  ('Wireless Noise-Cancelling Headphones', 2, 299.00, 30, 4.9),
+  ('4K Ultra-Wide Monitor 34"', 1, 649.50, 15, 4.7),
+  ('Ergonomic Mesh Chair', 3, 389.00, 20, 4.6),
+  ('Smart Fitness Watch V2', 4, 199.95, 60, 4.4),
+  ('USB-C Dual 4K Docking Station', 1, 129.00, 50, 4.5);
+
+INSERT INTO orders (customer_id, order_date, status, total_amount) VALUES
+  (1, '2026-08-10', 'completed', 448.99),
+  (2, '2026-08-12', 'completed', 299.00),
+  (3, '2026-08-15', 'processing', 778.50),
+  (1, '2026-08-18', 'completed', 199.95),
+  (4, '2026-08-19', 'pending', 389.00);
+
+INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES
+  (1, 1, 1, 149.99),
+  (1, 2, 1, 299.00),
+  (2, 2, 1, 299.00),
+  (3, 1, 1, 149.99),
+  (3, 3, 1, 628.51),
+  (4, 5, 1, 199.95),
+  (5, 4, 1, 389.00);
+`,
+        starterQuery: `-- Top Spending Customers with Order Counts
+SELECT 
+  c.name AS customer_name,
+  c.country,
+  COUNT(o.id) AS total_orders,
+  ROUND(SUM(o.total_amount), 2) AS total_spent
+FROM customers c
+JOIN orders o ON c.id = o.customer_id
+WHERE o.status != 'cancelled'
+GROUP BY c.id
+ORDER BY total_spent DESC;`
+      },
+
+      hr: {
+        name: 'Tech Company HR & Projects',
+        sql: `
+CREATE TABLE departments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  budget REAL NOT NULL
+);
+
+CREATE TABLE employees (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  department_id INTEGER REFERENCES departments(id),
+  job_title TEXT NOT NULL,
+  salary REAL NOT NULL,
+  hire_date DATE NOT NULL
+);
+
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  status TEXT CHECK(status IN ('planning', 'active', 'completed')),
+  budget REAL NOT NULL
+);
+
+CREATE TABLE employee_projects (
+  employee_id INTEGER REFERENCES employees(id),
+  project_id INTEGER REFERENCES projects(id),
+  role TEXT NOT NULL,
+  hours_logged INTEGER DEFAULT 0,
+  PRIMARY KEY (employee_id, project_id)
+);
+
+INSERT INTO departments (name, location, budget) VALUES
+  ('Core Engineering', 'San Francisco', 2500000),
+  ('AI Research', 'New York', 3200000),
+  ('Product Design', 'London', 1100000),
+  ('DevOps & Cloud', 'Seattle', 1800000);
+
+INSERT INTO employees (first_name, last_name, email, department_id, job_title, salary, hire_date) VALUES
+  ('Alex', 'Morgan', 'alex.m@example.com', 1, 'Staff Software Architect', 185000, '2022-03-15'),
+  ('Elena', 'Rostova', 'elena.r@example.com', 2, 'Principal ML Scientist', 210000, '2021-06-01'),
+  ('Marcus', 'Vance', 'marcus.v@example.com', 4, 'Senior Cloud SRE', 160000, '2023-01-10'),
+  ('Chloe', 'Dubois', 'chloe.d@example.com', 3, 'Lead Product Designer', 145000, '2022-09-20'),
+  ('David', 'Kim', 'david.k@example.com', 1, 'Senior Backend Engineer', 155000, '2023-04-12');
+
+INSERT INTO projects (name, status, budget) VALUES
+  ('Autonomous AI Agent Framework', 'active', 850000),
+  ('Global Multi-Region Edge Mesh', 'active', 450000),
+  ('Design System 3.0 Tokens', 'completed', 120000);
+
+INSERT INTO employee_projects (employee_id, project_id, role, hours_logged) VALUES
+  (1, 1, 'System Architect', 160),
+  (2, 1, 'Algorithm Lead', 140),
+  (3, 2, 'Infrastructure Lead', 210),
+  (4, 3, 'Design Lead', 95),
+  (5, 1, 'Core Engineer', 120);
+`,
+        starterQuery: `-- Average Salary and Headcount by Department
+SELECT 
+  d.name AS department,
+  d.location,
+  COUNT(e.id) AS headcount,
+  ROUND(AVG(e.salary), 2) AS avg_salary,
+  MAX(e.salary) AS max_salary
+FROM departments d
+LEFT JOIN employees e ON d.id = e.department_id
+GROUP BY d.id
+ORDER BY avg_salary DESC;`
+      },
+
+      university: {
+        name: 'University & Courses',
+        sql: `
+CREATE TABLE professors (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  department TEXT NOT NULL,
+  tenured INTEGER CHECK(tenured IN (0, 1))
+);
+
+CREATE TABLE courses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  credits INTEGER NOT NULL,
+  professor_id INTEGER REFERENCES professors(id)
+);
+
+CREATE TABLE students (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  major TEXT NOT NULL,
+  gpa REAL NOT NULL
+);
+
+CREATE TABLE enrollments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER REFERENCES students(id),
+  course_id INTEGER REFERENCES courses(id),
+  semester TEXT NOT NULL,
+  grade TEXT
+);
+
+INSERT INTO professors (name, department, tenured) VALUES
+  ('Dr. Alan Turing', 'Computer Science', 1),
+  ('Dr. Ada Lovelace', 'Computer Science', 1),
+  ('Dr. Richard Feynman', 'Physics', 1),
+  ('Dr. Marie Curie', 'Chemistry', 1);
+
+INSERT INTO courses (code, title, credits, professor_id) VALUES
+  ('CS101', 'Intro to Algorithms & Data Structures', 4, 1),
+  ('CS380', 'Compilers & Formal Languages', 4, 2),
+  ('PHYS201', 'Quantum Mechanics & Wave Theory', 4, 3),
+  ('CHEM105', 'Organic Synthesis', 3, 4);
+
+INSERT INTO students (name, major, gpa) VALUES
+  ('Leo Brooks', 'Computer Science', 3.85),
+  ('Maya Lin', 'Physics', 3.92),
+  ('Carlos Silva', 'Computer Science', 3.45),
+  ('Zara Khan', 'Chemistry', 3.78);
+
+INSERT INTO enrollments (student_id, course_id, semester, grade) VALUES
+  (1, 1, 'Fall 2025', 'A'),
+  (1, 2, 'Spring 2026', 'A-'),
+  (2, 3, 'Fall 2025', 'A+'),
+  (3, 1, 'Fall 2025', 'B+'),
+  (4, 4, 'Fall 2025', 'A');
+`,
+        starterQuery: `-- Student Course Enrollments & Faculty
+SELECT 
+  s.name AS student,
+  s.major,
+  c.code AS course_code,
+  c.title AS course_name,
+  p.name AS professor,
+  e.grade
+FROM students s
+JOIN enrollments e ON s.id = e.student_id
+JOIN courses c ON e.course_id = c.id
+JOIN professors p ON c.professor_id = p.id
+ORDER BY s.name;`
+      },
+
+      music: {
+        name: 'Music & Streaming Catalog',
+        sql: `
+CREATE TABLE artists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  genre TEXT NOT NULL,
+  country TEXT NOT NULL
+);
+
+CREATE TABLE albums (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id INTEGER REFERENCES artists(id),
+  title TEXT NOT NULL,
+  release_year INTEGER NOT NULL
+);
+
+CREATE TABLE tracks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  album_id INTEGER REFERENCES albums(id),
+  title TEXT NOT NULL,
+  duration_seconds INTEGER NOT NULL,
+  play_count INTEGER DEFAULT 0
+);
+
+INSERT INTO artists (name, genre, country) VALUES
+  ('Daft Punk', 'Electronic', 'France'),
+  ('Pink Floyd', 'Progressive Rock', 'United Kingdom'),
+  ('Miles Davis', 'Jazz', 'United States'),
+  ('Radiohead', 'Alternative Rock', 'United Kingdom');
+
+INSERT INTO albums (artist_id, title, release_year) VALUES
+  (1, 'Random Access Memories', 2013),
+  (1, 'Discovery', 2001),
+  (2, 'The Dark Side of the Moon', 1973),
+  (3, 'Kind of Blue', 1959),
+  (4, 'OK Computer', 1997);
+
+INSERT INTO tracks (album_id, title, duration_seconds, play_count) VALUES
+  (1, 'Get Lucky', 369, 1420500),
+  (1, 'Instant Crush', 337, 984200),
+  (2, 'One More Time', 320, 1850300),
+  (2, 'Harder, Better, Faster, Stronger', 224, 2104000),
+  (3, 'Time', 421, 3105000),
+  (3, 'Money', 382, 2894000),
+  (4, 'So What', 562, 1205000),
+  (5, 'Paranoid Android', 383, 1950000);
+`,
+        starterQuery: `-- Most Streamed Tracks with Artist and Album Info
+SELECT 
+  a.name AS artist,
+  al.title AS album,
+  t.title AS track,
+  PRINTF('%d:%02d', t.duration_seconds / 60, t.duration_seconds % 60) AS duration,
+  t.play_count
+FROM tracks t
+JOIN albums al ON t.album_id = al.id
+JOIN artists a ON al.artist_id = a.id
+ORDER BY t.play_count DESC;`
+      },
+
+      blank: {
+        name: 'Blank Database',
+        sql: `-- Empty Database Ready for DDL
+CREATE TABLE items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO items (name) VALUES ('Initial Test Item');
+`,
+        starterQuery: `SELECT * FROM items;`
+      }
+    };
+
+    // State
+    let db = null;
+    let SQL = null;
+    let editor = null;
+    let queryTabs = [
+      { id: 'tab-1', title: 'Query 1', sql: SCHEMAS.ecommerce.starterQuery }
+    ];
+    let activeTabId = 'tab-1';
+    let queryHistory = [];
+    let activeDatasetKey = 'ecommerce';
+
+    const STORAGE_HISTORY_KEY = 'toolbox:sql_playground_history';
+
+    // DOM Elements
+    const sqlEditorTextarea = document.getElementById('sql-editor-textarea');
+    const selectDataset = document.getElementById('select-dataset');
+    const btnRunQuery = document.getElementById('btn-run-query');
+    const btnExplainQuery = document.getElementById('btn-explain-query');
+    const btnFormatSql = document.getElementById('btn-format-sql');
+    const btnClearSql = document.getElementById('btn-clear-sql');
+    const btnRefreshSchema = document.getElementById('btn-refresh-schema');
+    const btnResetDb = document.getElementById('btn-reset-db');
+    const btnExportDb = document.getElementById('btn-export-db');
+    const inputImportFile = document.getElementById('input-import-file');
+    const btnShareUrl = document.getElementById('btn-share-url');
+    const queryTabsList = document.getElementById('query-tabs-list');
+    const btnNewTab = document.getElementById('btn-new-tab');
+    const schemaTreeContainer = document.getElementById('schema-tree-container');
+    const schemaTablesCount = document.getElementById('schema-tables-count');
+    const resultsDataTable = document.getElementById('results-data-table');
+    const resultsTableHead = document.getElementById('results-table-head');
+    const resultsTableBody = document.getElementById('results-table-body');
+    const resultsEmptyPlaceholder = document.getElementById('results-empty-placeholder');
+    const resultsMetricsText = document.getElementById('results-metrics-text');
+    const resultsStatusBadge = document.getElementById('results-status-badge');
+    const sqlErrorBanner = document.getElementById('sql-error-banner');
+    const sqlErrorMessage = document.getElementById('sql-error-message');
+    const btnDismissError = document.getElementById('btn-dismiss-error');
+    const btnCopyCsv = document.getElementById('btn-copy-csv');
+    const btnCopyJson = document.getElementById('btn-copy-json');
+    const btnDownloadCsv = document.getElementById('btn-download-csv');
+
+    // History Modal
+    const modalHistory = document.getElementById('modal-history');
+    const btnOpenHistory = document.getElementById('btn-open-history');
+    const btnCloseHistoryModal = document.getElementById('btn-close-history-modal');
+    const historyListContainer = document.getElementById('history-list-container');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+
+    // Mobile Tabs
+    const tabBtnEditor = document.getElementById('tab-btn-editor');
+    const tabBtnResults = document.getElementById('tab-btn-results');
+    const tabBtnSchema = document.getElementById('tab-btn-schema');
+    const sidebarSchema = document.getElementById('sidebar-schema');
+    const paneEditorContainer = document.getElementById('pane-editor-container');
+    const paneResultsContainer = document.getElementById('pane-results-container');
+
+    // Vertical Resizer
+    const resizerDragV = document.getElementById('resizer-drag-v');
+    const paneMainContent = document.getElementById('pane-main-content');
+
+    let currentQueryResult = null;
+
+    // =========================================================================
+    // INITIALIZE SQL.JS & CODEMIRROR
+    // =========================================================================
+    async function initDatabaseEngine() {
+      try {
+        resultsMetricsText.innerText = 'Loading SQLite WASM...';
+        SQL = await initSqlJs({
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${file}`
+        });
+
+        // Load Schema
+        loadDataset(activeDatasetKey);
+      } catch (err) {
+        showError('Failed to initialize SQLite WebAssembly engine: ' + err.message);
+      }
+    }
+
+    function loadDataset(key) {
+      if (!SQL) return;
+      const schema = SCHEMAS[key] || SCHEMAS.ecommerce;
+      activeDatasetKey = key;
+
+      try {
+        if (db) db.close();
+        db = new SQL.Database();
+        db.run(schema.sql);
+        
+        refreshSchemaBrowser();
+        
+        // Update active tab query
+        const activeTab = queryTabs.find(t => t.id === activeTabId);
+        if (activeTab && schema.starterQuery) {
+          activeTab.sql = schema.starterQuery;
+          if (editor) editor.setValue(activeTab.sql);
+        }
+
+        // Run starter query automatically
+        executeCurrentQuery();
+        showToast(`Loaded ${schema.name}`);
+      } catch (err) {
+        showError('Schema initialization error: ' + err.message);
+      }
+    }
+
+    function initEditor() {
+      editor = CodeMirror.fromTextArea(sqlEditorTextarea, {
+        mode: 'text/x-sqlite',
+        theme: document.documentElement.classList.contains('dark') ? 'material-ocean' : 'nord',
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        styleActiveLine: true,
+        tabSize: 2,
+        indentWithTabs: false,
+        lineWrapping: false
+      });
+
+      // Check URL for shared code
+      const urlCode = loadCodeFromURL();
+      if (urlCode) {
+        queryTabs[0].sql = urlCode;
+      }
+
+      renderTabs();
+      editor.setValue(queryTabs[0].sql);
+
+      editor.on('change', () => {
+        const activeTab = queryTabs.find(t => t.id === activeTabId);
+        if (activeTab) {
+          activeTab.sql = editor.getValue();
+        }
+      });
+
+      editor.setOption('extraKeys', {
+        'Ctrl-Enter': () => executeCurrentQuery(),
+        'Cmd-Enter': () => executeCurrentQuery(),
+        'Shift-Ctrl-F': () => formatSQL(),
+        'Shift-Cmd-F': () => formatSQL()
+      });
+
+      setTimeout(() => {
+        if (editor) editor.refresh();
+      }, 50);
+    }
+
+    // =========================================================================
+    // QUERY EXECUTION & RESULTS
+    // =========================================================================
+    function executeCurrentQuery() {
+      if (!db || !editor) return;
+      const rawSQL = editor.getValue().trim();
+      if (!rawSQL) {
+        showToast('Please enter a SQL query.');
+        return;
+      }
+
+      hideError();
+      const startTime = performance.now();
+
+      try {
+        // Execute multiple statements or single statement
+        const results = db.exec(rawSQL);
+        const duration = (performance.now() - startTime).toFixed(2);
+
+        if (results.length > 0) {
+          // Last SELECT result
+          const lastResult = results[results.length - 1];
+          currentQueryResult = lastResult;
+          renderTableResults(lastResult, duration);
+        } else {
+          // DDL/DML non-select query
+          currentQueryResult = null;
+          const rowsModified = db.getRowsModified();
+          renderDMLResults(rowsModified, duration);
+        }
+
+        // Add to history
+        addQueryHistory(rawSQL, true, duration);
+        refreshSchemaBrowser();
+      } catch (err) {
+        const duration = (performance.now() - startTime).toFixed(2);
+        showError(err.message);
+        addQueryHistory(rawSQL, false, duration, err.message);
+      }
+    }
+
+    function explainQueryPlan() {
+      if (!editor) return;
+      const rawSQL = editor.getValue().trim();
+      if (!rawSQL) return;
+
+      const explainSQL = `EXPLAIN QUERY PLAN ${rawSQL}`;
+      hideError();
+      const startTime = performance.now();
+
+      try {
+        const results = db.exec(explainSQL);
+        const duration = (performance.now() - startTime).toFixed(2);
+        if (results.length > 0) {
+          renderTableResults(results[0], duration, 'Query Execution Plan');
+        }
+      } catch (err) {
+        showError('Explain error: ' + err.message);
+      }
+    }
+
+    function renderTableResults(result, duration, customTitle = null) {
+      resultsEmptyPlaceholder.classList.add('hidden');
+      resultsDataTable.classList.remove('hidden');
+
+      const rowCount = result.values.length;
+      const colCount = result.columns.length;
+      resultsMetricsText.innerText = `${rowCount} row${rowCount === 1 ? '' : 's'} (${colCount} cols) in ${duration}ms`;
+      resultsStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>${customTitle || 'Query Results'}</span>`;
+
+      // Render Head
+      resultsTableHead.innerHTML = `
+        <tr>
+          <th class="py-2 px-3 text-[10px] text-theme-muted font-mono w-10 text-center border-r border-theme-line">#</th>
+          ${result.columns.map(col => `
+            <th class="py-2 px-3 text-[11px] font-bold text-theme-ink tracking-tight uppercase">${escapeHtml(col)}</th>
+          `).join('')}
+        </tr>
+      `;
+
+      // Render Body (capped at 500 rows for DOM performance)
+      const displayRows = result.values.slice(0, 500);
+      resultsTableBody.innerHTML = displayRows.map((row, rIdx) => `
+        <tr class="hover:bg-theme-surface-alt/50 transition-colors">
+          <td class="py-1.5 px-3 text-[10px] text-theme-muted text-center font-mono border-r border-theme-line">${rIdx + 1}</td>
+          ${row.map(val => {
+            if (val === null) {
+              return `<td class="py-1.5 px-3 text-[11px] font-mono text-slate-500 italic"><span class="px-1.5 py-0.2 rounded bg-slate-800/40 text-[10px]">NULL</span></td>`;
+            }
+            return `<td class="py-1.5 px-3 text-[11px] font-mono text-theme-ink">${escapeHtml(String(val))}</td>`;
+          }).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function renderDMLResults(rowsModified, duration) {
+      resultsDataTable.classList.add('hidden');
+      resultsEmptyPlaceholder.classList.remove('hidden');
+
+      resultsMetricsText.innerText = `Executed in ${duration}ms`;
+      resultsStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500"></span><span>Query Success</span>`;
+
+      resultsEmptyPlaceholder.innerHTML = `
+        <div class="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2 max-w-sm">
+          <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-lg font-bold">✓</div>
+          <h4 class="font-bold text-sm text-theme-ink">Query Executed Successfully</h4>
+          <p class="text-xs text-theme-muted font-mono">${rowsModified} row${rowsModified === 1 ? '' : 's'} affected • ${duration}ms</p>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // SCHEMA BROWSER
+    // =========================================================================
+    function refreshSchemaBrowser() {
+      if (!db) return;
+
+      try {
+        const tablesQuery = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;`;
+        const tablesRes = db.exec(tablesQuery);
+
+        if (!tablesRes.length || !tablesRes[0].values.length) {
+          schemaTreeContainer.innerHTML = '<p class="text-theme-muted text-center py-6 font-mono">No tables created yet.</p>';
+          schemaTablesCount.innerText = '0 Tables';
+          return;
+        }
+
+        const tables = tablesRes[0].values.map(v => v[0]);
+        schemaTablesCount.innerText = `${tables.length} Table${tables.length === 1 ? '' : 's'}`;
+
+        schemaTreeContainer.innerHTML = tables.map(tbl => {
+          // Get Columns & Row Count
+          const infoQuery = `PRAGMA table_info(${tbl});`;
+          const countQuery = `SELECT COUNT(*) FROM ${tbl};`;
+          
+          let columns = [];
+          let rowCount = 0;
+
+          try {
+            const infoRes = db.exec(infoQuery);
+            if (infoRes.length) {
+              columns = infoRes[0].values.map(col => ({
+                name: col[1],
+                type: col[2],
+                isPk: col[5] === 1
+              }));
+            }
+            const countRes = db.exec(countQuery);
+            if (countRes.length) rowCount = countRes[0].values[0][0];
+          } catch(e) {}
+
+          return `
+            <div class="rounded-xl border border-theme-line bg-theme-surface-alt/40 overflow-hidden text-xs">
+              <div class="p-2 flex items-center justify-between hover:bg-theme-surface-alt cursor-pointer group btn-table-header" data-table="${escapeHtml(tbl)}">
+                <div class="flex items-center gap-1.5 font-bold text-theme-ink truncate">
+                  <span class="text-sky-500">⊞</span>
+                  <span class="truncate">${escapeHtml(tbl)}</span>
+                </div>
+                <span class="text-[10px] font-mono text-theme-muted group-hover:text-sky-400">${rowCount} rows</span>
+              </div>
+
+              <div class="px-3 pb-2 pt-1 border-t border-theme-line/60 space-y-1 bg-theme-surface/30">
+                ${columns.map(c => `
+                  <div class="flex items-center justify-between text-[11px] font-mono text-theme-muted hover:text-theme-ink">
+                    <span class="flex items-center gap-1">
+                      ${c.isPk ? '<span class="text-amber-400 text-[10px]" title="Primary Key">🔑</span>' : ''}
+                      <span>${escapeHtml(c.name)}</span>
+                    </span>
+                    <span class="text-[10px] uppercase text-slate-500 font-semibold">${escapeHtml(c.type || 'ANY')}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Schema refresh error:', err);
+      }
+    }
+
+    schemaTreeContainer.addEventListener('click', (e) => {
+      const header = e.target.closest('.btn-table-header');
+      if (header && editor) {
+        const tbl = header.dataset.table;
+        const query = `SELECT * FROM ${tbl} LIMIT 50;`;
+        editor.setValue(query);
+        executeCurrentQuery();
+      }
+    });
+
+    // =========================================================================
+    // QUERY TABS MANAGEMENT
+    // =========================================================================
+    function renderTabs() {
+      queryTabsList.innerHTML = queryTabs.map(tab => `
+        <div
+          class="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors ${
+            tab.id === activeTabId
+              ? 'bg-theme-surface text-theme-accent border border-theme-line shadow-xs font-bold'
+              : 'text-theme-muted hover:text-theme-ink'
+          }"
+          data-tab-id="${tab.id}"
+        >
+          <span class="tab-title truncate max-w-[100px]">${escapeHtml(tab.title)}</span>
+          ${queryTabs.length > 1 ? `<button class="btn-close-tab text-theme-muted hover:text-red-400 text-[10px]" data-tab-id="${tab.id}">✕</button>` : ''}
+        </div>
+      `).join('');
+    }
+
+    btnNewTab.addEventListener('click', () => {
+      const newId = 'tab-' + (Date.now() % 10000);
+      const newTitle = `Query ${queryTabs.length + 1}`;
+      queryTabs.push({ id: newId, title: newTitle, sql: 'SELECT 1;' });
+      activeTabId = newId;
+      renderTabs();
+      editor.setValue('SELECT 1;');
+      editor.focus();
+    });
+
+    queryTabsList.addEventListener('click', (e) => {
+      const closeBtn = e.target.closest('.btn-close-tab');
+      if (closeBtn) {
+        e.stopPropagation();
+        const id = closeBtn.dataset.tabId;
+        queryTabs = queryTabs.filter(t => t.id !== id);
+        if (activeTabId === id) {
+          activeTabId = queryTabs[0].id;
+        }
+        renderTabs();
+        const activeTab = queryTabs.find(t => t.id === activeTabId);
+        if (activeTab && editor) editor.setValue(activeTab.sql);
+        return;
+      }
+
+      const tabEl = e.target.closest('[data-tab-id]');
+      if (tabEl) {
+        const id = tabEl.dataset.tabId;
+        activeTabId = id;
+        renderTabs();
+        const activeTab = queryTabs.find(t => t.id === activeTabId);
+        if (activeTab && editor) editor.setValue(activeTab.sql);
+      }
+    });
+
+    // =========================================================================
+    // SQL FORMATTER
+    // =========================================================================
+    function formatSQL() {
+      if (!editor) return;
+      const sql = editor.getValue();
+      const keywords = [
+        'SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'OUTER JOIN',
+        'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'OFFSET', 'INSERT INTO', 'VALUES', 'UPDATE', 'SET',
+        'DELETE FROM', 'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'PRIMARY KEY', 'FOREIGN KEY',
+        'REFERENCES', 'AUTOINCREMENT', 'AND', 'OR', 'NOT', 'IN', 'AS', 'ON', 'CASE', 'WHEN', 'THEN',
+        'ELSE', 'END', 'DISTINCT', 'UNION', 'ALL', 'EXPLAIN QUERY PLAN', 'PRAGMA', 'DEFAULT', 'CHECK'
+      ];
+
+      let formatted = sql;
+      keywords.forEach(kw => {
+        const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+        formatted = formatted.replace(regex, kw);
+      });
+
+      editor.setValue(formatted);
+      showToast('SQL keywords formatted!');
+    }
+
+    // =========================================================================
+    // IMPORT & EXPORT
+    // =========================================================================
+    btnExportDb.addEventListener('click', () => {
+      if (!db) return;
+      try {
+        const binaryArray = db.export();
+        const blob = new Blob([binaryArray], { type: 'application/x-sqlite3' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `database_${activeDatasetKey}.sqlite`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Exported SQLite database binary!');
+      } catch (err) {
+        showToast('Export failed: ' + err.message);
+      }
+    });
+
+    inputImportFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      if (file.name.endsWith('.sql')) {
+        reader.onload = function() {
+          try {
+            if (db) db.close();
+            db = new SQL.Database();
+            db.run(reader.result);
+            refreshSchemaBrowser();
+            executeCurrentQuery();
+            showToast(`Imported SQL script: ${file.name}`);
+          } catch(err) {
+            showError('Import error: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      } else {
+        reader.onload = function() {
+          try {
+            const uInt8Array = new Uint8Array(reader.result);
+            if (db) db.close();
+            db = new SQL.Database(uInt8Array);
+            refreshSchemaBrowser();
+            executeCurrentQuery();
+            showToast(`Imported SQLite DB: ${file.name}`);
+          } catch(err) {
+            showError('Database load error: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+      e.target.value = '';
+    });
+
+    // Copy / Export Results
+    btnCopyCsv.addEventListener('click', async () => {
+      if (!currentQueryResult) return;
+      const csv = formatAsCSV(currentQueryResult);
+      await navigator.clipboard.writeText(csv);
+      showToast('Results copied as CSV!');
+    });
+
+    btnCopyJson.addEventListener('click', async () => {
+      if (!currentQueryResult) return;
+      const json = formatAsJSON(currentQueryResult);
+      await navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+      showToast('Results copied as JSON!');
+    });
+
+    btnDownloadCsv.addEventListener('click', () => {
+      if (!currentQueryResult) return;
+      const csv = formatAsCSV(currentQueryResult);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `query_results.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded CSV results!');
+    });
+
+    function formatAsCSV(result) {
+      const lines = [];
+      lines.push(result.columns.map(c => `"${c.replace(/"/g, '""')}"`).join(','));
+      result.values.forEach(row => {
+        lines.push(row.map(v => v === null ? '' : `"${String(v).replace(/"/g, '""')}"`).join(','));
+      });
+      return lines.join('\n');
+    }
+
+    function formatAsJSON(result) {
+      return result.values.map(row => {
+        const obj = {};
+        result.columns.forEach((col, idx) => {
+          obj[col] = row[idx];
+        });
+        return obj;
+      });
+    }
+
+    // Share URL
+    btnShareUrl.addEventListener('click', async () => {
+      if (!editor || !window.LZString) return;
+      try {
+        const code = editor.getValue();
+        const compressed = LZString.compressToEncodedURIComponent(code);
+        const shareUrl = `${window.location.origin}${window.location.pathname}#query=${compressed}`;
+        await navigator.clipboard.writeText(shareUrl);
+        showToast('Shareable query link copied!');
+      } catch (e) {
+        showToast('Failed to copy share link.');
+      }
+    });
+
+    function loadCodeFromURL() {
+      try {
+        const hash = window.location.hash;
+        if (hash.startsWith('#query=') && window.LZString) {
+          const compressed = hash.substring(7);
+          const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
+          if (decompressed) return decompressed;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    // =========================================================================
+    // HISTORY & ACTIONS
+    // =========================================================================
+    function addQueryHistory(sql, success, duration, errorMsg = null) {
+      const item = {
+        id: Date.now(),
+        sql,
+        success,
+        duration,
+        errorMsg,
+        time: new Date().toLocaleTimeString()
+      };
+      queryHistory.unshift(item);
+      if (queryHistory.length > 50) queryHistory.pop();
+    }
+
+    function renderHistoryList() {
+      if (!queryHistory.length) {
+        historyListContainer.innerHTML = '<p class="text-theme-muted text-center py-6">No queries executed in this session.</p>';
+        return;
+      }
+
+      historyListContainer.innerHTML = queryHistory.map(h => `
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1.5 hover:border-theme-accent/40 transition-colors">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <div class="flex items-center gap-2">
+              <span class="px-1.5 py-0.2 rounded font-bold ${h.success ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}">
+                ${h.success ? 'SUCCESS' : 'ERROR'}
+              </span>
+              <span class="text-theme-muted">${h.time} • ${h.duration}ms</span>
+            </div>
+            <button class="btn-load-history text-sky-400 hover:underline" data-id="${h.id}">Load into Editor</button>
+          </div>
+          <pre class="whitespace-pre-wrap font-mono text-[11px] text-theme-ink p-2 rounded-xl bg-theme-surface/50 border border-theme-line/40 max-h-24 overflow-y-auto">${escapeHtml(h.sql)}</pre>
+          ${h.errorMsg ? `<p class="text-[10px] text-red-400">${escapeHtml(h.errorMsg)}</p>` : ''}
+        </div>
+      `).join('');
+    }
+
+    btnOpenHistory.addEventListener('click', () => {
+      renderHistoryList();
+      modalHistory.classList.remove('hidden');
+    });
+
+    btnCloseHistoryModal.addEventListener('click', () => {
+      modalHistory.classList.add('hidden');
+    });
+
+    btnClearHistory.addEventListener('click', () => {
+      queryHistory = [];
+      renderHistoryList();
+    });
+
+    historyListContainer.addEventListener('click', (e) => {
+      const loadBtn = e.target.closest('.btn-load-history');
+      if (loadBtn && editor) {
+        const id = Number(loadBtn.dataset.id);
+        const item = queryHistory.find(h => h.id === id);
+        if (item) {
+          editor.setValue(item.sql);
+          modalHistory.classList.add('hidden');
+          showToast('Loaded query from history.');
+        }
+      }
+    });
+
+    // Event Listeners
+    btnRunQuery.addEventListener('click', executeCurrentQuery);
+    btnExplainQuery.addEventListener('click', explainQueryPlan);
+    btnFormatSql.addEventListener('click', formatSQL);
+    btnClearSql.addEventListener('click', () => {
+      if (editor) editor.setValue('');
+    });
+    btnRefreshSchema.addEventListener('click', refreshSchemaBrowser);
+    btnResetDb.addEventListener('click', () => {
+      if (confirm('Reset database back to the sample dataset? Any unsaved tables will be cleared.')) {
+        loadDataset(activeDatasetKey);
+      }
+    });
+
+    selectDataset.addEventListener('change', (e) => {
+      loadDataset(e.target.value);
+    });
+
+    function showError(msg) {
+      sqlErrorMessage.innerText = msg;
+      sqlErrorBanner.classList.remove('hidden');
+    }
+
+    function hideError() {
+      sqlErrorBanner.classList.add('hidden');
+      sqlErrorMessage.innerText = '';
+    }
+
+    btnDismissError.addEventListener('click', hideError);
+
+    // =========================================================================
+    // VERTICAL DRAGGABLE RESIZER
+    // =========================================================================
+    let isResizingV = false;
+    resizerDragV.addEventListener('mousedown', () => {
+      isResizingV = true;
+      resizerDragV.classList.add('resizing');
+      document.body.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizingV) return;
+      const rect = paneMainContent.getBoundingClientRect();
+      const newHeight = e.clientY - rect.top;
+      const pct = (newHeight / rect.height) * 100;
+      if (pct > 20 && pct < 80) {
+        paneEditorContainer.style.height = `${pct}%`;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizingV) {
+        isResizingV = false;
+        resizerDragV.classList.remove('resizing');
+        document.body.style.userSelect = '';
+        if (editor) editor.refresh();
+      }
+    });
+
+    // Mobile Tabs
+    tabBtnEditor.addEventListener('click', () => {
+      sidebarSchema.classList.add('hidden');
+      paneEditorContainer.classList.remove('hidden');
+      paneResultsContainer.classList.add('hidden');
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs';
+      tabBtnResults.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnSchema.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      if (editor) editor.refresh();
+    });
+
+    tabBtnResults.addEventListener('click', () => {
+      sidebarSchema.classList.add('hidden');
+      paneEditorContainer.classList.add('hidden');
+      paneResultsContainer.classList.remove('hidden');
+      tabBtnResults.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs';
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnSchema.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+    });
+
+    tabBtnSchema.addEventListener('click', () => {
+      sidebarSchema.classList.remove('hidden');
+      paneEditorContainer.classList.add('hidden');
+      paneResultsContainer.classList.add('hidden');
+      tabBtnSchema.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink shadow-xs';
+      tabBtnEditor.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+      tabBtnResults.className = 'flex-1 py-1.5 rounded-lg text-theme-muted';
+    });
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    initEditor();
+    initDatabaseEngine();
+  </script>
+</body>
+</html>
