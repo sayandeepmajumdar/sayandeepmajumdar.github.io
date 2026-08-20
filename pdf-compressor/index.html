@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Compressor — 100% Client-Side In-Browser PDF Optimizer — Toolzy</title>
+  <meta name="description" content="Free client-side PDF compressor. Reduce PDF file size directly in your browser with customizable compression levels, image downsampling, metadata stripping, before/after preview, and zero server uploads." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- PDF-Lib CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <!-- JSZip for Batch Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #4f46e5;
+      --color-accent-hover: #4338ca;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #818cf8;
+      --color-accent-hover: #6366f1;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/20 selection:text-indigo-500">
+
+  <!-- Top App Header -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 font-black text-sm">
+          📄
+        </span>
+        <span class="font-bold text-sm tracking-tight hidden sm:inline">PDF Compressor</span>
+      </a>
+
+      <!-- Privacy Guarantee Pill -->
+      <div class="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+        <span>🛡️</span>
+        <span>100% Client-Side • Zero Data Uploaded</span>
+      </div>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex items-center gap-1">
+        <span>Tools Hub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    
+    <!-- Hero / Title Section -->
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-theme-ink">
+        Compress PDF Documents In-Browser
+      </h1>
+      <p class="text-xs sm:text-sm text-theme-muted leading-relaxed">
+        Reduce PDF file sizes safely without server uploads. Downsample embedded images, remove redundant metadata, and optimize document objects with live before/after size analysis.
+      </p>
+    </div>
+
+    <!-- Dropzone Card -->
+    <div
+      id="dropzone"
+      class="group relative border-2 border-dashed border-theme-line hover:border-indigo-500/60 bg-theme-surface hover:bg-theme-surface-alt/40 rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 shadow-xs"
+    >
+      <input id="file-input" type="file" accept=".pdf,application/pdf" multiple class="hidden" />
+
+      <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-3xl mx-auto mb-4 group-hover:scale-110 transition-transform">
+        📂
+      </div>
+
+      <h3 class="text-base font-bold text-theme-ink mb-1">
+        Drop your PDF files here, or <span class="text-indigo-500 underline">browse</span>
+      </h3>
+      <p class="text-xs text-theme-muted mb-4">
+        Supports single or batch multi-file compression • 100% Private in your browser
+      </p>
+
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-theme-surface-alt border border-theme-line text-[11px] font-mono text-theme-muted">
+        <span>.PDF</span>
+        <span>•</span>
+        <span>Batch ZIP</span>
+        <span>•</span>
+        <span>Smart Resizing</span>
+      </div>
+    </div>
+
+    <!-- Active Workspace (Revealed when files are selected) -->
+    <div id="workspace" class="hidden space-y-6">
+      
+      <!-- Compression Configuration Card -->
+      <div class="p-5 sm:p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme-line pb-4">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-theme-ink flex items-center gap-2">
+              <span>⚙️ Compression Settings</span>
+              <span id="files-count-badge" class="px-2 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-[11px] font-mono font-bold text-theme-muted">
+                1 file
+              </span>
+            </h2>
+            <p class="text-xs text-theme-muted mt-0.5">
+              Choose your compression level or fine-tune image quality and resolution downsampling.
+            </p>
+          </div>
+
+          <button id="btn-reset" type="button" class="text-xs text-rose-500 hover:underline self-start sm:self-auto font-semibold">
+            Clear / Choose other files
+          </button>
+        </div>
+
+        <!-- Preset Level Selector Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <!-- Low Compression -->
+          <label class="preset-card relative flex flex-col justify-between p-4 rounded-xl border-2 border-theme-line hover:border-indigo-500/50 bg-theme-surface-alt/40 cursor-pointer transition-all">
+            <input type="radio" name="compression-preset" value="low" class="hidden" />
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-xs text-theme-ink">Low (High Quality)</span>
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">~20–40%</span>
+              </div>
+              <p class="text-[11px] text-theme-muted leading-relaxed">
+                Light image compression with high DPI. Ideal for documents intended for printing.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] font-mono text-theme-muted">Quality: 85% • Scale: 90%</div>
+          </label>
+
+          <!-- Medium Compression (Recommended) -->
+          <label class="preset-card relative flex flex-col justify-between p-4 rounded-xl border-2 border-indigo-500 bg-indigo-500/5 cursor-pointer transition-all shadow-xs">
+            <input type="radio" name="compression-preset" value="medium" checked class="hidden" />
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-xs text-indigo-600 dark:text-indigo-400">Medium (Balanced) ⭐</span>
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">~40–65%</span>
+              </div>
+              <p class="text-[11px] text-theme-muted leading-relaxed">
+                Optimal balance of sharpness and size reduction. Best for email attachments and web sharing.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold">Quality: 65% • Scale: 75%</div>
+          </label>
+
+          <!-- High Compression -->
+          <label class="preset-card relative flex flex-col justify-between p-4 rounded-xl border-2 border-theme-line hover:border-indigo-500/50 bg-theme-surface-alt/40 cursor-pointer transition-all">
+            <input type="radio" name="compression-preset" value="high" class="hidden" />
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-xs text-theme-ink">High (Max Reduction)</span>
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">~65–85%</span>
+              </div>
+              <p class="text-[11px] text-theme-muted leading-relaxed">
+                Aggressive downsampling for heavy scans to fit strict upload size thresholds.
+              </p>
+            </div>
+            <div class="mt-3 text-[10px] font-mono text-theme-muted">Quality: 45% • Scale: 60%</div>
+          </label>
+        </div>
+
+        <!-- Advanced Options Toggle -->
+        <div class="pt-2">
+          <button id="btn-toggle-adv" type="button" class="text-xs font-semibold text-indigo-500 hover:underline flex items-center gap-1">
+            <span>Advanced Controls (Custom Quality & Scale)</span>
+            <span id="adv-arrow">▼</span>
+          </button>
+
+          <div id="adv-panel" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-theme-line mt-3 text-xs">
+            <div>
+              <div class="flex justify-between font-mono text-[11px] text-theme-muted mb-1">
+                <span>JPEG Quality:</span>
+                <strong id="val-quality" class="text-theme-ink">65%</strong>
+              </div>
+              <input id="slider-quality" type="range" min="20" max="95" value="65" class="w-full accent-indigo-600" />
+            </div>
+
+            <div>
+              <div class="flex justify-between font-mono text-[11px] text-theme-muted mb-1">
+                <span>Resolution Scale:</span>
+                <strong id="val-scale" class="text-theme-ink">75%</strong>
+              </div>
+              <input id="slider-scale" type="range" min="30" max="100" value="75" class="w-full accent-indigo-600" />
+            </div>
+
+            <div class="flex items-center">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="chk-strip-meta" type="checkbox" checked class="rounded border-theme-line text-indigo-600 focus:ring-0" />
+                <span class="font-medium text-theme-ink">Strip Metadata (Author, Title)</span>
+              </label>
+            </div>
+
+            <div class="flex items-center">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="chk-grayscale" type="checkbox" class="rounded border-theme-line text-indigo-600 focus:ring-0" />
+                <span class="font-medium text-theme-ink">Convert to Grayscale (B&W)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="text-xs text-theme-muted font-mono">
+            Ready to compress <strong id="total-selected-size" class="text-theme-ink">0 MB</strong>
+          </div>
+
+          <button
+            id="btn-start-compress"
+            type="button"
+            class="w-full sm:w-auto px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
+          >
+            <span>⚡ Compress PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Compression Progress Card (shown during compression) -->
+      <div id="progress-card" class="hidden p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-3 animate-in fade-in duration-150">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <span id="progress-status-text" class="text-theme-ink flex items-center gap-2">
+            <span class="animate-spin text-indigo-500">⟳</span>
+            <span>Compressing document pages...</span>
+          </span>
+          <span id="progress-percent" class="font-mono text-indigo-500 font-bold">0%</span>
+        </div>
+
+        <div class="w-full h-3 rounded-full bg-theme-surface-alt overflow-hidden border border-theme-line">
+          <div id="progress-bar-fill" class="h-full bg-indigo-600 rounded-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+        <p id="progress-details" class="text-[11px] font-mono text-theme-muted">
+          Processing page 1 of 1...
+        </p>
+      </div>
+
+      <!-- File Results List -->
+      <div id="results-container" class="space-y-4">
+        <!-- Result cards rendered dynamically -->
+      </div>
+
+      <!-- Batch Download All Bar (when multiple files) -->
+      <div id="batch-actions-bar" class="hidden p-4 rounded-2xl bg-theme-surface border border-theme-line flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-theme-ink">All Files Compressed!</span>
+          <p id="batch-savings-text" class="text-[11px] text-theme-muted font-mono">Saved 0 MB across 0 files</p>
+        </div>
+
+        <button id="btn-download-zip" type="button" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5">
+          <span>📦</span>
+          <span>Download All as ZIP</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Educational Guide & Technical FAQ -->
+    <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line text-xs space-y-4 text-theme-muted">
+      <h3 class="text-sm font-bold text-theme-ink flex items-center gap-2">
+        <span>💡 How In-Browser PDF Compression Works</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 leading-relaxed">
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">1. Image Downsampling</h4>
+          <p class="text-[11px]">
+            Embedded photos, graphics, and high-DPI scans are re-rendered and compressed as optimized JPEGs, achieving major size reduction.
+          </p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">2. Object & Metadata Stripping</h4>
+          <p class="text-[11px]">
+            Unused object streams, redundant font subsets, and tracking metadata (author, creation tool) are pruned safely.
+          </p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">3. Pure Text Documents</h4>
+          <p class="text-[11px]">
+            PDFs containing only vector text and no bitmap images are already compact, so reductions will naturally be lower.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // Initialize PDF.js worker
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // State
+    const filesState = [];
+    let isCompressing = false;
+
+    // Presets definition
+    const PRESETS = {
+      low: { quality: 0.85, scale: 0.90 },
+      medium: { quality: 0.65, scale: 0.75 },
+      high: { quality: 0.45, scale: 0.60 }
+    };
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // UI Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const workspace = document.getElementById('workspace');
+    const resultsContainer = document.getElementById('results-container');
+    const progressCard = document.getElementById('progress-card');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressDetails = document.getElementById('progress-details');
+    const btnStartCompress = document.getElementById('btn-start-compress');
+
+    // Drag and Drop
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-indigo-500', 'bg-indigo-500/5');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+      if (e.dataTransfer.files?.length) {
+        handleFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files?.length) {
+        handleFiles(Array.from(e.target.files));
+      }
+    });
+
+    async function handleFiles(files) {
+      const pdfFiles = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+      if (pdfFiles.length === 0) {
+        alert('Please select valid PDF (.pdf) files.');
+        return;
+      }
+
+      filesState.length = 0;
+
+      for (const file of pdfFiles) {
+        const item = {
+          id: 'file-' + Math.random().toString(36).substr(2, 6),
+          file,
+          name: file.name,
+          origSize: file.size,
+          compressedBlob: null,
+          compressedSize: null,
+          pageCount: 0,
+          previewDataUrl: null,
+          status: 'ready', // 'ready', 'processing', 'done', 'error'
+          errorMsg: null
+        };
+
+        // Try getting page count and preview
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          item.pageCount = pdfDoc.numPages;
+
+          // Render first page thumbnail
+          const firstPage = await pdfDoc.getPage(1);
+          const viewport = firstPage.getViewport({ scale: 0.5 });
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await firstPage.render({ canvasContext: ctx, viewport }).promise;
+          item.previewDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        } catch (e) {
+          if (e.name === 'PasswordException') {
+            item.errorMsg = 'Password-protected/encrypted PDF';
+          }
+        }
+
+        filesState.push(item);
+      }
+
+      workspace.classList.remove('hidden');
+      dropzone.classList.add('hidden');
+      updateWorkspaceHeader();
+      renderResultsList();
+    }
+
+    function updateWorkspaceHeader() {
+      const totalBytes = filesState.reduce((acc, f) => acc + f.origSize, 0);
+      document.getElementById('files-count-badge').innerText = `${filesState.length} file${filesState.length === 1 ? '' : 's'}`;
+      document.getElementById('total-selected-size').innerText = formatBytes(totalBytes);
+    }
+
+    function renderResultsList() {
+      resultsContainer.innerHTML = '';
+
+      filesState.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'p-5 rounded-2xl bg-theme-surface border border-theme-line shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4';
+
+        const reduction = item.compressedSize ? Math.max(0, Math.round(((item.origSize - item.compressedSize) / item.origSize) * 100)) : 0;
+        const savedBytes = item.compressedSize ? item.origSize - item.compressedSize : 0;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3.5 min-w-0 flex-1">
+            ${
+              item.previewDataUrl
+                ? `<img src="${item.previewDataUrl}" alt="Thumbnail" class="w-12 h-16 object-cover rounded-lg border border-theme-line shadow-xs shrink-0" />`
+                : `<div class="w-12 h-16 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl shrink-0 font-bold border border-rose-500/20">PDF</div>`
+            }
+
+            <div class="min-w-0 flex-1">
+              <h4 class="font-bold text-xs sm:text-sm text-theme-ink truncate">${item.name}</h4>
+              <div class="flex items-center gap-2 text-[11px] font-mono text-theme-muted mt-1">
+                <span>Pages: ${item.pageCount || '?'}</span>
+                <span>•</span>
+                <span>Original: <strong class="text-theme-ink">${formatBytes(item.origSize)}</strong></span>
+              </div>
+
+              ${
+                item.status === 'done'
+                  ? `
+                    <div class="flex items-center gap-2 mt-2">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        ↓ ${reduction}% (${formatBytes(item.compressedSize)})
+                      </span>
+                      <span class="text-[10px] text-theme-muted font-mono">Saved ${formatBytes(savedBytes)}</span>
+                    </div>
+                  `
+                  : item.errorMsg
+                  ? `<span class="text-[11px] text-rose-500 font-bold mt-1 block">⚠️ ${item.errorMsg}</span>`
+                  : ''
+              }
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-theme-line">
+            ${
+              item.status === 'done'
+                ? `
+                  <button class="btn-download-single px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs">
+                    <span>⬇️ Download</span>
+                  </button>
+                `
+                : ''
+            }
+          </div>
+        `;
+
+        if (item.status === 'done') {
+          card.querySelector('.btn-download-single').addEventListener('click', () => {
+            downloadBlob(item.compressedBlob, `compressed_${item.name}`);
+          });
+        }
+
+        resultsContainer.appendChild(card);
+      });
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Compression Core Engine
+    async function compressPDFFile(item, settings, onProgress) {
+      const arrayBuffer = await item.file.arrayBuffer();
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdfDoc.numPages;
+
+      // Create a fresh target PDF document with PDF-Lib
+      const newPdf = await PDFLib.PDFDocument.create();
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        onProgress(pageNum, numPages);
+
+        const page = await pdfDoc.getPage(pageNum);
+        const originalViewport = page.getViewport({ scale: 1.0 });
+
+        // Apply scale factor
+        const scale = settings.scale;
+        const scaledViewport = page.getViewport({ scale });
+
+        // Draw page onto offscreen canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        // Render PDF page
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+
+        // Convert to grayscale if requested
+        if (settings.grayscale) {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            data[i] = avg;
+            data[i + 1] = avg;
+            data[i + 2] = avg;
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Export as JPEG with specified quality
+        const jpegDataUrl = canvas.toDataURL('image/jpeg', settings.quality);
+        const jpegBytes = await fetch(jpegDataUrl).then(res => res.arrayBuffer());
+
+        // Embed into new PDF document
+        const embeddedImage = await newPdf.embedJpg(jpegBytes);
+        const newPage = newPdf.addPage([originalViewport.width, originalViewport.height]);
+        newPage.drawImage(embeddedImage, {
+          x: 0,
+          y: 0,
+          width: originalViewport.width,
+          height: originalViewport.height,
+        });
+      }
+
+      // Metadata stripping
+      if (settings.stripMeta) {
+        newPdf.setTitle('');
+        newPdf.setAuthor('');
+        newPdf.setSubject('');
+        newPdf.setProducer('Toolzy In-Browser PDF Compressor');
+        newPdf.setCreator('Toolzy');
+      }
+
+      const compressedBytes = await newPdf.save();
+      return new Blob([compressedBytes], { type: 'application/pdf' });
+    }
+
+    async function startCompression() {
+      if (isCompressing || filesState.length === 0) return;
+      isCompressing = true;
+
+      btnStartCompress.disabled = true;
+      progressCard.classList.remove('hidden');
+
+      // Get current settings
+      const quality = Number(document.getElementById('slider-quality').value) / 100;
+      const scale = Number(document.getElementById('slider-scale').value) / 100;
+      const stripMeta = document.getElementById('chk-strip-meta').checked;
+      const grayscale = document.getElementById('chk-grayscale').checked;
+
+      const settings = { quality, scale, stripMeta, grayscale };
+
+      let totalPagesAllFiles = filesState.reduce((acc, f) => acc + (f.pageCount || 1), 0);
+      let pagesProcessedSoFar = 0;
+
+      for (let i = 0; i < filesState.length; i++) {
+        const item = filesState[i];
+        item.status = 'processing';
+        renderResultsList();
+
+        try {
+          const compressedBlob = await compressPDFFile(item, settings, (currentPage, totalFilePages) => {
+            const currentTotal = pagesProcessedSoFar + currentPage;
+            const percent = Math.min(99, Math.round((currentTotal / totalPagesAllFiles) * 100));
+            progressBarFill.style.width = `${percent}%`;
+            progressPercent.innerText = `${percent}%`;
+            progressDetails.innerText = `Processing "${item.name}": Page ${currentPage} of ${totalFilePages}...`;
+          });
+
+          pagesProcessedSoFar += (item.pageCount || 1);
+          item.compressedBlob = compressedBlob;
+          item.compressedSize = compressedBlob.size;
+          item.status = 'done';
+        } catch (err) {
+          item.status = 'error';
+          item.errorMsg = err.message || 'Compression failed';
+        }
+
+        renderResultsList();
+      }
+
+      // Finish progress
+      progressBarFill.style.width = '100%';
+      progressPercent.innerText = '100%';
+      progressDetails.innerText = 'All documents processed!';
+      setTimeout(() => progressCard.classList.add('hidden'), 1000);
+
+      // Check for batch zip
+      if (filesState.length > 1 && filesState.some(f => f.status === 'done')) {
+        const totalOrig = filesState.reduce((acc, f) => acc + f.origSize, 0);
+        const totalComp = filesState.reduce((acc, f) => acc + (f.compressedSize || f.origSize), 0);
+        const totalSavings = totalOrig - totalComp;
+
+        document.getElementById('batch-savings-text').innerText = `Saved ${formatBytes(totalSavings)} across ${filesState.length} files`;
+        document.getElementById('batch-actions-bar').classList.remove('hidden');
+      }
+
+      btnStartCompress.disabled = false;
+      isCompressing = false;
+    }
+
+    // EVENT LISTENERS
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme initial setup
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').innerText = '☀️';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').innerText = '🌙';
+      }
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+      });
+
+      // Presets selector
+      document.querySelectorAll('input[name="compression-preset"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const val = e.target.value;
+          const conf = PRESETS[val];
+          if (conf) {
+            document.getElementById('slider-quality').value = conf.quality * 100;
+            document.getElementById('val-quality').innerText = `${Math.round(conf.quality * 100)}%`;
+
+            document.getElementById('slider-scale').value = conf.scale * 100;
+            document.getElementById('val-scale').innerText = `${Math.round(conf.scale * 100)}%`;
+          }
+
+          document.querySelectorAll('.preset-card').forEach(c => {
+            c.classList.remove('border-indigo-500', 'bg-indigo-500/5', 'shadow-xs');
+            c.classList.add('border-theme-line', 'bg-theme-surface-alt/40');
+          });
+          const parent = e.target.closest('.preset-card');
+          if (parent) {
+            parent.classList.add('border-indigo-500', 'bg-indigo-500/5', 'shadow-xs');
+            parent.classList.remove('border-theme-line', 'bg-theme-surface-alt/40');
+          }
+        });
+      });
+
+      // Slider changes
+      const sliderQuality = document.getElementById('slider-quality');
+      const valQuality = document.getElementById('val-quality');
+      sliderQuality.addEventListener('input', (e) => {
+        valQuality.innerText = `${e.target.value}%`;
+      });
+
+      const sliderScale = document.getElementById('slider-scale');
+      const valScale = document.getElementById('val-scale');
+      sliderScale.addEventListener('input', (e) => {
+        valScale.innerText = `${e.target.value}%`;
+      });
+
+      // Advanced controls toggle
+      document.getElementById('btn-toggle-adv').addEventListener('click', () => {
+        const panel = document.getElementById('adv-panel');
+        panel.classList.toggle('hidden');
+        document.getElementById('adv-arrow').innerText = panel.classList.contains('hidden') ? '▼' : '▲';
+      });
+
+      // Reset / change files
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        filesState.length = 0;
+        fileInput.value = '';
+        workspace.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+        document.getElementById('batch-actions-bar').classList.add('hidden');
+      });
+
+      // Start compression CTA
+      btnStartCompress.addEventListener('click', startCompression);
+
+      // Download All as ZIP
+      document.getElementById('btn-download-zip').addEventListener('click', async () => {
+        const zip = new JSZip();
+        filesState.forEach(item => {
+          if (item.compressedBlob) {
+            zip.file(`compressed_${item.name}`, item.compressedBlob);
+          }
+        });
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        downloadBlob(zipBlob, `compressed_pdfs_${Date.now()}.zip`);
+      });
+    });
+  </script>
+</body>
+</html>

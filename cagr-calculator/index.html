@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAGR Calculator — Compound Annual Growth Rate & Investment Planner — Toolzy</title>
+  <meta name="description" content="Calculate Compound Annual Growth Rate (CAGR), absolute returns, and year-by-year investment projections. Features reverse CAGR goal planning, multi-scenario comparisons, and interactive growth charts. 100% client-side." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #4f46e5;
+      --color-accent-hover: #4338ca;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #818cf8;
+      --color-accent-hover: #6366f1;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/20 selection:text-indigo-500">
+
+  <!-- Top App Header -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-black text-sm">
+          📈
+        </span>
+        <span class="font-bold text-sm tracking-tight hidden sm:inline">CAGR Calculator</span>
+      </a>
+
+      <!-- Currency Selector -->
+      <div class="flex items-center gap-1 pl-2 border-l border-theme-line">
+        <select id="currency-select" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-mono font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500 cursor-pointer">
+          <option value="$">$ USD</option>
+          <option value="₹">₹ INR</option>
+          <option value="€">€ EUR</option>
+          <option value="£">£ GBP</option>
+          <option value="¥">¥ JPY</option>
+          <option value="C$">C$ CAD</option>
+          <option value="A$">A$ AUD</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex items-center gap-1">
+        <span>Finance Hub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    
+    <!-- Hero / Title Section -->
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-theme-ink">
+        Compound Annual Growth Rate (CAGR) Calculator
+      </h1>
+      <p class="text-xs sm:text-sm text-theme-muted leading-relaxed">
+        Calculate the annualized growth rate of your investments, compare multiple asset scenarios, and project year-by-year compounding returns in real-time.
+      </p>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="flex justify-center">
+      <div class="inline-flex p-1 rounded-2xl bg-theme-surface border border-theme-line gap-1 shadow-xs text-xs font-semibold">
+        <button id="mode-cagr" class="px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-2xs transition-all">
+          📊 Standard CAGR
+        </button>
+        <button id="mode-reverse" class="px-4 py-2 rounded-xl text-theme-muted hover:text-theme-ink transition-all">
+          🎯 Target Goal Planner (Reverse)
+        </button>
+        <button id="mode-compare" class="px-4 py-2 rounded-xl text-theme-muted hover:text-theme-ink transition-all">
+          ⚖️ Compare Scenarios
+        </button>
+      </div>
+    </div>
+
+    <!-- Mode 1: Standard CAGR & Target Planner -->
+    <div id="view-standard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Left Column: Inputs & Presets (5 Cols) -->
+      <div class="lg:col-span-5 space-y-5">
+        
+        <!-- Input Form Card -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-theme-line pb-3">
+            <h2 id="form-heading" class="text-xs sm:text-sm font-bold text-theme-ink uppercase tracking-wider font-mono">
+              Investment Parameters
+            </h2>
+            <button id="btn-reset-inputs" class="text-[11px] text-theme-muted hover:text-indigo-500">
+              ↺ Reset
+            </button>
+          </div>
+
+          <!-- Initial Value -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <label class="font-bold text-theme-ink" for="input-initial">Initial Investment / Value</label>
+              <span class="text-theme-muted font-mono text-[11px]" id="label-initial-val">$10,000</span>
+            </div>
+            <div class="relative flex items-center rounded-xl bg-theme-surface-alt border border-theme-line focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+              <span class="currency-symbol pl-3 text-xs font-mono font-bold text-theme-muted">$</span>
+              <input
+                id="input-initial"
+                type="number"
+                value="10000"
+                min="1"
+                step="any"
+                class="w-full px-2 py-2.5 bg-transparent font-mono text-sm font-bold text-theme-ink focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Final Value / Target CAGR (Dynamic based on mode) -->
+          <div id="group-final-val" class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <label class="font-bold text-theme-ink" for="input-final">Final Value / Balance</label>
+              <span class="text-theme-muted font-mono text-[11px]" id="label-final-val">$25,000</span>
+            </div>
+            <div class="relative flex items-center rounded-xl bg-theme-surface-alt border border-theme-line focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+              <span class="currency-symbol pl-3 text-xs font-mono font-bold text-theme-muted">$</span>
+              <input
+                id="input-final"
+                type="number"
+                value="25000"
+                step="any"
+                class="w-full px-2 py-2.5 bg-transparent font-mono text-sm font-bold text-theme-ink focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Target CAGR Input (Only in Reverse Mode) -->
+          <div id="group-target-cagr" class="hidden space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <label class="font-bold text-theme-ink" for="input-target-cagr">Target CAGR Growth Rate</label>
+              <span class="text-theme-muted font-mono text-[11px]">e.g. 15%</span>
+            </div>
+            <div class="relative flex items-center rounded-xl bg-theme-surface-alt border border-theme-line focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+              <input
+                id="input-target-cagr"
+                type="number"
+                value="15"
+                step="0.1"
+                class="w-full pl-3 pr-8 py-2.5 bg-transparent font-mono text-sm font-bold text-theme-ink focus:outline-none"
+              />
+              <span class="pr-3 text-xs font-mono font-bold text-theme-muted">%</span>
+            </div>
+          </div>
+
+          <!-- Time Period in Years -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <label class="font-bold text-theme-ink" for="input-years">Time Duration (Years)</label>
+              <span class="text-theme-muted font-mono text-[11px]" id="label-duration">5 Years</span>
+            </div>
+            <div class="relative flex items-center rounded-xl bg-theme-surface-alt border border-theme-line focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+              <input
+                id="input-years"
+                type="number"
+                value="5"
+                min="0.1"
+                step="0.1"
+                class="w-full pl-3 pr-14 py-2.5 bg-transparent font-mono text-sm font-bold text-theme-ink focus:outline-none"
+              />
+              <span class="pr-3 text-xs font-mono font-bold text-theme-muted">Years</span>
+            </div>
+          </div>
+
+          <!-- Validation Warning Notice -->
+          <div id="validation-warning" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs leading-relaxed space-y-1">
+            <div class="font-bold flex items-center gap-1.5">
+              <span>⚠️</span>
+              <span>Invalid Input</span>
+            </div>
+            <p id="validation-text" class="text-[11px]">Initial Value and Duration must be greater than zero.</p>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="pt-2 border-t border-theme-line space-y-2">
+            <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider block">Quick Benchmark Scenarios:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button class="btn-preset px-2.5 py-1 rounded-lg bg-theme-surface-alt hover:bg-indigo-500/10 hover:text-indigo-500 border border-theme-line text-[11px] font-medium transition-colors" data-init="10000" data-final="25000" data-years="5">
+                Tech Stock (2.5x in 5 yrs)
+              </button>
+              <button class="btn-preset px-2.5 py-1 rounded-lg bg-theme-surface-alt hover:bg-indigo-500/10 hover:text-indigo-500 border border-theme-line text-[11px] font-medium transition-colors" data-init="50000" data-final="100000" data-years="7">
+                Real Estate (2x in 7 yrs)
+              </button>
+              <button class="btn-preset px-2.5 py-1 rounded-lg bg-theme-surface-alt hover:bg-indigo-500/10 hover:text-indigo-500 border border-theme-line text-[11px] font-medium transition-colors" data-init="10000" data-final="25937" data-years="10">
+                S&P 500 (10% avg 10 yrs)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Right Column: Results, Breakdown, Formula & Visual Chart (7 Cols) -->
+      <div class="lg:col-span-7 space-y-5">
+        
+        <!-- Results Hero Card -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-md space-y-5 relative overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-indigo-500 to-amber-500"></div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-xs font-mono uppercase tracking-wider text-theme-muted font-bold block mb-1">
+                Compound Annual Growth Rate
+              </span>
+              <div class="flex items-baseline gap-2">
+                <span id="hero-cagr-value" class="text-3xl sm:text-4xl font-extrabold text-emerald-500 tracking-tight font-mono">
+                  +20.11%
+                </span>
+                <span class="text-xs text-theme-muted font-semibold">per year</span>
+              </div>
+            </div>
+
+            <!-- Share / Copy Action -->
+            <button id="btn-copy-result" type="button" class="px-3.5 py-2 rounded-xl bg-theme-surface-alt hover:bg-indigo-500/10 hover:text-indigo-500 border border-theme-line text-xs font-semibold text-theme-ink transition-all flex items-center gap-1.5 self-start sm:self-auto">
+              <span>📋</span>
+              <span id="copy-btn-text">Copy Summary</span>
+            </button>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">Total Absolute Return</span>
+              <strong id="metric-abs-return" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">+150.00%</strong>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">Total Wealth Gained</span>
+              <strong id="metric-total-gain" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">+$15,000</strong>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line col-span-2 sm:col-span-1">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">Growth Multiplier</span>
+              <strong id="metric-multiplier" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">2.50x</strong>
+            </div>
+          </div>
+
+          <!-- Formula Step-by-Step Transparency Box -->
+          <div class="p-3.5 rounded-2xl bg-theme-surface-alt/70 border border-theme-line text-xs space-y-1.5">
+            <span class="text-[10px] font-mono font-bold text-theme-muted uppercase tracking-wider block">Mathematical Formula & Calculation:</span>
+            <div class="font-mono text-[11px] text-theme-ink overflow-x-auto whitespace-nowrap leading-relaxed">
+              <code id="formula-latex" class="text-indigo-500 font-bold">CAGR = (Final / Initial)^(1 / Years) - 1</code>
+            </div>
+            <p id="formula-calc-step" class="text-[11px] font-mono text-theme-muted">
+              = (25,000 / 10,000)^(1 / 5) - 1 = (2.50)^0.20 - 1 = 0.2011 (20.11%)
+            </p>
+          </div>
+        </div>
+
+        <!-- Growth Curve Chart Card -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-3">
+          <div class="flex items-center justify-between text-xs">
+            <h3 class="font-bold text-theme-ink flex items-center gap-2">
+              <span>📈 Compounding Growth Curve</span>
+            </h3>
+            <span class="text-[10px] font-mono text-theme-muted">End of Year Projection</span>
+          </div>
+
+          <div class="h-64 relative w-full">
+            <canvas id="cagr-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Year-by-Year Growth Table Card -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs sm:text-sm font-bold text-theme-ink flex items-center gap-2">
+              <span>🗓️ Year-by-Year Growth Schedule</span>
+            </h3>
+            <button id="btn-export-csv" class="px-2.5 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted hover:text-theme-ink transition-colors">
+              Export CSV 📥
+            </button>
+          </div>
+
+          <div class="border border-theme-line rounded-2xl overflow-hidden bg-theme-surface">
+            <div class="max-h-72 overflow-y-auto">
+              <table class="w-full text-xs text-right">
+                <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase sticky top-0 border-b border-theme-line">
+                  <tr>
+                    <th class="p-2.5 text-left">Year</th>
+                    <th class="p-2.5">Beginning</th>
+                    <th class="p-2.5">Annual Gain</th>
+                    <th class="p-2.5">Ending Balance</th>
+                    <th class="p-2.5 text-center">Total Return</th>
+                  </tr>
+                </thead>
+                <tbody id="schedule-tbody" class="divide-y divide-theme-line font-mono text-xs">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mode 2: Multi-Scenario Comparison View -->
+    <div id="view-compare" class="hidden space-y-6">
+      <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme-line pb-4">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-theme-ink">
+              Compare Multiple Investment Scenarios
+            </h2>
+            <p class="text-xs text-theme-muted mt-0.5">
+              Enter different initial investments, outcomes, and timeframes to compare annualized returns side by side.
+            </p>
+          </div>
+          <button id="btn-add-scenario" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors">
+            + Add Scenario
+          </button>
+        </div>
+
+        <div id="scenarios-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Rendered scenarios dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Educational Guide & FAQ -->
+    <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line text-xs space-y-4 text-theme-muted">
+      <h3 class="text-sm font-bold text-theme-ink flex items-center gap-2">
+        <span>💡 What is CAGR and Why Does It Matter?</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 leading-relaxed">
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">Annualized Compounding</h4>
+          <p class="text-[11px]">
+            Unlike simple absolute return, CAGR smooths out annual volatility to show the steady rate at which an investment would have grown if it compounded evenly.
+          </p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">Comparing Apples to Apples</h4>
+          <p class="text-[11px]">
+            CAGR allows you to fairly compare a 3-year mutual fund return against a 7-year real estate investment or a 10-year index fund.
+          </p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+          <h4 class="font-bold text-theme-ink">Formula Transparency</h4>
+          <p class="text-[11px]">
+            <code>CAGR = (EV / BV)^(1/n) - 1</code> where <strong>EV</strong> is Ending Value, <strong>BV</strong> is Beginning Value, and <strong>n</strong> is number of years.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // State
+    let currentMode = 'cagr'; // 'cagr', 'reverse', 'compare'
+    let currency = '$';
+    let chartInstance = null;
+
+    let scenarios = [
+      { id: 'sc-1', name: 'Scenario A (Index Fund)', initial: 10000, final: 25000, years: 5 },
+      { id: 'sc-2', name: 'Scenario B (Real Estate)', initial: 50000, final: 95000, years: 7 },
+      { id: 'sc-3', name: 'Scenario C (Startup Stock)', initial: 5000, final: 20000, years: 3 }
+    ];
+
+    function formatNumber(num) {
+      return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
+    }
+
+    function formatMoney(num) {
+      return `${currency}${formatNumber(num)}`;
+    }
+
+    // Calculation Core
+    function calculateCAGR(initial, final, years) {
+      if (initial <= 0 || years <= 0) {
+        return null;
+      }
+      const cagr = Math.pow(final / initial, 1 / years) - 1;
+      const absReturn = ((final - initial) / initial) * 100;
+      const gain = final - initial;
+      const multiplier = final / initial;
+      return { cagr, absReturn, gain, multiplier };
+    }
+
+    function calculateReverseFinal(initial, targetCagrPercent, years) {
+      if (initial <= 0 || years <= 0) return null;
+      const rate = targetCagrPercent / 100;
+      const final = initial * Math.pow(1 + rate, years);
+      const absReturn = ((final - initial) / initial) * 100;
+      const gain = final - initial;
+      const multiplier = final / initial;
+      return { final, cagr: rate, absReturn, gain, multiplier };
+    }
+
+    // Main Update Function
+    function updateCalculations() {
+      const initial = parseFloat(document.getElementById('input-initial').value) || 0;
+      const years = parseFloat(document.getElementById('input-years').value) || 0;
+
+      const warningBox = document.getElementById('validation-warning');
+      const warningText = document.getElementById('validation-text');
+
+      if (initial <= 0 || years <= 0) {
+        warningBox.classList.remove('hidden');
+        warningText.innerText = 'Initial Value and Duration in Years must be positive numbers greater than 0.';
+        return;
+      } else {
+        warningBox.classList.add('hidden');
+      }
+
+      let res = null;
+
+      if (currentMode === 'cagr') {
+        const final = parseFloat(document.getElementById('input-final').value) || 0;
+        res = calculateCAGR(initial, final, years);
+
+        if (!res) return;
+
+        // Render Hero
+        const isPositive = res.cagr >= 0;
+        const cagrPercent = (res.cagr * 100).toFixed(2);
+        const heroVal = document.getElementById('hero-cagr-value');
+        heroVal.innerText = `${isPositive ? '+' : ''}${cagrPercent}%`;
+        heroVal.className = `text-3xl sm:text-4xl font-extrabold font-mono tracking-tight ${
+          isPositive ? 'text-emerald-500' : 'text-rose-500'
+        }`;
+
+        document.getElementById('metric-abs-return').innerText = `${res.absReturn >= 0 ? '+' : ''}${res.absReturn.toFixed(2)}%`;
+        document.getElementById('metric-abs-return').className = `text-sm font-mono font-bold mt-0.5 block ${
+          res.absReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
+        }`;
+
+        document.getElementById('metric-total-gain').innerText = `${res.gain >= 0 ? '+' : ''}${formatMoney(res.gain)}`;
+        document.getElementById('metric-multiplier').innerText = `${res.multiplier.toFixed(2)}x`;
+
+        // Render Formula Step
+        document.getElementById('formula-latex').innerText = 'CAGR = (Final / Initial)^(1 / Years) - 1';
+        document.getElementById('formula-calc-step').innerText =
+          `= (${formatMoney(final)} / ${formatMoney(initial)})^(1 / ${years}) - 1 = (${(final/initial).toFixed(2)})^${(1/years).toFixed(3)} - 1 = ${cagrPercent}%`;
+
+        // Render Schedule & Chart
+        renderSchedule(initial, res.cagr, years, final);
+        renderChart(initial, res.cagr, years);
+
+      } else if (currentMode === 'reverse') {
+        const targetCagr = parseFloat(document.getElementById('input-target-cagr').value) || 0;
+        res = calculateReverseFinal(initial, targetCagr, years);
+
+        if (!res) return;
+
+        const heroVal = document.getElementById('hero-cagr-value');
+        heroVal.innerText = formatMoney(res.final);
+        heroVal.className = 'text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-indigo-500';
+
+        document.getElementById('metric-abs-return').innerText = `+${res.absReturn.toFixed(2)}%`;
+        document.getElementById('metric-total-gain').innerText = `+${formatMoney(res.gain)}`;
+        document.getElementById('metric-multiplier').innerText = `${res.multiplier.toFixed(2)}x`;
+
+        document.getElementById('formula-latex').innerText = 'Final Value = Initial * (1 + CAGR)^Years';
+        document.getElementById('formula-calc-step').innerText =
+          `= ${formatMoney(initial)} * (1 + ${(targetCagr/100).toFixed(4)})^${years} = ${formatMoney(res.final)}`;
+
+        renderSchedule(initial, res.cagr, years, res.final);
+        renderChart(initial, res.cagr, years);
+      }
+    }
+
+    function renderSchedule(initial, cagr, years, targetFinal) {
+      const tbody = document.getElementById('schedule-tbody');
+      tbody.innerHTML = '';
+
+      const totalSteps = Math.ceil(years);
+      let prevBalance = initial;
+
+      for (let y = 1; y <= totalSteps; y++) {
+        const currentYearFraction = Math.min(y, years);
+        const endBalance = initial * Math.pow(1 + cagr, currentYearFraction);
+        const annualGain = endBalance - prevBalance;
+        const totalReturnPercent = ((endBalance - initial) / initial) * 100;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-theme-surface-alt/60 transition-colors';
+        tr.innerHTML = `
+          <td class="p-2.5 text-left font-bold text-theme-ink">Year ${y}${currentYearFraction < y ? ` (${years} yrs)` : ''}</td>
+          <td class="p-2.5 text-theme-muted">${formatMoney(prevBalance)}</td>
+          <td class="p-2.5 font-bold ${annualGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${annualGain >= 0 ? '+' : ''}${formatMoney(annualGain)}</td>
+          <td class="p-2.5 text-theme-ink font-bold">${formatMoney(endBalance)}</td>
+          <td class="p-2.5 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              totalReturnPercent >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-500'
+            }">
+              ${totalReturnPercent >= 0 ? '+' : ''}${totalReturnPercent.toFixed(1)}%
+            </span>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+        prevBalance = endBalance;
+      }
+    }
+
+    function renderChart(initial, cagr, years) {
+      const ctx = document.getElementById('cagr-chart').getContext('2d');
+
+      const labels = ['Start (Yr 0)'];
+      const dataPoints = [initial];
+      const totalSteps = Math.ceil(years);
+
+      for (let y = 1; y <= totalSteps; y++) {
+        const yr = Math.min(y, years);
+        labels.push(`Yr ${y}`);
+        dataPoints.push(Math.round(initial * Math.pow(1 + cagr, yr)));
+      }
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+      const textColor = isDark ? '#a8a29e' : '#78716c';
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Portfolio Value',
+            data: dataPoints,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#818cf8',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  return `${currency}${formatNumber(ctx.raw)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: {
+                color: textColor,
+                font: { family: 'JetBrains Mono', size: 10 },
+                callback: function (val) {
+                  return `${currency}${formatNumber(val)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderScenarios() {
+      const container = document.getElementById('scenarios-grid');
+      container.innerHTML = '';
+
+      scenarios.forEach((sc, idx) => {
+        const res = calculateCAGR(sc.initial, sc.final, sc.years);
+        const card = document.createElement('div');
+        card.className = 'p-5 rounded-2xl bg-theme-surface-alt/50 border border-theme-line space-y-3 relative';
+
+        const cagrPercent = res ? (res.cagr * 100).toFixed(2) : '--';
+        const isPos = res && res.cagr >= 0;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <input type="text" value="${sc.name}" class="font-bold text-xs bg-transparent text-theme-ink border-b border-transparent focus:border-indigo-500 focus:outline-none" />
+            <button class="btn-del-sc text-theme-muted hover:text-rose-500 text-xs">×</button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-xs font-mono">
+            <div>
+              <span class="text-[10px] text-theme-muted block">Initial</span>
+              <input type="number" value="${sc.initial}" class="sc-init w-full bg-theme-surface border border-theme-line rounded px-1.5 py-1 text-theme-ink font-bold" />
+            </div>
+            <div>
+              <span class="text-[10px] text-theme-muted block">Final</span>
+              <input type="number" value="${sc.final}" class="sc-final w-full bg-theme-surface border border-theme-line rounded px-1.5 py-1 text-theme-ink font-bold" />
+            </div>
+            <div>
+              <span class="text-[10px] text-theme-muted block">Years</span>
+              <input type="number" value="${sc.years}" step="0.5" class="sc-years w-full bg-theme-surface border border-theme-line rounded px-1.5 py-1 text-theme-ink font-bold" />
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-theme-surface border border-theme-line flex items-center justify-between">
+            <span class="text-[11px] font-mono text-theme-muted">CAGR:</span>
+            <span class="text-base font-extrabold font-mono ${isPos ? 'text-emerald-500' : 'text-rose-500'}">
+              ${isPos ? '+' : ''}${cagrPercent}%
+            </span>
+          </div>
+        `;
+
+        card.querySelector('.sc-init').addEventListener('input', (e) => {
+          sc.initial = parseFloat(e.target.value) || 0;
+          renderScenarios();
+        });
+        card.querySelector('.sc-final').addEventListener('input', (e) => {
+          sc.final = parseFloat(e.target.value) || 0;
+          renderScenarios();
+        });
+        card.querySelector('.sc-years').addEventListener('input', (e) => {
+          sc.years = parseFloat(e.target.value) || 1;
+          renderScenarios();
+        });
+        card.querySelector('.btn-del-sc').addEventListener('click', () => {
+          scenarios.splice(idx, 1);
+          renderScenarios();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    // EVENT LISTENERS
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme initial setup
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').innerText = '☀️';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').innerText = '🌙';
+      }
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+        updateCalculations();
+      });
+
+      // Currency
+      document.getElementById('currency-select').addEventListener('change', (e) => {
+        currency = e.target.value;
+        document.querySelectorAll('.currency-symbol').forEach(el => el.innerText = currency);
+        updateCalculations();
+      });
+
+      // Inputs live change
+      ['input-initial', 'input-final', 'input-years', 'input-target-cagr'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateCalculations);
+      });
+
+      // Presets
+      document.querySelectorAll('.btn-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('input-initial').value = btn.dataset.init;
+          document.getElementById('input-final').value = btn.dataset.final;
+          document.getElementById('input-years').value = btn.dataset.years;
+          updateCalculations();
+        });
+      });
+
+      // Reset button
+      document.getElementById('btn-reset-inputs').addEventListener('click', () => {
+        document.getElementById('input-initial').value = '10000';
+        document.getElementById('input-final').value = '25000';
+        document.getElementById('input-years').value = '5';
+        updateCalculations();
+      });
+
+      // Mode Switchers
+      document.getElementById('mode-cagr').addEventListener('click', () => {
+        currentMode = 'cagr';
+        setModeUI('mode-cagr');
+        document.getElementById('view-standard').classList.remove('hidden');
+        document.getElementById('view-compare').classList.add('hidden');
+        document.getElementById('group-final-val').classList.remove('hidden');
+        document.getElementById('group-target-cagr').classList.add('hidden');
+        document.getElementById('form-heading').innerText = 'Investment Parameters';
+        updateCalculations();
+      });
+
+      document.getElementById('mode-reverse').addEventListener('click', () => {
+        currentMode = 'reverse';
+        setModeUI('mode-reverse');
+        document.getElementById('view-standard').classList.remove('hidden');
+        document.getElementById('view-compare').classList.add('hidden');
+        document.getElementById('group-final-val').classList.add('hidden');
+        document.getElementById('group-target-cagr').classList.remove('hidden');
+        document.getElementById('form-heading').innerText = 'Goal Target Parameters';
+        updateCalculations();
+      });
+
+      document.getElementById('mode-compare').addEventListener('click', () => {
+        currentMode = 'compare';
+        setModeUI('mode-compare');
+        document.getElementById('view-standard').classList.add('hidden');
+        document.getElementById('view-compare').classList.remove('hidden');
+        renderScenarios();
+      });
+
+      function setModeUI(activeId) {
+        ['mode-cagr', 'mode-reverse', 'mode-compare'].forEach(id => {
+          const btn = document.getElementById(id);
+          if (id === activeId) {
+            btn.className = 'px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-2xs transition-all';
+          } else {
+            btn.className = 'px-4 py-2 rounded-xl text-theme-muted hover:text-theme-ink transition-all';
+          }
+        });
+      }
+
+      // Add Scenario
+      document.getElementById('btn-add-scenario').addEventListener('click', () => {
+        scenarios.push({
+          id: 'sc-' + Date.now(),
+          name: `Scenario ${String.fromCharCode(65 + scenarios.length)}`,
+          initial: 10000,
+          final: 20000,
+          years: 5
+        });
+        renderScenarios();
+      });
+
+      // Copy Summary
+      document.getElementById('btn-copy-result').addEventListener('click', () => {
+        const init = document.getElementById('input-initial').value;
+        const final = document.getElementById('input-final').value;
+        const years = document.getElementById('input-years').value;
+        const cagr = document.getElementById('hero-cagr-value').innerText;
+        const abs = document.getElementById('metric-abs-return').innerText;
+        const gain = document.getElementById('metric-total-gain').innerText;
+
+        const summary = `📈 CAGR Investment Summary:\n• Initial: ${currency}${init}\n• Final: ${currency}${final}\n• Duration: ${years} Years\n• CAGR: ${cagr}\n• Absolute Return: ${abs} (${gain})\nCalculated via Toolzy CAGR Calculator`;
+
+        navigator.clipboard.writeText(summary);
+        document.getElementById('copy-btn-text').innerText = '✓ Copied!';
+        setTimeout(() => { document.getElementById('copy-btn-text').innerText = 'Copy Summary'; }, 1500);
+      });
+
+      // Export CSV
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        let csv = 'Year,Beginning Balance,Annual Gain,Ending Balance\n';
+        document.querySelectorAll('#schedule-tbody tr').forEach(row => {
+          const cols = row.querySelectorAll('td');
+          if (cols.length >= 4) {
+            csv += `"${cols[0].innerText}","${cols[1].innerText}","${cols[2].innerText}","${cols[3].innerText}"\n`;
+          }
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cagr_schedule_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      // Initial Calculation
+      updateCalculations();
+    });
+  </script>
+</body>
+</html>

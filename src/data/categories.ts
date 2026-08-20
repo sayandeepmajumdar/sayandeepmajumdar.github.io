@@ -12,9 +12,8 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'pdf-documents',
     name: 'PDF & Documents',
     slug: 'pdf-documents',
-    description: 'PDF converters, document tools, and spreadsheet transformers.',
+    description: 'PDF compressors, document converters, and spreadsheet transformers.',
     icon: 'FileText',
-    isStub: true,
   },
   {
     id: 'images',
