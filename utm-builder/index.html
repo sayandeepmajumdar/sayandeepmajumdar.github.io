@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UTM Campaign URL Builder & QR Generator — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side UTM campaign URL builder for Google Analytics 4, Meta Ads, and marketing tracking. Includes live preview, space validation, auto-lowercase, QR code generator, multi-channel batch builder, and CSV export." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries: QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Smooth transitions */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    /* Custom scrollbar */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">UTM Campaign URL Builder</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate, validate, and track clean campaign URLs for Google Analytics & Meta Ads.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-batch-modal-toggle" type="button" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors">
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <span>Multi-Channel Batch</span>
+        </button>
+
+        <button id="btn-sample-data" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-muted hover:text-ink transition-colors">
+          Load Sample
+        </button>
+
+        <button id="btn-reset" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid: Builder Form (Left) & Output / QR (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+      <!-- LEFT COLUMN: Form Inputs & Presets (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Quick Channel Presets Bar -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-line space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              <span>Quick Channel Presets</span>
+            </label>
+            <span class="text-[11px] text-muted">1-click fill source & medium</span>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5" id="presets-container">
+            <button type="button" data-source="google" data-medium="cpc" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🔍 Google Ads</span>
+              <span class="text-[10px] text-muted">cpc</span>
+            </button>
+            <button type="button" data-source="facebook" data-medium="social" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>📘 Facebook Post</span>
+              <span class="text-[10px] text-muted">social</span>
+            </button>
+            <button type="button" data-source="facebook" data-medium="paid_social" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🎯 Meta Paid Ad</span>
+              <span class="text-[10px] text-muted">paid_social</span>
+            </button>
+            <button type="button" data-source="instagram" data-medium="social" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>📸 Instagram Bio</span>
+              <span class="text-[10px] text-muted">social</span>
+            </button>
+            <button type="button" data-source="linkedin" data-medium="social" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>💼 LinkedIn</span>
+              <span class="text-[10px] text-muted">social</span>
+            </button>
+            <button type="button" data-source="twitter" data-medium="social" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🐦 X / Twitter</span>
+              <span class="text-[10px] text-muted">social</span>
+            </button>
+            <button type="button" data-source="newsletter" data-medium="email" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>📧 Newsletter</span>
+              <span class="text-[10px] text-muted">email</span>
+            </button>
+            <button type="button" data-source="youtube" data-medium="video" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🎥 YouTube</span>
+              <span class="text-[10px] text-muted">video</span>
+            </button>
+            <button type="button" data-source="reddit" data-medium="community" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>💬 Reddit</span>
+              <span class="text-[10px] text-muted">community</span>
+            </button>
+            <button type="button" data-source="affiliate" data-medium="referral" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🤝 Affiliate</span>
+              <span class="text-[10px] text-muted">referral</span>
+            </button>
+            <button type="button" data-source="print_flyer" data-medium="qr_code" class="preset-btn touch-target px-3 py-1.5 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-ink hover:text-accent transition-all flex items-center gap-1.5">
+              <span>🖨️ Offline Print</span>
+              <span class="text-[10px] text-muted">qr_code</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Form Container -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+          
+          <!-- 1. Destination Website URL (Required) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-url" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>1. Website Destination URL</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <button id="btn-fix-protocol" type="button" class="hidden text-[11px] font-bold text-accent hover:underline">
+                + Add https://
+              </button>
+            </div>
+            <div class="relative">
+              <input
+                id="input-url"
+                type="text"
+                value="https://example.com/pricing"
+                placeholder="https://yourwebsite.com/landing-page"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium transition-colors"
+              />
+            </div>
+            <!-- Validation Feedback -->
+            <p id="url-error" class="hidden text-[11px] text-red-500 font-medium flex items-center gap-1">
+              <span>⚠️ Please enter a valid URL with http:// or https://</span>
+            </p>
+            <p class="text-[11px] text-muted">
+              The target landing page where visitors should arrive. Existing query parameters (e.g. <code>?ref=123</code>) and fragments (<code>#plans</code>) are preserved.
+            </p>
+          </div>
+
+          <!-- 2. Campaign Source (Required) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-source" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>2. Campaign Source (<code>utm_source</code>)</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <div id="source-space-fix" class="hidden flex items-center gap-1 text-[11px]">
+                <span class="text-amber-500 font-semibold">Contains spaces:</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-source" data-replace="-">use hyphens</button>
+                <span class="text-muted">|</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-source" data-replace="_">use underscores</button>
+              </div>
+            </div>
+            <input
+              id="input-source"
+              type="text"
+              value="google"
+              placeholder="e.g. google, facebook, newsletter, linkedin, partner_blog"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink transition-colors"
+            />
+            <p class="text-[11px] text-muted">
+              The referrer or platform where the link is shared (e.g. <code>google</code>, <code>facebook</code>, <code>newsletter</code>).
+            </p>
+          </div>
+
+          <!-- 3. Campaign Medium (Required) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-medium" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>3. Campaign Medium (<code>utm_medium</code>)</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <div id="medium-space-fix" class="hidden flex items-center gap-1 text-[11px]">
+                <span class="text-amber-500 font-semibold">Contains spaces:</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-medium" data-replace="-">use hyphens</button>
+                <span class="text-muted">|</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-medium" data-replace="_">use underscores</button>
+              </div>
+            </div>
+            <input
+              id="input-medium"
+              type="text"
+              value="cpc"
+              placeholder="e.g. cpc, social, email, referral, organic, display, banner"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink transition-colors"
+            />
+            <!-- Common Medium Chips -->
+            <div class="flex flex-wrap gap-1 pt-1">
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">cpc</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">social</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">paid_social</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">email</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">organic</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">referral</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">qr_code</button>
+              <button type="button" class="medium-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-surface-alt text-muted hover:text-ink hover:bg-line transition-colors">affiliate</button>
+            </div>
+          </div>
+
+          <!-- 4. Campaign Name (Required) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-campaign" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>4. Campaign Name (<code>utm_campaign</code>)</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <div id="campaign-space-fix" class="hidden flex items-center gap-1 text-[11px]">
+                <span class="text-amber-500 font-semibold">Contains spaces:</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-campaign" data-replace="-">use hyphens</button>
+                <span class="text-muted">|</span>
+                <button type="button" class="btn-fix-space font-bold text-accent hover:underline" data-target="input-campaign" data-replace="_">use underscores</button>
+              </div>
+            </div>
+            <input
+              id="input-campaign"
+              type="text"
+              value="summer_sale_2026"
+              placeholder="e.g. spring_launch_2026, black_friday, product_onboarding"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink transition-colors"
+            />
+            <p class="text-[11px] text-muted">
+              Identifies the specific promotion, product sale, or strategic initiative.
+            </p>
+          </div>
+
+          <!-- Optional Parameters Grid: Term & Content -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t" style="border-color: var(--color-line);">
+            
+            <!-- 5. Campaign Term (Optional) -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="input-term" class="text-xs font-bold uppercase tracking-wider text-muted">
+                  5. Campaign Term (<code>utm_term</code>)
+                </label>
+                <span class="text-[10px] text-muted">Optional</span>
+              </div>
+              <input
+                id="input-term"
+                type="text"
+                value="cloud+developer+tools"
+                placeholder="e.g. cloud+hosting, seo+audit"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+              <p class="text-[11px] text-muted">
+                Identifies paid search keywords or audience segments.
+              </p>
+            </div>
+
+            <!-- 6. Campaign Content (Optional) -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="input-content" class="text-xs font-bold uppercase tracking-wider text-muted">
+                  6. Campaign Content (<code>utm_content</code>)
+                </label>
+                <span class="text-[10px] text-muted">Optional</span>
+              </div>
+              <input
+                id="input-content"
+                type="text"
+                value="hero_cta_button"
+                placeholder="e.g. hero_banner_blue, sidebar_link_v2"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+              <p class="text-[11px] text-muted">
+                Used for A/B testing ad variations or differentiating links on the same page.
+              </p>
+            </div>
+          </div>
+
+          <!-- Builder Options & Hygiene Toggles -->
+          <div class="pt-4 border-t space-y-3" style="border-color: var(--color-line);">
+            <div class="text-xs font-bold uppercase tracking-wider text-muted">Clean Tracking Options</div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Auto Lowercase Toggle -->
+              <label class="flex items-start gap-2.5 p-3 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+                <input id="toggle-lowercase" type="checkbox" checked class="mt-0.5 w-4 h-4 rounded text-accent focus:ring-accent accent-accent shrink-0" />
+                <div>
+                  <span class="text-xs font-bold text-ink block">Auto-Lowercase UTMs</span>
+                  <span class="text-[11px] text-muted leading-tight block mt-0.5">Prevents Google Analytics data fragmentation (e.g. <code>Facebook</code> vs <code>facebook</code>).</span>
+                </div>
+              </label>
+
+              <!-- Space Replacement Strategy -->
+              <div class="p-3 rounded-xl bg-surface-alt border border-line space-y-1.5">
+                <span class="text-xs font-bold text-ink block">Space Handling Mode</span>
+                <select id="select-space-mode" class="w-full px-2.5 py-1.5 rounded-lg text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent">
+                  <option value="hyphen">Replace spaces with hyphens (-)</option>
+                  <option value="underscore">Replace spaces with underscores (_)</option>
+                  <option value="encode">URL encode spaces (%20)</option>
+                  <option value="plus">Replace spaces with plus (+)</option>
+                  <option value="keep">Keep raw spaces</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Generated Output, QR Code & Actions (5 cols) -->
+      <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+
+        <!-- Live Generated URL Card -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Generated Campaign URL</span>
+            </label>
+            <div class="flex items-center gap-1.5 text-[11px] font-mono">
+              <span id="char-count-badge" class="px-2 py-0.5 rounded-md bg-surface-alt text-ink font-semibold">0 chars</span>
+            </div>
+          </div>
+
+          <!-- URL View Mode Tabs (Full vs Breakdown) -->
+          <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-surface-alt">
+            <button id="btn-view-full" type="button" class="touch-target py-1 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all">
+              Full URL
+            </button>
+            <button id="btn-view-breakdown" type="button" class="touch-target py-1 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all">
+              Parameters Breakdown
+            </button>
+          </div>
+
+          <!-- View 1: Full URL Container -->
+          <div id="view-full-container" class="relative rounded-xl bg-surface-alt border border-line p-3.5 break-all font-mono text-xs text-ink leading-relaxed max-h-48 overflow-y-auto scrollbar-thin select-all">
+            <span id="rendered-full-url" class="text-ink font-medium"></span>
+          </div>
+
+          <!-- View 2: Truncated / Parameter Breakdown Container -->
+          <div id="view-breakdown-container" class="hidden space-y-2 rounded-xl bg-surface-alt border border-line p-3.5 text-xs font-mono max-h-48 overflow-y-auto scrollbar-thin">
+            <div class="text-[11px] text-muted flex justify-between">
+              <span>Base URL:</span>
+              <span id="breakdown-base" class="text-ink font-semibold truncate ml-2"></span>
+            </div>
+            <div id="breakdown-params-list" class="space-y-1 pt-1 border-t border-line text-[11px]">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              id="btn-copy-url"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/>
+              </svg>
+              <span id="copy-btn-text">Copy URL</span>
+            </button>
+
+            <button
+              id="btn-save-history"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+            >
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+              </svg>
+              <span>Save Link</span>
+            </button>
+          </div>
+
+          <!-- Open In New Tab Link -->
+          <div class="text-center pt-1">
+            <a
+              id="link-test-url"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+            >
+              <span>Test & Open in New Tab</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Live QR Code Card -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+              </svg>
+              <span>Campaign QR Code</span>
+            </label>
+            <span class="text-[11px] text-muted">Ready for print & displays</span>
+          </div>
+
+          <!-- QR Code Canvas Display -->
+          <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-line">
+            <div id="qrcode-container" class="p-2"></div>
+            <p class="text-[10px] text-zinc-500 font-mono mt-2 truncate max-w-full" id="qr-target-label"></p>
+          </div>
+
+          <!-- Download QR Code Button -->
+          <button
+            id="btn-download-qr"
+            type="button"
+            class="w-full touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+          >
+            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <span>Download High-Res QR Code (PNG)</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- History / Saved URLs Section -->
+    <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4" style="border-color: var(--color-line);">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2">
+            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Saved Campaign History</span>
+            <span id="history-count-badge" class="text-xs px-2 py-0.5 rounded-full bg-surface-alt text-muted font-mono font-bold">0 links</span>
+          </h2>
+          <p class="text-xs text-muted mt-0.5">Stored locally in your browser for this session and future visits.</p>
+        </div>
+
+        <!-- History Actions -->
+        <div class="flex items-center gap-2">
+          <button
+            id="btn-export-csv"
+            type="button"
+            class="touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center gap-1.5"
+          >
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            id="btn-clear-history"
+            type="button"
+            class="touch-target px-3 py-1.5 rounded-xl text-xs font-semibold text-muted hover:text-red-500 transition-colors"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+
+      <!-- History Table / List -->
+      <div id="history-empty" class="py-8 text-center text-xs text-muted">
+        <svg class="w-8 h-8 text-muted/50 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <span>No saved campaign links yet. Build a URL and click <strong>"Save Link"</strong> to track your campaigns.</span>
+      </div>
+
+      <div id="history-table-container" class="hidden overflow-x-auto scrollbar-thin">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b text-muted font-bold uppercase tracking-wider text-[10px]" style="border-color: var(--color-line);">
+              <th class="py-2.5 px-3">Date</th>
+              <th class="py-2.5 px-3">Campaign</th>
+              <th class="py-2.5 px-3">Source / Medium</th>
+              <th class="py-2.5 px-3">Destination</th>
+              <th class="py-2.5 px-3">Full URL</th>
+              <th class="py-2.5 px-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody" class="divide-y" style="border-color: var(--color-line);">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Educational UTM Best Practices Accordion -->
+    <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-3 shadow-xs">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+        <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>UTM Tracking Best Practices & Guidelines</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-muted leading-relaxed">
+        <div class="space-y-1">
+          <h4 class="font-bold text-ink">1. Consistency & Lowercase</h4>
+          <p>Analytics tools treat <code>Facebook</code>, <code>facebook</code>, and <code>FB</code> as separate traffic sources. Always standardize on lowercase naming across your entire marketing team.</p>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-bold text-ink">2. Don't Track Internal Links</h4>
+          <p>Never put UTM parameters on internal website links (e.g. banners linking to your own pricing page). Doing so resets the user's original referrer session and skews conversion attribution.</p>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-bold text-ink">3. Standard Mediums</h4>
+          <p>Use industry-standard mediums recognized by GA4 Default Channel Groups: <code>cpc</code> (paid search), <code>paid_social</code> (ad campaigns), <code>social</code> (organic posts), and <code>email</code>.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Multi-Channel Batch Modal (Collapsible) -->
+  <div id="batch-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-3xl bg-surface border border-line shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-5 border-b" style="border-color: var(--color-line);">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-ink">Multi-Channel Batch Generator</h2>
+            <p class="text-xs text-muted">Generate UTM tracking links for multiple marketing channels in 1 click.</p>
+          </div>
+        </div>
+        <button id="btn-close-batch" class="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-surface-alt transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto space-y-4 text-xs scrollbar-thin">
+        <p class="text-muted">Select the channels you want to create campaign links for using your current Campaign Name (<strong><span id="batch-campaign-label"></span></strong>):</p>
+        
+        <!-- Channels Checkbox Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" id="batch-channels-grid">
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="google:cpc" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Google Ads (cpc)</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="facebook:social" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Facebook Post</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="facebook:paid_social" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Meta Paid Ad</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="instagram:social" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Instagram Bio</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="linkedin:social" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">LinkedIn Post</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="twitter:social" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">X / Twitter</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="newsletter:email" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Newsletter Email</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="youtube:video" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">YouTube Video</span>
+          </label>
+          <label class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+            <input type="checkbox" value="reddit:community" checked class="batch-channel-cb w-4 h-4 rounded text-accent accent-accent" />
+            <span class="font-medium text-ink">Reddit Post</span>
+          </label>
+        </div>
+
+        <!-- Generated Batch Results List -->
+        <div class="space-y-2 pt-2 border-t" style="border-color: var(--color-line);">
+          <div class="flex items-center justify-between">
+            <span class="font-bold uppercase tracking-wider text-muted text-[10px]">Generated Links</span>
+            <button id="btn-copy-all-batch" type="button" class="text-accent font-bold hover:underline">Copy All Links</button>
+          </div>
+          <div id="batch-results-list" class="space-y-2 max-h-60 overflow-y-auto scrollbar-thin">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Storage Key
+    const STORAGE_KEY = 'toolbox:utm_history';
+
+    // State
+    let currentOutputUrl = '';
+    let currentViewMode = 'full'; // 'full' | 'breakdown'
+    let qrcodeInstance = null;
+
+    // DOM Elements
+    const inputUrl = document.getElementById('input-url');
+    const inputSource = document.getElementById('input-source');
+    const inputMedium = document.getElementById('input-medium');
+    const inputCampaign = document.getElementById('input-campaign');
+    const inputTerm = document.getElementById('input-term');
+    const inputContent = document.getElementById('input-content');
+
+    const toggleLowercase = document.getElementById('toggle-lowercase');
+    const selectSpaceMode = document.getElementById('select-space-mode');
+
+    const renderedFullUrl = document.getElementById('rendered-full-url');
+    const charCountBadge = document.getElementById('char-count-badge');
+    const linkTestUrl = document.getElementById('link-test-url');
+    const qrcodeContainer = document.getElementById('qrcode-container');
+    const qrTargetLabel = document.getElementById('qr-target-label');
+
+    const btnViewFull = document.getElementById('btn-view-full');
+    const btnViewBreakdown = document.getElementById('btn-view-breakdown');
+    const viewFullContainer = document.getElementById('view-full-container');
+    const viewBreakdownContainer = document.getElementById('view-breakdown-container');
+    const breakdownBase = document.getElementById('breakdown-base');
+    const breakdownParamsList = document.getElementById('breakdown-params-list');
+
+    const btnCopyUrl = document.getElementById('btn-copy-url');
+    const copyBtnText = document.getElementById('copy-btn-text');
+    const btnSaveHistory = document.getElementById('btn-save-history');
+    const btnDownloadQr = document.getElementById('btn-download-qr');
+    const btnReset = document.getElementById('btn-reset');
+    const btnSampleData = document.getElementById('btn-sample-data');
+    const btnFixProtocol = document.getElementById('btn-fix-protocol');
+    const urlError = document.getElementById('url-error');
+
+    // Space Warning Containers
+    const sourceSpaceFix = document.getElementById('source-space-fix');
+    const mediumSpaceFix = document.getElementById('medium-space-fix');
+    const campaignSpaceFix = document.getElementById('campaign-space-fix');
+
+    // History elements
+    const historyCountBadge = document.getElementById('history-count-badge');
+    const historyEmpty = document.getElementById('history-empty');
+    const historyTableContainer = document.getElementById('history-table-container');
+    const historyTbody = document.getElementById('history-tbody');
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+
+    // Batch Modal elements
+    const btnBatchModalToggle = document.getElementById('btn-batch-modal-toggle');
+    const batchModal = document.getElementById('batch-modal');
+    const btnCloseBatch = document.getElementById('btn-close-batch');
+    const batchCampaignLabel = document.getElementById('batch-campaign-label');
+    const batchResultsList = document.getElementById('batch-results-list');
+    const btnCopyAllBatch = document.getElementById('btn-copy-all-batch');
+
+    // Clean String according to options
+    function formatParamValue(val) {
+      if (!val) return '';
+      let res = val.trim();
+      
+      const spaceMode = selectSpaceMode.value;
+      if (spaceMode === 'hyphen') {
+        res = res.replace(/\s+/g, '-');
+      } else if (spaceMode === 'underscore') {
+        res = res.replace(/\s+/g, '_');
+      } else if (spaceMode === 'plus') {
+        res = res.replace(/\s+/g, '+');
+      } else if (spaceMode === 'encode') {
+        res = res.replace(/\s+/g, '%20');
+      }
+
+      if (toggleLowercase.checked) {
+        res = res.toLowerCase();
+      }
+
+      return res;
+    }
+
+    // Build URL Logic
+    function buildUtmUrl(customSource, customMedium) {
+      let rawBaseUrl = inputUrl.value.trim();
+      if (!rawBaseUrl) return '';
+
+      // Auto-prefix protocol for URL parsing if missing
+      let parseUrlStr = rawBaseUrl;
+      if (!/^https?:\/\//i.test(parseUrlStr)) {
+        parseUrlStr = 'https://' + parseUrlStr;
+      }
+
+      try {
+        const urlObj = new URL(parseUrlStr);
+
+        const source = formatParamValue(customSource !== undefined ? customSource : inputSource.value);
+        const medium = formatParamValue(customMedium !== undefined ? customMedium : inputMedium.value);
+        const campaign = formatParamValue(inputCampaign.value);
+        const term = formatParamValue(inputTerm.value);
+        const content = formatParamValue(inputContent.value);
+
+        if (source) urlObj.searchParams.set('utm_source', source);
+        else urlObj.searchParams.delete('utm_source');
+
+        if (medium) urlObj.searchParams.set('utm_medium', medium);
+        else urlObj.searchParams.delete('utm_medium');
+
+        if (campaign) urlObj.searchParams.set('utm_campaign', campaign);
+        else urlObj.searchParams.delete('utm_campaign');
+
+        if (term) urlObj.searchParams.set('utm_term', term);
+        else urlObj.searchParams.delete('utm_term');
+
+        if (content) urlObj.searchParams.set('utm_content', content);
+        else urlObj.searchParams.delete('utm_content');
+
+        return urlObj.toString();
+      } catch (e) {
+        return rawBaseUrl;
+      }
+    }
+
+    // Validate and update UI
+    function updateBuilder() {
+      const rawUrl = inputUrl.value.trim();
+
+      // Protocol check
+      if (rawUrl && !/^https?:\/\//i.test(rawUrl)) {
+        btnFixProtocol.classList.remove('hidden');
+      } else {
+        btnFixProtocol.classList.add('hidden');
+      }
+
+      // URL Validity check
+      let isValidUrl = true;
+      if (rawUrl) {
+        try {
+          new URL(rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl);
+          urlError.classList.add('hidden');
+        } catch (e) {
+          isValidUrl = false;
+          urlError.classList.remove('hidden');
+        }
+      }
+
+      // Space warnings
+      if (/\s/.test(inputSource.value)) sourceSpaceFix.classList.remove('hidden');
+      else sourceSpaceFix.classList.add('hidden');
+
+      if (/\s/.test(inputMedium.value)) mediumSpaceFix.classList.remove('hidden');
+      else mediumSpaceFix.classList.add('hidden');
+
+      if (/\s/.test(inputCampaign.value)) campaignSpaceFix.classList.remove('hidden');
+      else campaignSpaceFix.classList.add('hidden');
+
+      // Generate final URL
+      currentOutputUrl = buildUtmUrl();
+      renderedFullUrl.innerText = currentOutputUrl || 'Enter your website URL to generate campaign link...';
+      charCountBadge.innerText = `${currentOutputUrl.length} chars`;
+
+      if (currentOutputUrl && isValidUrl) {
+        linkTestUrl.href = currentOutputUrl;
+        linkTestUrl.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        linkTestUrl.href = '#';
+        linkTestUrl.classList.add('opacity-50', 'pointer-events-none');
+      }
+
+      // Update Breakdown
+      updateBreakdownView();
+
+      // Render QR Code
+      renderQrCode();
+    }
+
+    // Update Breakdown View
+    function updateBreakdownView() {
+      let rawBaseUrl = inputUrl.value.trim();
+      breakdownBase.innerText = rawBaseUrl || 'None';
+
+      const params = [
+        { key: 'utm_source', val: formatParamValue(inputSource.value), color: 'text-blue-500' },
+        { key: 'utm_medium', val: formatParamValue(inputMedium.value), color: 'text-emerald-500' },
+        { key: 'utm_campaign', val: formatParamValue(inputCampaign.value), color: 'text-purple-500' },
+        { key: 'utm_term', val: formatParamValue(inputTerm.value), color: 'text-amber-500' },
+        { key: 'utm_content', val: formatParamValue(inputContent.value), color: 'text-pink-500' },
+      ];
+
+      breakdownParamsList.innerHTML = '';
+      params.forEach(p => {
+        if (p.val) {
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between py-1 border-b border-line/50';
+          div.innerHTML = `
+            <span class="font-bold ${p.color}">${p.key}</span>
+            <span class="text-ink font-semibold truncate ml-2">${escapeHtml(p.val)}</span>
+          `;
+          breakdownParamsList.appendChild(div);
+        }
+      });
+    }
+
+    // Render QR Code
+    function renderQrCode() {
+      if (!currentOutputUrl || currentOutputUrl.length < 5) {
+        qrcodeContainer.innerHTML = '<span class="text-xs text-zinc-400">QR Code will render here</span>';
+        qrTargetLabel.innerText = '';
+        return;
+      }
+
+      qrcodeContainer.innerHTML = '';
+      qrTargetLabel.innerText = currentOutputUrl;
+
+      try {
+        qrcodeInstance = new QRCode(qrcodeContainer, {
+          text: currentOutputUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (e) {
+        console.error('QR code error', e);
+      }
+    }
+
+    // Download QR Code as PNG
+    btnDownloadQr.addEventListener('click', () => {
+      const img = qrcodeContainer.querySelector('img') || qrcodeContainer.querySelector('canvas');
+      if (!img) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      let dataUrl = '';
+      if (img.tagName.toLowerCase() === 'img') {
+        dataUrl = img.src;
+      } else if (img.tagName.toLowerCase() === 'canvas') {
+        dataUrl = img.toDataURL('image/png');
+      }
+
+      if (dataUrl) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        const camp = formatParamValue(inputCampaign.value) || 'campaign';
+        a.download = `utm-qr-${camp}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded QR Code image!');
+      }
+    });
+
+    // View Mode Toggle
+    btnViewFull.addEventListener('click', () => {
+      currentViewMode = 'full';
+      btnViewFull.className = 'touch-target py-1 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all';
+      btnViewBreakdown.className = 'touch-target py-1 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all';
+      viewFullContainer.classList.remove('hidden');
+      viewBreakdownContainer.classList.add('hidden');
+    });
+
+    btnViewBreakdown.addEventListener('click', () => {
+      currentViewMode = 'breakdown';
+      btnViewBreakdown.className = 'touch-target py-1 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all';
+      btnViewFull.className = 'touch-target py-1 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all';
+      viewBreakdownContainer.classList.remove('hidden');
+      viewFullContainer.classList.add('hidden');
+    });
+
+    // Copy URL
+    btnCopyUrl.addEventListener('click', () => {
+      if (!currentOutputUrl) return;
+      navigator.clipboard.writeText(currentOutputUrl).then(() => {
+        showToast('Campaign URL copied to clipboard!');
+        copyBtnText.innerText = 'Copied!';
+        setTimeout(() => { copyBtnText.innerText = 'Copy URL'; }, 1800);
+      });
+    });
+
+    // Fix Protocol Helper
+    btnFixProtocol.addEventListener('click', () => {
+      if (inputUrl.value && !/^https?:\/\//i.test(inputUrl.value)) {
+        inputUrl.value = 'https://' + inputUrl.value;
+        updateBuilder();
+      }
+    });
+
+    // 1-Click Fix Space Buttons
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.classList.contains('btn-fix-space')) {
+        const targetId = e.target.dataset.target;
+        const replaceWith = e.target.dataset.replace;
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.value = el.value.replace(/\s+/g, replaceWith);
+          updateBuilder();
+          showToast(`Replaced spaces with '${replaceWith}'`);
+        }
+      }
+    });
+
+    // Channel Presets Click
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        inputSource.value = btn.dataset.source;
+        inputMedium.value = btn.dataset.medium;
+        updateBuilder();
+        showToast(`Applied ${btn.dataset.source} / ${btn.dataset.medium} preset`);
+      });
+    });
+
+    // Medium Chips Click
+    document.querySelectorAll('.medium-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        inputMedium.value = chip.innerText.trim();
+        updateBuilder();
+      });
+    });
+
+    // Reset Form
+    btnReset.addEventListener('click', () => {
+      inputUrl.value = '';
+      inputSource.value = '';
+      inputMedium.value = '';
+      inputCampaign.value = '';
+      inputTerm.value = '';
+      inputContent.value = '';
+      updateBuilder();
+      showToast('Form reset.');
+    });
+
+    // Load Sample Data
+    btnSampleData.addEventListener('click', () => {
+      inputUrl.value = 'https://example.com/pricing';
+      inputSource.value = 'google';
+      inputMedium.value = 'cpc';
+      inputCampaign.value = 'summer_sale_2026';
+      inputTerm.value = 'cloud+developer+tools';
+      inputContent.value = 'hero_cta_button';
+      updateBuilder();
+      showToast('Loaded sample marketing campaign.');
+    });
+
+    // Input listeners
+    [inputUrl, inputSource, inputMedium, inputCampaign, inputTerm, inputContent].forEach(el => {
+      el.addEventListener('input', updateBuilder);
+    });
+    toggleLowercase.addEventListener('change', updateBuilder);
+    selectSpaceMode.addEventListener('change', updateBuilder);
+
+    // ==========================================
+    // HISTORY & LOCALSTORAGE MANAGEMENT
+    // ==========================================
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveHistory(history) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (e) {
+        console.error('Failed to save to localStorage', e);
+      }
+    }
+
+    function renderHistory() {
+      const history = getHistory();
+      historyCountBadge.innerText = `${history.length} links`;
+
+      if (history.length === 0) {
+        historyEmpty.classList.remove('hidden');
+        historyTableContainer.classList.add('hidden');
+        return;
+      }
+
+      historyEmpty.classList.add('hidden');
+      historyTableContainer.classList.remove('hidden');
+      historyTbody.innerHTML = '';
+
+      history.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surface-alt/50 transition-colors';
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-muted text-[11px] whitespace-nowrap">${new Date(item.timestamp).toLocaleDateString()}</td>
+          <td class="py-2.5 px-3 font-semibold text-ink whitespace-nowrap">${escapeHtml(item.campaign || '—')}</td>
+          <td class="py-2.5 px-3 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[11px]">
+              ${escapeHtml(item.source)} / ${escapeHtml(item.medium)}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-muted truncate max-w-[150px]" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-accent truncate max-w-[220px]" title="${escapeHtml(item.fullUrl)}">
+            ${escapeHtml(item.fullUrl)}
+          </td>
+          <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
+            <button type="button" class="btn-copy-history-row p-1 rounded-lg text-muted hover:text-ink hover:bg-surface-alt transition-colors" data-url="${escapeHtml(item.fullUrl)}" title="Copy URL">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+            </button>
+            <button type="button" class="btn-load-history-row p-1 rounded-lg text-muted hover:text-accent hover:bg-surface-alt transition-colors" data-index="${index}" title="Load in Builder">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button type="button" class="btn-del-history-row p-1 rounded-lg text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors" data-index="${index}" title="Delete">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </td>
+        `;
+        historyTbody.appendChild(tr);
+      });
+    }
+
+    // Save Link to History
+    btnSaveHistory.addEventListener('click', () => {
+      if (!currentOutputUrl) {
+        showToast('Please enter a valid website URL first.');
+        return;
+      }
+
+      const item = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        url: inputUrl.value.trim(),
+        source: formatParamValue(inputSource.value),
+        medium: formatParamValue(inputMedium.value),
+        campaign: formatParamValue(inputCampaign.value),
+        term: formatParamValue(inputTerm.value),
+        content: formatParamValue(inputContent.value),
+        fullUrl: currentOutputUrl
+      };
+
+      const history = getHistory();
+      history.unshift(item);
+      saveHistory(history);
+      renderHistory();
+      showToast('Campaign link saved to history!');
+    });
+
+    // History Actions Delegation
+    historyTbody.addEventListener('click', (e) => {
+      const copyBtn = e.target.closest('.btn-copy-history-row');
+      if (copyBtn) {
+        navigator.clipboard.writeText(copyBtn.dataset.url).then(() => {
+          showToast('Copied URL from history!');
+        });
+        return;
+      }
+
+      const loadBtn = e.target.closest('.btn-load-history-row');
+      if (loadBtn) {
+        const history = getHistory();
+        const item = history[parseInt(loadBtn.dataset.index)];
+        if (item) {
+          inputUrl.value = item.url || '';
+          inputSource.value = item.source || '';
+          inputMedium.value = item.medium || '';
+          inputCampaign.value = item.campaign || '';
+          inputTerm.value = item.term || '';
+          inputContent.value = item.content || '';
+          updateBuilder();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast('Loaded campaign into builder!');
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-del-history-row');
+      if (delBtn) {
+        const history = getHistory();
+        history.splice(parseInt(delBtn.dataset.index), 1);
+        saveHistory(history);
+        renderHistory();
+        showToast('Deleted link from history.');
+        return;
+      }
+    });
+
+    // Clear All History
+    btnClearHistory.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all saved campaign URLs?')) {
+        saveHistory([]);
+        renderHistory();
+        showToast('History cleared.');
+      }
+    });
+
+    // Export History as CSV
+    btnExportCsv.addEventListener('click', () => {
+      const history = getHistory();
+      if (history.length === 0) {
+        showToast('No history to export.');
+        return;
+      }
+
+      let csv = 'Timestamp,Date,Campaign,Source,Medium,Destination_URL,Term,Content,Full_UTM_URL\n';
+      history.forEach(h => {
+        csv += [
+          h.timestamp,
+          `"${new Date(h.timestamp).toISOString()}"`,
+          `"${(h.campaign || '').replace(/"/g, '""')}"`,
+          `"${(h.source || '').replace(/"/g, '""')}"`,
+          `"${(h.medium || '').replace(/"/g, '""')}"`,
+          `"${(h.url || '').replace(/"/g, '""')}"`,
+          `"${(h.term || '').replace(/"/g, '""')}"`,
+          `"${(h.content || '').replace(/"/g, '""')}"`,
+          `"${(h.fullUrl || '').replace(/"/g, '""')}"`,
+        ].join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `utm-campaigns-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Exported campaign history as CSV!');
+    });
+
+    // ==========================================
+    // MULTI-CHANNEL BATCH MODAL
+    // ==========================================
+    function renderBatchResults() {
+      const campaignName = formatParamValue(inputCampaign.value) || 'campaign_name';
+      batchCampaignLabel.innerText = campaignName;
+
+      const checkedChannels = Array.from(document.querySelectorAll('.batch-channel-cb:checked')).map(cb => {
+        const [source, medium] = cb.value.split(':');
+        return { source, medium };
+      });
+
+      batchResultsList.innerHTML = '';
+      if (checkedChannels.length === 0) {
+        batchResultsList.innerHTML = '<p class="text-muted text-center py-4">Please select at least one channel above.</p>';
+        return;
+      }
+
+      checkedChannels.forEach(ch => {
+        const url = buildUtmUrl(ch.source, ch.medium);
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl bg-surface-alt border border-line space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-ink flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+              <span>${escapeHtml(ch.source)} / ${escapeHtml(ch.medium)}</span>
+            </span>
+            <button type="button" class="btn-copy-batch-single text-[11px] font-bold text-accent hover:underline" data-url="${escapeHtml(url)}">
+              Copy Link
+            </button>
+          </div>
+          <p class="font-mono text-[11px] text-muted truncate select-all">${escapeHtml(url)}</p>
+        `;
+        batchResultsList.appendChild(div);
+      });
+    }
+
+    btnBatchModalToggle.addEventListener('click', () => {
+      batchModal.classList.remove('hidden');
+      renderBatchResults();
+    });
+
+    btnCloseBatch.addEventListener('click', () => {
+      batchModal.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.batch-channel-cb').forEach(cb => {
+      cb.addEventListener('change', renderBatchResults);
+    });
+
+    batchResultsList.addEventListener('click', (e) => {
+      if (e.target && e.target.classList.contains('btn-copy-batch-single')) {
+        navigator.clipboard.writeText(e.target.dataset.url).then(() => {
+          showToast('Channel link copied!');
+        });
+      }
+    });
+
+    btnCopyAllBatch.addEventListener('click', () => {
+      const urls = Array.from(document.querySelectorAll('.btn-copy-batch-single')).map(b => b.dataset.url);
+      if (urls.length === 0) return;
+      navigator.clipboard.writeText(urls.join('\n')).then(() => {
+        showToast(`Copied all ${urls.length} batch links to clipboard!`);
+      });
+    });
+
+    // Helper: Show Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    updateBuilder();
+    renderHistory();
+  </script>
+</body>
+</html>

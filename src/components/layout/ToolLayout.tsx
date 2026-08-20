@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Share2, ExternalLink, Check } from 'lucide-react';
+import { Star, Share2, ExternalLink, Check, Mail } from 'lucide-react';
 import { Tool } from '../../types';
 import { Breadcrumbs } from './Breadcrumbs';
 import { DynamicIcon } from '../common/DynamicIcon';
@@ -148,6 +148,21 @@ export const ToolLayout: React.FC<ToolLayoutProps> = ({ tool, children }) => {
           </div>
         </div>
       )}
+
+      {/* Request Tool Prompt */}
+      <div className="mt-12 p-6 rounded-2xl bg-surface border border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div>
+          <h4 className="text-sm font-bold text-ink">Need a specific tool or feature?</h4>
+          <p className="text-xs text-muted mt-0.5">Let us know what developer or marketing tool you'd like us to build next.</p>
+        </div>
+        <a
+          href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy&body=Hi%20Toolzy%20Team%2C%0A%0AI%20would%20like%20to%20request%20a%20new%20tool%20for%20Toolzy%3A%0A%0A-%20Tool%20Name%3A%20%0A-%20Description%20%26%20Use%20Case%3A%20%0A-%20Key%20Features%3A%20%0A%0AThank%20you!"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors shrink-0 shadow-xs"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Request a Tool</span>
+        </a>
+      </div>
     </div>
   );
 };

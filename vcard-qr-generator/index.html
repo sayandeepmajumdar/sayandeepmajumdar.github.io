@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vCard QR Code Generator & Digital Business Card — Toolzy</title>
+  <meta name="description" content="Generate instant vCard 3.0 contact QR codes and printable business cards. Add multiple phone numbers, emails, addresses, job titles, and logos with 100% client-side privacy." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Library: qrcode-generator (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      header, #form-column, #tech-breakdown-card, #export-buttons-group, #view-mode-toggle, #toast {
+        display: none !important;
+      }
+      #preview-column {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+      }
+      #print-card-wrapper {
+        box-shadow: none !important;
+        border: 2px solid #000000 !important;
+        page-break-inside: avoid;
+        margin: 40px auto !important;
+        max-width: 520px !important;
+      }
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold shadow-md shadow-purple-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">vCard QR Code Generator & Business Card Studio</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate instant contact QR codes (vCard 3.0) and printable business cards.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy & View Mode Switcher -->
+      <div class="flex items-center gap-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>100% In-Memory</span>
+        </div>
+
+        <div id="view-mode-toggle" class="flex items-center p-1 rounded-xl bg-surface border border-line shadow-2xs">
+          <button id="btn-mode-qr" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            <span>QR Only</span>
+          </button>
+          <button id="btn-mode-card" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span>Business Card</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid: Inputs (7 cols) & Live Preview (5 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Contact Inputs & Settings (7 cols) -->
+      <div id="form-column" class="lg:col-span-7 space-y-6">
+
+        <!-- Card 1: Name & Professional Details -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-black">1</span>
+              <span>Personal & Professional Info</span>
+            </h2>
+            <div class="flex items-center gap-2">
+              <button id="btn-load-sample" type="button" class="text-[11px] font-bold text-accent hover:underline">Load Sample</button>
+              <span class="text-muted">•</span>
+              <button id="btn-clear-all" type="button" class="text-[11px] font-bold text-muted hover:text-red-500">Clear</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="input-fname" class="block text-xs font-bold uppercase tracking-wider text-muted">First Name <span class="text-red-500">*</span></label>
+              <input id="input-fname" type="text" value="Alex" placeholder="e.g. Alex" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium" required />
+            </div>
+
+            <div class="space-y-1">
+              <label for="input-lname" class="block text-xs font-bold uppercase tracking-wider text-muted">Last Name <span class="text-red-500">*</span></label>
+              <input id="input-lname" type="text" value="Rivera" placeholder="e.g. Rivera" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="input-company" class="block text-xs font-bold uppercase tracking-wider text-muted">Organization / Company</label>
+              <input id="input-company" type="text" value="Acme Technologies" placeholder="e.g. Acme Tech Ltd" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink" />
+            </div>
+
+            <div class="space-y-1">
+              <label for="input-title" class="block text-xs font-bold uppercase tracking-wider text-muted">Job Title / Role</label>
+              <input id="input-title" type="text" value="Principal Solutions Architect" placeholder="e.g. Senior Product Lead" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Contact Methods (Phones & Emails) -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">2</span>
+            <span>Phone Numbers & Emails</span>
+          </h2>
+
+          <!-- Phone Numbers Dynamic List -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted">Phone Numbers</label>
+              <button id="btn-add-phone" type="button" class="text-xs font-bold text-accent hover:underline flex items-center gap-1">
+                <span>+ Add Phone</span>
+              </button>
+            </div>
+            <div id="phones-container" class="space-y-2">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Email Addresses Dynamic List -->
+          <div class="space-y-2 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted">Email Addresses</label>
+              <button id="btn-add-email" type="button" class="text-xs font-bold text-accent hover:underline flex items-center gap-1">
+                <span>+ Add Email</span>
+              </button>
+            </div>
+            <div id="emails-container" class="space-y-2">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Online & Physical Address -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">3</span>
+            <span>Website, Address & Social Notes</span>
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="input-website" class="block text-xs font-bold uppercase tracking-wider text-muted">Website URL</label>
+              <input id="input-website" type="url" value="https://example.com/alex" placeholder="https://example.com" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink" />
+            </div>
+
+            <div class="space-y-1">
+              <label for="input-social" class="block text-xs font-bold uppercase tracking-wider text-muted">LinkedIn / Social Handle</label>
+              <input id="input-social" type="text" value="linkedin.com/in/alexrivera-tech" placeholder="linkedin.com/in/username" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink" />
+            </div>
+          </div>
+
+          <!-- Physical Address Grid -->
+          <div class="space-y-2 pt-2 border-t" style="border-color: var(--color-line);">
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted">Physical Address</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div class="sm:col-span-3">
+                <input id="input-street" type="text" value="100 Market St, Suite 400" placeholder="Street Address" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <input id="input-city" type="text" value="San Francisco" placeholder="City" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <input id="input-state" type="text" value="CA" placeholder="State / Province" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <input id="input-zip" type="text" value="94105" placeholder="Postal Code" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="space-y-1 pt-2 border-t" style="border-color: var(--color-line);">
+            <label for="input-notes" class="block text-xs font-bold uppercase tracking-wider text-muted">Notes / Bio</label>
+            <textarea id="input-notes" rows="2" placeholder="Specialties: Distributed Systems, Cloud Architecture, Open Source..." class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink">Specialties: Cloud Systems, Architecture & AI</textarea>
+          </div>
+        </div>
+
+        <!-- Card 4: Design & QR Appearance -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-pink-500/10 text-pink-500 flex items-center justify-center text-xs font-black">4</span>
+            <span>QR Code Appearance & Colors</span>
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Foreground Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">QR Dots Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-dark" type="color" value="#0f172a" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-dark" type="text" value="#0f172a" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Background Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">Background Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-light" type="color" value="#ffffff" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-light" type="text" value="#ffffff" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Error Correction Level -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="select-ecc" class="block text-xs font-bold text-muted">Error Correction</label>
+                <span class="text-[10px] text-muted" title="M or Q is recommended for dense vCards">ℹ️ Info</span>
+              </div>
+              <select id="select-ecc" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                <option value="L">L - Low (7% Recovery)</option>
+                <option value="M" selected>M - Medium (15% Recovery - Recommended)</option>
+                <option value="Q">Q - Quartile (25% Recovery)</option>
+                <option value="H">H - High (30% Recovery for Logos)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Resolution Slider -->
+          <div class="space-y-1.5 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center justify-between text-xs">
+              <label class="font-bold text-muted">QR Resolution</label>
+              <span id="label-size" class="font-mono font-bold text-ink">300 × 300 px</span>
+            </div>
+            <input id="slider-size" type="range" min="200" max="600" step="20" value="300" class="w-full accent-accent cursor-pointer" />
+          </div>
+
+          <!-- Center User Avatar/Logo Toggle -->
+          <div class="flex items-center justify-between pt-2 border-t" style="border-color: var(--color-line);">
+            <div>
+              <span class="text-xs font-bold text-ink block">Center Contact Icon Badge</span>
+              <span class="text-[11px] text-muted block">Embeds stylish contact person badge in QR center</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="toggle-center-logo" type="checkbox" checked class="sr-only peer" />
+              <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Live Previews & Exports (5 cols) -->
+      <div id="preview-column" class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+        
+        <!-- Live Preview Card -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="preview-title-label">Live vCard QR Preview</span>
+            </label>
+            <span id="payload-density-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold">240 bytes (Optimal)</span>
+          </div>
+
+          <!-- Business Card Mockup Wrapper -->
+          <div id="print-card-wrapper" class="flex flex-col items-center justify-center p-6 sm:p-7 rounded-2xl bg-white text-zinc-900 border border-line shadow-xs transition-all">
+            
+            <!-- Business Card Header (Visible in Card Mode) -->
+            <div id="card-header-area" class="w-full text-left mb-4 pb-3 border-b border-zinc-100 hidden">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 id="card-display-fullname" class="text-lg font-black tracking-tight text-zinc-900">Alex Rivera</h3>
+                  <p id="card-display-title" class="text-xs font-semibold text-blue-600">Principal Solutions Architect</p>
+                  <p id="card-display-company" class="text-[11px] text-zinc-500 font-medium">Acme Technologies</p>
+                </div>
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm">
+                  AR
+                </div>
+              </div>
+            </div>
+
+            <!-- Canvas Render Container -->
+            <div id="qrcode-render-target" class="flex items-center justify-center">
+              <!-- Injected via Canvas -->
+            </div>
+
+            <!-- Business Card Footer (Visible in Card Mode) -->
+            <div id="card-footer-area" class="w-full mt-4 pt-3 border-t border-zinc-100 text-xs space-y-1 text-zinc-600 hidden text-left">
+              <div id="card-phone-row" class="flex items-center gap-2 text-[11px]">
+                <span class="text-zinc-400">📞</span>
+                <span id="card-display-phone" class="font-mono text-zinc-800 font-medium">+1 (555) 019-2834</span>
+              </div>
+              <div id="card-email-row" class="flex items-center gap-2 text-[11px]">
+                <span class="text-zinc-400">✉️</span>
+                <span id="card-display-email" class="font-mono text-zinc-800 font-medium">alex.rivera@example.com</span>
+              </div>
+              <div id="card-web-row" class="flex items-center gap-2 text-[11px]">
+                <span class="text-zinc-400">🌐</span>
+                <span id="card-display-website" class="font-mono text-zinc-800 font-medium">https://example.com/alex</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Action Buttons -->
+          <div id="export-buttons-group" class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-download-png"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                id="btn-download-vcf"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Download .vcf File</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                id="btn-download-svg"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>SVG</span>
+              </button>
+
+              <button
+                id="btn-copy-qr-image"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy Image</span>
+              </button>
+
+              <button
+                id="btn-print-card"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Print Card</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raw vCard 3.0 Code Inspector Card -->
+        <div id="tech-breakdown-card" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-3 shadow-sm">
+          <div class="flex items-center justify-between border-b pb-2.5" style="border-color: var(--color-line);">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              <span>vCard 3.0 Payload</span>
+            </h3>
+            <button id="btn-copy-raw-vcard" type="button" class="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
+              <span>Copy Raw vCard</span>
+            </button>
+          </div>
+
+          <pre id="raw-vcard-display" class="p-3.5 rounded-xl bg-surface-alt border border-line font-mono text-[11px] text-ink overflow-x-auto whitespace-pre leading-relaxed select-all max-h-56 scrollbar-thin"></pre>
+
+          <p class="text-[11px] text-muted">Compatible with iOS Contacts, Google Contacts, Outlook, macOS, and Android address books.</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // State
+    let isCardMode = false;
+    let currentVcardString = '';
+    let personLogoImg = null;
+
+    let phonesList = [
+      { type: 'CELL', number: '+1 (555) 019-2834' },
+      { type: 'WORK', number: '+1 (555) 019-5678' }
+    ];
+
+    let emailsList = [
+      { type: 'WORK', email: 'alex.rivera@example.com' },
+      { type: 'HOME', email: 'alex.personal@example.com' }
+    ];
+
+    // Elements
+    const inputFname = document.getElementById('input-fname');
+    const inputLname = document.getElementById('input-lname');
+    const inputCompany = document.getElementById('input-company');
+    const inputTitle = document.getElementById('input-title');
+    const inputWebsite = document.getElementById('input-website');
+    const inputSocial = document.getElementById('input-social');
+    const inputStreet = document.getElementById('input-street');
+    const inputCity = document.getElementById('input-city');
+    const inputState = document.getElementById('input-state');
+    const inputZip = document.getElementById('input-zip');
+    const inputNotes = document.getElementById('input-notes');
+
+    const phonesContainer = document.getElementById('phones-container');
+    const emailsContainer = document.getElementById('emails-container');
+    const btnAddPhone = document.getElementById('btn-add-phone');
+    const btnAddEmail = document.getElementById('btn-add-email');
+    const btnLoadSample = document.getElementById('btn-load-sample');
+    const btnClearAll = document.getElementById('btn-clear-all');
+
+    const pickerColorDark = document.getElementById('picker-color-dark');
+    const inputColorDark = document.getElementById('input-color-dark');
+    const pickerColorLight = document.getElementById('picker-color-light');
+    const inputColorLight = document.getElementById('input-color-light');
+    const selectEcc = document.getElementById('select-ecc');
+    const sliderSize = document.getElementById('slider-size');
+    const labelSize = document.getElementById('label-size');
+    const toggleCenterLogo = document.getElementById('toggle-center-logo');
+
+    const btnModeQr = document.getElementById('btn-mode-qr');
+    const btnModeCard = document.getElementById('btn-mode-card');
+    const previewTitleLabel = document.getElementById('preview-title-label');
+    const printCardWrapper = document.getElementById('print-card-wrapper');
+    const cardHeaderArea = document.getElementById('card-header-area');
+    const cardFooterArea = document.getElementById('card-footer-area');
+    const cardDisplayFullname = document.getElementById('card-display-fullname');
+    const cardDisplayTitle = document.getElementById('card-display-title');
+    const cardDisplayCompany = document.getElementById('card-display-company');
+    const cardDisplayPhone = document.getElementById('card-display-phone');
+    const cardDisplayEmail = document.getElementById('card-display-email');
+    const cardDisplayWebsite = document.getElementById('card-display-website');
+
+    const qrRenderTarget = document.getElementById('qrcode-render-target');
+    const rawVcardDisplay = document.getElementById('raw-vcard-display');
+    const payloadDensityBadge = document.getElementById('payload-density-badge');
+
+    const btnDownloadPng = document.getElementById('btn-download-png');
+    const btnDownloadSvg = document.getElementById('btn-download-svg');
+    const btnDownloadVcf = document.getElementById('btn-download-vcf');
+    const btnCopyQrImage = document.getElementById('btn-copy-qr-image');
+    const btnCopyRawVcard = document.getElementById('btn-copy-raw-vcard');
+    const btnPrintCard = document.getElementById('btn-print-card');
+
+    // Create Pre-rendered Person Contact Icon for Center Badge
+    function initPersonLogo() {
+      const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+      img.onload = () => {
+        personLogoImg = img;
+        updateQrCode();
+      };
+    }
+
+    // Escape vCard special characters (\, ;, ,, \n)
+    function escapeVcard(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/\r\n|\r|\n/g, '\\n');
+    }
+
+    // Render Dynamic Phone Rows
+    function renderPhones() {
+      phonesContainer.innerHTML = '';
+      phonesList.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+          <select class="phone-type-select px-2.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-semibold" data-index="${index}">
+            <option value="CELL" ${item.type === 'CELL' ? 'selected' : ''}>Mobile</option>
+            <option value="WORK" ${item.type === 'WORK' ? 'selected' : ''}>Work</option>
+            <option value="HOME" ${item.type === 'HOME' ? 'selected' : ''}>Home</option>
+            <option value="FAX" ${item.type === 'FAX' ? 'selected' : ''}>Fax</option>
+          </select>
+          <input type="tel" value="${item.number}" placeholder="Phone number" class="phone-number-input flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" data-index="${index}" />
+          ${phonesList.length > 1 ? `<button type="button" class="btn-remove-phone p-2 text-muted hover:text-red-500 transition-colors" data-index="${index}" title="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>` : ''}
+        `;
+        phonesContainer.appendChild(row);
+      });
+    }
+
+    // Render Dynamic Email Rows
+    function renderEmails() {
+      emailsContainer.innerHTML = '';
+      emailsList.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+          <select class="email-type-select px-2.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-semibold" data-index="${index}">
+            <option value="WORK" ${item.type === 'WORK' ? 'selected' : ''}>Work</option>
+            <option value="HOME" ${item.type === 'HOME' ? 'selected' : ''}>Personal</option>
+            <option value="OTHER" ${item.type === 'OTHER' ? 'selected' : ''}>Other</option>
+          </select>
+          <input type="email" value="${item.email}" placeholder="Email address" class="email-address-input flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" data-index="${index}" />
+          ${emailsList.length > 1 ? `<button type="button" class="btn-remove-email p-2 text-muted hover:text-red-500 transition-colors" data-index="${index}" title="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>` : ''}
+        `;
+        emailsContainer.appendChild(row);
+      });
+    }
+
+    // Dynamic Row Event Listeners
+    btnAddPhone.addEventListener('click', () => {
+      phonesList.push({ type: 'CELL', number: '' });
+      renderPhones();
+    });
+
+    phonesContainer.addEventListener('input', (e) => {
+      const idx = e.target.dataset.index;
+      if (e.target.classList.contains('phone-number-input')) {
+        phonesList[idx].number = e.target.value;
+        updateQrCode();
+      }
+    });
+
+    phonesContainer.addEventListener('change', (e) => {
+      const idx = e.target.dataset.index;
+      if (e.target.classList.contains('phone-type-select')) {
+        phonesList[idx].type = e.target.value;
+        updateQrCode();
+      }
+    });
+
+    phonesContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-remove-phone');
+      if (btn) {
+        phonesList.splice(parseInt(btn.dataset.index), 1);
+        renderPhones();
+        updateQrCode();
+      }
+    });
+
+    btnAddEmail.addEventListener('click', () => {
+      emailsList.push({ type: 'WORK', email: '' });
+      renderEmails();
+    });
+
+    emailsContainer.addEventListener('input', (e) => {
+      const idx = e.target.dataset.index;
+      if (e.target.classList.contains('email-address-input')) {
+        emailsList[idx].email = e.target.value;
+        updateQrCode();
+      }
+    });
+
+    emailsContainer.addEventListener('change', (e) => {
+      const idx = e.target.dataset.index;
+      if (e.target.classList.contains('email-type-select')) {
+        emailsList[idx].type = e.target.value;
+        updateQrCode();
+      }
+    });
+
+    emailsContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-remove-email');
+      if (btn) {
+        emailsList.splice(parseInt(btn.dataset.index), 1);
+        renderEmails();
+        updateQrCode();
+      }
+    });
+
+    // View Mode Toggle
+    btnModeQr.addEventListener('click', () => {
+      isCardMode = false;
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Live vCard QR Preview';
+      cardHeaderArea.classList.add('hidden');
+      cardFooterArea.classList.add('hidden');
+    });
+
+    btnModeCard.addEventListener('click', () => {
+      isCardMode = true;
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Digital Business Card Preview';
+      cardHeaderArea.classList.remove('hidden');
+      cardFooterArea.classList.remove('hidden');
+      updateCardDisplay();
+    });
+
+    // Build Standard vCard 3.0 String
+    function computeVcard() {
+      const fn = inputFname.value.trim();
+      const ln = inputLname.value.trim();
+      const org = inputCompany.value.trim();
+      const title = inputTitle.value.trim();
+      const url = inputWebsite.value.trim();
+      const social = inputSocial.value.trim();
+      const street = inputStreet.value.trim();
+      const city = inputCity.value.trim();
+      const state = inputState.value.trim();
+      const zip = inputZip.value.trim();
+      const notes = inputNotes.value.trim();
+
+      if (!fn && !ln && !org) return '';
+
+      let v = 'BEGIN:VCARD\r\nVERSION:3.0\r\n';
+      
+      // N: Structured Name (Family;Given;Additional;Prefix;Suffix)
+      v += `N:${escapeVcard(ln)};${escapeVcard(fn)};;;\r\n`;
+      // FN: Full Formatted Name
+      v += `FN:${escapeVcard(fn)} ${escapeVcard(ln)}\r\n`.trim() + '\r\n';
+
+      if (org) v += `ORG:${escapeVcard(org)}\r\n`;
+      if (title) v += `TITLE:${escapeVcard(title)}\r\n`;
+
+      // Phone Numbers
+      phonesList.forEach(p => {
+        if (p.number.trim()) {
+          const type = p.type === 'CELL' ? 'CELL,VOICE' : p.type === 'WORK' ? 'WORK,VOICE' : 'HOME,VOICE';
+          v += `TEL;TYPE=${type}:${p.number.trim()}\r\n`;
+        }
+      });
+
+      // Emails
+      emailsList.forEach(e => {
+        if (e.email.trim()) {
+          const type = e.type === 'WORK' ? 'WORK,INTERNET' : 'HOME,INTERNET';
+          v += `EMAIL;TYPE=${type}:${e.email.trim()}\r\n`;
+        }
+      });
+
+      if (url) v += `URL:${url}\r\n`;
+
+      // Physical Address (ADR: ;;street;city;state;zip;country)
+      if (street || city || state || zip) {
+        v += `ADR;TYPE=WORK:;;${escapeVcard(street)};${escapeVcard(city)};${escapeVcard(state)};${escapeVcard(zip)};\r\n`;
+      }
+
+      // Notes & Social
+      let fullNotes = notes;
+      if (social) {
+        fullNotes += (fullNotes ? ' | ' : '') + `Social: ${social}`;
+      }
+      if (fullNotes) {
+        v += `NOTE:${escapeVcard(fullNotes)}\r\n`;
+      }
+
+      v += 'END:VCARD';
+      return v;
+    }
+
+    // Update Business Card Display Elements
+    function updateCardDisplay() {
+      const fn = inputFname.value.trim() || '';
+      const ln = inputLname.value.trim() || '';
+      const fullName = `${fn} ${ln}`.trim() || 'Your Name';
+      cardDisplayFullname.innerText = fullName;
+      cardDisplayTitle.innerText = inputTitle.value.trim() || 'Professional Title';
+      cardDisplayCompany.innerText = inputCompany.value.trim() || 'Organization';
+
+      const firstPhone = phonesList.find(p => p.number.trim())?.number || '';
+      const firstEmail = emailsList.find(e => e.email.trim())?.email || '';
+      const web = inputWebsite.value.trim() || '';
+
+      cardDisplayPhone.innerText = firstPhone || '(No phone)';
+      cardDisplayEmail.innerText = firstEmail || '(No email)';
+      cardDisplayWebsite.innerText = web || '(No website)';
+    }
+
+    // Render QR Code onto Canvas
+    function updateQrCode() {
+      currentVcardString = computeVcard();
+      rawVcardDisplay.innerText = currentVcardString || 'Enter contact details above to generate vCard 3.0 payload...';
+      updateCardDisplay();
+
+      qrRenderTarget.innerHTML = '';
+      if (!currentVcardString) {
+        qrRenderTarget.innerHTML = '<div class="w-48 h-48 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-muted">Enter name to preview</div>';
+        payloadDensityBadge.innerText = '0 bytes';
+        payloadDensityBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-surface-alt text-muted font-bold';
+        return;
+      }
+
+      // Byte Count & Density Warning
+      const byteSize = new Blob([currentVcardString]).size;
+      if (byteSize < 350) {
+        payloadDensityBadge.innerText = `${byteSize} bytes (Optimal Scan)`;
+        payloadDensityBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold';
+      } else if (byteSize < 750) {
+        payloadDensityBadge.innerText = `${byteSize} bytes (Standard)`;
+        payloadDensityBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 font-bold';
+      } else {
+        payloadDensityBadge.innerText = `${byteSize} bytes (Dense - Hold Close)`;
+        payloadDensityBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 font-bold';
+      }
+
+      let ecc = selectEcc.value; // 'L', 'M', 'Q', 'H'
+      let qr;
+      try {
+        qr = qrcode(0, ecc);
+        qr.addData(currentVcardString);
+        qr.make();
+      } catch (err) {
+        try {
+          qr = qrcode(0, 'L');
+          qr.addData(currentVcardString);
+          qr.make();
+        } catch (e) {
+          qrRenderTarget.innerHTML = `<div class="p-4 rounded-xl bg-red-500/10 text-red-500 text-xs text-center font-medium">Contact payload too large for QR encoding.</div>`;
+          return;
+        }
+      }
+
+      const moduleCount = qr.getModuleCount();
+      const size = parseInt(sliderSize.value, 10);
+      const margin = 2; // quiet zone in modules
+      const totalModules = moduleCount + margin * 2;
+      const cellSize = size / totalModules;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.id = 'vcard-qr-canvas';
+      canvas.className = 'max-w-full h-auto rounded-xl shadow-xs';
+      const ctx = canvas.getContext('2d');
+
+      // 1. Draw Background
+      ctx.fillStyle = inputColorLight.value;
+      ctx.fillRect(0, 0, size, size);
+
+      // 2. Draw Dark Modules
+      ctx.fillStyle = inputColorDark.value;
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const x = Math.round((c + margin) * cellSize);
+            const y = Math.round((r + margin) * cellSize);
+            const w = Math.ceil(cellSize);
+            const h = Math.ceil(cellSize);
+            ctx.fillRect(x, y, w, h);
+          }
+        }
+      }
+
+      // 3. Draw Center Contact Person Badge if enabled
+      if (toggleCenterLogo.checked && personLogoImg && (personLogoImg.complete || personLogoImg.naturalWidth > 0)) {
+        const logoSize = Math.round(size * 0.2);
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        const badgePadding = Math.max(5, Math.round(cellSize * 0.9));
+        const badgeSize = logoSize + badgePadding * 2;
+
+        // Draw Circular Badge Background
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, badgeSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Person Logo
+        ctx.save();
+        ctx.drawImage(personLogoImg, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
+
+      qrRenderTarget.innerHTML = '';
+      qrRenderTarget.appendChild(canvas);
+    }
+
+    // Attach Input Event Listeners
+    document.querySelectorAll('#form-column input, #form-column textarea, #form-column select').forEach(el => {
+      el.addEventListener('input', updateQrCode);
+      el.addEventListener('change', updateQrCode);
+    });
+
+    pickerColorDark.addEventListener('input', (e) => { inputColorDark.value = e.target.value; updateQrCode(); });
+    inputColorDark.addEventListener('input', () => updateQrCode());
+    pickerColorLight.addEventListener('input', (e) => { inputColorLight.value = e.target.value; updateQrCode(); });
+    inputColorLight.addEventListener('input', () => updateQrCode());
+    selectEcc.addEventListener('change', updateQrCode);
+    toggleCenterLogo.addEventListener('change', updateQrCode);
+
+    sliderSize.addEventListener('input', (e) => {
+      labelSize.innerText = `${e.target.value} × ${e.target.value} px`;
+      updateQrCode();
+    });
+
+    // Sample Preset Loader
+    btnLoadSample.addEventListener('click', () => {
+      inputFname.value = 'Alex';
+      inputLname.value = 'Rivera';
+      inputCompany.value = 'Acme Technologies';
+      inputTitle.value = 'Principal Solutions Architect';
+      inputWebsite.value = 'https://example.com/alex';
+      inputSocial.value = 'linkedin.com/in/alexrivera-tech';
+      inputStreet.value = '100 Market St, Suite 400';
+      inputCity.value = 'San Francisco';
+      inputState.value = 'CA';
+      inputZip.value = '94105';
+      inputNotes.value = 'Specialties: Cloud Systems, Architecture & AI';
+
+      phonesList = [
+        { type: 'CELL', number: '+1 (555) 019-2834' },
+        { type: 'WORK', number: '+1 (555) 019-5678' }
+      ];
+      emailsList = [
+        { type: 'WORK', email: 'alex.rivera@example.com' },
+        { type: 'HOME', email: 'alex.personal@example.com' }
+      ];
+
+      renderPhones();
+      renderEmails();
+      updateQrCode();
+      showToast('Loaded sample contact profile.');
+    });
+
+    // Clear All
+    btnClearAll.addEventListener('click', () => {
+      inputFname.value = '';
+      inputLname.value = '';
+      inputCompany.value = '';
+      inputTitle.value = '';
+      inputWebsite.value = '';
+      inputSocial.value = '';
+      inputStreet.value = '';
+      inputCity.value = '';
+      inputState.value = '';
+      inputZip.value = '';
+      inputNotes.value = '';
+
+      phonesList = [{ type: 'CELL', number: '' }];
+      emailsList = [{ type: 'WORK', email: '' }];
+
+      renderPhones();
+      renderEmails();
+      updateQrCode();
+      showToast('Cleared contact form.');
+    });
+
+    // Export: Download PNG
+    btnDownloadPng.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const dataUrl = canvasEl.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const fn = inputFname.value.trim() || 'contact';
+      const ln = inputLname.value.trim() || 'vcard';
+      a.download = `vcard-qr-${fn}-${ln}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Downloaded vCard QR Code as PNG!');
+    });
+
+    // Export: Download SVG
+    btnDownloadSvg.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const size = parseInt(sliderSize.value, 10);
+      const dataUrl = canvasEl.toDataURL('image/png');
+
+      const svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <image width="${size}" height="${size}" xlink:href="${dataUrl}"/>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const fn = inputFname.value.trim() || 'contact';
+      const ln = inputLname.value.trim() || 'vcard';
+      a.download = `vcard-qr-${fn}-${ln}-${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded vCard QR Code as SVG!');
+    });
+
+    // Export: Download .vcf file
+    btnDownloadVcf.addEventListener('click', () => {
+      if (!currentVcardString) {
+        showToast('No contact data to export.');
+        return;
+      }
+
+      const blob = new Blob([currentVcardString], { type: 'text/vcard;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const fn = inputFname.value.trim() || 'Contact';
+      const ln = inputLname.value.trim() || 'Card';
+      a.download = `${fn}_${ln}.vcf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded .vcf Contact Card file!');
+    });
+
+    // Export: Copy Image to Clipboard
+    btnCopyQrImage.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to copy.');
+        return;
+      }
+
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+            showToast('QR Code image copied to clipboard!');
+          });
+        } catch (e) {
+          showToast('Clipboard image copy not supported in this browser.');
+        }
+      });
+    });
+
+    // Export: Copy Raw vCard Text
+    btnCopyRawVcard.addEventListener('click', () => {
+      if (!currentVcardString) return;
+      navigator.clipboard.writeText(currentVcardString).then(() => {
+        showToast('vCard 3.0 text copied to clipboard!');
+      });
+    });
+
+    // Print Business Card
+    btnPrintCard.addEventListener('click', () => {
+      if (!isCardMode) {
+        btnModeCard.click();
+      }
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize
+    renderPhones();
+    renderEmails();
+    initPersonLogo();
+  </script>
+</body>
+</html>

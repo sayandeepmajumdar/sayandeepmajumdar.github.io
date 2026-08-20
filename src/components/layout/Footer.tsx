@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ExternalLink } from 'lucide-react';
+import { ShieldCheck, ExternalLink, Mail, Sparkles } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
 import { ToolzyLogo } from '../common/ToolzyLogo';
 
@@ -22,7 +22,16 @@ export const Footer: React.FC = () => {
               A private, high-performance developer tools platform built with modern web standards.
               All crypto algorithms, text formatters, image minifiers, and file exports run entirely inside your browser. No cookies, no tracking, zero telemetry.
             </p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted">
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted">
+              <a
+                href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy&body=Hi%20Toolzy%20Team%2C%0A%0AI%20would%20like%20to%20request%20a%20new%20tool%20for%20Toolzy%3A%0A%0A-%20Tool%20Name%3A%20%0A-%20Description%20%26%20Use%20Case%3A%20%0A-%20Key%20Features%3A%20%0A%0AThank%20you!"
+                className="inline-flex items-center gap-1.5 text-accent hover:underline font-semibold transition-colors"
+                title="Send tool request email to developerslab101@gmail.com"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Request a Tool</span>
+              </a>
+              <span>•</span>
               <a
                 href="https://github.com/sayandeepmajumdar"
                 target="_blank"

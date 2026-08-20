@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniConverter — Universal Unit Converter & Formula Calculator — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side Universal Unit Converter. Live two-way conversion for Length, Weight, Temperature, Digital Storage, Volume, Area, Speed, Pressure, Energy, Power, and Time with full precision and instant all-unit tables." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md shadow-teal-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">OmniConverter — Unit Converter</h1>
+            <p class="text-xs sm:text-sm text-muted">High-precision live conversions across 12 physical dimensions with simultaneous all-unit tables.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Badges -->
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>100% Client-Side</span>
+        </span>
+
+        <div class="flex items-center gap-1 bg-surface-alt p-1 rounded-xl border border-line text-xs font-semibold">
+          <span class="text-muted px-2">Decimals:</span>
+          <select id="select-precision" class="bg-paper border border-line rounded-lg px-2 py-1 text-ink focus:outline-none focus:border-accent text-xs font-mono">
+            <option value="2">2 digits</option>
+            <option value="4">4 digits</option>
+            <option value="6" selected>6 digits</option>
+            <option value="8">8 digits</option>
+            <option value="full">Full / Auto</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Category Pill Selector -->
+    <div class="overflow-x-auto scrollbar-thin pb-2">
+      <div id="category-pills" class="flex items-center gap-2 min-w-max">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Main Converter Workspace -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Two-Way Converter & Formula (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Primary Conversion Card -->
+        <div class="p-6 sm:p-8 rounded-3xl bg-surface border border-line shadow-xs space-y-6">
+          <div class="flex items-center justify-between">
+            <span id="active-category-title" class="text-xs font-bold uppercase tracking-wider text-accent font-mono">Length Conversion</span>
+            <button id="btn-quick-invert" type="button" class="text-xs text-muted hover:text-ink flex items-center gap-1 font-semibold">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Reset Values</span>
+            </button>
+          </div>
+
+          <!-- Two-Way Input Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+            
+            <!-- From Section (5 cols) -->
+            <div class="md:col-span-5 space-y-2">
+              <label for="input-from-value" class="block text-xs font-bold uppercase tracking-wider text-muted">From</label>
+              <div class="relative">
+                <input
+                  id="input-from-value"
+                  type="number"
+                  step="any"
+                  value="1"
+                  placeholder="0"
+                  class="w-full px-4 py-3 rounded-2xl text-xl sm:text-2xl font-black bg-paper border border-line text-ink focus:outline-none focus:border-accent shadow-inner font-mono tracking-tight"
+                />
+              </div>
+              <select
+                id="select-from-unit"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-surface-alt border border-line text-ink focus:outline-none focus:border-accent"
+              >
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+
+            <!-- Swap Button (1 col) -->
+            <div class="md:col-span-1 flex justify-center py-2 md:py-0">
+              <button
+                id="btn-swap-units"
+                type="button"
+                class="touch-target p-3 rounded-2xl bg-accent text-white hover:bg-accent-hover transition-all shadow-md shadow-accent/20 hover:scale-105 active:scale-95 flex items-center justify-center"
+                title="Swap Units (⇄)"
+                aria-label="Swap from and to units"
+              >
+                <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- To Section (5 cols) -->
+            <div class="md:col-span-5 space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="input-to-value" class="block text-xs font-bold uppercase tracking-wider text-muted">To (Converted)</label>
+                <button id="btn-copy-result" type="button" class="text-xs text-accent hover:underline font-semibold flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <div class="relative">
+                <input
+                  id="input-to-value"
+                  type="text"
+                  readonly
+                  class="w-full px-4 py-3 rounded-2xl text-xl sm:text-2xl font-black bg-surface-alt border border-line text-emerald-600 dark:text-emerald-400 font-mono tracking-tight focus:outline-none cursor-default"
+                />
+              </div>
+              <select
+                id="select-to-unit"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-surface-alt border border-line text-ink focus:outline-none focus:border-accent"
+              >
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+
+          </div>
+
+          <!-- Formula & Math Breakdown -->
+          <div class="p-4 rounded-2xl bg-surface-alt border border-line space-y-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block font-mono">Conversion Formula</span>
+            <p id="formula-text" class="text-xs sm:text-sm font-medium text-ink font-mono leading-relaxed">1 Meter = 3.28084 Feet</p>
+          </div>
+        </div>
+
+        <!-- Conversion History Section -->
+        <div class="p-6 rounded-3xl bg-surface border border-line shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-ink">Recent Conversions</h3>
+            </div>
+            <button id="btn-clear-history" type="button" class="text-[11px] text-muted hover:text-red-500 transition-colors font-semibold">Clear History</button>
+          </div>
+
+          <div id="history-container" class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
+            <p class="text-xs text-muted text-center py-4">Your recent conversions will appear here.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: All-Units Live Table & Quick Reference (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- All Units Simultaneous Table -->
+        <div class="p-6 rounded-3xl bg-surface border border-line shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-ink">All Units in Category</h3>
+              <p class="text-[11px] text-muted">Simultaneous live calculations</p>
+            </div>
+            <span id="all-units-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-alt border border-line text-muted">0 units</span>
+          </div>
+
+          <div class="space-y-2">
+            <input
+              id="input-filter-units-table"
+              type="text"
+              placeholder="Filter units..."
+              class="w-full px-3 py-1.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent"
+            />
+          </div>
+
+          <div id="all-units-table-container" class="space-y-1.5 max-h-[380px] overflow-y-auto scrollbar-thin pr-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Quick Reference / Common Conversions Cheat Sheet -->
+        <div class="p-6 rounded-3xl bg-surface border border-line shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-ink">Common Equivalents</h3>
+            <span class="text-[11px] font-mono text-muted">Standard Reference</span>
+          </div>
+
+          <div id="cheat-sheet-container" class="space-y-2 text-xs">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // UNIT CONVERSION DEFINITIONS & METRICS
+    // =========================================================================
+    const CATEGORIES = [
+      {
+        id: 'length',
+        name: 'Length',
+        icon: '📏',
+        baseUnit: 'm',
+        units: [
+          { id: 'nm', name: 'Nanometer', symbol: 'nm', ratio: 1e-9 },
+          { id: 'um', name: 'Micrometer', symbol: 'µm', ratio: 1e-6 },
+          { id: 'mm', name: 'Millimeter', symbol: 'mm', ratio: 0.001 },
+          { id: 'cm', name: 'Centimeter', symbol: 'cm', ratio: 0.01 },
+          { id: 'm', name: 'Meter', symbol: 'm', ratio: 1.0 },
+          { id: 'km', name: 'Kilometer', symbol: 'km', ratio: 1000 },
+          { id: 'in', name: 'Inch', symbol: 'in', ratio: 0.0254 },
+          { id: 'ft', name: 'Foot', symbol: 'ft', ratio: 0.3048 },
+          { id: 'yd', name: 'Yard', symbol: 'yd', ratio: 0.9144 },
+          { id: 'mi', name: 'Mile', symbol: 'mi', ratio: 1609.344 },
+          { id: 'nmi', name: 'Nautical Mile', symbol: 'NM', ratio: 1852 },
+          { id: 'ly', name: 'Light Year', symbol: 'ly', ratio: 9.4607304725808e15 }
+        ],
+        cheatSheet: [
+          { from: '1 inch', to: '2.54 cm' },
+          { from: '1 foot', to: '12 inches (30.48 cm)' },
+          { from: '1 yard', to: '3 feet (0.9144 m)' },
+          { from: '1 mile', to: '1.60934 km (5,280 ft)' },
+          { from: '1 nautical mile', to: '1.852 km' }
+        ]
+      },
+      {
+        id: 'mass',
+        name: 'Weight / Mass',
+        icon: '⚖️',
+        baseUnit: 'kg',
+        units: [
+          { id: 'ug', name: 'Microgram', symbol: 'µg', ratio: 1e-9 },
+          { id: 'mg', name: 'Milligram', symbol: 'mg', ratio: 1e-6 },
+          { id: 'g', name: 'Gram', symbol: 'g', ratio: 0.001 },
+          { id: 'kg', name: 'Kilogram', symbol: 'kg', ratio: 1.0 },
+          { id: 't', name: 'Metric Ton', symbol: 't', ratio: 1000 },
+          { id: 'oz', name: 'Ounce (US)', symbol: 'oz', ratio: 0.028349523125 },
+          { id: 'lb', name: 'Pound (US)', symbol: 'lb', ratio: 0.45359237 },
+          { id: 'st', name: 'Stone (UK)', symbol: 'st', ratio: 6.35029318 },
+          { id: 'us_ton', name: 'Short Ton (US)', symbol: 'ton (US)', ratio: 907.18474 },
+          { id: 'uk_ton', name: 'Long Ton (UK)', symbol: 'ton (UK)', ratio: 1016.0469088 }
+        ],
+        cheatSheet: [
+          { from: '1 kilogram', to: '2.20462 pounds' },
+          { from: '1 pound', to: '16 ounces (453.59 g)' },
+          { from: '1 ounce', to: '28.3495 grams' },
+          { from: '1 stone', to: '14 pounds (6.35 kg)' },
+          { from: '1 metric ton', to: '1,000 kg (2,204.6 lb)' }
+        ]
+      },
+      {
+        id: 'temperature',
+        name: 'Temperature',
+        icon: '🌡️',
+        isCustom: true,
+        units: [
+          { id: 'c', name: 'Celsius', symbol: '°C' },
+          { id: 'f', name: 'Fahrenheit', symbol: '°F' },
+          { id: 'k', name: 'Kelvin', symbol: 'K' },
+          { id: 'r', name: 'Rankine', symbol: '°R' }
+        ],
+        cheatSheet: [
+          { from: '0 °C (Freezing water)', to: '32 °F / 273.15 K' },
+          { from: '21 °C (Room temp)', to: '69.8 °F / 294.15 K' },
+          { from: '37 °C (Human body)', to: '98.6 °F / 310.15 K' },
+          { from: '100 °C (Boiling water)', to: '212 °F / 373.15 K' },
+          { from: '-40 °C', to: '-40 °F' }
+        ]
+      },
+      {
+        id: 'digital',
+        name: 'Digital Storage',
+        icon: '💾',
+        baseUnit: 'B',
+        units: [
+          { id: 'b', name: 'Bit', symbol: 'b', ratio: 0.125 },
+          { id: 'B', name: 'Byte', symbol: 'B', ratio: 1.0 },
+          { id: 'KB', name: 'Kilobyte (decimal)', symbol: 'KB', ratio: 1000 },
+          { id: 'KiB', name: 'Kibibyte (binary)', symbol: 'KiB', ratio: 1024 },
+          { id: 'MB', name: 'Megabyte (decimal)', symbol: 'MB', ratio: 1e6 },
+          { id: 'MiB', name: 'Mebibyte (binary)', symbol: 'MiB', ratio: 1048576 },
+          { id: 'GB', name: 'Gigabyte (decimal)', symbol: 'GB', ratio: 1e9 },
+          { id: 'GiB', name: 'Gibibyte (binary)', symbol: 'GiB', ratio: 1073741824 },
+          { id: 'TB', name: 'Terabyte (decimal)', symbol: 'TB', ratio: 1e12 },
+          { id: 'TiB', name: 'Tebibyte (binary)', symbol: 'TiB', ratio: 1099511627776 },
+          { id: 'PB', name: 'Petabyte (decimal)', symbol: 'PB', ratio: 1e15 },
+          { id: 'PiB', name: 'Pebibyte (binary)', symbol: 'PiB', ratio: 1125899906842624 }
+        ],
+        cheatSheet: [
+          { from: '1 Byte', to: '8 Bits' },
+          { from: '1 KiB (Binary)', to: '1,024 Bytes' },
+          { from: '1 MB (Decimal)', to: '1,000,000 Bytes' },
+          { from: '1 GiB (Binary)', to: '1,024 MiB (1,073,741,824 B)' },
+          { from: '1 TB (Decimal)', to: '1,000 GB' }
+        ]
+      },
+      {
+        id: 'volume',
+        name: 'Volume',
+        icon: '🧪',
+        baseUnit: 'L',
+        units: [
+          { id: 'ml', name: 'Milliliter', symbol: 'mL', ratio: 0.001 },
+          { id: 'cm3', name: 'Cubic Centimeter', symbol: 'cm³', ratio: 0.001 },
+          { id: 'l', name: 'Liter', symbol: 'L', ratio: 1.0 },
+          { id: 'm3', name: 'Cubic Meter', symbol: 'm³', ratio: 1000 },
+          { id: 'fl_oz', name: 'Fluid Ounce (US)', symbol: 'fl oz', ratio: 0.0295735295625 },
+          { id: 'cup', name: 'Cup (US)', symbol: 'cup', ratio: 0.2365882365 },
+          { id: 'pt', name: 'Pint (US)', symbol: 'pt', ratio: 0.473176473 },
+          { id: 'qt', name: 'Quart (US)', symbol: 'qt', ratio: 0.946352946 },
+          { id: 'gal', name: 'Gallon (US)', symbol: 'gal', ratio: 3.785411784 },
+          { id: 'uk_gal', name: 'Gallon (UK)', symbol: 'UK gal', ratio: 4.54609 },
+          { id: 'ft3', name: 'Cubic Foot', symbol: 'ft³', ratio: 28.316846592 },
+          { id: 'in3', name: 'Cubic Inch', symbol: 'in³', ratio: 0.016387064 }
+        ],
+        cheatSheet: [
+          { from: '1 Liter', to: '1,000 mL (0.26417 gal)' },
+          { from: '1 US Gallon', to: '3.78541 Liters (128 fl oz)' },
+          { from: '1 US Cup', to: '8 fl oz (236.59 mL)' },
+          { from: '1 Cubic Meter', to: '1,000 Liters (35.315 ft³)' },
+          { from: '1 UK Gallon', to: '4.54609 Liters (1.20095 US gal)' }
+        ]
+      },
+      {
+        id: 'area',
+        name: 'Area',
+        icon: '📐',
+        baseUnit: 'm2',
+        units: [
+          { id: 'mm2', name: 'Square Millimeter', symbol: 'mm²', ratio: 1e-6 },
+          { id: 'cm2', name: 'Square Centimeter', symbol: 'cm²', ratio: 1e-4 },
+          { id: 'm2', name: 'Square Meter', symbol: 'm²', ratio: 1.0 },
+          { id: 'ha', name: 'Hectare', symbol: 'ha', ratio: 10000 },
+          { id: 'km2', name: 'Square Kilometer', symbol: 'km²', ratio: 1e6 },
+          { id: 'in2', name: 'Square Inch', symbol: 'in²', ratio: 0.00064516 },
+          { id: 'ft2', name: 'Square Foot', symbol: 'ft²', ratio: 0.09290304 },
+          { id: 'yd2', name: 'Square Yard', symbol: 'yd²', ratio: 0.83612736 },
+          { id: 'ac', name: 'Acre', symbol: 'ac', ratio: 4046.8564224 },
+          { id: 'mi2', name: 'Square Mile', symbol: 'mi²', ratio: 2589988.110336 }
+        ],
+        cheatSheet: [
+          { from: '1 Acre', to: '43,560 sq ft (4,046.86 m²)' },
+          { from: '1 Hectare', to: '10,000 m² (2.47105 acres)' },
+          { from: '1 Square Meter', to: '10.7639 sq ft' },
+          { from: '1 Square Mile', to: '640 acres (2.58999 km²)' },
+          { from: '1 Square Yard', to: '9 sq ft (0.8361 m²)' }
+        ]
+      },
+      {
+        id: 'speed',
+        name: 'Speed',
+        icon: '⚡',
+        baseUnit: 'mps',
+        units: [
+          { id: 'mps', name: 'Meter per second', symbol: 'm/s', ratio: 1.0 },
+          { id: 'kph', name: 'Kilometer per hour', symbol: 'km/h', ratio: 0.2777777777777778 },
+          { id: 'mph', name: 'Mile per hour', symbol: 'mph', ratio: 0.44704 },
+          { id: 'knot', name: 'Knot', symbol: 'kn', ratio: 0.5144444444444445 },
+          { id: 'fps', name: 'Foot per second', symbol: 'ft/s', ratio: 0.3048 },
+          { id: 'mach', name: 'Mach (at sea level, 15°C)', symbol: 'Mach', ratio: 340.29 },
+          { id: 'c', name: 'Speed of Light', symbol: 'c', ratio: 299792458 }
+        ],
+        cheatSheet: [
+          { from: '60 mph', to: '96.5606 km/h (26.82 m/s)' },
+          { from: '100 km/h', to: '62.1371 mph (27.78 m/s)' },
+          { from: '1 Knot', to: '1.15078 mph (1.852 km/h)' },
+          { from: '1 Mach', to: '1,225.04 km/h (761.2 mph)' },
+          { from: 'Speed of Light (c)', to: '299,792,458 m/s (~1.08 billion km/h)' }
+        ]
+      },
+      {
+        id: 'pressure',
+        name: 'Pressure',
+        icon: '🎛️',
+        baseUnit: 'Pa',
+        units: [
+          { id: 'Pa', name: 'Pascal', symbol: 'Pa', ratio: 1.0 },
+          { id: 'kPa', name: 'Kilopascal', symbol: 'kPa', ratio: 1000 },
+          { id: 'MPa', name: 'Megapascal', symbol: 'MPa', ratio: 1e6 },
+          { id: 'bar', name: 'Bar', symbol: 'bar', ratio: 100000 },
+          { id: 'mbar', name: 'Millibar', symbol: 'mbar', ratio: 100 },
+          { id: 'atm', name: 'Standard Atmosphere', symbol: 'atm', ratio: 101325 },
+          { id: 'psi', name: 'Pound per Square Inch', symbol: 'psi', ratio: 6894.757293168 },
+          { id: 'torr', name: 'Torr / mmHg', symbol: 'Torr', ratio: 133.322368421 }
+        ],
+        cheatSheet: [
+          { from: '1 atm (Sea level)', to: '101.325 kPa (1.01325 bar / 14.696 psi)' },
+          { from: '1 bar', to: '100 kPa (14.5038 psi)' },
+          { from: '1 psi', to: '6.89476 kPa (0.06895 bar)' },
+          { from: '1 Torr', to: '1 mmHg (133.322 Pa)' },
+          { from: '32 psi (Car tire)', to: '2.206 bar / 220.6 kPa' }
+        ]
+      },
+      {
+        id: 'energy',
+        name: 'Energy',
+        icon: '🔋',
+        baseUnit: 'J',
+        units: [
+          { id: 'J', name: 'Joule', symbol: 'J', ratio: 1.0 },
+          { id: 'kJ', name: 'Kilojoule', symbol: 'kJ', ratio: 1000 },
+          { id: 'MJ', name: 'Megajoule', symbol: 'MJ', ratio: 1e6 },
+          { id: 'cal', name: 'Calorie (thermochemical)', symbol: 'cal', ratio: 4.184 },
+          { id: 'kcal', name: 'Kilocalorie (Food Cal)', symbol: 'kcal', ratio: 4184 },
+          { id: 'Wh', name: 'Watt-hour', symbol: 'Wh', ratio: 3600 },
+          { id: 'kWh', name: 'Kilowatt-hour', symbol: 'kWh', ratio: 3.6e6 },
+          { id: 'BTU', name: 'British Thermal Unit', symbol: 'BTU', ratio: 1055.05585262 },
+          { id: 'eV', name: 'Electronvolt', symbol: 'eV', ratio: 1.602176634e-19 }
+        ],
+        cheatSheet: [
+          { from: '1 kWh (Electricity)', to: '3.6 MJ (860.42 kcal)' },
+          { from: '1 kcal (Food Calorie)', to: '4,184 Joules (4.184 kJ)' },
+          { from: '1 BTU', to: '1,055.06 Joules (0.293 Wh)' },
+          { from: '1 Watt-hour', to: '3,600 Joules' },
+          { from: '2000 kcal (Daily diet)', to: '8.368 MJ (2.326 kWh)' }
+        ]
+      },
+      {
+        id: 'power',
+        name: 'Power',
+        icon: '💡',
+        baseUnit: 'W',
+        units: [
+          { id: 'W', name: 'Watt', symbol: 'W', ratio: 1.0 },
+          { id: 'kW', name: 'Kilowatt', symbol: 'kW', ratio: 1000 },
+          { id: 'MW', name: 'Megawatt', symbol: 'MW', ratio: 1e6 },
+          { id: 'hp', name: 'Horsepower (mechanical)', symbol: 'hp', ratio: 745.6998715822702 },
+          { id: 'ps', name: 'Metric Horsepower', symbol: 'PS', ratio: 735.49875 },
+          { id: 'btu_h', name: 'BTU per hour', symbol: 'BTU/h', ratio: 0.29307107 }
+        ],
+        cheatSheet: [
+          { from: '1 Horsepower (hp)', to: '745.7 Watts (0.7457 kW)' },
+          { from: '1 Kilowatt (kW)', to: '1.34102 hp (3,412.14 BTU/h)' },
+          { from: '1 Megawatt (MW)', to: '1,000 kW (1,341 hp)' },
+          { from: '1 Ton of Refrigeration', to: '12,000 BTU/h (3.517 kW)' }
+        ]
+      },
+      {
+        id: 'time',
+        name: 'Time',
+        icon: '⏱️',
+        baseUnit: 's',
+        units: [
+          { id: 'ns', name: 'Nanosecond', symbol: 'ns', ratio: 1e-9 },
+          { id: 'us', name: 'Microsecond', symbol: 'µs', ratio: 1e-6 },
+          { id: 'ms', name: 'Millisecond', symbol: 'ms', ratio: 0.001 },
+          { id: 's', name: 'Second', symbol: 's', ratio: 1.0 },
+          { id: 'min', name: 'Minute', symbol: 'min', ratio: 60 },
+          { id: 'h', name: 'Hour', symbol: 'h', ratio: 3600 },
+          { id: 'd', name: 'Day', symbol: 'd', ratio: 86400 },
+          { id: 'wk', name: 'Week', symbol: 'wk', ratio: 604800 },
+          { id: 'mo', name: 'Month (avg 30.44d)', symbol: 'mo', ratio: 2629800 },
+          { id: 'yr', name: 'Year (365.25d)', symbol: 'yr', ratio: 31557600 }
+        ],
+        cheatSheet: [
+          { from: '1 Hour', to: '60 minutes (3,600 seconds)' },
+          { from: '1 Day', to: '24 hours (1,440 min / 86,400 s)' },
+          { from: '1 Week', to: '7 days (168 hours / 604,800 s)' },
+          { from: '1 Year (365.25 d)', to: '8,766 hours (525,960 min)' },
+          { from: '1 Millisecond', to: '1,000 Microseconds (1e6 ns)' }
+        ]
+      },
+      {
+        id: 'angle',
+        name: 'Angle',
+        icon: '🔄',
+        baseUnit: 'rad',
+        units: [
+          { id: 'deg', name: 'Degree', symbol: '°', ratio: 0.017453292519943295 },
+          { id: 'rad', name: 'Radian', symbol: 'rad', ratio: 1.0 },
+          { id: 'grad', name: 'Gradian', symbol: 'grad', ratio: 0.015707963267948967 },
+          { id: 'arcmin', name: 'Arcminute', symbol: 'arcmin', ratio: 0.0002908882086657216 },
+          { id: 'arcsec', name: 'Arcsecond', symbol: 'arcsec', ratio: 0.00000484813681109536 }
+        ],
+        cheatSheet: [
+          { from: '180 Degrees', to: 'π Radians (~3.14159 rad)' },
+          { from: '90 Degrees (Right angle)', to: 'π/2 Radians (100 Gradians)' },
+          { from: '1 Radian', to: '57.2958 Degrees (3,437.75 arcmin)' },
+          { from: '1 Degree', to: '60 Arcminutes (3,600 arcseconds)' },
+          { from: '360 Degrees (Full circle)', to: '2π Radians (400 Gradians)' }
+        ]
+      }
+    ];
+
+    // State
+    let currentCategoryId = 'length';
+    let fromUnitId = 'm';
+    let toUnitId = 'ft';
+    let precision = '6';
+    let history = [];
+
+    const STORAGE_HISTORY_KEY = 'toolbox:unit_converter_history';
+
+    // DOM Elements
+    const categoryPillsContainer = document.getElementById('category-pills');
+    const activeCategoryTitle = document.getElementById('active-category-title');
+    const inputFromValue = document.getElementById('input-from-value');
+    const selectFromUnit = document.getElementById('select-from-unit');
+    const inputToValue = document.getElementById('input-to-value');
+    const selectToUnit = document.getElementById('select-to-unit');
+    const btnSwapUnits = document.getElementById('btn-swap-units');
+    const selectPrecision = document.getElementById('select-precision');
+    const formulaText = document.getElementById('formula-text');
+    const allUnitsTableContainer = document.getElementById('all-units-table-container');
+    const allUnitsCountBadge = document.getElementById('all-units-count-badge');
+    const inputFilterUnitsTable = document.getElementById('input-filter-units-table');
+    const cheatSheetContainer = document.getElementById('cheat-sheet-container');
+    const historyContainer = document.getElementById('history-container');
+    const btnCopyResult = document.getElementById('btn-copy-result');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+    const btnQuickInvert = document.getElementById('btn-quick-invert');
+
+    // =========================================================================
+    // TEMPERATURE SPECIAL CONVERSIONS
+    // =========================================================================
+    function tempToKelvin(val, unitId) {
+      const v = Number(val);
+      if (isNaN(v)) return NaN;
+      if (unitId === 'c') return v + 273.15;
+      if (unitId === 'f') return (v - 32) * (5 / 9) + 273.15;
+      if (unitId === 'k') return v;
+      if (unitId === 'r') return v * (5 / 9);
+      return v;
+    }
+
+    function tempFromKelvin(k, unitId) {
+      if (isNaN(k)) return NaN;
+      if (unitId === 'c') return k - 273.15;
+      if (unitId === 'f') return (k - 273.15) * (9 / 5) + 32;
+      if (unitId === 'k') return k;
+      if (unitId === 'r') return k * (9 / 5);
+      return k;
+    }
+
+    // =========================================================================
+    // CORE CONVERSION ENGINE
+    // =========================================================================
+    function convertValue(val, category, fromId, toId) {
+      const num = Number(val);
+      if (isNaN(num)) return NaN;
+      if (fromId === toId) return num;
+
+      if (category.isCustom && category.id === 'temperature') {
+        const kelvin = tempToKelvin(num, fromId);
+        return tempFromKelvin(kelvin, toId);
+      }
+
+      const fromUnit = category.units.find(u => u.id === fromId);
+      const toUnit = category.units.find(u => u.id === toId);
+      if (!fromUnit || !toUnit) return NaN;
+
+      // Base ratio conversion: (val * fromUnit.ratio) / toUnit.ratio
+      const baseValue = num * fromUnit.ratio;
+      return baseValue / toUnit.ratio;
+    }
+
+    function formatNumber(num, prec) {
+      if (isNaN(num) || num === null) return '';
+      if (!isFinite(num)) return num.toString();
+
+      if (prec === 'full') {
+        // High precision without trailing float rounding artifacts
+        if (Math.abs(num) > 0 && (Math.abs(num) < 1e-6 || Math.abs(num) >= 1e12)) {
+          return num.toExponential(8).replace(/\.?0+e/, 'e');
+        }
+        return Number(num.toPrecision(12)).toString();
+      }
+
+      const p = parseInt(prec, 10) || 6;
+      if (Math.abs(num) > 0 && (Math.abs(num) < Math.pow(10, -p) || Math.abs(num) >= 1e12)) {
+        return num.toExponential(p).replace(/\.?0+e/, 'e');
+      }
+
+      const fixed = num.toFixed(p);
+      return parseFloat(fixed).toString();
+    }
+
+    // =========================================================================
+    // UI RENDER & EVENT HANDLERS
+    // =========================================================================
+    function renderCategoryPills() {
+      categoryPillsContainer.innerHTML = '';
+      CATEGORIES.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = cat.id === currentCategoryId;
+        btn.className = `touch-target px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          isActive
+            ? 'bg-accent text-white shadow-md shadow-accent/20 scale-[1.02]'
+            : 'bg-surface border border-line text-muted hover:text-ink hover:border-accent/40'
+        }`;
+        btn.innerHTML = `<span>${cat.icon}</span><span>${cat.name}</span>`;
+        btn.addEventListener('click', () => selectCategory(cat.id));
+        categoryPillsContainer.appendChild(btn);
+      });
+    }
+
+    function selectCategory(catId) {
+      currentCategoryId = catId;
+      const cat = CATEGORIES.find(c => c.id === catId);
+      if (!cat) return;
+
+      activeCategoryTitle.innerText = `${cat.name} Conversion`;
+
+      // Set default from and to units
+      if (cat.units.length >= 2) {
+        fromUnitId = cat.units[0].id;
+        toUnitId = cat.units[1].id;
+      } else {
+        fromUnitId = cat.units[0].id;
+        toUnitId = cat.units[0].id;
+      }
+
+      renderCategoryPills();
+      populateUnitSelects();
+      renderCheatSheet();
+      performConversion();
+    }
+
+    function populateUnitSelects() {
+      const cat = CATEGORIES.find(c => c.id === currentCategoryId);
+      if (!cat) return;
+
+      selectFromUnit.innerHTML = '';
+      selectToUnit.innerHTML = '';
+
+      cat.units.forEach(u => {
+        const optFrom = document.createElement('option');
+        optFrom.value = u.id;
+        optFrom.innerText = `${u.name} (${u.symbol})`;
+        optFrom.selected = u.id === fromUnitId;
+        selectFromUnit.appendChild(optFrom);
+
+        const optTo = document.createElement('option');
+        optTo.value = u.id;
+        optTo.innerText = `${u.name} (${u.symbol})`;
+        optTo.selected = u.id === toUnitId;
+        selectToUnit.appendChild(optTo);
+      });
+    }
+
+    function performConversion() {
+      const cat = CATEGORIES.find(c => c.id === currentCategoryId);
+      if (!cat) return;
+
+      const rawVal = inputFromValue.value.trim();
+      if (rawVal === '' || isNaN(Number(rawVal))) {
+        inputToValue.value = '';
+        formulaText.innerText = 'Enter a valid number to see live calculation.';
+        renderAllUnitsTable(NaN);
+        return;
+      }
+
+      const fromId = selectFromUnit.value;
+      const toId = selectToUnit.value;
+      fromUnitId = fromId;
+      toUnitId = toId;
+
+      const converted = convertValue(rawVal, cat, fromId, toId);
+      const formatted = formatNumber(converted, precision);
+      inputToValue.value = formatted;
+
+      // Update Formula Text
+      updateFormulaText(cat, fromId, toId, rawVal, formatted);
+
+      // Render All Units Table
+      renderAllUnitsTable(Number(rawVal));
+
+      // Record to history (debounce check)
+      addToHistory(rawVal, fromId, formatted, toId, cat.name);
+    }
+
+    function updateFormulaText(cat, fromId, toId, rawVal, formatted) {
+      const fromU = cat.units.find(u => u.id === fromId);
+      const toU = cat.units.find(u => u.id === toId);
+      if (!fromU || !toU) return;
+
+      if (cat.id === 'temperature') {
+        if (fromId === 'c' && toId === 'f') formulaText.innerText = `°F = (${rawVal} × 9/5) + 32 = ${formatted} °F`;
+        else if (fromId === 'f' && toId === 'c') formulaText.innerText = `°C = (${rawVal} - 32) × 5/9 = ${formatted} °C`;
+        else if (fromId === 'c' && toId === 'k') formulaText.innerText = `K = ${rawVal} + 273.15 = ${formatted} K`;
+        else if (fromId === 'k' && toId === 'c') formulaText.innerText = `°C = ${rawVal} - 273.15 = ${formatted} °C`;
+        else formulaText.innerText = `${rawVal} ${fromU.symbol} = ${formatted} ${toU.symbol}`;
+      } else {
+        const unitConversion = convertValue(1, cat, fromId, toId);
+        const formattedUnit = formatNumber(unitConversion, '6');
+        formulaText.innerText = `1 ${fromU.name} (${fromU.symbol}) = ${formattedUnit} ${toU.name} (${toU.symbol})`;
+      }
+    }
+
+    function renderAllUnitsTable(inputNum) {
+      const cat = CATEGORIES.find(c => c.id === currentCategoryId);
+      if (!cat) return;
+
+      const filter = inputFilterUnitsTable.value.trim().toLowerCase();
+      const filteredUnits = cat.units.filter(u => u.name.toLowerCase().includes(filter) || u.symbol.toLowerCase().includes(filter));
+
+      allUnitsCountBadge.innerText = `${filteredUnits.length} of ${cat.units.length} units`;
+      allUnitsTableContainer.innerHTML = '';
+
+      if (isNaN(inputNum)) {
+        allUnitsTableContainer.innerHTML = `
+          <div class="p-6 text-center text-xs text-muted border border-dashed rounded-2xl">
+            Enter a number above to see all simultaneous unit conversions.
+          </div>
+        `;
+        return;
+      }
+
+      filteredUnits.forEach(u => {
+        const isFrom = u.id === fromUnitId;
+        const isTo = u.id === toUnitId;
+        const val = convertValue(inputNum, cat, fromUnitId, u.id);
+        const formattedVal = formatNumber(val, precision);
+
+        const row = document.createElement('div');
+        row.className = `p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs ${
+          isTo
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-ink font-bold'
+            : isFrom
+            ? 'bg-accent/10 border-accent/30 text-ink font-bold'
+            : 'bg-surface-alt border-line text-ink hover:border-accent/40'
+        }`;
+
+        row.innerHTML = `
+          <div class="min-w-0 flex-1 flex items-center gap-2">
+            <span class="font-bold text-ink truncate">${escapeHtml(u.name)}</span>
+            <span class="px-1.5 py-0.2 rounded bg-paper border border-line text-[10px] font-mono text-muted">${escapeHtml(u.symbol)}</span>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-mono font-black text-ink text-xs">${escapeHtml(formattedVal)}</span>
+            <button
+              type="button"
+              class="btn-copy-unit-val p-1 rounded-lg hover:bg-paper text-muted hover:text-accent transition-colors"
+              data-val="${escapeHtml(formattedVal)}"
+              title="Copy value"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+          </div>
+        `;
+
+        allUnitsTableContainer.appendChild(row);
+      });
+    }
+
+    function renderCheatSheet() {
+      const cat = CATEGORIES.find(c => c.id === currentCategoryId);
+      if (!cat || !cat.cheatSheet) {
+        cheatSheetContainer.innerHTML = '<p class="text-muted text-xs">No cheat sheet available.</p>';
+        return;
+      }
+
+      cheatSheetContainer.innerHTML = '';
+      cat.cheatSheet.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-2 rounded-xl bg-surface-alt border border-line flex items-center justify-between font-mono text-[11px]';
+        div.innerHTML = `
+          <span class="font-bold text-ink">${escapeHtml(item.from)}</span>
+          <span class="text-accent font-semibold">${escapeHtml(item.to)}</span>
+        `;
+        cheatSheetContainer.appendChild(div);
+      });
+    }
+
+    // History Logic
+    let historyTimeout = null;
+    function addToHistory(fromVal, fromId, toVal, toId, categoryName) {
+      clearTimeout(historyTimeout);
+      historyTimeout = setTimeout(() => {
+        if (!fromVal || !toVal) return;
+        const cat = CATEGORIES.find(c => c.id === currentCategoryId);
+        const fromU = cat?.units.find(u => u.id === fromId);
+        const toU = cat?.units.find(u => u.id === toId);
+        if (!fromU || !toU) return;
+
+        const record = {
+          id: Date.now(),
+          categoryId: currentCategoryId,
+          fromVal,
+          fromSymbol: fromU.symbol,
+          fromId,
+          toVal,
+          toSymbol: toU.symbol,
+          toId,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        // Avoid duplicate consecutive entries
+        if (history.length > 0 && history[0].fromVal === fromVal && history[0].fromId === fromId && history[0].toId === toId) {
+          return;
+        }
+
+        history.unshift(record);
+        if (history.length > 10) history.pop();
+        saveHistory();
+        renderHistory();
+      }, 800);
+    }
+
+    function saveHistory() {
+      try {
+        localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(history));
+      } catch (e) {}
+    }
+
+    function loadHistory() {
+      try {
+        const saved = localStorage.getItem(STORAGE_HISTORY_KEY);
+        if (saved) history = JSON.parse(saved);
+      } catch (e) {}
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyContainer.innerHTML = '';
+      if (history.length === 0) {
+        historyContainer.innerHTML = '<p class="text-xs text-muted text-center py-4">Your recent conversions will appear here.</p>';
+        return;
+      }
+
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 rounded-xl bg-surface-alt border border-line flex items-center justify-between gap-2 text-xs hover:border-accent/40 cursor-pointer transition-colors';
+        div.innerHTML = `
+          <div class="flex items-center gap-1.5 font-mono truncate">
+            <span class="font-bold text-ink">${escapeHtml(item.fromVal)} ${escapeHtml(item.fromSymbol)}</span>
+            <span class="text-muted">→</span>
+            <span class="font-bold text-emerald-600 dark:text-emerald-400">${escapeHtml(item.toVal)} ${escapeHtml(item.toSymbol)}</span>
+          </div>
+          <span class="text-[10px] text-muted font-mono shrink-0">${escapeHtml(item.time)}</span>
+        `;
+        div.addEventListener('click', () => {
+          if (item.categoryId !== currentCategoryId) {
+            selectCategory(item.categoryId);
+          }
+          inputFromValue.value = item.fromVal;
+          selectFromUnit.value = item.fromId;
+          selectToUnit.value = item.toId;
+          performConversion();
+        });
+        historyContainer.appendChild(div);
+      });
+    }
+
+    btnClearHistory.addEventListener('click', () => {
+      history = [];
+      saveHistory();
+      renderHistory();
+      showToast('History cleared.');
+    });
+
+    // Swap Units
+    btnSwapUnits.addEventListener('click', () => {
+      const prevFrom = selectFromUnit.value;
+      const prevTo = selectToUnit.value;
+      selectFromUnit.value = prevTo;
+      selectToUnit.value = prevFrom;
+      performConversion();
+    });
+
+    // Event Listeners
+    inputFromValue.addEventListener('input', performConversion);
+    selectFromUnit.addEventListener('change', performConversion);
+    selectToUnit.addEventListener('change', performConversion);
+    inputFilterUnitsTable.addEventListener('input', () => {
+      const rawVal = inputFromValue.value.trim();
+      renderAllUnitsTable(rawVal === '' ? NaN : Number(rawVal));
+    });
+
+    selectPrecision.addEventListener('change', (e) => {
+      precision = e.target.value;
+      performConversion();
+    });
+
+    btnQuickInvert.addEventListener('click', () => {
+      inputFromValue.value = '1';
+      performConversion();
+    });
+
+    // Copy Result
+    btnCopyResult.addEventListener('click', async () => {
+      const val = inputToValue.value;
+      if (!val) return;
+      try {
+        await navigator.clipboard.writeText(val);
+        showToast('Converted value copied!');
+      } catch (e) {
+        showToast('Failed to copy to clipboard.');
+      }
+    });
+
+    // Copy Unit Value from Table Click Delegation
+    allUnitsTableContainer.addEventListener('click', async (e) => {
+      const copyBtn = e.target.closest('.btn-copy-unit-val');
+      if (copyBtn) {
+        const val = copyBtn.dataset.val;
+        if (val) {
+          try {
+            await navigator.clipboard.writeText(val);
+            showToast(`Copied ${val}!`);
+          } catch (err) {}
+        }
+      }
+    });
+
+    // Toast Notification
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    renderCategoryPills();
+    selectCategory('length');
+    loadHistory();
+  </script>
+</body>
+</html>

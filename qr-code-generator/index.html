@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Studio & Live Scanner — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side QR Code Generator & Scanner. Create custom QR codes for URLs, WiFi, vCards, emails, and phone numbers with logos and custom colors. Scan live via webcam or upload image." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries: qrcode-generator & jsQR (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Smooth transitions */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    /* Custom scrollbar */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    /* Laser Scan Animation */
+    @keyframes scanLaser {
+      0% { top: 5%; opacity: 0.8; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 5%; opacity: 0.8; }
+    }
+    .scanner-laser {
+      animation: scanLaser 2s infinite ease-in-out;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">QR Code Studio & Live Scanner</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate customized QR codes with logos and scan live via camera or image upload.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs: Generate vs Scan -->
+      <div class="flex items-center gap-2 p-1 rounded-2xl bg-surface border border-line shadow-xs">
+        <button id="nav-tab-generate" type="button" class="touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+          <span>Generate QR Code</span>
+        </button>
+
+        <button id="nav-tab-scan" type="button" class="touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Scan QR Code</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: QR CODE GENERATOR -->
+    <!-- ========================================================================= -->
+    <div id="view-generator" class="space-y-6">
+      
+      <!-- Content Type Selector Chips -->
+      <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-line space-y-3 shadow-xs">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <span>Select Content Type</span>
+          </label>
+          <span class="text-[11px] text-muted">Form adapts automatically</span>
+        </div>
+
+        <div class="flex flex-wrap gap-2" id="type-selector-container">
+          <button type="button" data-type="url" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-xs flex items-center gap-1.5">
+            <span>🔗 URL / Website</span>
+          </button>
+          <button type="button" data-type="text" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>📝 Plain Text</span>
+          </button>
+          <button type="button" data-type="wifi" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>📶 Wi-Fi Network</span>
+          </button>
+          <button type="button" data-type="vcard" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>👤 vCard Contact</span>
+          </button>
+          <button type="button" data-type="email" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>✉️ Email</span>
+          </button>
+          <button type="button" data-type="phone" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>📞 Phone Call</span>
+          </button>
+          <button type="button" data-type="sms" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>💬 SMS Message</span>
+          </button>
+          <button type="button" data-type="geo" class="type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5">
+            <span>📍 Location</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Generator Workspace Grid: Input Form (Left 7) & Live Preview / Export (Right 5) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- LEFT COLUMN: Dynamic Inputs & Design Customization (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Dynamic Input Fields Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+              <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">1</span>
+              <span id="form-section-title">URL / Website Destination</span>
+            </h2>
+
+            <!-- 1. URL Form -->
+            <div id="form-url" class="type-form space-y-2">
+              <label for="input-gen-url" class="block text-xs font-bold uppercase tracking-wider text-muted">Website URL</label>
+              <input
+                id="input-gen-url"
+                type="url"
+                value="https://example.com/products/summer-collection"
+                placeholder="https://yourwebsite.com/page"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium"
+              />
+              <p class="text-[11px] text-muted">Direct users to any web page or landing page.</p>
+            </div>
+
+            <!-- 2. Plain Text Form -->
+            <div id="form-text" class="type-form hidden space-y-2">
+              <label for="input-gen-text" class="block text-xs font-bold uppercase tracking-wider text-muted">Plain Text Content</label>
+              <textarea
+                id="input-gen-text"
+                rows="4"
+                placeholder="Enter any text, serial number, memo, or raw data..."
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed"
+              ></textarea>
+            </div>
+
+            <!-- 3. Wi-Fi Network Form -->
+            <div id="form-wifi" class="type-form hidden space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                  <label for="input-wifi-ssid" class="block text-xs font-bold text-muted">Network Name (SSID) <span class="text-red-500">*</span></label>
+                  <input id="input-wifi-ssid" type="text" placeholder="e.g. Office_Guest_WiFi" class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label for="select-wifi-auth" class="block text-xs font-bold text-muted">Security / Encryption</label>
+                  <select id="select-wifi-auth" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent">
+                    <option value="WPA" selected>WPA / WPA2 / WPA3 (Default)</option>
+                    <option value="WEP">WEP</option>
+                    <option value="nopass">None (Open Network)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-wifi-pass" class="block text-xs font-bold text-muted">Password</label>
+                <input id="input-wifi-pass" type="text" placeholder="Enter Wi-Fi Password" class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input id="check-wifi-hidden" type="checkbox" class="w-4 h-4 rounded text-accent accent-accent" />
+                <span class="text-xs text-ink font-medium">Hidden SSID Network</span>
+              </label>
+            </div>
+
+            <!-- 4. vCard Contact Form -->
+            <div id="form-vcard" class="type-form hidden space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">First Name</label>
+                  <input id="vcard-fname" type="text" placeholder="Alex" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Last Name</label>
+                  <input id="vcard-lname" type="text" placeholder="Rivera" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Company / Organization</label>
+                  <input id="vcard-org" type="text" placeholder="Acme Technologies" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Job Title</label>
+                  <input id="vcard-title" type="text" placeholder="Lead Engineer" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Phone Number</label>
+                  <input id="vcard-phone" type="tel" placeholder="+1 (555) 019-2834" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Email Address</label>
+                  <input id="vcard-email" type="email" placeholder="alex.rivera@example.com" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[11px] font-bold text-muted mb-1">Website URL</label>
+                  <input id="vcard-url" type="url" placeholder="https://example.com" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Email Form -->
+            <div id="form-email" class="type-form hidden space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Recipient Email</label>
+                <input id="email-to" type="email" placeholder="support@example.com" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Subject</label>
+                <input id="email-subject" type="text" placeholder="Inquiry about Services" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Message Body</label>
+                <textarea id="email-body" rows="2" placeholder="Write your message..." class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink"></textarea>
+              </div>
+            </div>
+
+            <!-- 6. Phone Form -->
+            <div id="form-phone" class="type-form hidden space-y-2">
+              <label class="block text-[11px] font-bold text-muted">Phone Number (with Country Code)</label>
+              <input id="phone-number" type="tel" placeholder="+1 (555) 234-5678" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink" />
+            </div>
+
+            <!-- 7. SMS Form -->
+            <div id="form-sms" class="type-form hidden space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Phone Number</label>
+                <input id="sms-phone" type="tel" placeholder="+1 (555) 234-5678" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Predefined SMS Message</label>
+                <textarea id="sms-message" rows="2" placeholder="I would like more information..." class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink"></textarea>
+              </div>
+            </div>
+
+            <!-- 8. Geo Location Form -->
+            <div id="form-geo" class="type-form hidden space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Latitude</label>
+                  <input id="geo-lat" type="text" placeholder="37.7749" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Longitude</label>
+                  <input id="geo-lng" type="text" placeholder="-122.4194" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Styling & Customization Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+              <span class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">2</span>
+              <span>Design, Colors & Logo Overlay</span>
+            </h2>
+
+            <!-- Colors & Error Correction Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              
+              <!-- Foreground Color -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-muted">QR Dots Color</label>
+                <div class="flex items-center gap-2">
+                  <input id="picker-color-dark" type="color" value="#000000" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                  <input id="input-color-dark" type="text" value="#000000" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+                </div>
+              </div>
+
+              <!-- Background Color -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-muted">Background Color</label>
+                <div class="flex items-center gap-2">
+                  <input id="picker-color-light" type="color" value="#ffffff" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                  <input id="input-color-light" type="text" value="#ffffff" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+                </div>
+              </div>
+
+              <!-- Error Correction Level -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label for="select-ecc" class="block text-xs font-bold text-muted">Error Correction</label>
+                  <span class="text-[10px] text-muted" title="Higher recovery allows logos and damaged codes to scan">ℹ️ Info</span>
+                </div>
+                <select id="select-ecc" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                  <option value="L">L - Low (~7% Recovery)</option>
+                  <option value="M" selected>M - Medium (~15% Recovery)</option>
+                  <option value="Q">Q - Quartile (~25% Recovery)</option>
+                  <option value="H">H - High (~30% for Logos)</option>
+                </select>
+              </div>
+
+            </div>
+
+            <!-- Size Slider -->
+            <div class="space-y-1.5 pt-2 border-t" style="border-color: var(--color-line);">
+              <div class="flex items-center justify-between text-xs">
+                <label class="font-bold text-muted">QR Code Resolution</label>
+                <span id="label-size" class="font-mono font-bold text-ink">280 × 280 px</span>
+              </div>
+              <input id="slider-size" type="range" min="160" max="600" step="20" value="280" class="w-full accent-accent cursor-pointer" />
+            </div>
+
+            <!-- Center Logo Overlay Section -->
+            <div class="space-y-3 pt-3 border-t" style="border-color: var(--color-line);">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-bold uppercase tracking-wider text-muted">Center Logo Overlay (Optional)</label>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600">Active</span>
+                </div>
+                <button id="btn-clear-logo" type="button" class="hidden text-[11px] font-bold text-red-500 hover:underline">Remove Logo</button>
+              </div>
+
+              <!-- Logo Presets Chips -->
+              <div class="space-y-1.5">
+                <span class="text-[11px] text-muted block">Quick Presets or Custom Upload:</span>
+                <div class="flex flex-wrap items-center gap-2" id="logo-presets-container">
+                  <button type="button" data-preset="web" class="preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                    <span>🌐 Web</span>
+                  </button>
+                  <button type="button" data-preset="wifi" class="preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                    <span>📶 Wi-Fi</span>
+                  </button>
+                  <button type="button" data-preset="mail" class="preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                    <span>✉️ Mail</span>
+                  </button>
+                  <button type="button" data-preset="user" class="preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                    <span>👤 Contact</span>
+                  </button>
+                  <button type="button" data-preset="toolzy" class="preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                    <span>⚡ Toolzy</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload Custom Logo File -->
+              <div class="flex items-center gap-3">
+                <label for="input-logo-file" class="touch-target px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink cursor-pointer flex items-center gap-2">
+                  <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>Upload Custom Logo</span>
+                  <input id="input-logo-file" type="file" accept="image/*" class="hidden" />
+                </label>
+                <span id="logo-filename" class="text-xs text-muted truncate">No custom logo selected</span>
+              </div>
+
+              <!-- Logo Shape & Size Controls -->
+              <div id="logo-custom-controls" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div class="space-y-1">
+                  <label for="select-logo-shape" class="block text-[11px] font-bold text-muted">Logo Badge Shape</label>
+                  <select id="select-logo-shape" class="w-full px-3 py-1.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                    <option value="circle" selected>Circle (Recommended)</option>
+                    <option value="round-rect">Rounded Rectangle</option>
+                  </select>
+                </div>
+
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[11px]">
+                    <label class="font-bold text-muted">Logo Scale</label>
+                    <span id="label-logo-size" class="font-mono font-bold text-ink">22%</span>
+                  </div>
+                  <input id="slider-logo-size" type="range" min="14" max="28" step="2" value="22" class="w-full accent-accent cursor-pointer mt-1" />
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Live QR Code Display & Exports (5 cols) -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+          
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Live QR Code Preview</span>
+              </label>
+              <span id="payload-length-badge" class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-surface-alt text-ink font-semibold">0 bytes</span>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-line shadow-xs min-h-[300px]">
+              <div id="qrcode-render-target" class="relative flex items-center justify-center">
+                <!-- Dynamically rendered Canvas -->
+              </div>
+              <p id="qr-preview-caption" class="text-[11px] text-zinc-500 font-mono mt-4 truncate max-w-full text-center select-all"></p>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-download-png"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                id="btn-download-svg"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download SVG</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-copy-qr-image"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy Image</span>
+              </button>
+
+              <button
+                id="btn-copy-raw-text"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span>Copy Payload</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: QR CODE SCANNER -->
+    <!-- ========================================================================= -->
+    <div id="view-scanner" class="hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- LEFT: Camera Viewfinder & File Upload (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                <span>Live Camera Viewfinder</span>
+              </h2>
+
+              <!-- Camera Controls -->
+              <div class="flex items-center gap-2">
+                <button id="btn-toggle-camera" type="button" class="touch-target px-3 py-1.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors flex items-center gap-1.5 shadow-xs">
+                  <span>Start Camera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Video Viewfinder Frame -->
+            <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden flex items-center justify-center border border-line">
+              <video id="scanner-video" playsinline class="w-full h-full object-cover"></video>
+              <canvas id="scanner-hidden-canvas" class="hidden"></canvas>
+
+              <!-- Viewfinder Overlay Target -->
+              <div id="scanner-overlay" class="hidden absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div class="relative w-64 h-64 border-2 border-emerald-400/60 rounded-2xl overflow-hidden shadow-2xl">
+                  <!-- Laser Line -->
+                  <div class="scanner-laser absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_#34d399]"></div>
+                  <!-- Corner Accents -->
+                  <div class="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-emerald-400"></div>
+                  <div class="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-emerald-400"></div>
+                  <div class="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-emerald-400"></div>
+                  <div class="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-emerald-400"></div>
+                </div>
+              </div>
+
+              <!-- Idle / Error Placeholder -->
+              <div id="scanner-idle-placeholder" class="absolute inset-0 bg-slate-900/90 text-white flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-white">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="text-sm font-bold">Camera is Inactive</h3>
+                <p class="text-xs text-slate-400 max-w-sm">Click "Start Camera" to scan QR codes live with your device webcam, or drag and drop an image file below.</p>
+                <div id="camera-error-msg" class="hidden text-xs text-red-400 bg-red-500/20 p-2.5 rounded-xl border border-red-500/30"></div>
+              </div>
+            </div>
+
+            <!-- Alternative: File Upload Box -->
+            <div class="pt-2 border-t" style="border-color: var(--color-line);">
+              <label
+                for="scanner-file-input"
+                class="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer hover:border-accent transition-colors text-center bg-paper"
+                style="border-color: var(--color-line);"
+              >
+                <svg class="w-8 h-8 text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="text-xs font-bold text-ink">Or Upload / Drop a QR Image</span>
+                <span class="text-[11px] text-muted mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG</span>
+                <input id="scanner-file-input" type="file" accept="image/*" class="hidden" />
+              </label>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Decoded Result & Scan History (5 cols) -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+          
+          <!-- Latest Decoded Result Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span>Decoded QR Content</span>
+              </label>
+              <span id="scan-type-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-mono uppercase">URL</span>
+            </div>
+
+            <!-- Decoded Content Box -->
+            <div id="scan-result-container" class="p-4 rounded-xl bg-surface-alt border border-line text-xs font-mono break-all text-ink min-h-[90px] flex items-center justify-center text-center">
+              <span class="text-muted font-sans text-xs">Point your camera at a QR code or upload an image to decode.</span>
+            </div>
+
+            <!-- Action Buttons for Decoded Result -->
+            <div id="scan-actions-container" class="hidden space-y-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  id="btn-scan-copy"
+                  type="button"
+                  class="touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                  <span>Copy Content</span>
+                </button>
+
+                <a
+                  id="btn-scan-open-link"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="hidden touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-surface border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Open Link</span>
+                  <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+
+                <button
+                  id="btn-send-to-generator"
+                  type="button"
+                  class="touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-surface border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Edit in Generator</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scan History List Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-3 shadow-sm">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+                <span>Recent Scans</span>
+                <span id="history-count-label" class="px-2 py-0.5 rounded-full bg-surface-alt font-mono text-[10px] text-ink">0</span>
+              </h3>
+              <button id="btn-clear-scan-history" type="button" class="text-[11px] text-muted hover:text-red-500 font-medium transition-colors">Clear All</button>
+            </div>
+
+            <div id="scan-history-list" class="space-y-2 max-h-60 overflow-y-auto scrollbar-thin">
+              <span class="text-xs text-muted block text-center py-4">No scans yet.</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Storage Key
+    const SCAN_HISTORY_KEY = 'toolbox:qr_scan_history';
+
+    // State
+    let currentType = 'url';
+    let currentPayload = '';
+    let logoImageObj = null;
+    let currentLogoPreset = null;
+
+    // Scanner State
+    let videoStream = null;
+    let isScanning = false;
+    let scanAnimationId = null;
+
+    // Navigation Tabs
+    const navTabGen = document.getElementById('nav-tab-generate');
+    const navTabScan = document.getElementById('nav-tab-scan');
+    const viewGenerator = document.getElementById('view-generator');
+    const viewScanner = document.getElementById('view-scanner');
+
+    navTabGen.addEventListener('click', () => {
+      viewGenerator.classList.remove('hidden');
+      viewScanner.classList.add('hidden');
+      navTabGen.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2';
+      navTabScan.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2';
+      stopCamera();
+    });
+
+    navTabScan.addEventListener('click', () => {
+      viewScanner.classList.remove('hidden');
+      viewGenerator.classList.add('hidden');
+      navTabScan.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2';
+      navTabGen.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2';
+    });
+
+    // ==========================================
+    // QR GENERATOR LOGIC
+    // ==========================================
+    const typeButtons = document.querySelectorAll('.type-btn');
+    const typeForms = document.querySelectorAll('.type-form');
+    const formSectionTitle = document.getElementById('form-section-title');
+
+    const pickerColorDark = document.getElementById('picker-color-dark');
+    const inputColorDark = document.getElementById('input-color-dark');
+    const pickerColorLight = document.getElementById('picker-color-light');
+    const inputColorLight = document.getElementById('input-color-light');
+    const selectEcc = document.getElementById('select-ecc');
+    const sliderSize = document.getElementById('slider-size');
+    const labelSize = document.getElementById('label-size');
+
+    const inputLogoFile = document.getElementById('input-logo-file');
+    const logoFilename = document.getElementById('logo-filename');
+    const btnClearLogo = document.getElementById('btn-clear-logo');
+    const logoCustomControls = document.getElementById('logo-custom-controls');
+    const selectLogoShape = document.getElementById('select-logo-shape');
+    const sliderLogoSize = document.getElementById('slider-logo-size');
+    const labelLogoSize = document.getElementById('label-logo-size');
+    const presetLogoBtns = document.querySelectorAll('.preset-logo-btn');
+
+    const qrRenderTarget = document.getElementById('qrcode-render-target');
+    const payloadLengthBadge = document.getElementById('payload-length-badge');
+    const qrPreviewCaption = document.getElementById('qr-preview-caption');
+
+    const btnDownloadPng = document.getElementById('btn-download-png');
+    const btnDownloadSvg = document.getElementById('btn-download-svg');
+    const btnCopyQrImage = document.getElementById('btn-copy-qr-image');
+    const btnCopyRawText = document.getElementById('btn-copy-raw-text');
+
+    // Type Switching
+    typeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentType = btn.dataset.type;
+        typeButtons.forEach(b => {
+          if (b.dataset.type === currentType) {
+            b.className = 'type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-xs flex items-center gap-1.5';
+          } else {
+            b.className = 'type-btn touch-target px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink bg-surface-alt border border-line flex items-center gap-1.5';
+          }
+        });
+
+        typeForms.forEach(f => f.classList.add('hidden'));
+        const activeForm = document.getElementById(`form-${currentType}`);
+        if (activeForm) activeForm.classList.remove('hidden');
+
+        formSectionTitle.innerText = btn.innerText.trim();
+        updateQrCode();
+      });
+    });
+
+    // Build Payload string based on active type
+    function computePayload() {
+      if (currentType === 'url') {
+        let u = document.getElementById('input-gen-url').value.trim();
+        if (u && !/^https?:\/\//i.test(u) && !/^mailto:/i.test(u) && !/^tel:/i.test(u)) {
+          u = 'https://' + u;
+        }
+        return u;
+      }
+      if (currentType === 'text') {
+        return document.getElementById('input-gen-text').value;
+      }
+      if (currentType === 'wifi') {
+        const ssid = document.getElementById('input-wifi-ssid').value.trim();
+        const auth = document.getElementById('select-wifi-auth').value;
+        const pass = document.getElementById('input-wifi-pass').value;
+        const hidden = document.getElementById('check-wifi-hidden').checked;
+        if (!ssid) return '';
+        return `WIFI:S:${escapeWifi(ssid)};T:${auth};P:${escapeWifi(pass)};H:${hidden};;`;
+      }
+      if (currentType === 'vcard') {
+        const fn = document.getElementById('vcard-fname').value.trim();
+        const ln = document.getElementById('vcard-lname').value.trim();
+        const org = document.getElementById('vcard-org').value.trim();
+        const title = document.getElementById('vcard-title').value.trim();
+        const phone = document.getElementById('vcard-phone').value.trim();
+        const email = document.getElementById('vcard-email').value.trim();
+        const url = document.getElementById('vcard-url').value.trim();
+
+        let v = 'BEGIN:VCARD\nVERSION:3.0\n';
+        if (fn || ln) v += `N:${ln};${fn};;;\nFN:${fn} ${ln}\n`;
+        if (org) v += `ORG:${org}\n`;
+        if (title) v += `TITLE:${title}\n`;
+        if (phone) v += `TEL;TYPE=CELL:${phone}\n`;
+        if (email) v += `EMAIL:${email}\n`;
+        if (url) v += `URL:${url}\n`;
+        v += 'END:VCARD';
+        return v;
+      }
+      if (currentType === 'email') {
+        const to = document.getElementById('email-to').value.trim();
+        const sub = document.getElementById('email-subject').value.trim();
+        const body = document.getElementById('email-body').value.trim();
+        if (!to) return '';
+        let m = `mailto:${to}`;
+        const params = [];
+        if (sub) params.push(`subject=${encodeURIComponent(sub)}`);
+        if (body) params.push(`body=${encodeURIComponent(body)}`);
+        if (params.length > 0) m += `?${params.join('&')}`;
+        return m;
+      }
+      if (currentType === 'phone') {
+        const tel = document.getElementById('phone-number').value.trim();
+        return tel ? `tel:${tel}` : '';
+      }
+      if (currentType === 'sms') {
+        const phone = document.getElementById('sms-phone').value.trim();
+        const msg = document.getElementById('sms-message').value.trim();
+        if (!phone) return '';
+        return msg ? `smsto:${phone}:${msg}` : `smsto:${phone}`;
+      }
+      if (currentType === 'geo') {
+        const lat = document.getElementById('geo-lat').value.trim();
+        const lng = document.getElementById('geo-lng').value.trim();
+        if (!lat || !lng) return '';
+        return `geo:${lat},${lng}`;
+      }
+      return '';
+    }
+
+    function escapeWifi(str) {
+      return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/:/g, '\\:').replace(/,/g, '\\,');
+    }
+
+    // SVG Presets for Logo
+    function createPresetSvgImage(preset) {
+      let svgMarkup = '';
+      if (preset === 'web') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+      } else if (preset === 'wifi') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+      } else if (preset === 'mail') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`;
+      } else if (preset === 'user') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+      } else if (preset === 'toolzy') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="#3b82f6"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
+      }
+
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+      return img;
+    }
+
+    // Render QR Code onto Canvas with Center Logo Overlay
+    function updateQrCode() {
+      currentPayload = computePayload();
+      payloadLengthBadge.innerText = `${new Blob([currentPayload]).size} bytes`;
+      qrPreviewCaption.innerText = currentPayload || 'Enter content above to generate QR code...';
+
+      qrRenderTarget.innerHTML = '';
+      if (!currentPayload) {
+        qrRenderTarget.innerHTML = '<div class="w-48 h-48 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-muted">Enter content to preview</div>';
+        return;
+      }
+
+      const ecc = selectEcc.value; // 'L', 'M', 'Q', 'H'
+      let qr;
+      try {
+        qr = qrcode(0, ecc);
+        qr.addData(currentPayload);
+        qr.make();
+      } catch (err) {
+        // Fallback to High or Quartile if auto-size fails
+        try {
+          qr = qrcode(4, ecc);
+          qr.addData(currentPayload);
+          qr.make();
+        } catch (e) {
+          qrRenderTarget.innerHTML = `<div class="p-4 rounded-xl bg-red-500/10 text-red-500 text-xs text-center font-medium">Content is too long for selected Error Correction level.</div>`;
+          return;
+        }
+      }
+
+      const moduleCount = qr.getModuleCount();
+      const size = parseInt(sliderSize.value, 10);
+      const margin = 2; // quiet zone in modules
+      const totalModules = moduleCount + margin * 2;
+      const cellSize = size / totalModules;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.id = 'qr-rendered-canvas';
+      canvas.className = 'max-w-full h-auto rounded-xl shadow-xs';
+      const ctx = canvas.getContext('2d');
+
+      // 1. Draw Background
+      ctx.fillStyle = inputColorLight.value;
+      ctx.fillRect(0, 0, size, size);
+
+      // 2. Draw Dark Modules
+      ctx.fillStyle = inputColorDark.value;
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const x = Math.round((c + margin) * cellSize);
+            const y = Math.round((r + margin) * cellSize);
+            const w = Math.ceil(cellSize);
+            const h = Math.ceil(cellSize);
+            ctx.fillRect(x, y, w, h);
+          }
+        }
+      }
+
+      // 3. Draw Center Logo Overlay if logoImageObj exists
+      if (logoImageObj && (logoImageObj.complete || logoImageObj.naturalWidth > 0)) {
+        const logoRatio = (parseFloat(sliderLogoSize.value) || 22) / 100;
+        const logoSize = Math.round(size * logoRatio);
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        const badgePadding = Math.max(5, Math.round(cellSize * 0.9));
+        const badgeSize = logoSize + badgePadding * 2;
+        const badgeX = (size - badgeSize) / 2;
+        const badgeY = (size - badgeSize) / 2;
+        const shape = selectLogoShape.value || 'circle';
+
+        // Draw Badge Background (white with subtle border)
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
+        if (shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, badgeSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else {
+          const radius = Math.round(badgeSize * 0.22);
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
+          } else {
+            ctx.rect(badgeX, badgeY, badgeSize, badgeSize);
+          }
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Clip & Draw Logo Image
+        ctx.save();
+        if (shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, logoSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+        } else {
+          const imgRadius = Math.round(logoSize * 0.18);
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(logoX, logoY, logoSize, logoSize, imgRadius);
+          } else {
+            ctx.rect(logoX, logoY, logoSize, logoSize);
+          }
+          ctx.clip();
+        }
+        ctx.drawImage(logoImageObj, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
+
+      qrRenderTarget.innerHTML = '';
+      qrRenderTarget.appendChild(canvas);
+    }
+
+    // Logo Handling: Custom Upload
+    inputLogoFile.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      logoFilename.innerText = file.name;
+      btnClearLogo.classList.remove('hidden');
+      logoCustomControls.classList.remove('hidden');
+      currentLogoPreset = null;
+
+      // Deselect preset buttons
+      presetLogoBtns.forEach(b => b.className = 'preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5');
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+          logoImageObj = img;
+          selectEcc.value = 'H'; // Switch to High Error Correction (30%) automatically for logos
+          updateQrCode();
+          showToast('Applied custom logo overlay with High Error Correction (30%)!');
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Logo Handling: Preset Buttons
+    presetLogoBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        currentLogoPreset = preset;
+        logoFilename.innerText = `Preset: ${btn.innerText.trim()}`;
+        btnClearLogo.classList.remove('hidden');
+        logoCustomControls.classList.remove('hidden');
+
+        presetLogoBtns.forEach(b => {
+          if (b.dataset.preset === preset) {
+            b.className = 'preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-bold bg-accent text-white shadow-xs flex items-center gap-1.5';
+          } else {
+            b.className = 'preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5';
+          }
+        });
+
+        const img = createPresetSvgImage(preset);
+        img.onload = function () {
+          logoImageObj = img;
+          selectEcc.value = 'H'; // Switch to High ECC automatically
+          updateQrCode();
+          showToast(`Applied ${btn.innerText.trim()} logo!`);
+        };
+      });
+    });
+
+    // Remove Logo
+    btnClearLogo.addEventListener('click', () => {
+      logoImageObj = null;
+      currentLogoPreset = null;
+      inputLogoFile.value = '';
+      logoFilename.innerText = 'No custom logo selected';
+      btnClearLogo.classList.add('hidden');
+      logoCustomControls.classList.add('hidden');
+      presetLogoBtns.forEach(b => b.className = 'preset-logo-btn touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5');
+      updateQrCode();
+      showToast('Removed logo overlay.');
+    });
+
+    // Logo customization controls
+    selectLogoShape.addEventListener('change', updateQrCode);
+    sliderLogoSize.addEventListener('input', (e) => {
+      labelLogoSize.innerText = `${e.target.value}%`;
+      updateQrCode();
+    });
+
+    // Customization Listeners
+    pickerColorDark.addEventListener('input', (e) => { inputColorDark.value = e.target.value; updateQrCode(); });
+    inputColorDark.addEventListener('input', () => updateQrCode());
+    pickerColorLight.addEventListener('input', (e) => { inputColorLight.value = e.target.value; updateQrCode(); });
+    inputColorLight.addEventListener('input', () => updateQrCode());
+    selectEcc.addEventListener('change', updateQrCode);
+
+    sliderSize.addEventListener('input', (e) => {
+      labelSize.innerText = `${e.target.value} × ${e.target.value} px`;
+      updateQrCode();
+    });
+
+    // Attach to all form inputs
+    document.querySelectorAll('#view-generator input, #view-generator textarea, #view-generator select').forEach(el => {
+      el.addEventListener('input', updateQrCode);
+      el.addEventListener('change', updateQrCode);
+    });
+
+    // Export: Download PNG
+    btnDownloadPng.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const dataUrl = canvasEl.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `qrcode-${currentType}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Downloaded QR Code as PNG!');
+    });
+
+    // Export: Download SVG
+    btnDownloadSvg.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const size = parseInt(sliderSize.value, 10);
+      const dataUrl = canvasEl.toDataURL('image/png');
+
+      const svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <image width="${size}" height="${size}" xlink:href="${dataUrl}"/>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qrcode-${currentType}-${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded QR Code as SVG!');
+    });
+
+    // Export: Copy Image to Clipboard
+    btnCopyQrImage.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to copy.');
+        return;
+      }
+
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+            showToast('QR Code image copied to clipboard!');
+          });
+        } catch (e) {
+          showToast('Clipboard image copy not supported in this browser.');
+        }
+      });
+    });
+
+    // Export: Copy Raw Payload
+    btnCopyRawText.addEventListener('click', () => {
+      if (!currentPayload) return;
+      navigator.clipboard.writeText(currentPayload).then(() => {
+        showToast('Payload text copied to clipboard!');
+      });
+    });
+
+    // ==========================================
+    // QR SCANNER LOGIC (jsQR + Camera + File Upload)
+    // ==========================================
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerHiddenCanvas = document.getElementById('scanner-hidden-canvas');
+    const scannerOverlay = document.getElementById('scanner-overlay');
+    const scannerIdlePlaceholder = document.getElementById('scanner-idle-placeholder');
+    const cameraErrorMsg = document.getElementById('camera-error-msg');
+    const btnToggleCamera = document.getElementById('btn-toggle-camera');
+    const scannerFileInput = document.getElementById('scanner-file-input');
+
+    const scanResultContainer = document.getElementById('scan-result-container');
+    const scanTypeBadge = document.getElementById('scan-type-badge');
+    const scanActionsContainer = document.getElementById('scan-actions-container');
+    const btnScanCopy = document.getElementById('btn-scan-copy');
+    const btnScanOpenLink = document.getElementById('btn-scan-open-link');
+    const btnSendToGenerator = document.getElementById('btn-send-to-generator');
+
+    const scanHistoryList = document.getElementById('scan-history-list');
+    const historyCountLabel = document.getElementById('history-count-label');
+    const btnClearScanHistory = document.getElementById('btn-clear-scan-history');
+
+    let latestScannedContent = '';
+
+    // Start / Stop Camera
+    async function startCamera() {
+      cameraErrorMsg.classList.add('hidden');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } }
+        });
+        videoStream = stream;
+        scannerVideo.srcObject = stream;
+        await scannerVideo.play();
+
+        isScanning = true;
+        scannerOverlay.classList.remove('hidden');
+        scannerIdlePlaceholder.classList.add('hidden');
+        btnToggleCamera.innerText = 'Stop Camera';
+        btnToggleCamera.className = 'touch-target px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center gap-1.5 shadow-xs';
+
+        requestAnimationFrame(tickScanner);
+      } catch (err) {
+        console.error('Camera error', err);
+        cameraErrorMsg.classList.remove('hidden');
+        cameraErrorMsg.innerText = `Camera Access Error: ${err.message || 'Permission denied or no camera device found.'}`;
+      }
+    }
+
+    function stopCamera() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      isScanning = false;
+      if (scanAnimationId) cancelAnimationFrame(scanAnimationId);
+
+      scannerOverlay.classList.add('hidden');
+      scannerIdlePlaceholder.classList.remove('hidden');
+      btnToggleCamera.innerText = 'Start Camera';
+      btnToggleCamera.className = 'touch-target px-3 py-1.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors flex items-center gap-1.5 shadow-xs';
+    }
+
+    btnToggleCamera.addEventListener('click', () => {
+      if (isScanning) {
+        stopCamera();
+      } else {
+        startCamera();
+      }
+    });
+
+    // Scanner Loop (Live Camera)
+    function tickScanner() {
+      if (!isScanning) return;
+
+      if (scannerVideo.readyState === scannerVideo.HAVE_ENOUGH_DATA) {
+        const hiddenCtx = scannerHiddenCanvas.getContext('2d');
+        scannerHiddenCanvas.width = scannerVideo.videoWidth;
+        scannerHiddenCanvas.height = scannerVideo.videoHeight;
+        hiddenCtx.drawImage(scannerVideo, 0, 0, scannerHiddenCanvas.width, scannerHiddenCanvas.height);
+
+        const imageData = hiddenCtx.getImageData(0, 0, scannerHiddenCanvas.width, scannerHiddenCanvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+
+        if (code && code.data) {
+          handleSuccessfulScan(code.data);
+          playBeep();
+          stopCamera();
+          return;
+        }
+      }
+
+      scanAnimationId = requestAnimationFrame(tickScanner);
+    }
+
+    // Decode File Upload
+    scannerFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+          const hiddenCtx = scannerHiddenCanvas.getContext('2d');
+          scannerHiddenCanvas.width = img.naturalWidth;
+          scannerHiddenCanvas.height = img.naturalHeight;
+          hiddenCtx.drawImage(img, 0, 0);
+
+          const imageData = hiddenCtx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code && code.data) {
+            handleSuccessfulScan(code.data);
+            playBeep();
+            showToast('Decoded QR code from image!');
+          } else {
+            showToast('No QR code found in uploaded image.');
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Web Audio Subtle Beep
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    // Handle Successful Scan
+    function handleSuccessfulScan(data) {
+      latestScannedContent = data;
+      scanResultContainer.innerHTML = `<span class="text-ink font-semibold select-all">${escapeHtml(data)}</span>`;
+      scanActionsContainer.classList.remove('hidden');
+
+      // Detect Type
+      let detectedType = 'text';
+      if (/^https?:\/\//i.test(data)) {
+        detectedType = 'url';
+        btnScanOpenLink.href = data;
+        btnScanOpenLink.classList.remove('hidden');
+      } else if (/^WIFI:/i.test(data)) {
+        detectedType = 'wifi';
+        btnScanOpenLink.classList.add('hidden');
+      } else if (/^BEGIN:VCARD/i.test(data)) {
+        detectedType = 'vcard';
+        btnScanOpenLink.classList.add('hidden');
+      } else if (/^mailto:/i.test(data)) {
+        detectedType = 'email';
+        btnScanOpenLink.href = data;
+        btnScanOpenLink.classList.remove('hidden');
+      } else if (/^tel:/i.test(data)) {
+        detectedType = 'phone';
+        btnScanOpenLink.href = data;
+        btnScanOpenLink.classList.remove('hidden');
+      } else {
+        btnScanOpenLink.classList.add('hidden');
+      }
+
+      scanTypeBadge.innerText = detectedType;
+      scanTypeBadge.classList.remove('hidden');
+
+      // Save to History
+      saveScanToHistory({
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        type: detectedType,
+        content: data
+      });
+    }
+
+    // Copy Scanned Content
+    btnScanCopy.addEventListener('click', () => {
+      if (!latestScannedContent) return;
+      navigator.clipboard.writeText(latestScannedContent).then(() => {
+        showToast('Decoded text copied to clipboard!');
+      });
+    });
+
+    // Send Scanned Content to Generator
+    btnSendToGenerator.addEventListener('click', () => {
+      if (!latestScannedContent) return;
+
+      navTabGen.click();
+      if (/^https?:\/\//i.test(latestScannedContent)) {
+        document.querySelector('.type-btn[data-type="url"]').click();
+        document.getElementById('input-gen-url').value = latestScannedContent;
+      } else {
+        document.querySelector('.type-btn[data-type="text"]').click();
+        document.getElementById('input-gen-text').value = latestScannedContent;
+      }
+      updateQrCode();
+      showToast('Loaded scanned data into Generator!');
+    });
+
+    // ==========================================
+    // SCAN HISTORY STORAGE
+    // ==========================================
+    function getScanHistory() {
+      try {
+        const raw = localStorage.getItem(SCAN_HISTORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveScanToHistory(item) {
+      const history = getScanHistory();
+      history.unshift(item);
+      if (history.length > 30) history.pop();
+      try {
+        localStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(history));
+      } catch (e) {}
+      renderScanHistory();
+    }
+
+    function renderScanHistory() {
+      const history = getScanHistory();
+      historyCountLabel.innerText = history.length;
+
+      if (history.length === 0) {
+        scanHistoryList.innerHTML = '<span class="text-xs text-muted block text-center py-4">No scans yet.</span>';
+        return;
+      }
+
+      scanHistoryList.innerHTML = '';
+      history.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 rounded-xl bg-surface-alt border border-line flex items-center justify-between gap-2 text-xs';
+
+        div.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 text-[10px] text-muted mb-0.5">
+              <span class="font-bold text-accent uppercase">${item.type}</span>
+              <span>•</span>
+              <span>${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p class="font-mono text-ink text-[11px] truncate" title="${escapeHtml(item.content)}">${escapeHtml(item.content)}</p>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" class="btn-copy-history-scan p-1 text-muted hover:text-ink" data-content="${escapeHtml(item.content)}" title="Copy">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+            </button>
+            <button type="button" class="btn-del-history-scan p-1 text-muted hover:text-red-500" data-index="${index}" title="Delete">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
+        scanHistoryList.appendChild(div);
+      });
+    }
+
+    scanHistoryList.addEventListener('click', (e) => {
+      const copyBtn = e.target.closest('.btn-copy-history-scan');
+      if (copyBtn) {
+        navigator.clipboard.writeText(copyBtn.dataset.content).then(() => {
+          showToast('Copied from history!');
+        });
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-del-history-scan');
+      if (delBtn) {
+        const history = getScanHistory();
+        history.splice(parseInt(delBtn.dataset.index), 1);
+        try { localStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+        renderScanHistory();
+        showToast('Deleted item from history.');
+        return;
+      }
+    });
+
+    btnClearScanHistory.addEventListener('click', () => {
+      try { localStorage.removeItem(SCAN_HISTORY_KEY); } catch (e) {}
+      renderScanHistory();
+      showToast('Scan history cleared.');
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    updateQrCode();
+    renderScanHistory();
+  </script>
+</body>
+</html>

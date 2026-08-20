@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Sun, Moon, Search, ArrowLeft, Star } from 'lucide-react';
+import { Sun, Moon, Search, ArrowLeft, Star, PlusCircle } from 'lucide-react';
 import { getStoredTheme, setStoredTheme, getFavorites, getRecentTools } from '../../lib/storage';
 import { ToolzyLogo } from '../common/ToolzyLogo';
 
@@ -79,6 +79,16 @@ export const Header: React.FC = () => {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Request New Tool */}
+          <a
+            href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy&body=Hi%20Toolzy%20Team%2C%0A%0AI%20would%20like%20to%20request%20a%20new%20tool%20for%20Toolzy%3A%0A%0A-%20Tool%20Name%3A%20%0A-%20Description%20%26%20Use%20Case%3A%20%0A-%20Key%20Features%3A%20%0A%0AThank%20you!"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-accent hover:text-white hover:bg-accent border border-accent/30 transition-all shadow-2xs"
+            title="Request for adding a new tool"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Request Tool</span>
+          </a>
+
           {/* Favorites Link */}
           <Link
             to="/?tab=favorites"

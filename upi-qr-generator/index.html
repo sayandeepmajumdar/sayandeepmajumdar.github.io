@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPI QR Code Generator & Shop Standee Studio — Toolzy</title>
+  <meta name="description" content="Generate instant UPI payment QR codes and printable counter standees. Supports GPay, PhonePe, Paytm, BHIM, fixed amounts, and custom merchant logos with 100% in-browser privacy." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Library: qrcode-generator (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Print Styles for Counter Standee */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      header, #form-column, #tech-breakdown-card, #export-buttons-group, #view-mode-toggle, #trust-banner, #toast {
+        display: none !important;
+      }
+      #preview-column {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+      }
+      #print-standee-wrapper {
+        box-shadow: none !important;
+        border: 2px solid #0f172a !important;
+        page-break-inside: avoid;
+        margin: 30px auto !important;
+        max-width: 440px !important;
+      }
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">UPI QR Code Generator & Standee Studio</h1>
+            <p class="text-xs sm:text-sm text-muted">Create standard UPI payment QR codes and printable counter standees for all apps.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust Badge & Mode Switcher -->
+      <div class="flex items-center gap-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>100% In-Browser • Direct Payment</span>
+        </div>
+
+        <div id="view-mode-toggle" class="flex items-center p-1 rounded-xl bg-surface border border-line shadow-2xs">
+          <button id="btn-mode-qr" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            <span>QR Only</span>
+          </button>
+          <button id="btn-mode-card" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <span>Shop Standee</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Trust & Safety Banner -->
+    <div id="trust-banner" class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-3">
+      <svg class="w-5 h-5 shrink-0 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="space-y-0.5">
+        <p class="font-bold">Important Payment Notice & Disclaimer</p>
+        <p class="leading-relaxed opacity-90">This tool creates standard UPI deep links and QR codes entirely inside your browser. No payments are processed or stored on this server. All transactions occur directly between the customer and merchant inside official banking apps (Google Pay, PhonePe, Paytm, BHIM). Always verify your UPI ID before printing.</p>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid: Inputs (7 cols) & Live Preview (5 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Inputs & Configuration (7 cols) -->
+      <div id="form-column" class="lg:col-span-7 space-y-6">
+
+        <!-- Card 1: UPI ID & Payee Details -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-black">1</span>
+              <span>Payee & UPI Details</span>
+            </h2>
+            <div class="flex items-center gap-2">
+              <button id="btn-sample-merchant" type="button" class="text-[11px] font-bold text-accent hover:underline">Sample Merchant</button>
+              <span class="text-muted">•</span>
+              <button id="btn-sample-personal" type="button" class="text-[11px] font-bold text-accent hover:underline">Sample Personal</button>
+            </div>
+          </div>
+
+          <!-- UPI ID / VPA Input -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-vpa" class="block text-xs font-bold uppercase tracking-wider text-muted">UPI ID / VPA <span class="text-red-500">*</span></label>
+              <span id="vpa-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono">Valid VPA</span>
+            </div>
+            <input
+              id="input-vpa"
+              type="text"
+              value="coffeehouse@upi"
+              placeholder="e.g. yourname@okhdfcbank or merchant@paytm"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono font-bold"
+              required
+            />
+            
+            <!-- Quick Bank Handle Chips -->
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+              <span class="text-[10px] text-muted font-bold mr-1">Handles:</span>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@okhdfcbank">@okhdfcbank</button>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@okaxis">@okaxis</button>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@paytm">@paytm</button>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@ybl">@ybl</button>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@ibl">@ibl</button>
+              <button type="button" class="btn-handle-chip px-2 py-0.5 rounded-md text-[10px] font-mono bg-surface-alt hover:bg-surface border border-line text-ink" data-handle="@sbi">@sbi</button>
+            </div>
+          </div>
+
+          <!-- Payee Name Input -->
+          <div class="space-y-1.5">
+            <label for="input-payee-name" class="block text-xs font-bold uppercase tracking-wider text-muted">Payee / Merchant Name <span class="text-red-500">*</span></label>
+            <input
+              id="input-payee-name"
+              type="text"
+              value="Artisan Coffee & Bakery"
+              placeholder="e.g. Sunrise Cafe or John Doe"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-semibold"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Card 2: Payment Amount & Transaction Notes -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">2</span>
+            <span>Payment Amount & Remarks</span>
+          </h2>
+
+          <!-- Amount Mode Selector -->
+          <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-surface-alt border border-line">
+            <button id="btn-amount-any" type="button" class="touch-target py-2 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs">Any Amount (Customer Enters)</button>
+            <button id="btn-amount-fixed" type="button" class="touch-target py-2 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink">Fixed Amount (Locked)</button>
+          </div>
+
+          <!-- Fixed Amount Input (Conditional) -->
+          <div id="amount-input-row" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="input-amount" class="block text-xs font-bold uppercase tracking-wider text-muted">Amount (₹ INR)</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted font-bold">₹</span>
+                <input id="input-amount" type="number" step="0.01" min="1" value="250.00" placeholder="0.00" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono font-bold" />
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label for="select-currency" class="block text-xs font-bold uppercase tracking-wider text-muted">Currency</label>
+              <select id="select-currency" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink font-semibold" disabled>
+                <option value="INR" selected>INR (₹ Indian Rupee)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Transaction Note & Invoice Ref -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t" style="border-color: var(--color-line);">
+            <div class="space-y-1">
+              <label for="input-note" class="block text-xs font-bold uppercase tracking-wider text-muted">Transaction Note / Remark</label>
+              <input id="input-note" type="text" value="Table 4 Bill" placeholder="e.g. Order #1042 or Bill Payment" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink" />
+            </div>
+
+            <div class="space-y-1">
+              <label for="input-ref" class="block text-xs font-bold uppercase tracking-wider text-muted">Invoice / Reference ID (Optional)</label>
+              <input id="input-ref" type="text" value="INV-9821" placeholder="e.g. REF-2026-08" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: QR Appearance & Center Badge -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">3</span>
+            <span>QR Styling & Center App Badges</span>
+          </h2>
+
+          <!-- Center Logo Presets -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted block">Center Badge Overlay:</span>
+            <div class="flex flex-wrap items-center gap-2" id="badge-presets-container">
+              <button type="button" data-badge="upi" class="badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-bold bg-accent text-white shadow-2xs flex items-center gap-1.5">
+                <span>🇮🇳 UPI Badge</span>
+              </button>
+              <button type="button" data-badge="gpay" class="badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                <span>🔵 Google Pay</span>
+              </button>
+              <button type="button" data-badge="phonepe" class="badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                <span>🟣 PhonePe</span>
+              </button>
+              <button type="button" data-badge="paytm" class="badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5">
+                <span>🔷 Paytm</span>
+              </button>
+              <button type="button" data-badge="none" class="badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-muted flex items-center gap-1.5">
+                <span>None</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Colors & Error Correction Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t" style="border-color: var(--color-line);">
+            <!-- Foreground Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">QR Dots Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-dark" type="color" value="#0f172a" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-dark" type="text" value="#0f172a" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Background Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">Background Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-light" type="color" value="#ffffff" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-light" type="text" value="#ffffff" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Error Correction Level -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="select-ecc" class="block text-xs font-bold text-muted">Error Correction</label>
+                <span class="text-[10px] text-muted" title="High level enables center logo without scan failure">ℹ️ Info</span>
+              </div>
+              <select id="select-ecc" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                <option value="M">M - Medium (15%)</option>
+                <option value="Q">Q - Quartile (25%)</option>
+                <option value="H" selected>H - High (30% for Badge)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Resolution Slider -->
+          <div class="space-y-1.5 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center justify-between text-xs">
+              <label class="font-bold text-muted">QR Resolution</label>
+              <span id="label-size" class="font-mono font-bold text-ink">300 × 300 px</span>
+            </div>
+            <input id="slider-size" type="range" min="200" max="600" step="20" value="300" class="w-full accent-accent cursor-pointer" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Live Previews & Exports (5 cols) -->
+      <div id="preview-column" class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+        
+        <!-- Live Preview Card -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="preview-title-label">Live UPI Payment QR</span>
+            </label>
+            <span id="payment-mode-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold">ANY AMOUNT</span>
+          </div>
+
+          <!-- Shop Standee Mockup Wrapper -->
+          <div id="print-standee-wrapper" class="flex flex-col items-center justify-center p-6 sm:p-7 rounded-2xl bg-white text-zinc-900 border border-line shadow-xs transition-all text-center">
+            
+            <!-- Standee Header (Visible in Card Mode) -->
+            <div id="standee-header-area" class="w-full mb-4 pb-3 border-b border-zinc-100 hidden">
+              <div class="flex items-center justify-center gap-1.5 mb-1.5">
+                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-black text-[10px] tracking-wider uppercase">BHIM UPI</span>
+                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-black text-[10px] tracking-wider">GPay</span>
+                <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-black text-[10px] tracking-wider">PhonePe</span>
+                <span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 font-black text-[10px] tracking-wider">Paytm</span>
+              </div>
+              <h3 class="text-base font-black tracking-tight text-zinc-900">Scan & Pay with Any UPI App</h3>
+              <p class="text-[11px] text-zinc-500 font-medium">Use Google Pay, PhonePe, Paytm, BHIM, or any Banking app</p>
+            </div>
+
+            <!-- Canvas Render Container -->
+            <div id="qrcode-render-target" class="flex items-center justify-center">
+              <!-- Injected via Canvas -->
+            </div>
+
+            <!-- Standee Footer (Visible in Card Mode) -->
+            <div id="standee-footer-area" class="w-full mt-4 pt-3 border-t border-zinc-100 space-y-1.5 hidden">
+              <div>
+                <p id="standee-display-name" class="font-black text-sm text-zinc-900">Artisan Coffee & Bakery</p>
+                <p id="standee-display-vpa" class="font-mono text-xs text-blue-600 font-bold">coffeehouse@upi</p>
+              </div>
+
+              <div id="standee-amount-badge-container" class="hidden pt-1">
+                <span id="standee-display-amount" class="inline-block px-3 py-1 rounded-xl bg-zinc-900 text-white font-black text-xs font-mono">
+                  Paying: ₹250.00
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Action Buttons -->
+          <div id="export-buttons-group" class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-download-png"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                id="btn-copy-upi-link"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy UPI Link</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                id="btn-download-svg"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>SVG</span>
+              </button>
+
+              <button
+                id="btn-copy-qr-image"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy Image</span>
+              </button>
+
+              <button
+                id="btn-print-standee"
+                type="button"
+                class="touch-target px-3 py-2 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Print Standee</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // State
+    let isStandeeMode = false;
+    let isFixedAmount = false;
+    let currentUpiUri = '';
+    let activeBadgeType = 'upi';
+    let centerBadgeImg = null;
+
+    // Elements
+    const inputVpa = document.getElementById('input-vpa');
+    const inputPayeeName = document.getElementById('input-payee-name');
+    const vpaStatusBadge = document.getElementById('vpa-status-badge');
+    const btnAmountAny = document.getElementById('btn-amount-any');
+    const btnAmountFixed = document.getElementById('btn-amount-fixed');
+    const amountInputRow = document.getElementById('amount-input-row');
+    const inputAmount = document.getElementById('input-amount');
+    const inputNote = document.getElementById('input-note');
+    const inputRef = document.getElementById('input-ref');
+
+    const handleChips = document.querySelectorAll('.btn-handle-chip');
+    const badgePresetBtns = document.querySelectorAll('.badge-preset-btn');
+    const btnSampleMerchant = document.getElementById('btn-sample-merchant');
+    const btnSamplePersonal = document.getElementById('btn-sample-personal');
+
+    const pickerColorDark = document.getElementById('picker-color-dark');
+    const inputColorDark = document.getElementById('input-color-dark');
+    const pickerColorLight = document.getElementById('picker-color-light');
+    const inputColorLight = document.getElementById('input-color-light');
+    const selectEcc = document.getElementById('select-ecc');
+    const sliderSize = document.getElementById('slider-size');
+    const labelSize = document.getElementById('label-size');
+
+    const btnModeQr = document.getElementById('btn-mode-qr');
+    const btnModeCard = document.getElementById('btn-mode-card');
+    const previewTitleLabel = document.getElementById('preview-title-label');
+    const paymentModeBadge = document.getElementById('payment-mode-badge');
+    const printStandeeWrapper = document.getElementById('print-standee-wrapper');
+    const standeeHeaderArea = document.getElementById('standee-header-area');
+    const standeeFooterArea = document.getElementById('standee-footer-area');
+    const standeeDisplayName = document.getElementById('standee-display-name');
+    const standeeDisplayVpa = document.getElementById('standee-display-vpa');
+    const standeeAmountBadgeContainer = document.getElementById('standee-amount-badge-container');
+    const standeeDisplayAmount = document.getElementById('standee-display-amount');
+    const qrRenderTarget = document.getElementById('qrcode-render-target');
+
+    const btnDownloadPng = document.getElementById('btn-download-png');
+    const btnDownloadSvg = document.getElementById('btn-download-svg');
+    const btnCopyQrImage = document.getElementById('btn-copy-qr-image');
+    const btnCopyUpiLink = document.getElementById('btn-copy-upi-link');
+    const btnPrintStandee = document.getElementById('btn-print-standee');
+
+    // Create Pre-rendered Badge SVG Icons
+    function createBadgeImage(type) {
+      let svgMarkup = '';
+      if (type === 'upi') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="#16a34a"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`;
+      } else if (type === 'gpay') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="#2563eb"><circle cx="12" cy="12" r="10"></circle><text x="12" y="16" font-size="12" font-family="sans-serif" font-weight="bold" fill="white" text-anchor="middle">G</text></svg>`;
+      } else if (type === 'phonepe') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="#9333ea"><circle cx="12" cy="12" r="10"></circle><text x="12" y="16" font-size="12" font-family="sans-serif" font-weight="bold" fill="white" text-anchor="middle">पे</text></svg>`;
+      } else if (type === 'paytm') {
+        svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="#0284c7"><circle cx="12" cy="12" r="10"></circle><text x="12" y="15" font-size="9" font-family="sans-serif" font-weight="bold" fill="white" text-anchor="middle">paytm</text></svg>`;
+      }
+
+      if (!svgMarkup) return null;
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+      return img;
+    }
+
+    // Set Center Badge
+    function setCenterBadge(type) {
+      activeBadgeType = type;
+      if (type === 'none') {
+        centerBadgeImg = null;
+      } else {
+        const img = createBadgeImage(type);
+        if (img) {
+          img.onload = () => {
+            centerBadgeImg = img;
+            updateQrCode();
+          };
+        }
+      }
+      updateQrCode();
+    }
+
+    // Badge preset buttons
+    badgePresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const badge = btn.dataset.badge;
+        badgePresetBtns.forEach(b => {
+          if (b.dataset.badge === badge) {
+            b.className = 'badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-bold bg-accent text-white shadow-2xs flex items-center gap-1.5';
+          } else {
+            b.className = 'badge-preset-btn touch-target px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink flex items-center gap-1.5';
+          }
+        });
+        setCenterBadge(badge);
+      });
+    });
+
+    // Handle Chips
+    handleChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const handle = chip.dataset.handle;
+        let vpa = inputVpa.value.trim();
+        const atIdx = vpa.indexOf('@');
+        if (atIdx !== -1) {
+          vpa = vpa.substring(0, atIdx);
+        }
+        inputVpa.value = (vpa || 'payee') + handle;
+        updateQrCode();
+      });
+    });
+
+    // Amount Mode Switcher
+    btnAmountAny.addEventListener('click', () => {
+      isFixedAmount = false;
+      btnAmountAny.className = 'touch-target py-2 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs';
+      btnAmountFixed.className = 'touch-target py-2 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink';
+      amountInputRow.classList.add('hidden');
+      paymentModeBadge.innerText = 'ANY AMOUNT';
+      paymentModeBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold';
+      standeeAmountBadgeContainer.classList.add('hidden');
+      updateQrCode();
+    });
+
+    btnAmountFixed.addEventListener('click', () => {
+      isFixedAmount = true;
+      btnAmountFixed.className = 'touch-target py-2 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs';
+      btnAmountAny.className = 'touch-target py-2 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink';
+      amountInputRow.classList.remove('hidden');
+      paymentModeBadge.innerText = 'FIXED AMOUNT';
+      paymentModeBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 font-bold';
+      standeeAmountBadgeContainer.classList.remove('hidden');
+      updateQrCode();
+    });
+
+    // View Mode Toggle (QR Only vs Standee)
+    btnModeQr.addEventListener('click', () => {
+      isStandeeMode = false;
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Live UPI Payment QR';
+      standeeHeaderArea.classList.add('hidden');
+      standeeFooterArea.classList.add('hidden');
+    });
+
+    btnModeCard.addEventListener('click', () => {
+      isStandeeMode = true;
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Printable Shop Standee Preview';
+      standeeHeaderArea.classList.remove('hidden');
+      standeeFooterArea.classList.remove('hidden');
+      updateStandeeDisplay();
+    });
+
+    // VPA Validation
+    function validateVpa(vpa) {
+      const vpaRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+      return vpaRegex.test(vpa);
+    }
+
+    // Build Standard UPI Deep Link URI
+    function computeUpiUri() {
+      const vpa = inputVpa.value.trim();
+      const name = inputPayeeName.value.trim();
+      const note = inputNote.value.trim();
+      const ref = inputRef.value.trim();
+      const amount = parseFloat(inputAmount.value);
+
+      if (!vpa) return '';
+
+      let uri = `upi://pay?pa=${encodeURIComponent(vpa)}`;
+      if (name) uri += `&pn=${encodeURIComponent(name)}`;
+      if (isFixedAmount && !isNaN(amount) && amount > 0) {
+        uri += `&am=${amount.toFixed(2)}&cu=INR`;
+      } else {
+        uri += `&cu=INR`;
+      }
+      if (note) uri += `&tn=${encodeURIComponent(note)}`;
+      if (ref) uri += `&tr=${encodeURIComponent(ref)}`;
+
+      return uri;
+    }
+
+    // Update Standee Text
+    function updateStandeeDisplay() {
+      standeeDisplayName.innerText = inputPayeeName.value.trim() || 'Merchant Name';
+      standeeDisplayVpa.innerText = inputVpa.value.trim() || 'upi@bank';
+
+      if (isFixedAmount) {
+        const amt = parseFloat(inputAmount.value);
+        standeeDisplayAmount.innerText = `Paying: ₹${!isNaN(amt) && amt > 0 ? amt.toFixed(2) : '0.00'}`;
+        standeeAmountBadgeContainer.classList.remove('hidden');
+      } else {
+        standeeAmountBadgeContainer.classList.add('hidden');
+      }
+    }
+
+    // Render QR Code onto Canvas
+    function updateQrCode() {
+      const vpa = inputVpa.value.trim();
+      const isValid = validateVpa(vpa);
+
+      if (isValid) {
+        vpaStatusBadge.innerText = 'Valid VPA';
+        vpaStatusBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono';
+      } else {
+        vpaStatusBadge.innerText = 'Check Format (name@bank)';
+        vpaStatusBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 font-mono';
+      }
+
+      currentUpiUri = computeUpiUri();
+      updateStandeeDisplay();
+
+      qrRenderTarget.innerHTML = '';
+      if (!currentUpiUri) {
+        qrRenderTarget.innerHTML = '<div class="w-48 h-48 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-muted">Enter UPI ID to preview</div>';
+        return;
+      }
+
+      let ecc = selectEcc.value; // 'M', 'Q', 'H'
+      if (centerBadgeImg && ecc === 'M') {
+        ecc = 'H';
+      }
+
+      let qr;
+      try {
+        qr = qrcode(0, ecc);
+        qr.addData(currentUpiUri);
+        qr.make();
+      } catch (err) {
+        try {
+          qr = qrcode(4, ecc);
+          qr.addData(currentUpiUri);
+          qr.make();
+        } catch (e) {
+          qrRenderTarget.innerHTML = `<div class="p-4 rounded-xl bg-red-500/10 text-red-500 text-xs text-center font-medium">Payload too long for QR code.</div>`;
+          return;
+        }
+      }
+
+      const moduleCount = qr.getModuleCount();
+      const size = parseInt(sliderSize.value, 10);
+      const margin = 2; // quiet zone in modules
+      const totalModules = moduleCount + margin * 2;
+      const cellSize = size / totalModules;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.id = 'upi-qr-canvas';
+      canvas.className = 'max-w-full h-auto rounded-xl shadow-xs';
+      const ctx = canvas.getContext('2d');
+
+      // 1. Draw Background
+      ctx.fillStyle = inputColorLight.value;
+      ctx.fillRect(0, 0, size, size);
+
+      // 2. Draw Dark Modules
+      ctx.fillStyle = inputColorDark.value;
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const x = Math.round((c + margin) * cellSize);
+            const y = Math.round((r + margin) * cellSize);
+            const w = Math.ceil(cellSize);
+            const h = Math.ceil(cellSize);
+            ctx.fillRect(x, y, w, h);
+          }
+        }
+      }
+
+      // 3. Draw Center Badge if present
+      if (centerBadgeImg && (centerBadgeImg.complete || centerBadgeImg.naturalWidth > 0)) {
+        const logoSize = Math.round(size * 0.22);
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        const badgePadding = Math.max(5, Math.round(cellSize * 0.9));
+        const badgeSize = logoSize + badgePadding * 2;
+
+        // Circular Badge Background
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, badgeSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Badge Icon
+        ctx.save();
+        ctx.drawImage(centerBadgeImg, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
+
+      qrRenderTarget.innerHTML = '';
+      qrRenderTarget.appendChild(canvas);
+    }
+
+    // Attach Event Listeners
+    inputVpa.addEventListener('input', updateQrCode);
+    inputPayeeName.addEventListener('input', updateQrCode);
+    inputAmount.addEventListener('input', updateQrCode);
+    inputNote.addEventListener('input', updateQrCode);
+    inputRef.addEventListener('input', updateQrCode);
+
+    pickerColorDark.addEventListener('input', (e) => { inputColorDark.value = e.target.value; updateQrCode(); });
+    inputColorDark.addEventListener('input', updateQrCode);
+    pickerColorLight.addEventListener('input', (e) => { inputColorLight.value = e.target.value; updateQrCode(); });
+    inputColorLight.addEventListener('input', updateQrCode);
+    selectEcc.addEventListener('change', updateQrCode);
+
+    sliderSize.addEventListener('input', (e) => {
+      labelSize.innerText = `${e.target.value} × ${e.target.value} px`;
+      updateQrCode();
+    });
+
+    // Sample Presets
+    btnSampleMerchant.addEventListener('click', () => {
+      inputVpa.value = 'coffeehouse@upi';
+      inputPayeeName.value = 'Artisan Coffee & Bakery';
+      inputNote.value = 'Store Purchase';
+      inputRef.value = 'INV-1049';
+      btnAmountFixed.click();
+      inputAmount.value = '250.00';
+      updateQrCode();
+      showToast('Loaded Merchant Sample.');
+    });
+
+    btnSamplePersonal.addEventListener('click', () => {
+      inputVpa.value = 'rahul.sharma@okhdfcbank';
+      inputPayeeName.value = 'Rahul Sharma';
+      inputNote.value = 'Dinner share';
+      inputRef.value = '';
+      btnAmountAny.click();
+      updateQrCode();
+      showToast('Loaded Personal Sample.');
+    });
+
+    // Export: Download PNG
+    btnDownloadPng.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+      const dataUrl = canvasEl.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const cleanName = (inputVpa.value || 'upi').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `upi-qr-${cleanName}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Downloaded UPI QR Code as PNG!');
+    });
+
+    // Export: Download SVG
+    btnDownloadSvg.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const size = parseInt(sliderSize.value, 10);
+      const dataUrl = canvasEl.toDataURL('image/png');
+
+      const svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <image width="${size}" height="${size}" xlink:href="${dataUrl}"/>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanName = (inputVpa.value || 'upi').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `upi-qr-${cleanName}-${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded UPI QR Code as SVG!');
+    });
+
+    // Export: Copy Image to Clipboard
+    btnCopyQrImage.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to copy.');
+        return;
+      }
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+            showToast('UPI QR Code image copied to clipboard!');
+          });
+        } catch (e) {
+          showToast('Clipboard image copy not supported in this browser.');
+        }
+      });
+    });
+
+    // Export: Copy UPI Deep Link
+    btnCopyUpiLink.addEventListener('click', () => {
+      if (!currentUpiUri) return;
+      navigator.clipboard.writeText(currentUpiUri).then(() => {
+        showToast('UPI Payment Link copied! Can be shared via WhatsApp/SMS.');
+      });
+    });
+
+    // Print Standee
+    btnPrintStandee.addEventListener('click', () => {
+      if (!isStandeeMode) {
+        btnModeCard.click();
+      }
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize
+    setCenterBadge('upi');
+  </script>
+</body>
+</html>

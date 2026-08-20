@@ -84,9 +84,8 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'productivity',
     name: 'Productivity',
     slug: 'productivity',
-    description: 'Time trackers, quick note organizers, and workflow automation helpers.',
+    description: 'Time trackers, flashcard study apps, quick note organizers, and workflow helpers.',
     icon: 'CheckSquare',
-    isStub: true,
   },
 ];
 

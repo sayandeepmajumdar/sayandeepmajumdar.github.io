@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barcode Studio & Live Scanner — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side Barcode Generator & Scanner. Create CODE128, EAN-13, UPC-A, Code 39, ITF-14, and MSI barcodes with batch ZIP export. Scan live via webcam or image upload." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries: JsBarcode, @zxing/library, JSZip (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    /* Red Laser Scan Animation */
+    @keyframes barcodeLaser {
+      0% { top: 10%; opacity: 0.8; }
+      50% { top: 85%; opacity: 1; }
+      100% { top: 10%; opacity: 0.8; }
+    }
+    .barcode-laser {
+      animation: barcodeLaser 1.8s infinite ease-in-out;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 flex items-center justify-center text-white font-bold shadow-md shadow-orange-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h2v12H4V6zm4 0h1v12H8V6zm3 0h2v12h-2V6zm4 0h1v12h-1V6zm3 0h2v12h-2V6z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">Barcode Studio & Live Scanner</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate standard 1D barcodes with batch export, and scan live via camera or image.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs: Generate vs Scan -->
+      <div class="flex items-center gap-2 p-1 rounded-2xl bg-surface border border-line shadow-xs">
+        <button id="nav-tab-generate" type="button" class="touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h2v12H4V6zm4 0h1v12H8V6zm3 0h2v12h-2V6zm4 0h1v12h-1V6zm3 0h2v12h-2V6z"/></svg>
+          <span>Generate Barcode</span>
+        </button>
+
+        <button id="nav-tab-scan" type="button" class="touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Scan Barcode</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: BARCODE GENERATOR -->
+    <!-- ========================================================================= -->
+    <div id="view-generator" class="space-y-6">
+      
+      <!-- Generator Mode Toggle (Single vs Batch) -->
+      <div class="flex items-center justify-between p-4 rounded-2xl bg-surface border border-line shadow-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-muted font-mono">Mode:</span>
+          <div class="flex items-center p-1 rounded-xl bg-surface-alt border border-line">
+            <button id="btn-mode-single" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs">Single Barcode</button>
+            <button id="btn-mode-batch" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink">Batch Generator (ZIP)</button>
+          </div>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-2">
+          <button id="btn-sample-sku" type="button" class="text-xs font-bold text-accent hover:underline">Sample SKU</button>
+          <span class="text-muted">•</span>
+          <button id="btn-sample-ean" type="button" class="text-xs font-bold text-accent hover:underline">Sample EAN-13</button>
+          <span class="text-muted">•</span>
+          <button id="btn-sample-upc" type="button" class="text-xs font-bold text-accent hover:underline">Sample UPC-A</button>
+        </div>
+      </div>
+
+      <!-- Main Generator Workspace -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- LEFT COLUMN: Inputs & Formatting Customization (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Card 1: Value & Format Selection -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+              <span class="w-6 h-6 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center text-xs font-black">1</span>
+              <span>Barcode Value & Standard Format</span>
+            </h2>
+
+            <!-- Barcode Format Selector -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="select-format" class="block text-xs font-bold uppercase tracking-wider text-muted">Barcode Symbology</label>
+                <span id="format-use-case" class="text-[11px] text-accent font-semibold">General purpose & logistics</span>
+              </div>
+              <select id="select-format" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink font-semibold focus:outline-none focus:border-accent">
+                <option value="CODE128" selected>CODE128 — General purpose, alphanumeric (Letters + Digits)</option>
+                <option value="CODE39">CODE39 — Industrial, automotive, uppercase alphanumeric</option>
+                <option value="EAN13">EAN-13 — Global retail products (12 or 13 digits)</option>
+                <option value="EAN8">EAN-8 — Compact retail packaging (7 or 8 digits)</option>
+                <option value="UPC">UPC-A — US & Canada retail products (11 or 12 digits)</option>
+                <option value="UPCE">UPC-E — Compressed US retail barcode (6 to 8 digits)</option>
+                <option value="ITF14">ITF-14 — Master carton & shipping container (13 or 14 digits)</option>
+                <option value="MSI">MSI / Plessey — Warehousing and storage inventory</option>
+                <option value="pharmacode">Pharmacode — Pharmaceutical packaging control</option>
+                <option value="codabar">Codabar — Libraries, blood banks, FedEx tracking</option>
+              </select>
+            </div>
+
+            <!-- Single Mode Input Field -->
+            <div id="single-input-wrapper" class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="input-barcode-value" class="block text-xs font-bold uppercase tracking-wider text-muted">Barcode Value <span class="text-red-500">*</span></label>
+                <span id="char-counter" class="text-[11px] font-mono text-muted">10 chars</span>
+              </div>
+              <input
+                id="input-barcode-value"
+                type="text"
+                value="TOOLZY-9824"
+                placeholder="Enter value or numbers..."
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono font-bold"
+                required
+              />
+              <div id="checksum-feedback" class="text-[11px] text-muted flex items-center justify-between">
+                <span id="format-rules-hint">Supports full ASCII letters, numbers, and symbols.</span>
+                <span id="auto-checksum-badge" class="hidden text-emerald-600 font-bold">Auto Checksum: Calculated</span>
+              </div>
+            </div>
+
+            <!-- Batch Mode Input Field -->
+            <div id="batch-input-wrapper" class="hidden space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="input-batch-values" class="block text-xs font-bold uppercase tracking-wider text-muted">Batch Values (One per line)</label>
+                <span id="batch-count-badge" class="text-[11px] font-mono text-muted">4 items</span>
+              </div>
+              <textarea
+                id="input-batch-values"
+                rows="5"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed"
+                placeholder="PROD-001&#10;PROD-002&#10;PROD-003&#10;PROD-004"
+              >TOOLZY-SKU-101
+TOOLZY-SKU-102
+TOOLZY-SKU-103
+TOOLZY-SKU-104</textarea>
+              <button
+                id="btn-download-batch-zip"
+                type="button"
+                class="w-full touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-xs"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Generate & Download Batch ZIP</span>
+              </button>
+            </div>
+
+            <!-- Validation Error Alert -->
+            <div id="barcode-error-alert" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="barcode-error-text">Invalid barcode value for selected format.</span>
+            </div>
+
+          </div>
+
+          <!-- Card 2: Styling & Dimensions -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+            <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+              <span class="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-black">2</span>
+              <span>Dimensions & Typography</span>
+            </h2>
+
+            <!-- Colors Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Foreground Bar Color -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-muted">Bar Line Color</label>
+                <div class="flex items-center gap-2">
+                  <input id="picker-color-line" type="color" value="#000000" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                  <input id="input-color-line" type="text" value="#000000" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+                </div>
+              </div>
+
+              <!-- Background Color -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-muted">Background Color</label>
+                <div class="flex items-center gap-2">
+                  <input id="picker-color-bg" type="color" value="#ffffff" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                  <input id="input-color-bg" type="text" value="#ffffff" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Sliders Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t" style="border-color: var(--color-line);">
+              
+              <!-- Bar Width -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <label class="font-bold text-muted">Bar Width</label>
+                  <span id="label-bar-width" class="font-mono font-bold text-ink">2px</span>
+                </div>
+                <input id="slider-bar-width" type="range" min="1" max="4" step="0.5" value="2" class="w-full accent-accent cursor-pointer" />
+              </div>
+
+              <!-- Bar Height -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <label class="font-bold text-muted">Bar Height</label>
+                  <span id="label-bar-height" class="font-mono font-bold text-ink">100px</span>
+                </div>
+                <input id="slider-bar-height" type="range" min="40" max="180" step="5" value="100" class="w-full accent-accent cursor-pointer" />
+              </div>
+
+              <!-- Quiet Zone / Margin -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <label class="font-bold text-muted">Quiet Margin</label>
+                  <span id="label-margin" class="font-mono font-bold text-ink">10px</span>
+                </div>
+                <input id="slider-margin" type="range" min="0" max="30" step="2" value="10" class="w-full accent-accent cursor-pointer" />
+              </div>
+
+            </div>
+
+            <!-- Human Readable Text Options -->
+            <div class="space-y-3 pt-3 border-t" style="border-color: var(--color-line);">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold text-ink block">Show Human-Readable Text</span>
+                  <span class="text-[11px] text-muted block">Prints the decoded value text with barcode</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input id="toggle-display-value" type="checkbox" checked class="sr-only peer" />
+                  <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+              </div>
+
+              <div id="text-customization-row" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div class="space-y-1">
+                  <label for="select-text-position" class="block text-[11px] font-bold text-muted">Text Position</label>
+                  <select id="select-text-position" class="w-full px-3 py-1.5 rounded-xl text-xs bg-paper border border-line text-ink font-medium">
+                    <option value="bottom" selected>Bottom</option>
+                    <option value="top">Top</option>
+                  </select>
+                </div>
+
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[11px]">
+                    <label class="font-bold text-muted">Font Size</label>
+                    <span id="label-font-size" class="font-mono font-bold text-ink">18px</span>
+                  </div>
+                  <input id="slider-font-size" type="range" min="12" max="28" step="1" value="18" class="w-full accent-accent cursor-pointer mt-1" />
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Live Barcode Preview & Exports (5 cols) -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+          
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Live Barcode Preview</span>
+              </label>
+              <span id="current-format-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-bold uppercase">CODE128</span>
+            </div>
+
+            <!-- Barcode Display Container -->
+            <div class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white border border-line shadow-xs min-h-[220px] overflow-x-auto scrollbar-thin">
+              <svg id="barcode-svg" class="max-w-full h-auto"></svg>
+              <canvas id="barcode-canvas" class="hidden"></canvas>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-download-png"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                id="btn-download-svg"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download SVG</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-copy-image"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy Image</span>
+              </button>
+
+              <button
+                id="btn-copy-value"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span>Copy Value</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: BARCODE SCANNER -->
+    <!-- ========================================================================= -->
+    <div id="view-scanner" class="hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- LEFT: Camera Viewfinder & File Upload (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <h2 class="text-sm font-bold text-ink flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                <span>Live Barcode Scanner</span>
+              </h2>
+
+              <div class="flex items-center gap-2">
+                <select id="camera-select" class="hidden max-w-[140px] px-2 py-1 rounded-lg text-xs bg-paper border border-line text-ink"></select>
+                <button id="btn-toggle-camera" type="button" class="touch-target px-3.5 py-1.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors flex items-center gap-1.5 shadow-xs">
+                  <span>Start Camera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Video Viewfinder Frame -->
+            <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden flex items-center justify-center border border-line">
+              <video id="scanner-video" playsinline class="w-full h-full object-cover"></video>
+
+              <!-- Viewfinder Overlay Target -->
+              <div id="scanner-overlay" class="hidden absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div class="relative w-72 h-44 border-2 border-red-500/70 rounded-xl overflow-hidden shadow-2xl">
+                  <!-- Red Laser Line -->
+                  <div class="barcode-laser absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_10px_#ef4444]"></div>
+                  <!-- Corner Brackets -->
+                  <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-red-500"></div>
+                  <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-500"></div>
+                  <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-red-500"></div>
+                  <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-red-500"></div>
+                </div>
+              </div>
+
+              <!-- Idle / Error Placeholder -->
+              <div id="scanner-idle-placeholder" class="absolute inset-0 bg-slate-900/90 text-white flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-white">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="text-sm font-bold">Camera is Inactive</h3>
+                <p class="text-xs text-slate-400 max-w-sm">Click "Start Camera" to scan 1D retail & industrial barcodes live, or drop an image below.</p>
+                <div id="camera-error-msg" class="hidden text-xs text-red-400 bg-red-500/20 p-2.5 rounded-xl border border-red-500/30"></div>
+              </div>
+            </div>
+
+            <!-- Alternative: File Upload Box -->
+            <div class="pt-2 border-t" style="border-color: var(--color-line);">
+              <label
+                for="scanner-file-input"
+                class="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer hover:border-accent transition-colors text-center bg-paper"
+                style="border-color: var(--color-line);"
+              >
+                <svg class="w-8 h-8 text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="text-xs font-bold text-ink">Or Upload / Drop a Barcode Photo</span>
+                <span class="text-[11px] text-muted mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG</span>
+                <input id="scanner-file-input" type="file" accept="image/*" class="hidden" />
+              </label>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Decoded Result & Scan History (5 cols) -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+          
+          <!-- Latest Decoded Result Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Decoded Barcode Result</span>
+              </label>
+              <span id="scan-format-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-mono uppercase">EAN_13</span>
+            </div>
+
+            <!-- Decoded Content Box -->
+            <div id="scan-result-container" class="p-4 rounded-xl bg-surface-alt border border-line text-xs font-mono break-all text-ink min-h-[90px] flex items-center justify-center text-center">
+              <span class="text-muted font-sans text-xs">Point your camera at a barcode or upload an image to decode.</span>
+            </div>
+
+            <!-- Action Buttons for Decoded Result -->
+            <div id="scan-actions-container" class="hidden space-y-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  id="btn-scan-copy"
+                  type="button"
+                  class="touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                  <span>Copy Code</span>
+                </button>
+
+                <button
+                  id="btn-send-to-gen"
+                  type="button"
+                  class="touch-target px-4 py-2.5 rounded-xl font-bold text-xs bg-surface border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Edit in Studio</span>
+                </button>
+              </div>
+
+              <!-- External Search Links -->
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <a
+                  id="btn-search-google"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="touch-target px-3 py-2 rounded-xl text-[11px] font-semibold bg-surface-alt border border-line text-ink hover:text-accent flex items-center justify-center gap-1.5"
+                >
+                  <span>Google Search</span>
+                  <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+
+                <a
+                  id="btn-search-amazon"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="touch-target px-3 py-2 rounded-xl text-[11px] font-semibold bg-surface-alt border border-line text-ink hover:text-accent flex items-center justify-center gap-1.5"
+                >
+                  <span>Amazon Search</span>
+                  <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scan History List Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-3 shadow-sm">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+                <span>Recent Barcode Scans</span>
+                <span id="history-count-label" class="px-2 py-0.5 rounded-full bg-surface-alt font-mono text-[10px] text-ink">0</span>
+              </h3>
+              <button id="btn-clear-scan-history" type="button" class="text-[11px] text-muted hover:text-red-500 font-medium transition-colors">Clear All</button>
+            </div>
+
+            <div id="scan-history-list" class="space-y-2 max-h-60 overflow-y-auto scrollbar-thin">
+              <span class="text-xs text-muted block text-center py-4">No barcode scans yet.</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Storage Key
+    const SCAN_HISTORY_KEY = 'toolbox:barcode_scan_history';
+
+    // State
+    let isBatchMode = false;
+    let currentBarcodeValue = 'TOOLZY-9824';
+    let currentFormat = 'CODE128';
+    let zxingReader = null;
+    let isCameraScanning = false;
+    let latestScannedCode = '';
+
+    // Navigation Tabs
+    const navTabGen = document.getElementById('nav-tab-generate');
+    const navTabScan = document.getElementById('nav-tab-scan');
+    const viewGenerator = document.getElementById('view-generator');
+    const viewScanner = document.getElementById('view-scanner');
+
+    navTabGen.addEventListener('click', () => {
+      viewGenerator.classList.remove('hidden');
+      viewScanner.classList.add('hidden');
+      navTabGen.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2';
+      navTabScan.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2';
+      stopCameraScan();
+    });
+
+    navTabScan.addEventListener('click', () => {
+      viewScanner.classList.remove('hidden');
+      viewGenerator.classList.add('hidden');
+      navTabScan.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2';
+      navTabGen.className = 'touch-target px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2';
+    });
+
+    // ==========================================
+    // BARCODE GENERATOR LOGIC
+    // ==========================================
+    const selectFormat = document.getElementById('select-format');
+    const formatUseCase = document.getElementById('format-use-case');
+    const inputBarcodeValue = document.getElementById('input-barcode-value');
+    const charCounter = document.getElementById('char-counter');
+    const formatRulesHint = document.getElementById('format-rules-hint');
+    const autoChecksumBadge = document.getElementById('auto-checksum-badge');
+    const barcodeErrorAlert = document.getElementById('barcode-error-alert');
+    const barcodeErrorText = document.getElementById('barcode-error-text');
+    const currentFormatBadge = document.getElementById('current-format-badge');
+
+    const btnModeSingle = document.getElementById('btn-mode-single');
+    const btnModeBatch = document.getElementById('btn-mode-batch');
+    const singleInputWrapper = document.getElementById('single-input-wrapper');
+    const batchInputWrapper = document.getElementById('batch-input-wrapper');
+    const inputBatchValues = document.getElementById('input-batch-values');
+    const batchCountBadge = document.getElementById('batch-count-badge');
+    const btnDownloadBatchZip = document.getElementById('btn-download-batch-zip');
+
+    const pickerColorLine = document.getElementById('picker-color-line');
+    const inputColorLine = document.getElementById('input-color-line');
+    const pickerColorBg = document.getElementById('picker-color-bg');
+    const inputColorBg = document.getElementById('input-color-bg');
+    const sliderBarWidth = document.getElementById('slider-bar-width');
+    const labelBarWidth = document.getElementById('label-bar-width');
+    const sliderBarHeight = document.getElementById('slider-bar-height');
+    const labelBarHeight = document.getElementById('label-bar-height');
+    const sliderMargin = document.getElementById('slider-margin');
+    const labelMargin = document.getElementById('label-margin');
+
+    const toggleDisplayValue = document.getElementById('toggle-display-value');
+    const textCustomizationRow = document.getElementById('text-customization-row');
+    const selectTextPosition = document.getElementById('select-text-position');
+    const sliderFontSize = document.getElementById('slider-font-size');
+    const labelFontSize = document.getElementById('label-font-size');
+
+    const barcodeSvg = document.getElementById('barcode-svg');
+    const barcodeCanvas = document.getElementById('barcode-canvas');
+    const btnDownloadPng = document.getElementById('btn-download-png');
+    const btnDownloadSvg = document.getElementById('btn-download-svg');
+    const btnCopyImage = document.getElementById('btn-copy-image');
+    const btnCopyValue = document.getElementById('btn-copy-value');
+
+    const btnSampleSku = document.getElementById('btn-sample-sku');
+    const btnSampleEan = document.getElementById('btn-sample-ean');
+    const btnSampleUpc = document.getElementById('btn-sample-upc');
+
+    // Format Use Case Descriptions
+    const FORMAT_DESCRIPTIONS = {
+      CODE128: 'General purpose & logistics (ASCII)',
+      CODE39: 'Industrial, automotive, uppercase',
+      EAN13: 'Global retail products (13 digits)',
+      EAN8: 'Compact retail packages (8 digits)',
+      UPC: 'US & Canada retail (12 digits)',
+      UPCE: 'Compressed US retail (6-8 digits)',
+      ITF14: 'Shipping cartons & packaging (14 digits)',
+      MSI: 'Inventory & warehouse storage',
+      pharmacode: 'Pharmaceutical packaging',
+      codabar: 'Libraries & blood banks'
+    };
+
+    // Calculate EAN / UPC Check Digit
+    function calculateCheckDigit(digitsStr, type) {
+      const clean = digitsStr.replace(/\D/g, '');
+      if (type === 'EAN13' && clean.length === 12) {
+        let sum = 0;
+        for (let i = 0; i < 12; i++) {
+          sum += parseInt(clean[i], 10) * (i % 2 === 0 ? 1 : 3);
+        }
+        return (10 - (sum % 10)) % 10;
+      }
+      if (type === 'EAN8' && clean.length === 7) {
+        let sum = 0;
+        for (let i = 0; i < 7; i++) {
+          sum += parseInt(clean[i], 10) * (i % 2 === 0 ? 3 : 1);
+        }
+        return (10 - (sum % 10)) % 10;
+      }
+      if (type === 'UPC' && clean.length === 11) {
+        let sum = 0;
+        for (let i = 0; i < 11; i++) {
+          sum += parseInt(clean[i], 10) * (i % 2 === 0 ? 3 : 1);
+        }
+        return (10 - (sum % 10)) % 10;
+      }
+      if (type === 'ITF14' && clean.length === 13) {
+        let sum = 0;
+        for (let i = 0; i < 13; i++) {
+          sum += parseInt(clean[i], 10) * (i % 2 === 0 ? 3 : 1);
+        }
+        return (10 - (sum % 10)) % 10;
+      }
+      return null;
+    }
+
+    // Auto-complete or format input
+    function getProcessedValue(rawVal, fmt) {
+      let val = rawVal.trim();
+      const check = calculateCheckDigit(val, fmt);
+      if (check !== null) {
+        autoChecksumBadge.innerText = `Auto Checksum: +${check}`;
+        autoChecksumBadge.classList.remove('hidden');
+        return val + check;
+      } else {
+        autoChecksumBadge.classList.add('hidden');
+      }
+      return val;
+    }
+
+    // Render Barcode
+    function renderBarcode() {
+      currentFormat = selectFormat.value;
+      formatUseCase.innerText = FORMAT_DESCRIPTIONS[currentFormat] || '';
+      currentFormatBadge.innerText = currentFormat;
+
+      let rawVal = inputBarcodeValue.value;
+      charCounter.innerText = `${rawVal.length} chars`;
+
+      let valToRender = getProcessedValue(rawVal, currentFormat);
+      barcodeErrorAlert.classList.add('hidden');
+
+      if (!valToRender) {
+        barcodeSvg.innerHTML = '';
+        return;
+      }
+
+      const barWidth = parseFloat(sliderBarWidth.value);
+      const barHeight = parseInt(sliderBarHeight.value, 10);
+      const margin = parseInt(sliderMargin.value, 10);
+      const displayValue = toggleDisplayValue.checked;
+      const textPosition = selectTextPosition.value;
+      const fontSize = parseInt(sliderFontSize.value, 10);
+      const lineColor = inputColorLine.value;
+      const bgColor = inputColorBg.value;
+
+      try {
+        JsBarcode(barcodeSvg, valToRender, {
+          format: currentFormat,
+          width: barWidth,
+          height: barHeight,
+          displayValue: displayValue,
+          textPosition: textPosition,
+          fontSize: fontSize,
+          margin: margin,
+          lineColor: lineColor,
+          background: bgColor,
+          fontOptions: 'bold',
+          font: 'monospace',
+          valid: function (valid) {
+            if (!valid) {
+              barcodeErrorAlert.classList.remove('hidden');
+              barcodeErrorText.innerText = `Value is not valid for ${currentFormat}. Check length and characters.`;
+            }
+          }
+        });
+
+        // Also render onto hidden canvas for image copy/downloads
+        JsBarcode(barcodeCanvas, valToRender, {
+          format: currentFormat,
+          width: barWidth,
+          height: barHeight,
+          displayValue: displayValue,
+          textPosition: textPosition,
+          fontSize: fontSize,
+          margin: margin,
+          lineColor: lineColor,
+          background: bgColor,
+          fontOptions: 'bold',
+          font: 'monospace'
+        });
+      } catch (err) {
+        barcodeErrorAlert.classList.remove('hidden');
+        barcodeErrorText.innerText = err.message || `Failed to render ${currentFormat} barcode.`;
+      }
+    }
+
+    // Format & Input Listeners
+    selectFormat.addEventListener('change', () => {
+      // Suggest default sample value matching selected format
+      const fmt = selectFormat.value;
+      if (fmt === 'EAN13') inputBarcodeValue.value = '590123412345';
+      else if (fmt === 'EAN8') inputBarcodeValue.value = '9638507';
+      else if (fmt === 'UPC') inputBarcodeValue.value = '03600029145';
+      else if (fmt === 'ITF14') inputBarcodeValue.value = '1001234567890';
+      else if (fmt === 'CODE39') inputBarcodeValue.value = 'TOOLZY-100';
+      else if (fmt === 'pharmacode') inputBarcodeValue.value = '12345';
+      else inputBarcodeValue.value = 'TOOLZY-9824';
+      renderBarcode();
+    });
+
+    inputBarcodeValue.addEventListener('input', renderBarcode);
+    pickerColorLine.addEventListener('input', (e) => { inputColorLine.value = e.target.value; renderBarcode(); });
+    inputColorLine.addEventListener('input', renderBarcode);
+    pickerColorBg.addEventListener('input', (e) => { inputColorBg.value = e.target.value; renderBarcode(); });
+    inputColorBg.addEventListener('input', renderBarcode);
+
+    sliderBarWidth.addEventListener('input', (e) => {
+      labelBarWidth.innerText = `${e.target.value}px`;
+      renderBarcode();
+    });
+    sliderBarHeight.addEventListener('input', (e) => {
+      labelBarHeight.innerText = `${e.target.value}px`;
+      renderBarcode();
+    });
+    sliderMargin.addEventListener('input', (e) => {
+      labelMargin.innerText = `${e.target.value}px`;
+      renderBarcode();
+    });
+
+    toggleDisplayValue.addEventListener('change', () => {
+      textCustomizationRow.classList.toggle('hidden', !toggleDisplayValue.checked);
+      renderBarcode();
+    });
+    selectTextPosition.addEventListener('change', renderBarcode);
+    sliderFontSize.addEventListener('input', (e) => {
+      labelFontSize.innerText = `${e.target.value}px`;
+      renderBarcode();
+    });
+
+    // Sample Presets
+    btnSampleSku.addEventListener('click', () => {
+      selectFormat.value = 'CODE128';
+      inputBarcodeValue.value = 'TOOLZY-SKU-84291';
+      renderBarcode();
+      showToast('Loaded CODE128 Sample.');
+    });
+    btnSampleEan.addEventListener('click', () => {
+      selectFormat.value = 'EAN13';
+      inputBarcodeValue.value = '4006381333931';
+      renderBarcode();
+      showToast('Loaded EAN-13 Sample.');
+    });
+    btnSampleUpc.addEventListener('click', () => {
+      selectFormat.value = 'UPC';
+      inputBarcodeValue.value = '012345678905';
+      renderBarcode();
+      showToast('Loaded UPC-A Sample.');
+    });
+
+    // Single vs Batch Mode Switcher
+    btnModeSingle.addEventListener('click', () => {
+      isBatchMode = false;
+      btnModeSingle.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs';
+      btnModeBatch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink';
+      singleInputWrapper.classList.remove('hidden');
+      batchInputWrapper.classList.add('hidden');
+    });
+
+    btnModeBatch.addEventListener('click', () => {
+      isBatchMode = true;
+      btnModeBatch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs';
+      btnModeSingle.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink';
+      singleInputWrapper.classList.add('hidden');
+      batchInputWrapper.classList.remove('hidden');
+      updateBatchCount();
+    });
+
+    function updateBatchCount() {
+      const lines = inputBatchValues.value.split('\n').filter(l => l.trim().length > 0);
+      batchCountBadge.innerText = `${lines.length} items`;
+    }
+    inputBatchValues.addEventListener('input', updateBatchCount);
+
+    // Batch ZIP Export using JSZip
+    btnDownloadBatchZip.addEventListener('click', async () => {
+      const lines = inputBatchValues.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) {
+        showToast('Please enter at least one value for batch export.');
+        return;
+      }
+
+      showToast(`Generating ${lines.length} barcodes in ZIP...`);
+      const zip = new JSZip();
+      const tempCanvas = document.createElement('canvas');
+
+      const fmt = selectFormat.value;
+      const barWidth = parseFloat(sliderBarWidth.value);
+      const barHeight = parseInt(sliderBarHeight.value, 10);
+      const margin = parseInt(sliderMargin.value, 10);
+      const displayValue = toggleDisplayValue.checked;
+      const textPosition = selectTextPosition.value;
+      const fontSize = parseInt(sliderFontSize.value, 10);
+      const lineColor = inputColorLine.value;
+      const bgColor = inputColorBg.value;
+
+      let successCount = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const val = getProcessedValue(lines[i], fmt);
+        try {
+          JsBarcode(tempCanvas, val, {
+            format: fmt,
+            width: barWidth,
+            height: barHeight,
+            displayValue: displayValue,
+            textPosition: textPosition,
+            fontSize: fontSize,
+            margin: margin,
+            lineColor: lineColor,
+            background: bgColor,
+            fontOptions: 'bold',
+            font: 'monospace'
+          });
+
+          const dataUrl = tempCanvas.toDataURL('image/png');
+          const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+          const cleanName = val.replace(/[^a-zA-Z0-9_-]/g, '_');
+          zip.file(`barcode_${i + 1}_${cleanName}.png`, base64Data, { base64: true });
+          successCount++;
+        } catch (e) {
+          console.warn('Failed barcode in batch:', val, e);
+        }
+      }
+
+      if (successCount === 0) {
+        showToast('Could not generate barcodes. Please check format compatibility.');
+        return;
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = `barcodes_${fmt}_batch_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Downloaded ${successCount} barcodes in ZIP!`);
+    });
+
+    // Export: Download PNG
+    btnDownloadPng.addEventListener('click', () => {
+      if (!barcodeCanvas || barcodeCanvas.width === 0) {
+        showToast('No barcode to download.');
+        return;
+      }
+      const dataUrl = barcodeCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const cleanVal = (inputBarcodeValue.value || 'barcode').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `barcode-${selectFormat.value}-${cleanVal}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Downloaded Barcode PNG!');
+    });
+
+    // Export: Download SVG
+    btnDownloadSvg.addEventListener('click', () => {
+      const svgXml = new XMLSerializer().serializeToString(barcodeSvg);
+      if (!svgXml) {
+        showToast('No barcode SVG to download.');
+        return;
+      }
+      const blob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanVal = (inputBarcodeValue.value || 'barcode').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `barcode-${selectFormat.value}-${cleanVal}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded Barcode SVG!');
+    });
+
+    // Export: Copy Image to Clipboard
+    btnCopyImage.addEventListener('click', () => {
+      if (!barcodeCanvas || barcodeCanvas.width === 0) {
+        showToast('No barcode to copy.');
+        return;
+      }
+      barcodeCanvas.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+            showToast('Barcode image copied to clipboard!');
+          });
+        } catch (e) {
+          showToast('Clipboard image copy not supported in this browser.');
+        }
+      });
+    });
+
+    // Export: Copy Value
+    btnCopyValue.addEventListener('click', () => {
+      const val = inputBarcodeValue.value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => {
+        showToast('Barcode value copied to clipboard!');
+      });
+    });
+
+    // ==========================================
+    // BARCODE SCANNER LOGIC (@zxing/library)
+    // ==========================================
+    const scannerVideo = document.getElementById('scanner-video');
+    const scannerOverlay = document.getElementById('scanner-overlay');
+    const scannerIdlePlaceholder = document.getElementById('scanner-idle-placeholder');
+    const cameraErrorMsg = document.getElementById('camera-error-msg');
+    const btnToggleCamera = document.getElementById('btn-toggle-camera');
+    const cameraSelect = document.getElementById('camera-select');
+    const scannerFileInput = document.getElementById('scanner-file-input');
+
+    const scanResultContainer = document.getElementById('scan-result-container');
+    const scanFormatBadge = document.getElementById('scan-format-badge');
+    const scanActionsContainer = document.getElementById('scan-actions-container');
+    const btnScanCopy = document.getElementById('btn-scan-copy');
+    const btnSendToGen = document.getElementById('btn-send-to-gen');
+    const btnSearchGoogle = document.getElementById('btn-search-google');
+    const btnSearchAmazon = document.getElementById('btn-search-amazon');
+
+    const scanHistoryList = document.getElementById('scan-history-list');
+    const historyCountLabel = document.getElementById('history-count-label');
+    const btnClearScanHistory = document.getElementById('btn-clear-scan-history');
+
+    // Initialize ZXing MultiFormat Reader
+    function getZxingReader() {
+      if (!zxingReader && window.ZXing) {
+        zxingReader = new ZXing.BrowserMultiFormatReader();
+      }
+      return zxingReader;
+    }
+
+    // Start Camera Scanner
+    async function startCameraScan() {
+      cameraErrorMsg.classList.add('hidden');
+      const reader = getZxingReader();
+      if (!reader) {
+        cameraErrorMsg.classList.remove('hidden');
+        cameraErrorMsg.innerText = 'Scanner library loading. Please try again.';
+        return;
+      }
+
+      try {
+        const videoInputDevices = await reader.listVideoInputDevices();
+        if (videoInputDevices.length === 0) {
+          throw new Error('No camera found on this device.');
+        }
+
+        // Populate camera select
+        cameraSelect.innerHTML = '';
+        videoInputDevices.forEach((device) => {
+          const opt = document.createElement('option');
+          opt.value = device.deviceId;
+          opt.text = device.label || `Camera ${cameraSelect.length + 1}`;
+          cameraSelect.appendChild(opt);
+        });
+        if (videoInputDevices.length > 1) {
+          cameraSelect.classList.remove('hidden');
+        }
+
+        // Prefer rear camera on mobile
+        let selectedDeviceId = videoInputDevices[0].deviceId;
+        const backCamera = videoInputDevices.find(d => /back|rear|environment/i.test(d.label));
+        if (backCamera) {
+          selectedDeviceId = backCamera.deviceId;
+          cameraSelect.value = selectedDeviceId;
+        }
+
+        isCameraScanning = true;
+        scannerOverlay.classList.remove('hidden');
+        scannerIdlePlaceholder.classList.add('hidden');
+        btnToggleCamera.innerText = 'Stop Camera';
+        btnToggleCamera.className = 'touch-target px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center gap-1.5 shadow-xs';
+
+        reader.decodeFromVideoDevice(selectedDeviceId, 'scanner-video', (result, err) => {
+          if (result) {
+            handleSuccessfulBarcodeScan(result.getText(), result.getBarcodeFormat());
+            playBeep();
+            stopCameraScan();
+          }
+        });
+      } catch (err) {
+        console.error('Camera error:', err);
+        cameraErrorMsg.classList.remove('hidden');
+        cameraErrorMsg.innerText = `Camera Error: ${err.message || 'Permission denied or no video input available.'}`;
+      }
+    }
+
+    function stopCameraScan() {
+      if (zxingReader) {
+        zxingReader.reset();
+      }
+      isCameraScanning = false;
+      scannerOverlay.classList.add('hidden');
+      scannerIdlePlaceholder.classList.remove('hidden');
+      btnToggleCamera.innerText = 'Start Camera';
+      btnToggleCamera.className = 'touch-target px-3.5 py-1.5 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors flex items-center gap-1.5 shadow-xs';
+    }
+
+    btnToggleCamera.addEventListener('click', () => {
+      if (isCameraScanning) {
+        stopCameraScan();
+      } else {
+        startCameraScan();
+      }
+    });
+
+    cameraSelect.addEventListener('change', () => {
+      if (isCameraScanning) {
+        stopCameraScan();
+        startCameraScan();
+      }
+    });
+
+    // File Upload Scanner
+    scannerFileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = getZxingReader();
+      if (!reader) return;
+
+      const fileUrl = URL.createObjectURL(file);
+      try {
+        const result = await reader.decodeFromImageUrl(fileUrl);
+        if (result) {
+          handleSuccessfulBarcodeScan(result.getText(), result.getBarcodeFormat());
+          playBeep();
+          showToast('Decoded barcode from image!');
+        }
+      } catch (err) {
+        showToast('No 1D barcode found in uploaded image.');
+      } finally {
+        URL.revokeObjectURL(fileUrl);
+      }
+    });
+
+    // Handle Successful Barcode Scan
+    function handleSuccessfulBarcodeScan(codeText, formatEnum) {
+      latestScannedCode = codeText;
+      let formatName = '1D Barcode';
+      if (typeof formatEnum === 'number' && window.ZXing && window.ZXing.BarcodeFormat) {
+        const key = Object.keys(window.ZXing.BarcodeFormat).find(k => window.ZXing.BarcodeFormat[k] === formatEnum);
+        if (key) formatName = key;
+      } else if (typeof formatEnum === 'string') {
+        formatName = formatEnum;
+      }
+
+      scanResultContainer.innerHTML = `<span class="text-ink font-bold font-mono text-sm sm:text-base select-all tracking-wider">${escapeHtml(codeText)}</span>`;
+      scanFormatBadge.innerText = formatName;
+      scanFormatBadge.classList.remove('hidden');
+      scanActionsContainer.classList.remove('hidden');
+
+      // Update Search Links
+      btnSearchGoogle.href = `https://www.google.com/search?q=${encodeURIComponent(codeText)}`;
+      btnSearchAmazon.href = `https://www.amazon.com/s?k=${encodeURIComponent(codeText)}`;
+
+      // Save to History
+      saveScanToHistory({
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        format: formatName,
+        value: codeText
+      });
+    }
+
+    // Subtle Web Audio Beep
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+      } catch (e) {}
+    }
+
+    // Copy Scanned Code
+    btnScanCopy.addEventListener('click', () => {
+      if (!latestScannedCode) return;
+      navigator.clipboard.writeText(latestScannedCode).then(() => {
+        showToast('Barcode value copied to clipboard!');
+      });
+    });
+
+    // Send Scanned Code to Generator
+    btnSendToGen.addEventListener('click', () => {
+      if (!latestScannedCode) return;
+      navTabGen.click();
+      inputBarcodeValue.value = latestScannedCode;
+      renderBarcode();
+      showToast('Loaded scanned barcode into Generator!');
+    });
+
+    // ==========================================
+    // SCAN HISTORY STORAGE
+    // ==========================================
+    function getScanHistory() {
+      try {
+        const raw = localStorage.getItem(SCAN_HISTORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveScanToHistory(item) {
+      const history = getScanHistory();
+      history.unshift(item);
+      if (history.length > 30) history.pop();
+      try {
+        localStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(history));
+      } catch (e) {}
+      renderScanHistory();
+    }
+
+    function renderScanHistory() {
+      const history = getScanHistory();
+      historyCountLabel.innerText = history.length;
+
+      if (history.length === 0) {
+        scanHistoryList.innerHTML = '<span class="text-xs text-muted block text-center py-4">No barcode scans yet.</span>';
+        return;
+      }
+
+      scanHistoryList.innerHTML = '';
+      history.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 rounded-xl bg-surface-alt border border-line flex items-center justify-between gap-2 text-xs';
+
+        div.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 text-[10px] text-muted mb-0.5">
+              <span class="font-bold text-accent uppercase">${item.format}</span>
+              <span>•</span>
+              <span>${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <p class="font-mono text-ink text-[11px] truncate font-semibold" title="${escapeHtml(item.value)}">${escapeHtml(item.value)}</p>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" class="btn-copy-hist p-1 text-muted hover:text-ink" data-content="${escapeHtml(item.value)}" title="Copy">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+            </button>
+            <button type="button" class="btn-del-hist p-1 text-muted hover:text-red-500" data-index="${index}" title="Delete">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
+        scanHistoryList.appendChild(div);
+      });
+    }
+
+    scanHistoryList.addEventListener('click', (e) => {
+      const copyBtn = e.target.closest('.btn-copy-hist');
+      if (copyBtn) {
+        navigator.clipboard.writeText(copyBtn.dataset.content).then(() => {
+          showToast('Copied barcode value!');
+        });
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-del-hist');
+      if (delBtn) {
+        const history = getScanHistory();
+        history.splice(parseInt(delBtn.dataset.index), 1);
+        try { localStorage.setItem(SCAN_HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+        renderScanHistory();
+        showToast('Deleted item from history.');
+        return;
+      }
+    });
+
+    btnClearScanHistory.addEventListener('click', () => {
+      try { localStorage.removeItem(SCAN_HISTORY_KEY); } catch (e) {}
+      renderScanHistory();
+      showToast('Scan history cleared.');
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    renderBarcode();
+    renderScanHistory();
+  </script>
+</body>
+</html>

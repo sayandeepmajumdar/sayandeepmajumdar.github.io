@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KeyCraft — Typing Speed Test & WPM Analyzer — Toolzy</title>
+  <meta name="description" content="Master your typing speed with KeyCraft. Real-time WPM, precision accuracy, Monkeytype-inspired smooth caret, interactive performance graph, and sound feedback." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+              error: 'var(--color-error)',
+              'error-extra': 'var(--color-error-extra)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #d97706;
+      --color-accent-hover: #b45309;
+      --color-error: #ef4444;
+      --color-error-extra: #dc2626;
+      --color-caret: #d97706;
+      --color-untyped: #94a3b8;
+    }
+    .dark {
+      --color-bg: #0e1117;
+      --color-surface: #161b22;
+      --color-surface-alt: #1f2937;
+      --color-ink: #e6edf3;
+      --color-muted: #64748b;
+      --color-line: #21262d;
+      --color-accent: #e2b714;
+      --color-accent-hover: #f1c40f;
+      --color-error: #f85149;
+      --color-error-extra: #da3633;
+      --color-caret: #e2b714;
+      --color-untyped: #484f58;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .font-typing {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      letter-spacing: 0.02em;
+    }
+
+    /* Caret Animation */
+    .typing-caret {
+      position: absolute;
+      width: 2.5px;
+      height: 1.3em;
+      background-color: var(--color-caret);
+      border-radius: 2px;
+      transition: left 0.075s cubic-bezier(0.1, 0.9, 0.2, 1), top 0.075s ease;
+      animation: caretPulse 1s infinite ease-in-out;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .typing-caret.typing {
+      animation: none;
+      opacity: 1;
+    }
+    @keyframes caretPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Character States */
+    .char {
+      transition: color 0.05s ease;
+    }
+    .char.untyped {
+      color: var(--color-untyped);
+    }
+    .char.correct {
+      color: var(--color-ink);
+    }
+    .char.incorrect {
+      color: var(--color-error);
+      text-decoration: underline wavy;
+      text-decoration-thickness: 1.5px;
+    }
+    .char.extra {
+      color: var(--color-error-extra);
+      opacity: 0.85;
+    }
+
+    .word {
+      display: inline-block;
+      margin-right: 0.6em;
+      margin-bottom: 0.4em;
+    }
+    .word.error-word {
+      border-bottom: 1.5px solid var(--color-error);
+    }
+
+    /* Words Container Scroll Mask */
+    #words-wrapper {
+      position: relative;
+      height: 140px;
+      overflow: hidden;
+      user-select: none;
+      cursor: text;
+    }
+
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500/20 selection:text-amber-400">
+
+  <!-- Main Container -->
+  <div class="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 flex flex-col justify-between space-y-8">
+
+    <!-- Top Navigation & Controls Bar -->
+    <header class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-theme-line pb-6">
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">KeyCraft</h1>
+            <p class="text-xs text-theme-muted hidden sm:block">Real-time typing speed & accuracy benchmark</p>
+          </div>
+        </div>
+
+        <!-- Mode Config Bar on mobile -->
+        <div class="flex md:hidden items-center gap-1.5 bg-theme-surface-alt p-1 rounded-xl border border-theme-line text-xs font-mono">
+          <button id="btn-sound-toggle-mobile" class="p-2 rounded-lg text-theme-muted hover:text-theme-ink" title="Toggle Sound">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Test Configuration Bar -->
+      <div id="test-config-bar" class="flex flex-wrap items-center justify-center gap-2 bg-theme-surface border border-theme-line p-1.5 rounded-2xl shadow-xs text-xs font-medium transition-opacity duration-300">
+        
+        <!-- Mode Type (Time vs Words vs Quote) -->
+        <div class="flex items-center bg-theme-surface-alt rounded-xl p-1 gap-1">
+          <button data-mode="time" class="btn-config-mode px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-theme-accent text-slate-950 shadow-xs font-mono">time</button>
+          <button data-mode="words" class="btn-config-mode px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-theme-muted hover:text-theme-ink font-mono">words</button>
+          <button data-mode="quote" class="btn-config-mode px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-theme-muted hover:text-theme-ink font-mono">quote</button>
+        </div>
+
+        <!-- Mode Sub-options (e.g. 15, 30, 60, 120s or 25, 50, 100 words) -->
+        <div id="sub-options-container" class="flex items-center bg-theme-surface-alt rounded-xl p-1 gap-1 font-mono">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Punctuation & Numbers Toggles -->
+        <div class="flex items-center bg-theme-surface-alt rounded-xl p-1 gap-1 font-mono">
+          <button id="toggle-punctuation" class="px-2.5 py-1.5 rounded-lg text-xs transition-colors text-theme-muted hover:text-theme-ink flex items-center gap-1">
+            <span>@</span>
+            <span class="hidden sm:inline">punc</span>
+          </button>
+          <button id="toggle-numbers" class="px-2.5 py-1.5 rounded-lg text-xs transition-colors text-theme-muted hover:text-theme-ink flex items-center gap-1">
+            <span>#</span>
+            <span class="hidden sm:inline">num</span>
+          </button>
+        </div>
+
+        <!-- Sound Feedback Toggle -->
+        <button id="btn-sound-toggle" class="p-2 rounded-xl bg-theme-surface-alt text-theme-muted hover:text-theme-ink border border-theme-line transition-colors flex items-center gap-1.5" title="Toggle Mechanical Keyboard Audio">
+          <svg id="sound-icon-on" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          <svg id="sound-icon-off" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+          <span class="text-[11px] font-mono hidden sm:inline" id="sound-status-text">sound off</span>
+        </button>
+
+      </div>
+    </header>
+
+    <!-- ACTIVE TEST VIEWPORT -->
+    <main id="view-test" class="flex-1 flex flex-col justify-center max-w-4xl w-full mx-auto space-y-6">
+
+      <!-- Live Floating Metrics Bar (Unobtrusive) -->
+      <div id="live-stats-bar" class="flex items-center justify-between text-theme-muted font-mono text-sm sm:text-base px-2 transition-opacity duration-300">
+        <div class="flex items-center gap-6">
+          <div class="flex items-baseline gap-1.5">
+            <span class="text-xs uppercase text-theme-muted/70">wpm</span>
+            <span id="live-wpm" class="text-xl sm:text-2xl font-black text-theme-accent">0</span>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span class="text-xs uppercase text-theme-muted/70">acc</span>
+            <span id="live-acc" class="text-xl sm:text-2xl font-black text-theme-ink">100%</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <!-- Timer Countdown or Word Counter -->
+          <div class="flex items-baseline gap-1.5">
+            <span id="live-target-label" class="text-xs uppercase text-theme-muted/70">time</span>
+            <span id="live-target-counter" class="text-xl sm:text-2xl font-black text-theme-accent">30</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Words Display Box -->
+      <div class="relative p-6 sm:p-8 rounded-3xl bg-theme-surface border border-theme-line shadow-xl">
+        
+        <!-- Hidden Focus Capture Input -->
+        <input
+          id="typing-input-trap"
+          type="text"
+          class="absolute opacity-0 pointer-events-none w-0 h-0"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+
+        <!-- Typing Words Area -->
+        <div id="words-wrapper" class="font-typing text-xl sm:text-2xl md:text-3xl leading-relaxed sm:leading-relaxed">
+          <div id="words-content" class="relative transition-transform duration-200">
+            <div id="caret" class="typing-caret"></div>
+            <!-- Words injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Focus Warning Overlay -->
+        <div id="focus-warning" class="absolute inset-0 bg-theme-bg/80 backdrop-blur-xs rounded-3xl flex items-center justify-center cursor-pointer transition-opacity duration-200 hidden">
+          <div class="flex items-center gap-2 text-theme-accent font-mono text-sm font-bold animate-pulse">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+            <span>Click or press any key to focus</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Hints -->
+      <div class="flex items-center justify-center gap-4 text-xs font-mono text-theme-muted">
+        <button id="btn-restart-test" class="px-4 py-2 rounded-xl bg-theme-surface border border-theme-line hover:border-theme-accent hover:text-theme-ink transition-all flex items-center gap-2 shadow-xs group">
+          <svg class="w-4 h-4 transition-transform group-hover:rotate-180 duration-500 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>Restart Test</span>
+          <kbd class="px-1.5 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[10px] text-theme-muted">Tab + Enter</kbd>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- RESULTS SCREEN VIEWPORT (Hidden by default) -->
+    <div id="view-results" class="hidden flex-1 flex flex-col justify-center max-w-4xl w-full mx-auto space-y-8 animate-fadeIn">
+      
+      <!-- Personal Best Alert Banner -->
+      <div id="pb-banner" class="hidden p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center gap-2 font-mono font-bold text-sm">
+        <span>🎉</span>
+        <span>NEW PERSONAL BEST! You beat your previous high score!</span>
+      </div>
+
+      <!-- Hero Metrics Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        
+        <!-- Hero WPM -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Net WPM</span>
+          <div id="result-hero-wpm" class="text-4xl sm:text-5xl md:text-6xl font-black text-theme-accent font-mono tracking-tight">0</div>
+        </div>
+
+        <!-- Accuracy -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Accuracy</span>
+          <div id="result-hero-acc" class="text-4xl sm:text-5xl md:text-6xl font-black text-theme-ink font-mono tracking-tight">0%</div>
+        </div>
+
+        <!-- Raw WPM -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Raw WPM</span>
+          <div id="result-raw-wpm" class="text-3xl sm:text-4xl font-black text-theme-muted font-mono tracking-tight">0</div>
+        </div>
+
+        <!-- Consistency -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line space-y-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Consistency</span>
+          <div id="result-consistency" class="text-3xl sm:text-4xl font-black text-emerald-500 font-mono tracking-tight">0%</div>
+        </div>
+
+      </div>
+
+      <!-- Interactive WPM Over Time Canvas Chart -->
+      <div class="p-6 sm:p-8 rounded-3xl bg-theme-surface border border-theme-line space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4 text-xs font-mono">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+              <span class="text-theme-ink font-bold">WPM</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-slate-500 inline-block"></span>
+              <span class="text-theme-muted">Raw WPM</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+              <span class="text-red-400">Errors</span>
+            </div>
+          </div>
+          <span id="result-mode-badge" class="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-theme-surface-alt border border-theme-line text-theme-muted">time 30s</span>
+        </div>
+
+        <div class="relative w-full h-48 sm:h-60">
+          <canvas id="wpm-chart-canvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown & Actions -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Characters Breakdown</h4>
+          <div class="grid grid-cols-4 gap-2 text-center font-mono">
+            <div class="p-2 rounded-xl bg-theme-surface-alt">
+              <span class="text-[10px] text-theme-muted block">Correct</span>
+              <span id="stat-chars-correct" class="text-lg font-black text-emerald-500">0</span>
+            </div>
+            <div class="p-2 rounded-xl bg-theme-surface-alt">
+              <span class="text-[10px] text-theme-muted block">Incorrect</span>
+              <span id="stat-chars-incorrect" class="text-lg font-black text-red-500">0</span>
+            </div>
+            <div class="p-2 rounded-xl bg-theme-surface-alt">
+              <span class="text-[10px] text-theme-muted block">Extra</span>
+              <span id="stat-chars-extra" class="text-lg font-black text-red-400">0</span>
+            </div>
+            <div class="p-2 rounded-xl bg-theme-surface-alt">
+              <span class="text-[10px] text-theme-muted block">Missed</span>
+              <span id="stat-chars-missed" class="text-lg font-black text-theme-muted">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line flex flex-col justify-between gap-4">
+          <div class="space-y-1">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-theme-muted font-mono">Test Info</h4>
+            <p id="stat-test-summary" class="text-xs text-theme-muted font-mono">30 seconds test • Standard words</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="btn-next-test" class="flex-1 py-3 px-4 rounded-2xl bg-theme-accent text-slate-950 font-bold text-xs uppercase tracking-wider font-mono hover:bg-theme-accent-hover transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              <span>Next Test</span>
+            </button>
+            <button id="btn-retry-same" class="py-3 px-4 rounded-2xl bg-theme-surface-alt border border-theme-line text-theme-ink font-bold text-xs uppercase tracking-wider font-mono hover:border-theme-accent transition-all flex items-center justify-center gap-2" title="Repeat Same Text">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Repeat</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Stats & Shortcuts Hint & Brand -->
+    <footer class="space-y-4 border-t border-theme-line pt-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-theme-muted">
+        <div class="flex items-center gap-4">
+          <span>Personal Best: <strong id="footer-pb-val" class="text-theme-accent">-- WPM</strong></span>
+          <span>•</span>
+          <span>Tests Completed: <strong id="footer-total-tests" class="text-theme-ink">0</strong></span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <kbd class="px-1.5 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[10px]">Tab</kbd>
+          <span>+</span>
+          <kbd class="px-1.5 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[10px]">Enter</kbd>
+          <span>to restart</span>
+        </div>
+      </div>
+
+      <!-- Toolzy Brand Small Line -->
+      <div class="flex flex-wrap items-center justify-center sm:justify-between gap-2 text-[11px] font-mono text-theme-muted pt-2 border-t border-theme-line/60">
+        <div class="flex items-center gap-2">
+          <a href="/tools/" class="hover:underline flex items-center gap-1.5 font-bold">
+            <span class="tracking-tight text-sm font-black">
+              <span style="color:#4285F4">T</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">l</span><span style="color:#34A853">z</span><span style="color:#EA4335">y</span>
+            </span>
+            <span class="text-theme-muted font-normal">• 100% Free & Client-Side Tools</span>
+          </a>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy" class="text-theme-accent hover:underline">Request a Tool</a>
+          <span>•</span>
+          <a href="/index.html" class="hover:text-theme-ink transition-colors">Portfolio</a>
+          <span>•</span>
+          <a href="/tools/" class="hover:text-theme-ink transition-colors">All Tools</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // WORD BANKS & QUOTE CORPUS
+    // =========================================================================
+    const COMMON_WORDS = [
+      "the", "be", "of", "and", "a", "to", "in", "he", "have", "it", "that", "for", "they", "I", "with", "as", "not", "on", "she", "at", "by", "this", "we", "you", "do", "but", "his", "from", "they", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "system", "program", "code", "data", "software", "network", "function", "object", "array", "string", "number", "boolean", "async", "promise", "server", "client", "request", "response", "state", "component", "render", "memory", "thread", "process", "storage", "database", "query", "index", "pointer", "structure", "algorithm", "design", "pattern", "compile", "execute", "runtime", "virtual", "machine", "cloud", "security", "stream", "buffer", "event", "loop", "stack", "queue", "binary", "tree", "graph", "syntax", "module", "package", "import", "export", "interface", "class", "method", "variable", "constant", "scope", "closure", "lambda", "filter", "reduce", "map", "debug", "optimize", "profile", "benchmark", "deploy", "release", "commit", "branch", "merge", "pull", "push", "origin", "remote", "terminal", "shell", "script", "command", "config", "build", "bundle", "asset", "worker", "service", "signal", "channel", "mutex", "lock", "atomic", "cache", "token", "session", "cookie", "header", "payload", "router", "route", "param", "schema", "table", "column", "record", "transaction", "commit", "rollback", "acid", "shard", "cluster", "replica", "broker", "queue", "socket", "packet", "port", "host", "domain", "gateway", "proxy", "firewall", "crypto", "cipher", "digest", "secret", "public", "private", "cert", "handshake"
+    ];
+
+    const QUOTES = [
+      { text: "Simplicity is prerequisite for reliability.", author: "Edsger W. Dijkstra" },
+      { text: "Premature optimization is the root of all evil in programming.", author: "Donald Knuth" },
+      { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
+      { text: "Programs must be written for people to read, and only incidentally for machines to execute.", author: "Harold Abelson" },
+      { text: "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.", author: "Martin Fowler" },
+      { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+      { text: "Experience is the name everyone gives to their mistakes.", author: "Oscar Wilde" },
+      { text: "The most disastrous thing that you can ever learn is your first programming language.", author: "Alan Kay" }
+    ];
+
+    // Configuration & State
+    let config = {
+      mode: 'time', // 'time' | 'words' | 'quote'
+      timeTarget: 30, // 15 | 30 | 60 | 120
+      wordsTarget: 50, // 10 | 25 | 50 | 100
+      punctuation: false,
+      numbers: false,
+      sound: false
+    };
+
+    let testState = {
+      status: 'idle', // 'idle' | 'running' | 'finished'
+      words: [],
+      currentWordIndex: 0,
+      currentCharIndex: 0,
+      typedHistory: [], // Array of typed word strings
+      startTime: null,
+      timerInterval: null,
+      timeRemaining: 30,
+      timeElapsed: 0,
+      secondSnapshots: [], // Array of { second, wpm, rawWpm, errors }
+      totalErrors: 0,
+      correctChars: 0,
+      incorrectChars: 0,
+      extraChars: 0,
+      missedChars: 0
+    };
+
+    const STORAGE_PB_KEY = 'toolbox:keycraft_personal_bests';
+    const STORAGE_STATS_KEY = 'toolbox:keycraft_stats';
+
+    // DOM Elements
+    const wordsWrapper = document.getElementById('words-wrapper');
+    const wordsContent = document.getElementById('words-content');
+    const caret = document.getElementById('caret');
+    const typingInputTrap = document.getElementById('typing-input-trap');
+    const focusWarning = document.getElementById('focus-warning');
+    const liveStatsBar = document.getElementById('live-stats-bar');
+    const liveWpm = document.getElementById('live-wpm');
+    const liveAcc = document.getElementById('live-acc');
+    const liveTargetLabel = document.getElementById('live-target-label');
+    const liveTargetCounter = document.getElementById('live-target-counter');
+    const testConfigBar = document.getElementById('test-config-bar');
+    const subOptionsContainer = document.getElementById('sub-options-container');
+    const togglePunctuation = document.getElementById('toggle-punctuation');
+    const toggleNumbers = document.getElementById('toggle-numbers');
+    const btnSoundToggle = document.getElementById('btn-sound-toggle');
+    const soundIconOn = document.getElementById('sound-icon-on');
+    const soundIconOff = document.getElementById('sound-icon-off');
+    const soundStatusText = document.getElementById('sound-status-text');
+
+    // Views
+    const viewTest = document.getElementById('view-test');
+    const viewResults = document.getElementById('view-results');
+    const btnRestartTest = document.getElementById('btn-restart-test');
+    const btnNextTest = document.getElementById('btn-next-test');
+    const btnRetrySame = document.getElementById('btn-retry-same');
+
+    // Results Elements
+    const resultHeroWpm = document.getElementById('result-hero-wpm');
+    const resultHeroAcc = document.getElementById('result-hero-acc');
+    const resultRawWpm = document.getElementById('result-raw-wpm');
+    const resultConsistency = document.getElementById('result-consistency');
+    const statCharsCorrect = document.getElementById('stat-chars-correct');
+    const statCharsIncorrect = document.getElementById('stat-chars-incorrect');
+    const statCharsExtra = document.getElementById('stat-chars-extra');
+    const statCharsMissed = document.getElementById('stat-chars-missed');
+    const statTestSummary = document.getElementById('stat-test-summary');
+    const resultModeBadge = document.getElementById('result-mode-badge');
+    const pbBanner = document.getElementById('pb-banner');
+    const footerPbVal = document.getElementById('footer-pb-val');
+    const footerTotalTests = document.getElementById('footer-total-tests');
+    const wpmChartCanvas = document.getElementById('wpm-chart-canvas');
+
+    // =========================================================================
+    // SYNTHESIZED MECHANICAL KEYBOARD AUDIO (Web Audio API)
+    // =========================================================================
+    let audioCtx = null;
+    function playKeySound(isError = false) {
+      if (!config.sound) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (isError) {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else {
+          // Subtle mechanical click/thock
+          osc.type = 'triangle';
+          const baseFreq = 420 + Math.random() * 80;
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.045);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+          osc.start(now);
+          osc.stop(now + 0.045);
+        }
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // SUB-OPTIONS & CONFIGURATION UI
+    // =========================================================================
+    function renderSubOptions() {
+      subOptionsContainer.innerHTML = '';
+      if (config.mode === 'time') {
+        [15, 30, 60, 120].forEach(t => {
+          const btn = document.createElement('button');
+          btn.className = `px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            config.timeTarget === t
+              ? 'bg-theme-accent text-slate-950 font-bold'
+              : 'text-theme-muted hover:text-theme-ink'
+          }`;
+          btn.innerText = `${t}s`;
+          btn.addEventListener('click', () => {
+            config.timeTarget = t;
+            renderSubOptions();
+            resetTest();
+          });
+          subOptionsContainer.appendChild(btn);
+        });
+      } else if (config.mode === 'words') {
+        [10, 25, 50, 100].forEach(w => {
+          const btn = document.createElement('button');
+          btn.className = `px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            config.wordsTarget === w
+              ? 'bg-theme-accent text-slate-950 font-bold'
+              : 'text-theme-muted hover:text-theme-ink'
+          }`;
+          btn.innerText = `${w}`;
+          btn.addEventListener('click', () => {
+            config.wordsTarget = w;
+            renderSubOptions();
+            resetTest();
+          });
+          subOptionsContainer.appendChild(btn);
+        });
+      } else if (config.mode === 'quote') {
+        const span = document.createElement('span');
+        span.className = 'px-3 py-1.5 text-xs text-theme-muted';
+        span.innerText = 'famous quotes';
+        subOptionsContainer.appendChild(span);
+      }
+    }
+
+    document.querySelectorAll('.btn-config-mode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-config-mode').forEach(b => {
+          b.className = 'btn-config-mode px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-theme-muted hover:text-theme-ink font-mono';
+        });
+        btn.className = 'btn-config-mode px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-theme-accent text-slate-950 shadow-xs font-mono font-bold';
+        config.mode = btn.dataset.mode;
+        renderSubOptions();
+        resetTest();
+      });
+    });
+
+    togglePunctuation.addEventListener('click', () => {
+      config.punctuation = !config.punctuation;
+      togglePunctuation.classList.toggle('text-theme-accent', config.punctuation);
+      togglePunctuation.classList.toggle('bg-amber-500/10', config.punctuation);
+      resetTest();
+    });
+
+    toggleNumbers.addEventListener('click', () => {
+      config.numbers = !config.numbers;
+      toggleNumbers.classList.toggle('text-theme-accent', config.numbers);
+      toggleNumbers.classList.toggle('bg-amber-500/10', config.numbers);
+      resetTest();
+    });
+
+    function toggleSound() {
+      config.sound = !config.sound;
+      soundIconOn.classList.toggle('hidden', !config.sound);
+      soundIconOff.classList.toggle('hidden', config.sound);
+      soundStatusText.innerText = config.sound ? 'sound on' : 'sound off';
+      btnSoundToggle.classList.toggle('text-theme-accent', config.sound);
+    }
+    btnSoundToggle.addEventListener('click', toggleSound);
+    const btnSoundToggleMobile = document.getElementById('btn-sound-toggle-mobile');
+    if (btnSoundToggleMobile) btnSoundToggleMobile.addEventListener('click', toggleSound);
+
+    // =========================================================================
+    // TEST GENERATION & WORD RENDERING
+    // =========================================================================
+    function generateWords() {
+      let wordList = [];
+      if (config.mode === 'quote') {
+        const quoteObj = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        wordList = quoteObj.text.split(' ');
+      } else {
+        const count = config.mode === 'words' ? config.wordsTarget : Math.max(80, Math.ceil(config.timeTarget * 3.5));
+        for (let i = 0; i < count; i++) {
+          let w = COMMON_WORDS[Math.floor(Math.random() * COMMON_WORDS.length)];
+          if (config.punctuation && Math.random() < 0.25) {
+            const puncs = [",", ".", "!", "?", ";", ":", "-", "'"];
+            const p = puncs[Math.floor(Math.random() * puncs.length)];
+            w = Math.random() < 0.15 ? `"${w}"` : `${w}${p}`;
+            if (Math.random() < 0.3) w = w.charAt(0).toUpperCase() + w.slice(1);
+          }
+          if (config.numbers && Math.random() < 0.15) {
+            w = String(Math.floor(Math.random() * 999) + 1);
+          }
+          wordList.push(w);
+        }
+      }
+      return wordList;
+    }
+
+    function renderWordsDOM() {
+      wordsContent.innerHTML = '';
+      wordsContent.appendChild(caret);
+
+      testState.words.forEach((wordText, wIdx) => {
+        const wordSpan = document.createElement('div');
+        wordSpan.className = 'word';
+        wordSpan.id = `word-${wIdx}`;
+
+        for (let cIdx = 0; cIdx < wordText.length; cIdx++) {
+          const charSpan = document.createElement('span');
+          charSpan.className = 'char untyped';
+          charSpan.id = `char-${wIdx}-${cIdx}`;
+          charSpan.innerText = wordText[cIdx];
+          wordSpan.appendChild(charSpan);
+        }
+
+        wordsContent.appendChild(wordSpan);
+      });
+
+      wordsContent.style.transform = 'translateY(0px)';
+      requestAnimationFrame(updateCaretPosition);
+    }
+
+    function updateCaretPosition() {
+      const currentWordEl = document.getElementById(`word-${testState.currentWordIndex}`);
+      if (!currentWordEl || !wordsContent) return;
+
+      const contentRect = wordsContent.getBoundingClientRect();
+      const currentCharEl = document.getElementById(`char-${testState.currentWordIndex}-${testState.currentCharIndex}`);
+      let left = 0;
+      let top = 0;
+      let charHeight = 36;
+
+      if (currentCharEl) {
+        const charRect = currentCharEl.getBoundingClientRect();
+        left = charRect.left - contentRect.left;
+        top = charRect.top - contentRect.top;
+        charHeight = charRect.height;
+      } else {
+        // At the end of the word or typing extra characters
+        const lastChar = currentWordEl.lastElementChild;
+        if (lastChar && (lastChar.classList.contains('char') || lastChar.tagName === 'SPAN')) {
+          const charRect = lastChar.getBoundingClientRect();
+          left = charRect.right - contentRect.left;
+          top = charRect.top - contentRect.top;
+          charHeight = charRect.height;
+        } else {
+          const wordRect = currentWordEl.getBoundingClientRect();
+          left = wordRect.left - contentRect.left;
+          top = wordRect.top - contentRect.top;
+          charHeight = wordRect.height;
+        }
+      }
+
+      caret.style.left = `${Math.round(left)}px`;
+      caret.style.top = `${Math.round(top)}px`;
+      if (charHeight > 0) caret.style.height = `${Math.round(charHeight)}px`;
+
+      // Auto-scroll viewport if current word is on lower lines
+      const wordTop = currentWordEl.offsetTop;
+      if (wordTop > 40) {
+        const scrollAmount = wordTop - 8;
+        wordsContent.style.transform = `translateY(-${scrollAmount}px)`;
+      } else {
+        wordsContent.style.transform = 'translateY(0px)';
+      }
+    }
+
+    // =========================================================================
+    // TEST RUNTIME & INPUT HANDLER
+    // =========================================================================
+    function startTest() {
+      testState.status = 'running';
+      testState.startTime = Date.now();
+      testState.timeElapsed = 0;
+      testState.timeRemaining = config.timeTarget;
+      testState.secondSnapshots = [];
+
+      testConfigBar.classList.add('opacity-40', 'pointer-events-none');
+      caret.classList.add('typing');
+
+      testState.timerInterval = setInterval(() => {
+        testState.timeElapsed++;
+        if (config.mode === 'time') {
+          testState.timeRemaining--;
+          liveTargetCounter.innerText = Math.max(0, testState.timeRemaining);
+          if (testState.timeRemaining <= 0) {
+            finishTest();
+            return;
+          }
+        } else {
+          liveTargetCounter.innerText = `${testState.currentWordIndex}/${config.mode === 'words' ? config.wordsTarget : testState.words.length}`;
+        }
+
+        // Record Second Snapshot for Chart
+        const stats = calculateCurrentStats();
+        testState.secondSnapshots.push({
+          second: testState.timeElapsed,
+          wpm: stats.wpm,
+          rawWpm: stats.rawWpm,
+          errors: stats.errors
+        });
+
+        liveWpm.innerText = stats.wpm;
+        liveAcc.innerText = `${stats.accuracy}%`;
+      }, 1000);
+    }
+
+    function calculateCurrentStats() {
+      const elapsedMin = Math.max(testState.timeElapsed, 1) / 60;
+      let totalTypedChars = 0;
+      let correctChars = 0;
+      let incorrectChars = 0;
+      let extraChars = 0;
+
+      testState.typedHistory.forEach((typedWord, wIdx) => {
+        const targetWord = testState.words[wIdx] || '';
+        for (let i = 0; i < typedWord.length; i++) {
+          totalTypedChars++;
+          if (i < targetWord.length) {
+            if (typedWord[i] === targetWord[i]) correctChars++;
+            else incorrectChars++;
+          } else {
+            extraChars++;
+          }
+        }
+        // Account for space
+        if (wIdx < testState.typedHistory.length - 1) {
+          totalTypedChars++;
+          correctChars++;
+        }
+      });
+
+      // Current active word
+      const currentTyped = typingInputTrap.value;
+      const targetWord = testState.words[testState.currentWordIndex] || '';
+      for (let i = 0; i < currentTyped.length; i++) {
+        totalTypedChars++;
+        if (i < targetWord.length) {
+          if (currentTyped[i] === targetWord[i]) correctChars++;
+          else incorrectChars++;
+        } else {
+          extraChars++;
+        }
+      }
+
+      const netWpm = Math.max(0, Math.round((correctChars / 5) / elapsedMin));
+      const rawWpm = Math.max(0, Math.round((totalTypedChars / 5) / elapsedMin));
+      const accuracy = totalTypedChars > 0 ? Math.round((correctChars / totalTypedChars) * 100) : 100;
+
+      return {
+        wpm: netWpm,
+        rawWpm: rawWpm,
+        accuracy: accuracy,
+        correctChars,
+        incorrectChars,
+        extraChars,
+        totalTypedChars,
+        errors: incorrectChars + extraChars
+      };
+    }
+
+    function handleTypingInput(e) {
+      if (testState.status === 'finished') return;
+      if (testState.status === 'idle') {
+        startTest();
+      }
+
+      const inputVal = typingInputTrap.value;
+      const targetWord = testState.words[testState.currentWordIndex] || '';
+      const wordEl = document.getElementById(`word-${testState.currentWordIndex}`);
+      if (!wordEl) return;
+
+      // Check for Space (Word completion)
+      if (inputVal.endsWith(' ')) {
+        const typedWord = inputVal.slice(0, -1);
+        if (typedWord.length === 0) {
+          typingInputTrap.value = '';
+          return;
+        }
+
+        testState.typedHistory.push(typedWord);
+
+        // Check if word had errors
+        if (typedWord !== targetWord) {
+          wordEl.classList.add('error-word');
+          testState.totalErrors++;
+          playKeySound(true);
+        } else {
+          playKeySound(false);
+        }
+
+        // Advance to next word
+        testState.currentWordIndex++;
+        testState.currentCharIndex = 0;
+        typingInputTrap.value = '';
+
+        if (testState.currentWordIndex >= testState.words.length) {
+          finishTest();
+          return;
+        }
+
+        updateLiveMetrics();
+        updateCaretPosition();
+        return;
+      }
+
+      // Character-by-character validation of current word
+      testState.currentCharIndex = inputVal.length;
+
+      // Update existing character DOM elements
+      for (let i = 0; i < targetWord.length; i++) {
+        let charEl = document.getElementById(`char-${testState.currentWordIndex}-${i}`);
+        if (!charEl) continue;
+
+        if (i < inputVal.length) {
+          if (inputVal[i] === targetWord[i]) {
+            charEl.className = 'char correct';
+          } else {
+            charEl.className = 'char incorrect';
+          }
+        } else {
+          charEl.className = 'char untyped';
+        }
+      }
+
+      // Handle Extra Characters
+      const existingExtras = wordEl.querySelectorAll('.char.extra');
+      existingExtras.forEach(el => el.remove());
+
+      if (inputVal.length > targetWord.length) {
+        for (let i = targetWord.length; i < inputVal.length; i++) {
+          const extraChar = document.createElement('span');
+          extraChar.className = 'char extra';
+          extraChar.innerText = inputVal[i];
+          wordEl.appendChild(extraChar);
+        }
+        playKeySound(true);
+      } else {
+        const lastCharCorrect = inputVal[inputVal.length - 1] === targetWord[inputVal.length - 1];
+        playKeySound(!lastCharCorrect);
+      }
+
+      updateLiveMetrics();
+      updateCaretPosition();
+    }
+
+    function updateLiveMetrics() {
+      const stats = calculateCurrentStats();
+      liveWpm.innerText = stats.wpm;
+      liveAcc.innerText = `${stats.accuracy}%`;
+    }
+
+    function finishTest() {
+      testState.status = 'finished';
+      clearInterval(testState.timerInterval);
+      caret.classList.remove('typing');
+
+      // Final calculations
+      const stats = calculateCurrentStats();
+      testState.correctChars = stats.correctChars;
+      testState.incorrectChars = stats.incorrectChars;
+      testState.extraChars = stats.extraChars;
+
+      // Calculate Missed Characters
+      let totalTargetChars = 0;
+      testState.words.forEach(w => totalTargetChars += w.length);
+      testState.missedChars = Math.max(0, totalTargetChars - (testState.correctChars + testState.incorrectChars));
+
+      // Calculate Consistency Score
+      let consistency = 100;
+      if (testState.secondSnapshots.length >= 2) {
+        const wpms = testState.secondSnapshots.map(s => s.wpm);
+        const mean = wpms.reduce((a, b) => a + b, 0) / wpms.length;
+        const variance = wpms.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / wpms.length;
+        const stdDev = Math.sqrt(variance);
+        const cv = mean > 0 ? (stdDev / mean) : 0;
+        consistency = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+      }
+
+      showResults(stats.wpm, stats.rawWpm, stats.accuracy, consistency);
+    }
+
+    // =========================================================================
+    // RESULTS SCREEN & PERFORMANCE GRAPH
+    // =========================================================================
+    function showResults(wpm, rawWpm, accuracy, consistency) {
+      viewTest.classList.add('hidden');
+      viewResults.classList.remove('hidden');
+
+      // Animate Hero Numbers
+      animateCountUp(resultHeroWpm, wpm);
+      animateCountUp(resultHeroAcc, accuracy, '%');
+      animateCountUp(resultRawWpm, rawWpm);
+      animateCountUp(resultConsistency, consistency, '%');
+
+      statCharsCorrect.innerText = testState.correctChars;
+      statCharsIncorrect.innerText = testState.incorrectChars;
+      statCharsExtra.innerText = testState.extraChars;
+      statCharsMissed.innerText = testState.missedChars;
+
+      const modeStr = config.mode === 'time' ? `time ${config.timeTarget}s` : config.mode === 'words' ? `words ${config.wordsTarget}` : 'quote mode';
+      resultModeBadge.innerText = modeStr;
+      statTestSummary.innerText = `${testState.timeElapsed}s duration • ${modeStr}`;
+
+      // Personal Best Handling
+      const modeKey = config.mode === 'time' ? `time_${config.timeTarget}` : config.mode === 'words' ? `words_${config.wordsTarget}` : 'quote';
+      const isPb = checkAndSavePB(modeKey, wpm);
+      pbBanner.classList.toggle('hidden', !isPb);
+
+      // Render WPM Canvas Graph
+      renderWpmChart(testState.secondSnapshots);
+
+      // Save Stats
+      incrementTotalTests();
+      updateFooterPB();
+    }
+
+    function animateCountUp(element, targetVal, suffix = '') {
+      let current = 0;
+      const duration = 750;
+      const startTime = performance.now();
+
+      function updateNumber(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const val = Math.round(easeOut * targetVal);
+        element.innerText = `${val}${suffix}`;
+        if (progress < 1) requestAnimationFrame(updateNumber);
+      }
+      requestAnimationFrame(updateNumber);
+    }
+
+    function renderWpmChart(snapshots) {
+      if (!wpmChartCanvas) return;
+      const ctx = wpmChartCanvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = wpmChartCanvas.getBoundingClientRect();
+      wpmChartCanvas.width = rect.width * dpr;
+      wpmChartCanvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+      const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+
+      ctx.clearRect(0, 0, width, height);
+
+      if (!snapshots || snapshots.length < 2) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Not enough data to plot graph.', width / 2, height / 2);
+        return;
+      }
+
+      const maxSec = snapshots[snapshots.length - 1].second;
+      const maxWpm = Math.max(40, ...snapshots.map(s => Math.max(s.wpm, s.rawWpm))) * 1.15;
+
+      const getX = (sec) => padding.left + ((sec - 1) / Math.max(1, maxSec - 1)) * (width - padding.left - padding.right);
+      const getY = (wpm) => height - padding.bottom - (wpm / maxWpm) * (height - padding.top - padding.bottom);
+
+      // Draw Grid Lines
+      ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#21262d' : '#e2e8f0';
+      ctx.lineWidth = 1;
+
+      for (let yVal = 0; yVal <= maxWpm; yVal += 20) {
+        const y = getY(yVal);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(yVal, padding.left - 8, y + 3);
+      }
+
+      // Draw Raw WPM Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      snapshots.forEach((s, idx) => {
+        const x = getX(s.second);
+        const y = getY(s.rawWpm);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Net WPM Gradient Area
+      const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+      gradient.addColorStop(0, 'rgba(226, 183, 20, 0.35)');
+      gradient.addColorStop(1, 'rgba(226, 183, 20, 0.0)');
+
+      ctx.beginPath();
+      snapshots.forEach((s, idx) => {
+        const x = getX(s.second);
+        const y = getY(s.wpm);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(getX(snapshots[snapshots.length - 1].second), height - padding.bottom);
+      ctx.lineTo(getX(1), height - padding.bottom);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Draw Net WPM Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#e2b714';
+      ctx.lineWidth = 3;
+      snapshots.forEach((s, idx) => {
+        const x = getX(s.second);
+        const y = getY(s.wpm);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Draw Error Crosses
+      snapshots.forEach(s => {
+        if (s.errors > 0) {
+          const x = getX(s.second);
+          const y = getY(s.wpm);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    // =========================================================================
+    // LOCALSTORAGE & PERSONAL BESTS
+    // =========================================================================
+    function checkAndSavePB(modeKey, currentWpm) {
+      try {
+        const pbs = JSON.parse(localStorage.getItem(STORAGE_PB_KEY) || '{}');
+        const prev = pbs[modeKey] || 0;
+        if (currentWpm > prev) {
+          pbs[modeKey] = currentWpm;
+          localStorage.setItem(STORAGE_PB_KEY, JSON.stringify(pbs));
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function updateFooterPB() {
+      try {
+        const pbs = JSON.parse(localStorage.getItem(STORAGE_PB_KEY) || '{}');
+        const modeKey = config.mode === 'time' ? `time_${config.timeTarget}` : config.mode === 'words' ? `words_${config.wordsTarget}` : 'quote';
+        const best = pbs[modeKey] || 0;
+        footerPbVal.innerText = best > 0 ? `${best} WPM` : '-- WPM';
+      } catch (e) {}
+    }
+
+    function incrementTotalTests() {
+      try {
+        let count = parseInt(localStorage.getItem(STORAGE_STATS_KEY) || '0', 10);
+        count++;
+        localStorage.setItem(STORAGE_STATS_KEY, String(count));
+        footerTotalTests.innerText = count;
+      } catch (e) {}
+    }
+
+    function loadStats() {
+      try {
+        const count = localStorage.getItem(STORAGE_STATS_KEY) || '0';
+        footerTotalTests.innerText = count;
+      } catch (e) {}
+      updateFooterPB();
+    }
+
+    // =========================================================================
+    // TEST RESET & LIFECYCLE
+    // =========================================================================
+    function resetTest(reuseWords = false) {
+      clearInterval(testState.timerInterval);
+      testState.status = 'idle';
+      testState.currentWordIndex = 0;
+      testState.currentCharIndex = 0;
+      testState.typedHistory = [];
+      testState.totalErrors = 0;
+      testState.correctChars = 0;
+      testState.incorrectChars = 0;
+      testState.extraChars = 0;
+      testState.missedChars = 0;
+      testState.timeElapsed = 0;
+      testState.timeRemaining = config.timeTarget;
+      testState.secondSnapshots = [];
+
+      typingInputTrap.value = '';
+      liveWpm.innerText = '0';
+      liveAcc.innerText = '100%';
+      liveTargetLabel.innerText = config.mode === 'time' ? 'time' : 'words';
+      liveTargetCounter.innerText = config.mode === 'time' ? config.timeTarget : `0/${config.wordsTarget}`;
+
+      testConfigBar.classList.remove('opacity-40', 'pointer-events-none');
+      viewResults.classList.add('hidden');
+      viewTest.classList.remove('hidden');
+
+      if (!reuseWords || testState.words.length === 0) {
+        testState.words = generateWords();
+      }
+
+      renderWordsDOM();
+      updateFooterPB();
+      focusTypingArea();
+    }
+
+    function focusTypingArea() {
+      typingInputTrap.focus();
+      focusWarning.classList.add('hidden');
+    }
+
+    // Event Listeners
+    typingInputTrap.addEventListener('input', handleTypingInput);
+    
+    // Support Backspace to jump back to previous word when at start of current word
+    typingInputTrap.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && typingInputTrap.value === '' && testState.currentWordIndex > 0) {
+        testState.currentWordIndex--;
+        const prevWord = testState.typedHistory.pop() || '';
+        typingInputTrap.value = prevWord;
+        testState.currentCharIndex = prevWord.length;
+
+        const prevWordEl = document.getElementById(`word-${testState.currentWordIndex}`);
+        if (prevWordEl) prevWordEl.classList.remove('error-word');
+
+        handleTypingInput(null);
+        e.preventDefault();
+      }
+    });
+
+    typingInputTrap.addEventListener('blur', () => {
+      if (testState.status !== 'finished') {
+        focusWarning.classList.remove('hidden');
+      }
+    });
+
+    focusWarning.addEventListener('click', focusTypingArea);
+    wordsWrapper.addEventListener('click', focusTypingArea);
+
+    btnRestartTest.addEventListener('click', () => resetTest(false));
+    btnNextTest.addEventListener('click', () => resetTest(false));
+    btnRetrySame.addEventListener('click', () => resetTest(true));
+
+    // Global Keyboard Shortcuts (Tab or any key to refocus)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        resetTest(false);
+      } else if (testState.status !== 'finished' && document.activeElement !== typingInputTrap) {
+        if (e.key.length === 1 || e.key === 'Backspace') {
+          focusTypingArea();
+        }
+      }
+    });
+
+    window.addEventListener('resize', updateCaretPosition);
+
+    // Initialize
+    renderSubOptions();
+    resetTest();
+    loadStats();
+  </script>
+</body>
+</html>

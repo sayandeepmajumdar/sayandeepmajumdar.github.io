@@ -267,6 +267,10 @@ export const HomePage: React.FC = () => {
                   }
                 : undefined
             }
+            secondaryActionText="Request a Tool"
+            secondaryActionHref={`mailto:developerslab101@gmail.com?subject=New%20Tool%20Request%20-%20Toolzy&body=Hi%20Toolzy%20Team%2C%0A%0AI%20would%20like%20to%20request%20a%20new%20tool%20for%20Toolzy%3A%0A%0A-%20Tool%20Name%3A%20${encodeURIComponent(
+              query ? `Tool for "${query}"` : 'New Tool'
+            )}%0A-%20Description%20%26%20Use%20Case%3A%20%0A-%20Key%20Features%3A%20%0A%0AThank%20you!`}
           />
         )}
       </div>

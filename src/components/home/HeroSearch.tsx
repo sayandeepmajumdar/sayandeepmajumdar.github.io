@@ -57,7 +57,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
           type="text"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search by tool name, format, or tag (e.g. 'json', 'jwt', 'aes', 'cron', 'sql')..."
+          placeholder="Search by tool name, format, or tag (e.g. 'qr', 'json', 'jwt', 'aes', 'cron', 'sql')..."
           className="w-full pl-11 pr-20 py-3.5 rounded-2xl bg-surface border-2 border-line text-ink text-sm sm:text-base placeholder-muted focus:outline-none focus:border-accent shadow-md transition-all"
           spellCheck={false}
           autoFocus

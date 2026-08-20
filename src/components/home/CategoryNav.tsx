@@ -24,6 +24,11 @@ const SORT_OPTIONS: { id: 'popular' | 'all' | 'name' | 'starred'; label: string 
 ];
 
 const POPULAR_TAGS = [
+  'typing test',
+  'unit converter',
+  'flashcards',
+  'barcode',
+  'qr code',
   'json',
   'jwt',
   'cryptography',

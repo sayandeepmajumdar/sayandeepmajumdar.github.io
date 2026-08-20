@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meta Tag Generator & Live SERP Previewer — Toolzy</title>
+  <meta name="description" content="Generate complete, SEO-compliant HTML meta tags, Open Graph (OG), and Twitter/X Cards with live Google SERP and social share previews. Export as HTML, Next.js metadata, or React Helmet." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+            'google-blue': '#1a0dab',
+            'google-green': '#006621',
+            'google-cite': '#202124',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Smooth transitions */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    /* Custom scrollbar */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">Meta Tag Generator & SERP Previewer</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate complete SEO, Open Graph & Twitter Card tags with live Google and social mockups.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons & Presets -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Presets Dropdown -->
+        <div class="relative inline-block text-left">
+          <button id="btn-presets-menu" type="button" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors">
+            <span>⚡ Page Presets</span>
+            <svg class="w-3.5 h-3.5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="presets-dropdown" class="hidden absolute right-0 mt-1.5 w-48 rounded-2xl bg-surface border border-line shadow-xl z-30 py-1.5 divide-y divide-line">
+            <div class="py-1">
+              <button type="button" data-preset="article" class="preset-choice-btn w-full text-left px-3.5 py-2 text-xs text-ink hover:bg-surface-alt flex items-center gap-2">
+                <span>📝 Blog Article</span>
+              </button>
+              <button type="button" data-preset="saas" class="preset-choice-btn w-full text-left px-3.5 py-2 text-xs text-ink hover:bg-surface-alt flex items-center gap-2">
+                <span>🏢 SaaS Homepage</span>
+              </button>
+              <button type="button" data-preset="product" class="preset-choice-btn w-full text-left px-3.5 py-2 text-xs text-ink hover:bg-surface-alt flex items-center gap-2">
+                <span>🛍️ E-Commerce Product</span>
+              </button>
+              <button type="button" data-preset="portfolio" class="preset-choice-btn w-full text-left px-3.5 py-2 text-xs text-ink hover:bg-surface-alt flex items-center gap-2">
+                <span>👤 Portfolio / Profile</span>
+              </button>
+            </div>
+            <div class="py-1">
+              <button type="button" id="btn-reset-form" class="w-full text-left px-3.5 py-2 text-xs text-red-500 hover:bg-red-500/10 flex items-center gap-2">
+                <span>🧹 Clear / Reset All</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-sync-all" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-accent/10 border border-accent/20 text-accent hover:bg-accent hover:text-white transition-colors flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span>Auto-Sync to OG & Twitter</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid: Form Inputs (Left 7) & Live Preview / Code (Right 5) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+      <!-- LEFT COLUMN: Form Sections (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- SECTION 1: Primary HTML & SEO Meta Tags -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h2 class="text-sm font-bold flex items-center gap-2 text-ink">
+              <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">1</span>
+              <span>Primary SEO & Document Tags</span>
+            </h2>
+            <span class="text-[11px] text-muted font-medium">Standard HTML & Search</span>
+          </div>
+
+          <!-- Page Title Input with Live Counter -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-title" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>Page Title (<code>&lt;title&gt;</code>)</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span id="title-char-count" class="font-mono font-bold text-ink">0</span>
+                <span class="text-muted text-[11px]">/ 50-60 ideal (max ~70)</span>
+              </div>
+            </div>
+            <input
+              id="input-title"
+              type="text"
+              value="Modern Web Architecture & Performance Guide (2026)"
+              placeholder="e.g. Acme Studio — High Performance Web Platform"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium transition-colors"
+            />
+            <!-- Progress Bar Gauge -->
+            <div class="w-full h-1.5 bg-surface-alt rounded-full overflow-hidden">
+              <div id="title-progress-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 50%;"></div>
+            </div>
+            <p id="title-warning" class="hidden text-[11px] text-amber-500 dark:text-amber-400">
+              ⚠️ Title is over 60 characters and may get truncated on Google search results.
+            </p>
+          </div>
+
+          <!-- Meta Description Input with Live Counter -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-description" class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                <span>Meta Description</span>
+                <span class="text-red-500 font-bold">*</span>
+              </label>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span id="desc-char-count" class="font-mono font-bold text-ink">0</span>
+                <span class="text-muted text-[11px]">/ 150-160 ideal</span>
+              </div>
+            </div>
+            <textarea
+              id="input-description"
+              rows="3"
+              placeholder="Provide an informative, concise summary of the page's contents to maximize organic click-through rate."
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed transition-colors"
+            >Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems for high-performance apps.</textarea>
+            <!-- Progress Bar Gauge -->
+            <div class="w-full h-1.5 bg-surface-alt rounded-full overflow-hidden">
+              <div id="desc-progress-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 50%;"></div>
+            </div>
+            <p id="desc-warning" class="hidden text-[11px] text-amber-500 dark:text-amber-400">
+              ⚠️ Description is over 160 characters and may get cut off on mobile search screens.
+            </p>
+          </div>
+
+          <!-- Canonical URL & Author Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label for="input-canonical" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Canonical URL (<code>rel="canonical"</code>)
+              </label>
+              <input
+                id="input-canonical"
+                type="url"
+                value="https://example.com/blog/modern-web-architecture"
+                placeholder="https://example.com/page-url"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-author" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Author Name
+              </label>
+              <input
+                id="input-author"
+                type="text"
+                value="Alex Rivera"
+                placeholder="e.g. John Doe / Tech Team"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+          </div>
+
+          <!-- Keywords Input -->
+          <div class="space-y-1.5">
+            <label for="input-keywords" class="block text-xs font-bold uppercase tracking-wider text-muted">
+              Keywords (Comma Separated)
+            </label>
+            <input
+              id="input-keywords"
+              type="text"
+              value="web development, performance, seo, javascript, frontend architecture"
+              placeholder="keyword1, keyword2, keyword3"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+            />
+          </div>
+
+          <!-- Robots Directives & Viewport Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="space-y-1.5 sm:col-span-2">
+              <label for="select-robots" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Robots Indexing Directive
+              </label>
+              <select id="select-robots" class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent">
+                <option value="index, follow" selected>index, follow (Standard Default — Public & Searchable)</option>
+                <option value="noindex, follow">noindex, follow (Hide from search, follow internal links)</option>
+                <option value="index, nofollow">index, nofollow (Index page, do not follow links)</option>
+                <option value="noindex, nofollow">noindex, nofollow (Private / Staging / No indexing)</option>
+                <option value="all">all (Equivalent to index, follow)</option>
+                <option value="none">none (Equivalent to noindex, nofollow)</option>
+              </select>
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-lang" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                HTML Language (<code>lang</code>)
+              </label>
+              <input
+                id="input-lang"
+                type="text"
+                value="en"
+                placeholder="en, es, fr, de"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+          </div>
+
+          <!-- Viewport & Charset & Theme Color -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <label for="input-viewport" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Viewport
+              </label>
+              <input
+                id="input-viewport"
+                type="text"
+                value="width=device-width, initial-scale=1.0"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-charset" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Charset
+              </label>
+              <input
+                id="input-charset"
+                type="text"
+                value="UTF-8"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-theme-color" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Theme Color
+              </label>
+              <div class="flex items-center gap-2">
+                <input
+                  id="picker-theme-color"
+                  type="color"
+                  value="#3b82f6"
+                  class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent"
+                />
+                <input
+                  id="input-theme-color"
+                  type="text"
+                  value="#3b82f6"
+                  placeholder="#3b82f6"
+                  class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Favicon & Icons -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="space-y-1.5">
+              <label for="input-favicon" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Favicon URL (<code>rel="icon"</code>)
+              </label>
+              <input
+                id="input-favicon"
+                type="url"
+                value="https://example.com/favicon.ico"
+                placeholder="https://example.com/favicon.ico"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-apple-icon" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Apple Touch Icon (<code>rel="apple-touch-icon"</code>)
+              </label>
+              <input
+                id="input-apple-icon"
+                type="url"
+                value="https://example.com/apple-touch-icon.png"
+                placeholder="https://example.com/apple-touch-icon.png"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Open Graph (Facebook / LinkedIn / Slack) -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h2 class="text-sm font-bold flex items-center gap-2 text-ink">
+              <span class="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-black">2</span>
+              <span>Open Graph (Facebook, LinkedIn, Discord)</span>
+            </h2>
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input id="toggle-include-og" type="checkbox" checked class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+              <span class="text-xs font-semibold text-ink">Include OG Tags</span>
+            </label>
+          </div>
+
+          <div id="og-fields-container" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label for="input-og-title" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:title
+                </label>
+                <input
+                  id="input-og-title"
+                  type="text"
+                  value="Modern Web Architecture & Performance Guide (2026)"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-og-type" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:type
+                </label>
+                <select id="input-og-type" class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent">
+                  <option value="article" selected>article</option>
+                  <option value="website">website</option>
+                  <option value="product">product</option>
+                  <option value="profile">profile</option>
+                  <option value="book">book</option>
+                  <option value="video.other">video.other</option>
+                  <option value="music.song">music.song</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-og-desc" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                og:description
+              </label>
+              <textarea
+                id="input-og-desc"
+                rows="2"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed"
+              >Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems for high-performance apps.</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label for="input-og-image" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:image (1200 × 630 px recommended)
+                </label>
+                <input
+                  id="input-og-image"
+                  type="url"
+                  value="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80"
+                  placeholder="https://example.com/images/hero-og.jpg"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-og-url" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:url
+                </label>
+                <input
+                  id="input-og-url"
+                  type="url"
+                  value="https://example.com/blog/modern-web-architecture"
+                  placeholder="https://example.com/page"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label for="input-og-site-name" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:site_name
+                </label>
+                <input
+                  id="input-og-site-name"
+                  type="text"
+                  value="Tech Chronicle"
+                  placeholder="e.g. Acme Magazine"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-og-locale" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  og:locale
+                </label>
+                <input
+                  id="input-og-locale"
+                  type="text"
+                  value="en_US"
+                  placeholder="en_US, fr_FR, de_DE"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Twitter / X Card Meta Tags -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <h2 class="text-sm font-bold flex items-center gap-2 text-ink">
+              <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center text-xs font-black">3</span>
+              <span>Twitter / X Card Tags</span>
+            </h2>
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input id="toggle-include-twitter" type="checkbox" checked class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+              <span class="text-xs font-semibold text-ink">Include Twitter Tags</span>
+            </label>
+          </div>
+
+          <div id="twitter-fields-container" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label for="select-twitter-card" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  twitter:card Type
+                </label>
+                <select id="select-twitter-card" class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent">
+                  <option value="summary_large_image" selected>summary_large_image (Hero 2:1)</option>
+                  <option value="summary">summary (Compact 1:1 Thumbnail)</option>
+                </select>
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-twitter-site" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  twitter:site (@handle)
+                </label>
+                <input
+                  id="input-twitter-site"
+                  type="text"
+                  value="@techchronicle"
+                  placeholder="@company_handle"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-twitter-title" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                twitter:title
+              </label>
+              <input
+                id="input-twitter-title"
+                type="text"
+                value="Modern Web Architecture & Performance Guide (2026)"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <label for="input-twitter-desc" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                twitter:description
+              </label>
+              <textarea
+                id="input-twitter-desc"
+                rows="2"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed"
+              >Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems for high-performance apps.</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label for="input-twitter-image" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  twitter:image
+                </label>
+                <input
+                  id="input-twitter-image"
+                  type="url"
+                  value="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label for="input-twitter-creator" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  twitter:creator (@handle)
+                </label>
+                <input
+                  id="input-twitter-creator"
+                  type="text"
+                  value="@alex_dev"
+                  placeholder="@author_handle"
+                  class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Live Previews & Code Output (5 cols) -->
+      <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+
+        <!-- PREVIEWS CONTAINER -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <span>Live Visual Previews</span>
+            </label>
+            <span class="text-[11px] text-muted">Real-time rendering</span>
+          </div>
+
+          <!-- Preview Mockup Tabs -->
+          <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-surface-alt text-xs font-semibold">
+            <button id="tab-prev-google" type="button" class="touch-target py-1.5 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center justify-center gap-1">
+              <span>🔍 Google</span>
+            </button>
+            <button id="tab-prev-social" type="button" class="touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1">
+              <span>📘 Open Graph</span>
+            </button>
+            <button id="tab-prev-twitter" type="button" class="touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1">
+              <span>🐦 X / Twitter</span>
+            </button>
+          </div>
+
+          <!-- 1. GOOGLE SERP MOCKUP -->
+          <div id="mockup-google" class="p-4 rounded-xl bg-white text-slate-900 border border-line shadow-xs space-y-1.5 text-left font-sans">
+            <!-- URL Breadcrumb Row -->
+            <div class="flex items-center gap-2 text-xs">
+              <div class="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                <img id="serp-favicon-img" src="https://example.com/favicon.ico" alt="Favicon" class="w-3.5 h-3.5" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>'" />
+              </div>
+              <div class="truncate text-[#202124] text-[13px] leading-none flex items-center gap-1">
+                <span id="serp-domain" class="font-medium text-[#202124]">example.com</span>
+                <span class="text-[#5f6368] text-[11px]" id="serp-path">› blog › modern-web-architecture</span>
+              </div>
+            </div>
+
+            <!-- Clickable Title Link -->
+            <h3 id="serp-title" class="text-[#1a0dab] hover:underline text-base sm:text-lg font-medium leading-snug cursor-pointer line-clamp-1">
+              Modern Web Architecture & Performance Guide (2026)
+            </h3>
+
+            <!-- Description Snippet -->
+            <p id="serp-desc" class="text-[#4d5156] text-xs sm:text-[13px] leading-relaxed line-clamp-2">
+              Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems for high-performance apps.
+            </p>
+          </div>
+
+          <!-- 2. OPEN GRAPH (FACEBOOK / LINKEDIN) MOCKUP -->
+          <div id="mockup-social" class="hidden rounded-xl overflow-hidden border border-line bg-white text-slate-900 shadow-xs">
+            <div class="w-full aspect-[1.91/1] bg-slate-100 overflow-hidden relative">
+              <img id="og-mockup-img" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="OG Preview" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22630%22 viewBox=%220 0 1200 630%22><rect width=%221200%22 height=%22630%22 fill=%22%23f1f5f9%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2236%22 fill=%22%2394a3b8%22>No Image Found</text></svg>'" />
+            </div>
+            <div class="p-3 bg-slate-50 border-t border-slate-200 space-y-1">
+              <span id="og-mockup-domain" class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block truncate">
+                EXAMPLE.COM
+              </span>
+              <h4 id="og-mockup-title" class="font-bold text-xs sm:text-sm text-slate-900 line-clamp-1 leading-snug">
+                Modern Web Architecture & Performance Guide (2026)
+              </h4>
+              <p id="og-mockup-desc" class="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems.
+              </p>
+            </div>
+          </div>
+
+          <!-- 3. TWITTER / X CARD MOCKUP -->
+          <div id="mockup-twitter" class="hidden rounded-xl overflow-hidden border border-[#2f3336] bg-[#000000] text-white p-3 space-y-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-xs text-white">
+                T
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1">
+                  <span class="font-bold text-xs truncate">Tech Chronicle</span>
+                  <svg class="w-3.5 h-3.5 fill-[#1d9bf0]" viewBox="0 0 24 24"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.79-4-4-4-.495 0-.965.084-1.4.238C14.55 2.475 13.18 1.6 11.6 1.6S8.65 2.475 7.81 3.738c-.435-.154-.905-.238-1.4-.238-2.21 0-4 1.79-4 4 0 .495.084.965.238 1.4C1.375 9.55.5 10.92.5 12.5s.875 2.95 2.148 3.6c-.154.435-.238.905-.238 1.4 0 2.21 1.79 4 4 4 .495 0 .965-.084 1.4-.238 1.26 1.263 2.63 2.138 4.21 2.138s2.95-.875 3.6-2.148c.435.154.905.238 1.4.238 2.21 0 4-1.79 4-4 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.8 4.2l-4.2-4.2 1.4-1.4 2.8 2.8 7.2-7.2 1.4 1.4-8.6 8.6z"/></svg>
+                </div>
+                <span id="tw-mockup-handle" class="text-[11px] text-zinc-500 font-mono">@techchronicle</span>
+              </div>
+            </div>
+
+            <!-- Twitter Card Box -->
+            <div id="tw-card-box" class="rounded-xl overflow-hidden border border-[#2f3336] bg-[#16181c]">
+              <div id="tw-img-container" class="w-full aspect-[1.91/1] bg-zinc-900 overflow-hidden">
+                <img id="tw-mockup-img" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="Twitter Preview" class="w-full h-full object-cover" />
+              </div>
+              <div class="p-2.5 space-y-1">
+                <span id="tw-mockup-domain" class="text-[11px] text-zinc-400 truncate block">example.com</span>
+                <h4 id="tw-mockup-title" class="font-bold text-xs text-white line-clamp-1 leading-snug">
+                  Modern Web Architecture & Performance Guide (2026)
+                </h4>
+                <p id="tw-mockup-desc" class="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                  Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- GENERATED CODE OUTPUT CARD -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span>Generated Code Output</span>
+            </label>
+            <span id="tag-count-badge" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-surface-alt text-ink">0 tags</span>
+          </div>
+
+          <!-- Format Tabs (HTML vs Next.js vs React Helmet) -->
+          <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-surface-alt text-xs font-semibold">
+            <button id="btn-format-html" type="button" class="touch-target py-1 rounded-lg bg-paper text-ink shadow-xs transition-all">
+              HTML &lt;head&gt;
+            </button>
+            <button id="btn-format-nextjs" type="button" class="touch-target py-1 rounded-lg text-muted hover:text-ink transition-all">
+              Next.js Metadata
+            </button>
+            <button id="btn-format-helmet" type="button" class="touch-target py-1 rounded-lg text-muted hover:text-ink transition-all">
+              React Helmet
+            </button>
+          </div>
+
+          <!-- Code Snippet Area -->
+          <div class="relative rounded-xl bg-surface-alt border border-line overflow-hidden">
+            <pre class="p-4 text-xs font-mono overflow-x-auto text-ink leading-relaxed max-h-72 scrollbar-thin select-all"><code id="code-output"></code></pre>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              id="btn-copy-code"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/>
+              </svg>
+              <span id="copy-code-text">Copy All Tags</span>
+            </button>
+
+            <button
+              id="btn-download-html"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+            >
+              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span>Download .html Snippet</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // State
+    let outputFormat = 'html'; // 'html' | 'nextjs' | 'helmet'
+    let currentPreview = 'google'; // 'google' | 'social' | 'twitter'
+
+    // DOM Elements - Primary
+    const inputTitle = document.getElementById('input-title');
+    const inputDescription = document.getElementById('input-description');
+    const inputCanonical = document.getElementById('input-canonical');
+    const inputAuthor = document.getElementById('input-author');
+    const inputKeywords = document.getElementById('input-keywords');
+    const selectRobots = document.getElementById('select-robots');
+    const inputLang = document.getElementById('input-lang');
+    const inputViewport = document.getElementById('input-viewport');
+    const inputCharset = document.getElementById('input-charset');
+    const inputThemeColor = document.getElementById('input-theme-color');
+    const pickerThemeColor = document.getElementById('picker-theme-color');
+    const inputFavicon = document.getElementById('input-favicon');
+    const inputAppleIcon = document.getElementById('input-apple-icon');
+
+    // DOM Elements - Open Graph
+    const toggleIncludeOg = document.getElementById('toggle-include-og');
+    const ogFieldsContainer = document.getElementById('og-fields-container');
+    const inputOgTitle = document.getElementById('input-og-title');
+    const inputOgType = document.getElementById('input-og-type');
+    const inputOgDesc = document.getElementById('input-og-desc');
+    const inputOgImage = document.getElementById('input-og-image');
+    const inputOgUrl = document.getElementById('input-og-url');
+    const inputOgSiteName = document.getElementById('input-og-site-name');
+    const inputOgLocale = document.getElementById('input-og-locale');
+
+    // DOM Elements - Twitter
+    const toggleIncludeTwitter = document.getElementById('toggle-include-twitter');
+    const twitterFieldsContainer = document.getElementById('twitter-fields-container');
+    const selectTwitterCard = document.getElementById('select-twitter-card');
+    const inputTwitterSite = document.getElementById('input-twitter-site');
+    const inputTwitterTitle = document.getElementById('input-twitter-title');
+    const inputTwitterDesc = document.getElementById('input-twitter-desc');
+    const inputTwitterImage = document.getElementById('input-twitter-image');
+    const inputTwitterCreator = document.getElementById('input-twitter-creator');
+
+    // Counters & Warning
+    const titleCharCount = document.getElementById('title-char-count');
+    const titleProgressBar = document.getElementById('title-progress-bar');
+    const titleWarning = document.getElementById('title-warning');
+    const descCharCount = document.getElementById('desc-char-count');
+    const descProgressBar = document.getElementById('desc-progress-bar');
+    const descWarning = document.getElementById('desc-warning');
+
+    // Presets & Sync
+    const btnPresetsMenu = document.getElementById('btn-presets-menu');
+    const presetsDropdown = document.getElementById('presets-dropdown');
+    const btnSyncAll = document.getElementById('btn-sync-all');
+    const btnResetForm = document.getElementById('btn-reset-form');
+
+    // Output & Buttons
+    const codeOutput = document.getElementById('code-output');
+    const tagCountBadge = document.getElementById('tag-count-badge');
+    const btnCopyCode = document.getElementById('btn-copy-code');
+    const copyCodeText = document.getElementById('copy-code-text');
+    const btnDownloadHtml = document.getElementById('btn-download-html');
+
+    // Format Tabs
+    const btnFormatHtml = document.getElementById('btn-format-html');
+    const btnFormatNextjs = document.getElementById('btn-format-nextjs');
+    const btnFormatHelmet = document.getElementById('btn-format-helmet');
+
+    // Preview Tabs & Mockups
+    const tabPrevGoogle = document.getElementById('tab-prev-google');
+    const tabPrevSocial = document.getElementById('tab-prev-social');
+    const tabPrevTwitter = document.getElementById('tab-prev-twitter');
+
+    const mockupGoogle = document.getElementById('mockup-google');
+    const mockupSocial = document.getElementById('mockup-social');
+    const mockupTwitter = document.getElementById('mockup-twitter');
+
+    // SERP elements
+    const serpFaviconImg = document.getElementById('serp-favicon-img');
+    const serpDomain = document.getElementById('serp-domain');
+    const serpPath = document.getElementById('serp-path');
+    const serpTitle = document.getElementById('serp-title');
+    const serpDesc = document.getElementById('serp-desc');
+
+    // OG Mockup elements
+    const ogMockupImg = document.getElementById('og-mockup-img');
+    const ogMockupDomain = document.getElementById('og-mockup-domain');
+    const ogMockupTitle = document.getElementById('og-mockup-title');
+    const ogMockupDesc = document.getElementById('og-mockup-desc');
+
+    // Twitter Mockup elements
+    const twMockupHandle = document.getElementById('tw-mockup-handle');
+    const twMockupImg = document.getElementById('tw-mockup-img');
+    const twMockupDomain = document.getElementById('tw-mockup-domain');
+    const twMockupTitle = document.getElementById('tw-mockup-title');
+    const twMockupDesc = document.getElementById('tw-mockup-desc');
+    const twImgContainer = document.getElementById('tw-img-container');
+
+    // Helper: Extract domain and path
+    function parseUrlComponents(urlStr) {
+      try {
+        if (!urlStr) return { domain: 'example.com', path: '' };
+        const u = new URL(urlStr.startsWith('http') ? urlStr : 'https://' + urlStr);
+        const domain = u.hostname.replace(/^www\./, '');
+        const path = u.pathname && u.pathname !== '/' ? ' › ' + u.pathname.replace(/^\//, '').replace(/\/$/, '').split('/').join(' › ') : '';
+        return { domain, path };
+      } catch (e) {
+        return { domain: 'example.com', path: '' };
+      }
+    }
+
+    // Update Counters & Warnings
+    function updateCounters() {
+      const titleLen = inputTitle.value.length;
+      titleCharCount.innerText = titleLen;
+      const titlePct = Math.min(100, (titleLen / 60) * 100);
+      titleProgressBar.style.width = `${titlePct}%`;
+
+      if (titleLen > 60) {
+        titleProgressBar.className = 'h-full bg-amber-500 transition-all duration-200';
+        titleWarning.classList.remove('hidden');
+      } else {
+        titleProgressBar.className = 'h-full bg-emerald-500 transition-all duration-200';
+        titleWarning.classList.add('hidden');
+      }
+
+      const descLen = inputDescription.value.length;
+      descCharCount.innerText = descLen;
+      const descPct = Math.min(100, (descLen / 160) * 100);
+      descProgressBar.style.width = `${descPct}%`;
+
+      if (descLen > 160) {
+        descProgressBar.className = 'h-full bg-amber-500 transition-all duration-200';
+        descWarning.classList.remove('hidden');
+      } else {
+        descProgressBar.className = 'h-full bg-emerald-500 transition-all duration-200';
+        descWarning.classList.add('hidden');
+      }
+    }
+
+    // Update Visual Previews
+    function updatePreviews() {
+      const title = inputTitle.value.trim() || 'Untitled Page';
+      const desc = inputDescription.value.trim() || 'No description provided.';
+      const canonical = inputCanonical.value.trim();
+      const favicon = inputFavicon.value.trim();
+      const { domain, path } = parseUrlComponents(canonical);
+
+      // 1. Google SERP
+      serpFaviconImg.src = favicon || 'https://example.com/favicon.ico';
+      serpDomain.innerText = domain;
+      serpPath.innerText = path;
+      serpTitle.innerText = title;
+      serpDesc.innerText = desc;
+
+      // 2. Open Graph Mockup
+      const ogTitle = inputOgTitle.value.trim() || title;
+      const ogDesc = inputOgDesc.value.trim() || desc;
+      const ogImage = inputOgImage.value.trim();
+      const ogUrl = inputOgUrl.value.trim() || canonical;
+      const ogDomainParsed = parseUrlComponents(ogUrl);
+
+      ogMockupTitle.innerText = ogTitle;
+      ogMockupDesc.innerText = ogDesc;
+      ogMockupDomain.innerText = ogDomainParsed.domain.toUpperCase();
+      if (ogImage) ogMockupImg.src = ogImage;
+
+      // 3. Twitter Mockup
+      const twTitle = inputTwitterTitle.value.trim() || title;
+      const twDesc = inputTwitterDesc.value.trim() || desc;
+      const twImage = inputTwitterImage.value.trim() || ogImage;
+      const twSite = inputTwitterSite.value.trim() || '@techchronicle';
+      const twCardType = selectTwitterCard.value;
+
+      twMockupTitle.innerText = twTitle;
+      twMockupDesc.innerText = twDesc;
+      twMockupHandle.innerText = twSite.startsWith('@') ? twSite : '@' + twSite;
+      twMockupDomain.innerText = domain;
+      if (twImage) twMockupImg.src = twImage;
+
+      if (twCardType === 'summary') {
+        twImgContainer.className = 'w-full aspect-[1/1] max-h-48 bg-zinc-900 overflow-hidden';
+      } else {
+        twImgContainer.className = 'w-full aspect-[1.91/1] bg-zinc-900 overflow-hidden';
+      }
+    }
+
+    // Generate Output Code
+    function generateCode() {
+      const title = inputTitle.value.trim();
+      const desc = inputDescription.value.trim();
+      const canonical = inputCanonical.value.trim();
+      const author = inputAuthor.value.trim();
+      const keywords = inputKeywords.value.trim();
+      const robots = selectRobots.value;
+      const lang = inputLang.value.trim() || 'en';
+      const viewport = inputViewport.value.trim() || 'width=device-width, initial-scale=1.0';
+      const charset = inputCharset.value.trim() || 'UTF-8';
+      const themeColor = inputThemeColor.value.trim();
+      const favicon = inputFavicon.value.trim();
+      const appleIcon = inputAppleIcon.value.trim();
+
+      const incOg = toggleIncludeOg.checked;
+      const ogTitle = inputOgTitle.value.trim() || title;
+      const ogType = inputOgType.value;
+      const ogDesc = inputOgDesc.value.trim() || desc;
+      const ogImage = inputOgImage.value.trim();
+      const ogUrl = inputOgUrl.value.trim() || canonical;
+      const ogSiteName = inputOgSiteName.value.trim();
+      const ogLocale = inputOgLocale.value.trim();
+
+      const incTw = toggleIncludeTwitter.checked;
+      const twCard = selectTwitterCard.value;
+      const twSite = inputTwitterSite.value.trim();
+      const twTitle = inputTwitterTitle.value.trim() || title;
+      const twDesc = inputTwitterDesc.value.trim() || desc;
+      const twImage = inputTwitterImage.value.trim() || ogImage;
+      const twCreator = inputTwitterCreator.value.trim();
+
+      let tagCount = 0;
+
+      if (outputFormat === 'html') {
+        let lines = [];
+        lines.push('<!-- Primary Meta Tags -->');
+        if (title) { lines.push(`<title>${escapeHtml(title)}</title>`); lines.push(`<meta name="title" content="${escapeHtml(title)}">`); tagCount += 2; }
+        if (desc) { lines.push(`<meta name="description" content="${escapeHtml(desc)}">`); tagCount++; }
+        if (keywords) { lines.push(`<meta name="keywords" content="${escapeHtml(keywords)}">`); tagCount++; }
+        if (author) { lines.push(`<meta name="author" content="${escapeHtml(author)}">`); tagCount++; }
+        if (canonical) { lines.push(`<link rel="canonical" href="${escapeHtml(canonical)}">`); tagCount++; }
+        if (robots) { lines.push(`<meta name="robots" content="${escapeHtml(robots)}">`); tagCount++; }
+        if (viewport) { lines.push(`<meta name="viewport" content="${escapeHtml(viewport)}">`); tagCount++; }
+        if (charset) { lines.push(`<meta charset="${escapeHtml(charset)}">`); tagCount++; }
+        if (themeColor) { lines.push(`<meta name="theme-color" content="${escapeHtml(themeColor)}">`); tagCount++; }
+
+        if (favicon || appleIcon) {
+          lines.push('');
+          lines.push('<!-- Favicon & Icons -->');
+          if (favicon) { lines.push(`<link rel="icon" type="image/x-icon" href="${escapeHtml(favicon)}">`); tagCount++; }
+          if (appleIcon) { lines.push(`<link rel="apple-touch-icon" href="${escapeHtml(appleIcon)}">`); tagCount++; }
+        }
+
+        if (incOg) {
+          lines.push('');
+          lines.push('<!-- Open Graph / Facebook -->');
+          if (ogType) { lines.push(`<meta property="og:type" content="${escapeHtml(ogType)}">`); tagCount++; }
+          if (ogUrl) { lines.push(`<meta property="og:url" content="${escapeHtml(ogUrl)}">`); tagCount++; }
+          if (ogTitle) { lines.push(`<meta property="og:title" content="${escapeHtml(ogTitle)}">`); tagCount++; }
+          if (ogDesc) { lines.push(`<meta property="og:description" content="${escapeHtml(ogDesc)}">`); tagCount++; }
+          if (ogImage) { lines.push(`<meta property="og:image" content="${escapeHtml(ogImage)}">`); tagCount++; }
+          if (ogSiteName) { lines.push(`<meta property="og:site_name" content="${escapeHtml(ogSiteName)}">`); tagCount++; }
+          if (ogLocale) { lines.push(`<meta property="og:locale" content="${escapeHtml(ogLocale)}">`); tagCount++; }
+        }
+
+        if (incTw) {
+          lines.push('');
+          lines.push('<!-- Twitter / X -->');
+          if (twCard) { lines.push(`<meta name="twitter:card" content="${escapeHtml(twCard)}">`); tagCount++; }
+          if (twUrl || ogUrl) { lines.push(`<meta name="twitter:url" content="${escapeHtml(ogUrl || canonical)}">`); tagCount++; }
+          if (twTitle) { lines.push(`<meta name="twitter:title" content="${escapeHtml(twTitle)}">`); tagCount++; }
+          if (twDesc) { lines.push(`<meta name="twitter:description" content="${escapeHtml(twDesc)}">`); tagCount++; }
+          if (twImage) { lines.push(`<meta name="twitter:image" content="${escapeHtml(twImage)}">`); tagCount++; }
+          if (twSite) { lines.push(`<meta name="twitter:site" content="${escapeHtml(twSite)}">`); tagCount++; }
+          if (twCreator) { lines.push(`<meta name="twitter:creator" content="${escapeHtml(twCreator)}">`); tagCount++; }
+        }
+
+        codeOutput.textContent = lines.join('\n');
+      } else if (outputFormat === 'nextjs') {
+        const metadata = {
+          title: title || undefined,
+          description: desc || undefined,
+          keywords: keywords ? keywords.split(',').map(k => k.trim()) : undefined,
+          authors: author ? [{ name: author }] : undefined,
+          alternates: canonical ? { canonical } : undefined,
+          robots: robots ? { index: !robots.includes('noindex'), follow: !robots.includes('nofollow') } : undefined,
+        };
+
+        if (incOg) {
+          metadata.openGraph = {
+            title: ogTitle || title,
+            description: ogDesc || desc,
+            url: ogUrl || canonical,
+            siteName: ogSiteName || undefined,
+            images: ogImage ? [{ url: ogImage, width: 1200, height: 630, alt: ogTitle }] : undefined,
+            locale: ogLocale || 'en_US',
+            type: ogType || 'website',
+          };
+        }
+
+        if (incTw) {
+          metadata.twitter = {
+            card: twCard || 'summary_large_image',
+            title: twTitle || title,
+            description: twDesc || desc,
+            creator: twCreator || undefined,
+            site: twSite || undefined,
+            images: twImage ? [twImage] : undefined,
+          };
+        }
+
+        tagCount = 12;
+        codeOutput.textContent = `// app/layout.tsx or app/page.tsx\nimport type { Metadata } from 'next';\n\nexport const metadata: Metadata = ${JSON.stringify(metadata, null, 2)};`;
+      } else if (outputFormat === 'helmet') {
+        let jsx = [];
+        jsx.push('<Helmet>');
+        if (title) jsx.push(`  <title>${escapeHtml(title)}</title>`);
+        if (desc) jsx.push(`  <meta name="description" content="${escapeHtml(desc)}" />`);
+        if (canonical) jsx.push(`  <link rel="canonical" href="${escapeHtml(canonical)}" />`);
+        if (robots) jsx.push(`  <meta name="robots" content="${escapeHtml(robots)}" />`);
+        if (incOg) {
+          if (ogTitle) jsx.push(`  <meta property="og:title" content="${escapeHtml(ogTitle)}" />`);
+          if (ogDesc) jsx.push(`  <meta property="og:description" content="${escapeHtml(ogDesc)}" />`);
+          if (ogImage) jsx.push(`  <meta property="og:image" content="${escapeHtml(ogImage)}" />`);
+          if (ogUrl) jsx.push(`  <meta property="og:url" content="${escapeHtml(ogUrl)}" />`);
+          if (ogType) jsx.push(`  <meta property="og:type" content="${escapeHtml(ogType)}" />`);
+        }
+        if (incTw) {
+          if (twCard) jsx.push(`  <meta name="twitter:card" content="${escapeHtml(twCard)}" />`);
+          if (twTitle) jsx.push(`  <meta name="twitter:title" content="${escapeHtml(twTitle)}" />`);
+          if (twDesc) jsx.push(`  <meta name="twitter:description" content="${escapeHtml(twDesc)}" />`);
+          if (twImage) jsx.push(`  <meta name="twitter:image" content="${escapeHtml(twImage)}" />`);
+        }
+        jsx.push('</Helmet>');
+        tagCount = jsx.length - 2;
+        codeOutput.textContent = jsx.join('\n');
+      }
+
+      tagCountBadge.innerText = `${tagCount} tags`;
+    }
+
+    function updateAll() {
+      updateCounters();
+      updatePreviews();
+      generateCode();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/"/g, '&quot;');
+    }
+
+    // Sync Primary Inputs to OG and Twitter
+    btnSyncAll.addEventListener('click', () => {
+      const title = inputTitle.value.trim();
+      const desc = inputDescription.value.trim();
+      const canonical = inputCanonical.value.trim();
+
+      if (title) {
+        inputOgTitle.value = title;
+        inputTwitterTitle.value = title;
+      }
+      if (desc) {
+        inputOgDesc.value = desc;
+        inputTwitterDesc.value = desc;
+      }
+      if (canonical) {
+        inputOgUrl.value = canonical;
+      }
+
+      updateAll();
+      showToast('Synced title, description & URL to OG and Twitter tags!');
+    });
+
+    // Theme Color Synchronization
+    pickerThemeColor.addEventListener('input', (e) => {
+      inputThemeColor.value = e.target.value;
+      generateCode();
+    });
+    inputThemeColor.addEventListener('input', (e) => {
+      if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+        pickerThemeColor.value = e.target.value;
+      }
+      generateCode();
+    });
+
+    // Format Tab Switching
+    btnFormatHtml.addEventListener('click', () => {
+      outputFormat = 'html';
+      btnFormatHtml.className = 'touch-target py-1 rounded-lg bg-paper text-ink shadow-xs transition-all';
+      btnFormatNextjs.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      btnFormatHelmet.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      generateCode();
+    });
+
+    btnFormatNextjs.addEventListener('click', () => {
+      outputFormat = 'nextjs';
+      btnFormatNextjs.className = 'touch-target py-1 rounded-lg bg-paper text-ink shadow-xs transition-all';
+      btnFormatHtml.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      btnFormatHelmet.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      generateCode();
+    });
+
+    btnFormatHelmet.addEventListener('click', () => {
+      outputFormat = 'helmet';
+      btnFormatHelmet.className = 'touch-target py-1 rounded-lg bg-paper text-ink shadow-xs transition-all';
+      btnFormatHtml.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      btnFormatNextjs.className = 'touch-target py-1 rounded-lg text-muted hover:text-ink transition-all';
+      generateCode();
+    });
+
+    // Preview Tab Switching
+    tabPrevGoogle.addEventListener('click', () => {
+      currentPreview = 'google';
+      tabPrevGoogle.className = 'touch-target py-1.5 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center justify-center gap-1';
+      tabPrevSocial.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      tabPrevTwitter.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      mockupGoogle.classList.remove('hidden');
+      mockupSocial.classList.add('hidden');
+      mockupTwitter.classList.add('hidden');
+    });
+
+    tabPrevSocial.addEventListener('click', () => {
+      currentPreview = 'social';
+      tabPrevSocial.className = 'touch-target py-1.5 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center justify-center gap-1';
+      tabPrevGoogle.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      tabPrevTwitter.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      mockupSocial.classList.remove('hidden');
+      mockupGoogle.classList.add('hidden');
+      mockupTwitter.classList.add('hidden');
+    });
+
+    tabPrevTwitter.addEventListener('click', () => {
+      currentPreview = 'twitter';
+      tabPrevTwitter.className = 'touch-target py-1.5 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center justify-center gap-1';
+      tabPrevGoogle.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      tabPrevSocial.className = 'touch-target py-1.5 rounded-lg text-muted hover:text-ink transition-all flex items-center justify-center gap-1';
+      mockupTwitter.classList.remove('hidden');
+      mockupGoogle.classList.add('hidden');
+      mockupSocial.classList.add('hidden');
+    });
+
+    // Copy Code
+    btnCopyCode.addEventListener('click', () => {
+      const code = codeOutput.textContent;
+      if (!code) return;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Meta tags copied to clipboard!');
+        copyCodeText.innerText = 'Copied!';
+        setTimeout(() => { copyCodeText.innerText = 'Copy All Tags'; }, 1800);
+      });
+    });
+
+    // Download HTML
+    btnDownloadHtml.addEventListener('click', () => {
+      const code = codeOutput.textContent;
+      if (!code) return;
+      const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outputFormat === 'nextjs' ? 'metadata.ts' : 'meta-tags.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded meta tags snippet!');
+    });
+
+    // Presets Dropdown Toggle
+    btnPresetsMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      presetsDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      presetsDropdown.classList.add('hidden');
+    });
+
+    // Preset Choice Application
+    document.querySelectorAll('.preset-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.preset;
+        if (preset === 'article') {
+          inputTitle.value = 'Modern Web Architecture & Performance Guide (2026)';
+          inputDescription.value = 'Explore modern web architecture patterns, Core Web Vitals optimization techniques, and scalable frontend design systems for high-performance apps.';
+          inputCanonical.value = 'https://example.com/blog/modern-web-architecture';
+          inputAuthor.value = 'Alex Rivera';
+          inputKeywords.value = 'web development, performance, seo, javascript, frontend architecture';
+          inputOgType.value = 'article';
+          selectTwitterCard.value = 'summary_large_image';
+        } else if (preset === 'saas') {
+          inputTitle.value = 'CloudScale — Serverless Cloud Infrastructure for Developers';
+          inputDescription.value = 'Deploy, monitor, and scale serverless APIs and databases globally with zero cold starts and instant automated edge deployments.';
+          inputCanonical.value = 'https://example.com/';
+          inputAuthor.value = 'CloudScale Inc.';
+          inputKeywords.value = 'serverless, cloud hosting, edge computing, database, devops';
+          inputOgType.value = 'website';
+          selectTwitterCard.value = 'summary_large_image';
+        } else if (preset === 'product') {
+          inputTitle.value = 'ErgoPro Mechanical Keyboard — Wireless RGB Ergonomic';
+          inputDescription.value = 'Engineered for developers and typists. Hot-swappable tactile switches, split ergonomic layout, and 80-hour battery life with USB-C.';
+          inputCanonical.value = 'https://example.com/products/ergopro-keyboard';
+          inputAuthor.value = 'ErgoTech Gear';
+          inputKeywords.value = 'mechanical keyboard, ergonomic keyboard, dev gear, wireless keyboard';
+          inputOgType.value = 'product';
+          selectTwitterCard.value = 'summary_large_image';
+        } else if (preset === 'portfolio') {
+          inputTitle.value = 'Elena Chen — Senior Product Designer & Design Engineer';
+          inputDescription.value = 'Specializing in design systems, micro-interactions, and accessible web experiences for high-growth tech platforms.';
+          inputCanonical.value = 'https://example.com/portfolio';
+          inputAuthor.value = 'Elena Chen';
+          inputKeywords.value = 'product designer, design systems, ui ux, design engineering, portfolio';
+          inputOgType.value = 'profile';
+          selectTwitterCard.value = 'summary';
+        }
+
+        // Sync to OG & Twitter
+        inputOgTitle.value = inputTitle.value;
+        inputOgDesc.value = inputDescription.value;
+        inputOgUrl.value = inputCanonical.value;
+        inputTwitterTitle.value = inputTitle.value;
+        inputTwitterDesc.value = inputDescription.value;
+
+        updateAll();
+        showToast(`Loaded ${preset} preset!`);
+      });
+    });
+
+    // Reset Form
+    btnResetForm.addEventListener('click', () => {
+      inputTitle.value = '';
+      inputDescription.value = '';
+      inputCanonical.value = '';
+      inputAuthor.value = '';
+      inputKeywords.value = '';
+      inputOgTitle.value = '';
+      inputOgDesc.value = '';
+      inputOgUrl.value = '';
+      inputTwitterTitle.value = '';
+      inputTwitterDesc.value = '';
+      updateAll();
+      showToast('Form cleared.');
+    });
+
+    // Attach listeners to all inputs
+    const allInputEls = [
+      inputTitle, inputDescription, inputCanonical, inputAuthor, inputKeywords,
+      selectRobots, inputLang, inputViewport, inputCharset, inputThemeColor,
+      inputFavicon, inputAppleIcon, toggleIncludeOg, inputOgTitle, inputOgType,
+      inputOgDesc, inputOgImage, inputOgUrl, inputOgSiteName, inputOgLocale,
+      toggleIncludeTwitter, selectTwitterCard, inputTwitterSite, inputTwitterTitle,
+      inputTwitterDesc, inputTwitterImage, inputTwitterCreator
+    ];
+
+    allInputEls.forEach(el => {
+      el.addEventListener('input', updateAll);
+      el.addEventListener('change', updateAll);
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize
+    updateAll();
+  </script>
+</body>
+</html>

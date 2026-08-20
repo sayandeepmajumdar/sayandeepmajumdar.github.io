@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEO Content Checker & SERP Simulator — Toolzy</title>
+  <meta name="description" content="All-in-one SEO toolkit: SEO Title Checker with pixel width, Meta Description Checker, Google SERP Simulator (Desktop & Mobile), and Keyword Density Analyzer with N-Gram frequency." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Smooth transitions */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    /* Custom scrollbar */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    /* SERP Google font simulation */
+    .serp-title-font {
+      font-family: Arial, sans-serif;
+    }
+    .serp-desc-font {
+      font-family: Roboto, Arial, sans-serif;
+    }
+    /* Highlighted keyword */
+    mark.keyword-hl {
+      background-color: rgba(251, 191, 36, 0.4);
+      color: inherit;
+      padding: 0.1em 0.25em;
+      border-radius: 0.25rem;
+      font-weight: 600;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-600 to-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">SEO Content Checker & SERP Simulator</h1>
+            <p class="text-xs sm:text-sm text-muted">Optimize Title, Meta Description, Google SERP truncation, and Keyword Density in one unified workspace.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Presets & Quick Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-sample-blog" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center gap-1.5">
+          <span>📝 Sample Article</span>
+        </button>
+
+        <button id="btn-sample-saas" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center gap-1.5">
+          <span>🏢 Sample SaaS</span>
+        </button>
+
+        <button id="btn-reset-all" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Focus Keyword & URL Global Bar -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-line shadow-xs grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+      <div class="sm:col-span-5 space-y-1">
+        <label for="input-focus-kw" class="block text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span>Target / Focus Keyword</span>
+        </label>
+        <input
+          id="input-focus-kw"
+          type="text"
+          value="web development"
+          placeholder="e.g. web development, cloud hosting"
+          class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium"
+        />
+      </div>
+
+      <div class="sm:col-span-5 space-y-1">
+        <label for="input-dest-url" class="block text-xs font-bold uppercase tracking-wider text-muted">
+          Landing Page URL (for SERP Breadcrumb)
+        </label>
+        <input
+          id="input-dest-url"
+          type="url"
+          value="https://example.com/blog/modern-web-architecture"
+          placeholder="https://example.com/page-path"
+          class="w-full px-3.5 py-2 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+        />
+      </div>
+
+      <div class="sm:col-span-2 flex flex-col items-center justify-center p-2 rounded-xl bg-surface-alt border border-line text-center">
+        <span class="text-[10px] uppercase tracking-wider text-muted font-bold">SEO Health Score</span>
+        <div class="flex items-baseline gap-1 mt-0.5">
+          <span id="overall-seo-score" class="text-xl font-black text-emerald-500">92</span>
+          <span class="text-[11px] text-muted font-bold">/100</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs for the 4 Tools -->
+    <div class="flex flex-wrap gap-2 border-b pb-2" style="border-color: var(--color-line);">
+      <button id="tab-btn-dashboard" type="button" class="tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        <span>All-In-One Workspace</span>
+      </button>
+
+      <button id="tab-btn-title" type="button" class="tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+        <span>1. SEO Title Checker</span>
+      </button>
+
+      <button id="tab-btn-desc" type="button" class="tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+        <span>2. Description Checker</span>
+      </button>
+
+      <button id="tab-btn-serp" type="button" class="tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+        <span>3. SERP Simulator</span>
+      </button>
+
+      <button id="tab-btn-density" type="button" class="tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2">
+        <span>4. Keyword Density & N-Grams</span>
+      </button>
+    </div>
+
+    <!-- MAIN WORKSPACE CONTAINER -->
+    <div class="space-y-6">
+
+      <!-- TOOL 1: SEO TITLE CHECKER -->
+      <section id="section-title-checker" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+        <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">1</span>
+            <h2 class="text-sm font-bold text-ink">SEO Title Checker & Pixel Width</h2>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-muted text-[11px]">Desktop Cutoff: ~580px (~60 chars)</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+            <label for="input-seo-title" class="font-bold uppercase tracking-wider text-muted">
+              Page Title Tag (<code>&lt;title&gt;</code>)
+            </label>
+            <!-- Live Counters -->
+            <div class="flex items-center gap-3 font-mono font-bold">
+              <span id="title-chars-badge" class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs">
+                56 chars
+              </span>
+              <span id="title-pixels-badge" class="px-2 py-0.5 rounded-md bg-surface-alt text-ink text-xs">
+                480 / 580 px
+              </span>
+            </div>
+          </div>
+
+          <input
+            id="input-seo-title"
+            type="text"
+            value="Modern Web Development: 10 Architecture Patterns for 2026"
+            placeholder="Write a compelling, keyword-rich title..."
+            class="w-full px-4 py-3 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-semibold transition-colors"
+          />
+
+          <!-- Pixel Width Gauge Bar -->
+          <div class="space-y-1">
+            <div class="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
+              <div id="title-pixel-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 82%;"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-muted font-mono">
+              <span>0px</span>
+              <span>250px (Min)</span>
+              <span>580px (Google Cutoff)</span>
+              <span>700px</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Title Audit Checks Grid -->
+        <div id="title-checks-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TOOL 2: SEO DESCRIPTION CHECKER -->
+      <section id="section-desc-checker" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+        <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-black">2</span>
+            <h2 class="text-sm font-bold text-ink">SEO Meta Description Checker</h2>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-muted text-[11px]">Desktop Cutoff: ~960px (~160 chars)</span>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+            <label for="input-seo-desc" class="font-bold uppercase tracking-wider text-muted">
+              Meta Description Tag
+            </label>
+            <!-- Live Counters -->
+            <div class="flex items-center gap-3 font-mono font-bold">
+              <span id="desc-chars-badge" class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs">
+                152 chars
+              </span>
+              <span id="desc-pixels-badge" class="px-2 py-0.5 rounded-md bg-surface-alt text-ink text-xs">
+                890 / 960 px
+              </span>
+            </div>
+          </div>
+
+          <textarea
+            id="input-seo-desc"
+            rows="3"
+            placeholder="Write a clear meta description that includes your focus keyword and a compelling call to action..."
+            class="w-full px-4 py-3 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed transition-colors"
+          >Discover modern web development architecture patterns, performance optimization tips, and scalable frontend strategies to build fast applications today.</textarea>
+
+          <!-- Pixel Width Gauge Bar -->
+          <div class="space-y-1">
+            <div class="w-full h-2 bg-surface-alt rounded-full overflow-hidden">
+              <div id="desc-pixel-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 90%;"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-muted font-mono">
+              <span>0px</span>
+              <span>400px (Min)</span>
+              <span>960px (Google Desktop Cutoff)</span>
+              <span>1200px</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Audit Checks Grid -->
+        <div id="desc-checks-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TOOL 3: GOOGLE SERP SIMULATOR -->
+      <section id="section-serp-simulator" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3" style="border-color: var(--color-line);">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-teal-500/10 text-teal-500 flex items-center justify-center text-xs font-black">3</span>
+            <h2 class="text-sm font-bold text-ink">Google SERP Simulator (Pixel-Accurate)</h2>
+          </div>
+
+          <!-- Desktop vs Mobile Viewport Switcher -->
+          <div class="flex items-center gap-1 p-1 rounded-xl bg-surface-alt text-xs font-semibold">
+            <button id="btn-serp-desktop" type="button" class="touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <span>Desktop</span>
+            </button>
+            <button id="btn-serp-mobile" type="button" class="touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+              <span>Mobile</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rendered Google Search Snippet Box -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white text-slate-900 border border-slate-200 shadow-sm space-y-2 text-left">
+          
+          <div id="serp-container" class="max-w-[600px] space-y-1.5 transition-all">
+            <!-- URL & Favicon Row -->
+            <div class="flex items-center gap-2 text-xs">
+              <div class="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border border-slate-200">
+                <span class="text-[10px]">🌐</span>
+              </div>
+              <div class="truncate text-[#202124] text-[13px] leading-none flex items-center gap-1">
+                <span id="serp-live-domain" class="font-medium text-[#202124]">example.com</span>
+                <span id="serp-live-path" class="text-[#5f6368] text-[12px]">› blog › modern-web-architecture</span>
+              </div>
+            </div>
+
+            <!-- Title Link (with exact visual truncation) -->
+            <h3 id="serp-live-title" class="serp-title-font text-[#1a0dab] hover:underline text-lg sm:text-[20px] font-normal leading-snug cursor-pointer line-clamp-1 break-words">
+              Modern Web Development: 10 Architecture Patterns for 2026
+            </h3>
+
+            <!-- Description (with keyword bolding) -->
+            <p id="serp-live-desc" class="serp-desc-font text-[#4d5156] text-[14px] leading-relaxed line-clamp-2">
+              Discover modern web development architecture patterns, performance optimization tips, and scalable frontend strategies to build fast applications today.
+            </p>
+          </div>
+
+          <!-- Rich Snippets Add-ons Preview -->
+          <div class="flex items-center gap-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+            <span class="flex items-center gap-1 text-amber-500 font-semibold">
+              <span>★★★★★</span>
+              <span class="text-slate-600 font-normal">4.9 (148 reviews)</span>
+            </span>
+            <span>•</span>
+            <span class="text-slate-500">Aug 20, 2026</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOOL 4: KEYWORD DENSITY & N-GRAM CHECKER -->
+      <section id="section-density-checker" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3" style="border-color: var(--color-line);">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-black">4</span>
+            <h2 class="text-sm font-bold text-ink">Keyword Density & N-Gram Phrase Analyzer</h2>
+          </div>
+          
+          <!-- View Toggle: Raw Text vs Highlighted View -->
+          <div class="flex items-center gap-1 p-1 rounded-xl bg-surface-alt text-xs font-semibold">
+            <button id="btn-view-editor" type="button" class="touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all">
+              Editor Text
+            </button>
+            <button id="btn-view-highlighted" type="button" class="touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all">
+              Highlighted Keywords
+            </button>
+          </div>
+        </div>
+
+        <!-- Content Input / Highlight View -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted">
+            Page Content / Body Copy
+          </label>
+
+          <!-- Textarea -->
+          <textarea
+            id="input-page-content"
+            rows="8"
+            placeholder="Paste your article or webpage content here to calculate keyword density, reading time, and n-gram frequency..."
+            class="w-full p-4 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed font-sans transition-colors"
+          >Modern web development has undergone massive architectural shifts in recent years. Today, developers building high-performance web applications prioritize Core Web Vitals, serverless edge rendering, and responsive design systems. In this comprehensive guide, we explore the essential web development patterns that define scalable frontend engineering.
+
+From state management to privacy-first client-side tools, modern web development demands a careful balance between user experience and performance. By applying these web development best practices, engineering teams can achieve instant page loads, higher search engine visibility, and superior user engagement across all devices.</textarea>
+
+          <!-- Highlighted Text Display Container (Hidden by default) -->
+          <div id="content-highlight-box" class="hidden p-4 rounded-xl bg-paper border border-line text-xs sm:text-sm text-ink leading-relaxed max-h-64 overflow-y-auto scrollbar-thin"></div>
+        </div>
+
+        <!-- Content Metrics Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl bg-surface-alt border border-line space-y-1 text-center sm:text-left">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Total Words</span>
+            <span id="metric-word-count" class="text-lg font-black text-ink font-mono">112</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-surface-alt border border-line space-y-1 text-center sm:text-left">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Reading Time</span>
+            <span id="metric-read-time" class="text-lg font-black text-ink font-mono">1 min</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-surface-alt border border-line space-y-1 text-center sm:text-left">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Focus KW Count</span>
+            <span id="metric-focus-count" class="text-lg font-black text-ink font-mono">4 times</span>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-surface-alt border border-line space-y-1 text-center sm:text-left">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Focus KW Density</span>
+            <div class="flex items-baseline gap-1 justify-center sm:justify-start">
+              <span id="metric-focus-density" class="text-lg font-black text-emerald-500 font-mono">3.57%</span>
+              <span id="metric-density-status" class="text-[10px] font-bold text-amber-500">Good</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- N-Gram Keyword Breakdown Tables (1-Word, 2-Word, 3-Word) -->
+        <div class="space-y-3 pt-2 border-t" style="border-color: var(--color-line);">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted">Top Frequent Keywords & N-Grams</span>
+            <span class="text-[11px] text-muted">Excludes English stopwords</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- 1-Word Column -->
+            <div class="p-3 rounded-xl bg-surface-alt border border-line space-y-2">
+              <span class="text-xs font-bold text-ink block border-b pb-1" style="border-color: var(--color-line);">1-Word Keywords</span>
+              <div id="table-1gram" class="space-y-1 text-xs font-mono max-h-48 overflow-y-auto scrollbar-thin">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- 2-Word Bigrams Column -->
+            <div class="p-3 rounded-xl bg-surface-alt border border-line space-y-2">
+              <span class="text-xs font-bold text-ink block border-b pb-1" style="border-color: var(--color-line);">2-Word Phrases</span>
+              <div id="table-2gram" class="space-y-1 text-xs font-mono max-h-48 overflow-y-auto scrollbar-thin">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- 3-Word Trigrams Column -->
+            <div class="p-3 rounded-xl bg-surface-alt border border-line space-y-2">
+              <span class="text-xs font-bold text-ink block border-b pb-1" style="border-color: var(--color-line);">3-Word Phrases</span>
+              <div id="table-3gram" class="space-y-1 text-xs font-mono max-h-48 overflow-y-auto scrollbar-thin">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Common English Stopwords
+    const STOPWORDS = new Set([
+      'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at',
+      'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
+      'can', 'can\'t', 'cannot', 'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during',
+      'each', 'few', 'for', 'from', 'further', 'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s',
+      'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself',
+      'let\'s', 'me', 'more', 'most', 'mustn\'t', 'my', 'myself',
+      'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
+      'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such',
+      'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too',
+      'under', 'until', 'up', 'very', 'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t',
+      'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
+    ]);
+
+    // Action CTA Words
+    const CTA_WORDS = ['discover', 'learn', 'explore', 'get', 'try', 'find', 'buy', 'shop', 'read', 'start', 'compare', 'download', 'check', 'build', 'create', 'boost', 'maximize', 'guide'];
+
+    // Canvas for Pixel Measurement
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    function measureTextWidth(text, font) {
+      if (!text) return 0;
+      ctx.font = font;
+      return Math.round(ctx.measureText(text).width);
+    }
+
+    // DOM Elements
+    const inputFocusKw = document.getElementById('input-focus-kw');
+    const inputDestUrl = document.getElementById('input-dest-url');
+    const overallSeoScore = document.getElementById('overall-seo-score');
+
+    const inputSeoTitle = document.getElementById('input-seo-title');
+    const titleCharsBadge = document.getElementById('title-chars-badge');
+    const titlePixelsBadge = document.getElementById('title-pixels-badge');
+    const titlePixelBar = document.getElementById('title-pixel-bar');
+    const titleChecksContainer = document.getElementById('title-checks-container');
+
+    const inputSeoDesc = document.getElementById('input-seo-desc');
+    const descCharsBadge = document.getElementById('desc-chars-badge');
+    const descPixelsBadge = document.getElementById('desc-pixels-badge');
+    const descPixelBar = document.getElementById('desc-pixel-bar');
+    const descChecksContainer = document.getElementById('desc-checks-container');
+
+    const serpLiveDomain = document.getElementById('serp-live-domain');
+    const serpLivePath = document.getElementById('serp-live-path');
+    const serpLiveTitle = document.getElementById('serp-live-title');
+    const serpLiveDesc = document.getElementById('serp-live-desc');
+    const serpContainer = document.getElementById('serp-container');
+    const btnSerpDesktop = document.getElementById('btn-serp-desktop');
+    const btnSerpMobile = document.getElementById('btn-serp-mobile');
+
+    const inputPageContent = document.getElementById('input-page-content');
+    const contentHighlightBox = document.getElementById('content-highlight-box');
+    const btnViewEditor = document.getElementById('btn-view-editor');
+    const btnViewHighlighted = document.getElementById('btn-view-highlighted');
+
+    const metricWordCount = document.getElementById('metric-word-count');
+    const metricReadTime = document.getElementById('metric-read-time');
+    const metricFocusCount = document.getElementById('metric-focus-count');
+    const metricFocusDensity = document.getElementById('metric-focus-density');
+    const metricDensityStatus = document.getElementById('metric-density-status');
+
+    const table1gram = document.getElementById('table-1gram');
+    const table2gram = document.getElementById('table-2gram');
+    const table3gram = document.getElementById('table-3gram');
+
+    const btnSampleBlog = document.getElementById('btn-sample-blog');
+    const btnSampleSaas = document.getElementById('btn-sample-saas');
+    const btnResetAll = document.getElementById('btn-reset-all');
+
+    // Tab buttons
+    const tabButtons = {
+      dashboard: document.getElementById('tab-btn-dashboard'),
+      title: document.getElementById('tab-btn-title'),
+      desc: document.getElementById('tab-btn-desc'),
+      serp: document.getElementById('tab-btn-serp'),
+      density: document.getElementById('tab-btn-density'),
+    };
+
+    const sections = {
+      title: document.getElementById('section-title-checker'),
+      desc: document.getElementById('section-desc-checker'),
+      serp: document.getElementById('section-serp-simulator'),
+      density: document.getElementById('section-density-checker'),
+    };
+
+    // Tab Navigation
+    function setActiveTab(tab) {
+      Object.keys(tabButtons).forEach(k => {
+        if (k === tab) {
+          tabButtons[k].className = 'tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-accent text-white shadow-sm flex items-center gap-2';
+        } else {
+          tabButtons[k].className = 'tab-btn touch-target px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-2';
+        }
+      });
+
+      if (tab === 'dashboard') {
+        Object.values(sections).forEach(s => s.classList.remove('hidden'));
+      } else if (tab === 'title') {
+        sections.title.classList.remove('hidden');
+        sections.desc.classList.add('hidden');
+        sections.serp.classList.add('hidden');
+        sections.density.classList.add('hidden');
+      } else if (tab === 'desc') {
+        sections.desc.classList.remove('hidden');
+        sections.title.classList.add('hidden');
+        sections.serp.classList.add('hidden');
+        sections.density.classList.add('hidden');
+      } else if (tab === 'serp') {
+        sections.serp.classList.remove('hidden');
+        sections.title.classList.add('hidden');
+        sections.desc.classList.add('hidden');
+        sections.density.classList.add('hidden');
+      } else if (tab === 'density') {
+        sections.density.classList.remove('hidden');
+        sections.title.classList.add('hidden');
+        sections.desc.classList.add('hidden');
+        sections.serp.classList.add('hidden');
+      }
+    }
+
+    tabButtons.dashboard.addEventListener('click', () => setActiveTab('dashboard'));
+    tabButtons.title.addEventListener('click', () => setActiveTab('title'));
+    tabButtons.desc.addEventListener('click', () => setActiveTab('desc'));
+    tabButtons.serp.addEventListener('click', () => setActiveTab('serp'));
+    tabButtons.density.addEventListener('click', () => setActiveTab('density'));
+
+    // SERP Desktop vs Mobile toggle
+    btnSerpDesktop.addEventListener('click', () => {
+      serpContainer.className = 'max-w-[600px] space-y-1.5 transition-all';
+      btnSerpDesktop.className = 'touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center gap-1.5';
+      btnSerpMobile.className = 'touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all flex items-center gap-1.5';
+    });
+
+    btnSerpMobile.addEventListener('click', () => {
+      serpContainer.className = 'max-w-[360px] space-y-1.5 transition-all';
+      btnSerpMobile.className = 'touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all flex items-center gap-1.5';
+      btnSerpDesktop.className = 'touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all flex items-center gap-1.5';
+    });
+
+    // Content View Toggle (Editor vs Highlighted)
+    btnViewEditor.addEventListener('click', () => {
+      inputPageContent.classList.remove('hidden');
+      contentHighlightBox.classList.add('hidden');
+      btnViewEditor.className = 'touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all';
+      btnViewHighlighted.className = 'touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all';
+    });
+
+    btnViewHighlighted.addEventListener('click', () => {
+      inputPageContent.classList.add('hidden');
+      contentHighlightBox.classList.remove('hidden');
+      btnViewHighlighted.className = 'touch-target px-3 py-1 rounded-lg bg-paper text-ink shadow-xs transition-all';
+      btnViewEditor.className = 'touch-target px-3 py-1 rounded-lg text-muted hover:text-ink transition-all';
+    });
+
+    // AUDIT & CALCULATION ENGINE
+    function runAudits() {
+      const title = inputSeoTitle.value.trim();
+      const desc = inputSeoDesc.value.trim();
+      const focusKw = inputFocusKw.value.trim().toLowerCase();
+      const destUrl = inputDestUrl.value.trim();
+      const content = inputPageContent.value.trim();
+
+      let totalScore = 100;
+
+      // 1. Audit Title
+      const titleCharLen = title.length;
+      const titlePx = measureTextWidth(title, '20px Arial, sans-serif');
+      titleCharsBadge.innerText = `${titleCharLen} chars`;
+      titlePixelsBadge.innerText = `${titlePx} / 580 px`;
+
+      const titlePxPct = Math.min(100, (titlePx / 580) * 100);
+      titlePixelBar.style.width = `${titlePxPct}%`;
+
+      let titleChecks = [];
+
+      // Length Check
+      if (titleCharLen >= 45 && titleCharLen <= 60 && titlePx <= 580) {
+        titleChecks.push({ pass: true, text: 'Optimal Length (50–60 chars)' });
+      } else if (titleCharLen < 30) {
+        titleChecks.push({ pass: false, text: 'Title is too short (< 30 chars)' });
+        totalScore -= 10;
+      } else if (titlePx > 580 || titleCharLen > 60) {
+        titleChecks.push({ pass: false, text: `Truncation risk (${titlePx}px > 580px)` });
+        totalScore -= 10;
+      } else {
+        titleChecks.push({ pass: true, text: 'Acceptable Length' });
+      }
+
+      // Keyword Presence in Title
+      if (focusKw) {
+        if (title.toLowerCase().includes(focusKw)) {
+          const idx = title.toLowerCase().indexOf(focusKw);
+          if (idx < 30) {
+            titleChecks.push({ pass: true, text: 'Focus Keyword in first 30 chars' });
+          } else {
+            titleChecks.push({ pass: true, text: 'Focus Keyword present' });
+          }
+        } else {
+          titleChecks.push({ pass: false, text: `Missing focus keyword "${focusKw}"` });
+          totalScore -= 15;
+        }
+      }
+
+      // Brand Separator Check
+      if (/[|\-—•]/.test(title)) {
+        titleChecks.push({ pass: true, text: 'Contains brand separator (| / -)' });
+      } else {
+        titleChecks.push({ pass: true, text: 'No brand separator found' });
+      }
+
+      // Spam Check (All-caps)
+      const upperLetters = (title.match(/[A-Z]/g) || []).length;
+      if (titleCharLen > 10 && upperLetters / titleCharLen > 0.4) {
+        titleChecks.push({ pass: false, text: 'Spam warning: excessive uppercase' });
+        totalScore -= 10;
+      } else {
+        titleChecks.push({ pass: true, text: 'Clean capitalization' });
+      }
+
+      // Render Title Checks
+      renderChecks(titleChecksContainer, titleChecks);
+
+      // Title Bar color
+      if (titlePx > 580 || titleCharLen > 65) {
+        titlePixelBar.className = 'h-full bg-red-500 transition-all duration-200';
+        titleCharsBadge.className = 'px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs';
+      } else if (titleCharLen < 30) {
+        titlePixelBar.className = 'h-full bg-amber-500 transition-all duration-200';
+        titleCharsBadge.className = 'px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs';
+      } else {
+        titlePixelBar.className = 'h-full bg-emerald-500 transition-all duration-200';
+        titleCharsBadge.className = 'px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs';
+      }
+
+      // 2. Audit Description
+      const descCharLen = desc.length;
+      const descPx = measureTextWidth(desc, '14px Roboto, Arial, sans-serif');
+      descCharsBadge.innerText = `${descCharLen} chars`;
+      descPixelsBadge.innerText = `${descPx} / 960 px`;
+
+      const descPxPct = Math.min(100, (descPx / 960) * 100);
+      descPixelBar.style.width = `${descPxPct}%`;
+
+      let descChecks = [];
+
+      // Length Check
+      if (descCharLen >= 120 && descCharLen <= 160 && descPx <= 960) {
+        descChecks.push({ pass: true, text: 'Optimal Length (120–160 chars)' });
+      } else if (descCharLen < 70) {
+        descChecks.push({ pass: false, text: 'Description too short (< 70 chars)' });
+        totalScore -= 10;
+      } else if (descPx > 960 || descCharLen > 165) {
+        descChecks.push({ pass: false, text: `Truncation risk (${descPx}px > 960px)` });
+        totalScore -= 10;
+      } else {
+        descChecks.push({ pass: true, text: 'Acceptable Length' });
+      }
+
+      // Keyword in Description
+      if (focusKw) {
+        if (desc.toLowerCase().includes(focusKw)) {
+          descChecks.push({ pass: true, text: 'Focus keyword present' });
+        } else {
+          descChecks.push({ pass: false, text: `Missing focus keyword "${focusKw}"` });
+          totalScore -= 10;
+        }
+      }
+
+      // Call to Action Check
+      const hasCta = CTA_WORDS.some(w => new RegExp(`\\b${w}\\b`, 'i').test(desc));
+      if (hasCta) {
+        descChecks.push({ pass: true, text: 'Contains actionable CTA verb' });
+      } else {
+        descChecks.push({ pass: false, text: 'Tip: Add a Call to Action (e.g. Discover, Learn)' });
+        totalScore -= 5;
+      }
+
+      // Duplicate Check against Title
+      if (desc.length > 20 && title.length > 20 && desc.toLowerCase() === title.toLowerCase()) {
+        descChecks.push({ pass: false, text: 'Duplicate: Description equals Title' });
+        totalScore -= 15;
+      } else {
+        descChecks.push({ pass: true, text: 'Unique from Page Title' });
+      }
+
+      // Render Description Checks
+      renderChecks(descChecksContainer, descChecks);
+
+      // Description Bar color
+      if (descPx > 960 || descCharLen > 165) {
+        descPixelBar.className = 'h-full bg-red-500 transition-all duration-200';
+        descCharsBadge.className = 'px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 text-xs';
+      } else if (descCharLen < 70) {
+        descPixelBar.className = 'h-full bg-amber-500 transition-all duration-200';
+        descCharsBadge.className = 'px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs';
+      } else {
+        descPixelBar.className = 'h-full bg-emerald-500 transition-all duration-200';
+        descCharsBadge.className = 'px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs';
+      }
+
+      // 3. Update SERP Simulator
+      let domain = 'example.com';
+      let path = '';
+      try {
+        if (destUrl) {
+          const u = new URL(destUrl.startsWith('http') ? destUrl : 'https://' + destUrl);
+          domain = u.hostname.replace(/^www\./, '');
+          if (u.pathname && u.pathname !== '/') {
+            path = ' › ' + u.pathname.replace(/^\//, '').replace(/\/$/, '').split('/').join(' › ');
+          }
+        }
+      } catch (e) {}
+
+      serpLiveDomain.innerText = domain;
+      serpLivePath.innerText = path;
+      serpLiveTitle.innerText = title || 'Enter Page Title...';
+
+      // Bold keywords in SERP snippet
+      if (focusKw && desc.toLowerCase().includes(focusKw)) {
+        const regex = new RegExp(`(${escapeRegExp(focusKw)})`, 'gi');
+        serpLiveDesc.innerHTML = escapeHtml(desc).replace(regex, '<b class="font-bold text-black">$1</b>');
+      } else {
+        serpLiveDesc.innerText = desc || 'Enter meta description...';
+      }
+
+      // 4. Keyword Density & N-Gram Calculation
+      const words = content.toLowerCase().match(/\b[a-z0-9'-]+\b/g) || [];
+      const totalWords = words.length;
+      metricWordCount.innerText = totalWords;
+      metricReadTime.innerText = `${Math.max(1, Math.ceil(totalWords / 200))} min`;
+
+      let focusCount = 0;
+      if (focusKw && totalWords > 0) {
+        const kwWords = focusKw.split(/\s+/).length;
+        if (kwWords === 1) {
+          focusCount = words.filter(w => w === focusKw).length;
+        } else {
+          const contentLower = content.toLowerCase();
+          const regex = new RegExp(`\\b${escapeRegExp(focusKw)}\\b`, 'gi');
+          const matches = contentLower.match(regex);
+          focusCount = matches ? matches.length : 0;
+        }
+
+        metricFocusCount.innerText = `${focusCount} times`;
+        const density = ((focusCount * kwWords) / totalWords) * 100;
+        metricFocusDensity.innerText = `${density.toFixed(2)}%`;
+
+        if (density < 0.5) {
+          metricDensityStatus.innerText = 'Low (<0.5%)';
+          metricDensityStatus.className = 'text-[10px] font-bold text-amber-500';
+          totalScore -= 5;
+        } else if (density > 3.0) {
+          metricDensityStatus.innerText = 'Spam Risk (>3%)';
+          metricDensityStatus.className = 'text-[10px] font-bold text-red-500';
+          totalScore -= 10;
+        } else {
+          metricDensityStatus.innerText = 'Optimal (0.5%–3%)';
+          metricDensityStatus.className = 'text-[10px] font-bold text-emerald-500';
+        }
+      } else {
+        metricFocusCount.innerText = '0';
+        metricFocusDensity.innerText = '0.00%';
+        metricDensityStatus.innerText = 'No keyword';
+        metricDensityStatus.className = 'text-[10px] font-bold text-muted';
+      }
+
+      // Calculate N-Grams
+      calculateNGrams(words);
+
+      // Render Highlighted Content
+      renderHighlightedContent(content, focusKw);
+
+      // Final Score Calculation
+      const finalScore = Math.max(10, Math.min(100, totalScore));
+      overallSeoScore.innerText = finalScore;
+      if (finalScore >= 80) overallSeoScore.className = 'text-xl font-black text-emerald-500';
+      else if (finalScore >= 60) overallSeoScore.className = 'text-xl font-black text-amber-500';
+      else overallSeoScore.className = 'text-xl font-black text-red-500';
+    }
+
+    function renderChecks(container, checks) {
+      container.innerHTML = '';
+      checks.forEach(c => {
+        const div = document.createElement('div');
+        div.className = `p-2 rounded-xl text-[11px] font-medium flex items-center gap-1.5 ${
+          c.pass
+            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+            : 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+        }`;
+        div.innerHTML = `
+          <span>${c.pass ? '✅' : '⚠️'}</span>
+          <span class="truncate">${escapeHtml(c.text)}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function calculateNGrams(words) {
+      if (words.length === 0) {
+        table1gram.innerHTML = '<span class="text-muted">No content</span>';
+        table2gram.innerHTML = '<span class="text-muted">No content</span>';
+        table3gram.innerHTML = '<span class="text-muted">No content</span>';
+        return;
+      }
+
+      // 1-Grams
+      const map1 = {};
+      words.forEach(w => {
+        if (!STOPWORDS.has(w) && w.length > 2 && !/^\d+$/.test(w)) {
+          map1[w] = (map1[w] || 0) + 1;
+        }
+      });
+      renderGramTable(table1gram, map1, words.length, 1);
+
+      // 2-Grams
+      const map2 = {};
+      for (let i = 0; i < words.length - 1; i++) {
+        const w1 = words[i];
+        const w2 = words[i + 1];
+        if (!STOPWORDS.has(w1) && !STOPWORDS.has(w2)) {
+          const phrase = `${w1} ${w2}`;
+          map2[phrase] = (map2[phrase] || 0) + 1;
+        }
+      }
+      renderGramTable(table2gram, map2, words.length, 2);
+
+      // 3-Grams
+      const map3 = {};
+      for (let i = 0; i < words.length - 2; i++) {
+        const w1 = words[i];
+        const w2 = words[i + 1];
+        const w3 = words[i + 2];
+        if (!STOPWORDS.has(w1) && !STOPWORDS.has(w3)) {
+          const phrase = `${w1} ${w2} ${w3}`;
+          map3[phrase] = (map3[phrase] || 0) + 1;
+        }
+      }
+      renderGramTable(table3gram, map3, words.length, 3);
+    }
+
+    function renderGramTable(container, map, totalWords, nGramSize) {
+      container.innerHTML = '';
+      const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      if (sorted.length === 0) {
+        container.innerHTML = '<span class="text-muted text-[11px]">No frequent phrases</span>';
+        return;
+      }
+
+      sorted.forEach(([phrase, count]) => {
+        const density = ((count * nGramSize) / totalWords) * 100;
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between py-1 border-b border-line/40 hover:bg-surface transition-colors cursor-pointer px-1 rounded';
+        row.title = `Click to set as focus keyword`;
+        row.innerHTML = `
+          <span class="truncate text-ink font-semibold mr-2">${escapeHtml(phrase)}</span>
+          <span class="text-muted text-[10px] shrink-0 font-mono">${count}x (${density.toFixed(1)}%)</span>
+        `;
+        row.addEventListener('click', () => {
+          inputFocusKw.value = phrase;
+          runAudits();
+          showToast(`Set "${phrase}" as focus keyword!`);
+        });
+        container.appendChild(row);
+      });
+    }
+
+    function renderHighlightedContent(content, focusKw) {
+      if (!content) {
+        contentHighlightBox.innerHTML = '<span class="text-muted">No content to display.</span>';
+        return;
+      }
+
+      if (!focusKw) {
+        contentHighlightBox.innerText = content;
+        return;
+      }
+
+      const regex = new RegExp(`(${escapeRegExp(focusKw)})`, 'gi');
+      contentHighlightBox.innerHTML = escapeHtml(content).replace(regex, '<mark class="keyword-hl">$1</mark>').replace(/\n/g, '<br>');
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Presets
+    btnSampleBlog.addEventListener('click', () => {
+      inputFocusKw.value = 'web development';
+      inputDestUrl.value = 'https://example.com/blog/modern-web-architecture';
+      inputSeoTitle.value = 'Modern Web Development: 10 Architecture Patterns for 2026';
+      inputSeoDesc.value = 'Discover modern web development architecture patterns, performance optimization tips, and scalable frontend strategies to build fast applications today.';
+      inputPageContent.value = `Modern web development has undergone massive architectural shifts in recent years. Today, developers building high-performance web applications prioritize Core Web Vitals, serverless edge rendering, and responsive design systems. In this comprehensive guide, we explore the essential web development patterns that define scalable frontend engineering.\n\nFrom state management to privacy-first client-side tools, modern web development demands a careful balance between user experience and performance. By applying these web development best practices, engineering teams can achieve instant page loads, higher search engine visibility, and superior user engagement across all devices.`;
+      runAudits();
+      showToast('Loaded Sample Blog Article preset!');
+    });
+
+    btnSampleSaas.addEventListener('click', () => {
+      inputFocusKw.value = 'serverless cloud hosting';
+      inputDestUrl.value = 'https://example.com/platform';
+      inputSeoTitle.value = 'Fast Serverless Cloud Hosting for Developers | CloudScale';
+      inputSeoDesc.value = 'Explore instant serverless cloud hosting with automated global edge deployments, zero cold starts, and built-in database caching. Start building free today.';
+      inputPageContent.value = `Deploy your applications on our next-generation serverless cloud hosting platform. Engineered for scale, our global edge network runs serverless cloud hosting workloads within milliseconds of your users.\n\nWith automated SSL, infinite concurrency, and zero cold starts, serverless cloud hosting has never been this accessible for modern development teams. Experience the future of cloud computing with our generous free tier and transparent developer pricing.`;
+      runAudits();
+      showToast('Loaded Sample SaaS preset!');
+    });
+
+    btnResetAll.addEventListener('click', () => {
+      inputFocusKw.value = '';
+      inputDestUrl.value = '';
+      inputSeoTitle.value = '';
+      inputSeoDesc.value = '';
+      inputPageContent.value = '';
+      runAudits();
+      showToast('Form cleared.');
+    });
+
+    // Attach Input Listeners
+    [inputFocusKw, inputDestUrl, inputSeoTitle, inputSeoDesc, inputPageContent].forEach(el => {
+      el.addEventListener('input', runAudits);
+      el.addEventListener('change', runAudits);
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize
+    runAudits();
+  </script>
+</body>
+</html>

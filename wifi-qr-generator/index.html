@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wi-Fi QR Code Generator & Printable Sign — Toolzy</title>
+  <meta name="description" content="Generate instant Wi-Fi connect QR codes and printable guest cards. Secure, 100% in-browser processing with zero credential storage. Supports WPA/WPA2/WPA3, WEP, and Open networks." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Library: qrcode-generator (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      header, #form-column, #tech-breakdown-card, #export-buttons-group, #view-mode-toggle, #toast {
+        display: none !important;
+      }
+      #preview-column {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+      }
+      #print-card-wrapper {
+        box-shadow: none !important;
+        border: 2px solid #000000 !important;
+        page-break-inside: avoid;
+        margin: 20px auto !important;
+        max-width: 450px !important;
+      }
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">Wi-Fi QR Code Generator & Sign Studio</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate instant-connect Wi-Fi QR codes and printable guest access cards.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Guarantee Pill & View Mode Switcher -->
+      <div class="flex items-center gap-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>100% In-Memory • No Storage</span>
+        </div>
+
+        <div id="view-mode-toggle" class="flex items-center p-1 rounded-xl bg-surface border border-line shadow-2xs">
+          <button id="btn-mode-qr" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            <span>QR Only</span>
+          </button>
+          <button id="btn-mode-card" type="button" class="touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <span>Printable Sign</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main 2-Column Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Credentials & Design Options (7 cols) -->
+      <div id="form-column" class="lg:col-span-7 space-y-6">
+
+        <!-- Card 1: Network Credentials -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-black">1</span>
+            <span>Network Credentials</span>
+          </h2>
+
+          <!-- SSID Input -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-ssid" class="block text-xs font-bold uppercase tracking-wider text-muted">Network Name (SSID) <span class="text-red-500">*</span></label>
+              <span id="ssid-char-count" class="text-[11px] font-mono text-muted">14 chars</span>
+            </div>
+            <input
+              id="input-ssid"
+              type="text"
+              value="CoffeeShop_5G"
+              placeholder="e.g. Home_Network_5G"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium"
+              required
+            />
+          </div>
+
+          <!-- Security Type & Hidden Network Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <div class="space-y-1.5">
+              <label for="select-security" class="block text-xs font-bold uppercase tracking-wider text-muted">Security / Encryption</label>
+              <select id="select-security" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                <option value="WPA" selected>WPA / WPA2 / WPA3 (Default)</option>
+                <option value="WEP">WEP (Legacy)</option>
+                <option value="nopass">None (Open Network)</option>
+              </select>
+            </div>
+
+            <div class="flex flex-col justify-end">
+              <label class="touch-target inline-flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface-alt border border-line cursor-pointer select-none">
+                <input id="check-hidden" type="checkbox" class="w-4 h-4 rounded text-accent accent-accent" />
+                <div class="text-xs">
+                  <span class="font-bold text-ink block">Hidden Network</span>
+                  <span class="text-[10px] text-muted block">SSID broadcast is disabled</span>
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+          <!-- Password Input -->
+          <div id="password-container" class="space-y-1.5 transition-all">
+            <div class="flex items-center justify-between">
+              <label for="input-password" class="block text-xs font-bold uppercase tracking-wider text-muted">Wi-Fi Password</label>
+              <span id="password-strength-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600">Valid</span>
+            </div>
+
+            <div class="relative">
+              <input
+                id="input-password"
+                type="password"
+                value="Espresso2026!"
+                placeholder="Enter network password"
+                class="w-full pl-3.5 pr-10 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-mono font-medium"
+              />
+              <button
+                id="btn-toggle-password"
+                type="button"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-ink transition-colors"
+                title="Toggle password visibility"
+              >
+                <svg id="icon-eye-show" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <svg id="icon-eye-hide" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+              </button>
+            </div>
+            
+            <p id="password-hint" class="text-[11px] text-muted">WPA/WPA2/WPA3 networks require a minimum of 8 characters.</p>
+          </div>
+
+          <!-- Open Network Notice -->
+          <div id="open-network-notice" class="hidden p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>This is an Open network. Anyone can connect without a password.</span>
+          </div>
+
+          <!-- Validation Warning Box -->
+          <div id="validation-warning" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span id="validation-warning-text">Please enter a valid SSID.</span>
+          </div>
+
+        </div>
+
+        <!-- Card 2: QR Code Customization & Colors -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-xs font-black">2</span>
+            <span>QR Code Appearance & Colors</span>
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <!-- Foreground Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">QR Dots Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-dark" type="color" value="#0f172a" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-dark" type="text" value="#0f172a" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Background Color -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-muted">Background Color</label>
+              <div class="flex items-center gap-2">
+                <input id="picker-color-light" type="color" value="#ffffff" class="w-8 h-8 rounded-lg border border-line cursor-pointer bg-transparent" />
+                <input id="input-color-light" type="text" value="#ffffff" class="flex-1 px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink font-mono" />
+              </div>
+            </div>
+
+            <!-- Error Correction Level -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="select-ecc" class="block text-xs font-bold text-muted">Error Correction</label>
+                <span class="text-[10px] text-muted" title="High level allows logos and damaged codes to scan seamlessly">ℹ️ Info</span>
+              </div>
+              <select id="select-ecc" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent font-medium">
+                <option value="L">L - Low (7% Recovery)</option>
+                <option value="M" selected>M - Medium (15% Recovery)</option>
+                <option value="Q">Q - Quartile (25% Recovery)</option>
+                <option value="H">H - High (30% Recovery for Logo)</option>
+              </select>
+            </div>
+
+          </div>
+
+          <!-- Size Resolution Slider -->
+          <div class="space-y-1.5 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center justify-between text-xs">
+              <label class="font-bold text-muted">QR Code Resolution</label>
+              <span id="label-size" class="font-mono font-bold text-ink">300 × 300 px</span>
+            </div>
+            <input id="slider-size" type="range" min="180" max="600" step="20" value="300" class="w-full accent-accent cursor-pointer" />
+          </div>
+
+          <!-- Center Wi-Fi Logo Toggle -->
+          <div class="flex items-center justify-between pt-2 border-t" style="border-color: var(--color-line);">
+            <div>
+              <span class="text-xs font-bold text-ink block">Center Wi-Fi Icon Badge</span>
+              <span class="text-[11px] text-muted block">Embeds stylish Wi-Fi logo badge in QR center</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="toggle-center-logo" type="checkbox" checked class="sr-only peer" />
+              <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-line after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+            </label>
+          </div>
+
+        </div>
+
+        <!-- Card 3: Printable Sign Customization -->
+        <div id="print-options-card" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs">
+          <h2 class="text-sm font-bold text-ink flex items-center gap-2 border-b pb-3" style="border-color: var(--color-line);">
+            <span class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-black">3</span>
+            <span>Printable Sign Options</span>
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="input-card-title" class="block text-[11px] font-bold text-muted">Card Header</label>
+              <input id="input-card-title" type="text" value="Join Our Wi-Fi" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+            </div>
+
+            <div class="space-y-1">
+              <label for="input-card-subtitle" class="block text-[11px] font-bold text-muted">Card Subtitle / Instructions</label>
+              <input id="input-card-subtitle" type="text" value="Scan with your phone camera to connect instantly" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input id="check-show-password-card" type="checkbox" checked class="w-4 h-4 rounded text-accent accent-accent" />
+              <span class="text-xs text-ink font-medium">Print network name & password text below QR</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Live Previews & Exports (5 cols) -->
+      <div id="preview-column" class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+        
+        <!-- Live Preview Card (Adapts to QR Only or Printable Sign) -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-sm">
+          
+          <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="preview-title-label">Live Wi-Fi QR Preview</span>
+            </label>
+            <span id="wifi-format-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-bold uppercase">WPA</span>
+          </div>
+
+          <!-- Printable Card Mockup Wrapper -->
+          <div id="print-card-wrapper" class="flex flex-col items-center justify-center p-6 sm:p-8 rounded-2xl bg-white text-zinc-900 border border-line shadow-xs transition-all text-center">
+            
+            <!-- Card Header Area (Visible in Card Mode) -->
+            <div id="card-header-area" class="space-y-1 mb-5 hidden">
+              <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+              </div>
+              <h3 id="card-display-title" class="text-lg font-black tracking-tight text-zinc-900">Join Our Wi-Fi</h3>
+              <p id="card-display-subtitle" class="text-xs text-zinc-500 font-medium">Scan with your phone camera to connect instantly</p>
+            </div>
+
+            <!-- Canvas Render Container -->
+            <div id="qrcode-render-target" class="flex items-center justify-center">
+              <!-- Rendered via Canvas -->
+            </div>
+
+            <!-- Card Footer Area (SSID + Password) -->
+            <div id="card-footer-area" class="w-full mt-5 pt-4 border-t border-zinc-100 space-y-2 hidden">
+              <div class="flex items-center justify-between text-xs px-2">
+                <span class="text-zinc-400 font-semibold uppercase text-[10px]">Network:</span>
+                <span id="card-display-ssid" class="font-bold text-zinc-800 font-mono">CoffeeShop_5G</span>
+              </div>
+              <div id="card-password-row" class="flex items-center justify-between text-xs px-2">
+                <span class="text-zinc-400 font-semibold uppercase text-[10px]">Password:</span>
+                <span id="card-display-password" class="font-bold text-zinc-800 font-mono">Espresso2026!</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Export Action Buttons -->
+          <div id="export-buttons-group" class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-download-png"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                id="btn-download-svg"
+                type="button"
+                class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download SVG</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                id="btn-copy-qr-image"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/></svg>
+                <span>Copy Image</span>
+              </button>
+
+              <button
+                id="btn-print-card"
+                type="button"
+                class="touch-target px-4 py-2.5 rounded-xl font-semibold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+              >
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Print Sign / PDF</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Technical Raw String Breakdown Card -->
+        <div id="tech-breakdown-card" class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-3 shadow-sm">
+          <div class="flex items-center justify-between border-b pb-2.5" style="border-color: var(--color-line);">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              <span>Encoded Wi-Fi Payload String</span>
+            </h3>
+            <button id="btn-copy-raw-wifi" type="button" class="text-[11px] font-bold text-accent hover:underline flex items-center gap-1">
+              <span>Copy String</span>
+            </button>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-surface-alt border border-line font-mono text-xs text-ink break-all select-all leading-relaxed" id="raw-payload-display">
+            WIFI:T:WPA;S:CoffeeShop_5G;P:Espresso2026!;H:false;;
+          </div>
+
+          <p class="text-[11px] text-muted">Standard protocol recognized natively by iOS Camera, Android Wi-Fi scanner, and QR readers.</p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // State
+    let isCardMode = false;
+    let currentPayload = '';
+    let wifiLogoImg = null;
+
+    // Elements
+    const inputSsid = document.getElementById('input-ssid');
+    const selectSecurity = document.getElementById('select-security');
+    const checkHidden = document.getElementById('check-hidden');
+    const inputPassword = document.getElementById('input-password');
+    const passwordContainer = document.getElementById('password-container');
+    const passwordHint = document.getElementById('password-hint');
+    const passwordStrengthBadge = document.getElementById('password-strength-badge');
+    const openNetworkNotice = document.getElementById('open-network-notice');
+    const validationWarning = document.getElementById('validation-warning');
+    const validationWarningText = document.getElementById('validation-warning-text');
+    const ssidCharCount = document.getElementById('ssid-char-count');
+
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const iconEyeShow = document.getElementById('icon-eye-show');
+    const iconEyeHide = document.getElementById('icon-eye-hide');
+
+    const pickerColorDark = document.getElementById('picker-color-dark');
+    const inputColorDark = document.getElementById('input-color-dark');
+    const pickerColorLight = document.getElementById('picker-color-light');
+    const inputColorLight = document.getElementById('input-color-light');
+    const selectEcc = document.getElementById('select-ecc');
+    const sliderSize = document.getElementById('slider-size');
+    const labelSize = document.getElementById('label-size');
+    const toggleCenterLogo = document.getElementById('toggle-center-logo');
+
+    const btnModeQr = document.getElementById('btn-mode-qr');
+    const btnModeCard = document.getElementById('btn-mode-card');
+    const previewTitleLabel = document.getElementById('preview-title-label');
+    const printCardWrapper = document.getElementById('print-card-wrapper');
+    const cardHeaderArea = document.getElementById('card-header-area');
+    const cardFooterArea = document.getElementById('card-footer-area');
+    const cardPasswordRow = document.getElementById('card-password-row');
+    const cardDisplayTitle = document.getElementById('card-display-title');
+    const cardDisplaySubtitle = document.getElementById('card-display-subtitle');
+    const cardDisplaySsid = document.getElementById('card-display-ssid');
+    const cardDisplayPassword = document.getElementById('card-display-password');
+    const inputCardTitle = document.getElementById('input-card-title');
+    const inputCardSubtitle = document.getElementById('input-card-subtitle');
+    const checkShowPasswordCard = document.getElementById('check-show-password-card');
+
+    const qrRenderTarget = document.getElementById('qrcode-render-target');
+    const rawPayloadDisplay = document.getElementById('raw-payload-display');
+    const wifiFormatBadge = document.getElementById('wifi-format-badge');
+
+    const btnDownloadPng = document.getElementById('btn-download-png');
+    const btnDownloadSvg = document.getElementById('btn-download-svg');
+    const btnCopyQrImage = document.getElementById('btn-copy-qr-image');
+    const btnCopyRawWifi = document.getElementById('btn-copy-raw-wifi');
+    const btnPrintCard = document.getElementById('btn-print-card');
+
+    // Create Pre-rendered Wi-Fi Logo for Center Badge
+    function initWifiLogo() {
+      const svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>`;
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgMarkup);
+      img.onload = () => {
+        wifiLogoImg = img;
+        updateQrCode();
+      };
+    }
+
+    // Toggle Password Visibility
+    btnTogglePassword.addEventListener('click', () => {
+      if (inputPassword.type === 'password') {
+        inputPassword.type = 'text';
+        iconEyeShow.classList.add('hidden');
+        iconEyeHide.classList.remove('hidden');
+      } else {
+        inputPassword.type = 'password';
+        iconEyeShow.classList.remove('hidden');
+        iconEyeHide.classList.add('hidden');
+      }
+    });
+
+    // View Mode Toggle (QR Only vs Printable Sign)
+    btnModeQr.addEventListener('click', () => {
+      isCardMode = false;
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Live Wi-Fi QR Preview';
+      cardHeaderArea.classList.add('hidden');
+      cardFooterArea.classList.add('hidden');
+    });
+
+    btnModeCard.addEventListener('click', () => {
+      isCardMode = true;
+      btnModeCard.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-accent text-white shadow-2xs flex items-center gap-1.5';
+      btnModeQr.className = 'touch-target px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-muted hover:text-ink hover:bg-surface-alt flex items-center gap-1.5';
+      previewTitleLabel.innerText = 'Printable Sign Preview';
+      cardHeaderArea.classList.remove('hidden');
+      cardFooterArea.classList.remove('hidden');
+      updateCardText();
+    });
+
+    // Wi-Fi Spec Special Character Escaping (\, ;, ,, :, ")
+    function escapeWifiString(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/:/g, '\\:')
+        .replace(/"/g, '\\"');
+    }
+
+    // Build Standard Wi-Fi QR String
+    function computeWifiPayload() {
+      const ssid = inputSsid.value;
+      const security = selectSecurity.value;
+      const pass = inputPassword.value;
+      const hidden = checkHidden.checked;
+
+      if (!ssid.trim()) return '';
+
+      const escapedSsid = escapeWifiString(ssid);
+      const isHidden = hidden ? 'true' : 'false';
+
+      if (security === 'nopass') {
+        return `WIFI:T:nopass;S:${escapedSsid};;H:${isHidden};;`;
+      }
+
+      const escapedPass = escapeWifiString(pass);
+      return `WIFI:T:${security};S:${escapedSsid};P:${escapedPass};H:${isHidden};;`;
+    }
+
+    // Validation & State Checks
+    function validateInputs() {
+      const ssid = inputSsid.value.trim();
+      const security = selectSecurity.value;
+      const pass = inputPassword.value;
+
+      ssidCharCount.innerText = `${inputSsid.value.length} chars`;
+
+      // Handle Open Network UI
+      if (security === 'nopass') {
+        passwordContainer.classList.add('hidden');
+        openNetworkNotice.classList.remove('hidden');
+        cardPasswordRow.classList.add('hidden');
+        wifiFormatBadge.innerText = 'Open';
+        wifiFormatBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-bold uppercase';
+      } else {
+        passwordContainer.classList.remove('hidden');
+        openNetworkNotice.classList.add('hidden');
+        cardPasswordRow.classList.remove('hidden');
+        wifiFormatBadge.innerText = security;
+        wifiFormatBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-bold uppercase';
+      }
+
+      // Check Errors
+      if (!ssid) {
+        validationWarning.classList.remove('hidden');
+        validationWarningText.innerText = 'Network Name (SSID) is required.';
+        return false;
+      }
+
+      if (security === 'WPA' && pass.length > 0 && pass.length < 8) {
+        validationWarning.classList.remove('hidden');
+        validationWarningText.innerText = 'WPA/WPA2/WPA3 passwords must be at least 8 characters long.';
+        passwordStrengthBadge.innerText = 'Too short (<8)';
+        passwordStrengthBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600';
+        return true; // Still generate preview, but show warning
+      }
+
+      if (security === 'WPA' && pass.length >= 8) {
+        passwordStrengthBadge.innerText = 'Valid (8+ chars)';
+        passwordStrengthBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600';
+      }
+
+      validationWarning.classList.add('hidden');
+      return true;
+    }
+
+    // Update Card Text
+    function updateCardText() {
+      cardDisplayTitle.innerText = inputCardTitle.value.trim() || 'Join Our Wi-Fi';
+      cardDisplaySubtitle.innerText = inputCardSubtitle.value.trim() || 'Scan with your camera to connect';
+      cardDisplaySsid.innerText = inputSsid.value || 'None';
+      cardDisplayPassword.innerText = inputPassword.value || '(None)';
+
+      if (!checkShowPasswordCard.checked || selectSecurity.value === 'nopass') {
+        cardPasswordRow.classList.add('hidden');
+      } else {
+        cardPasswordRow.classList.remove('hidden');
+      }
+    }
+
+    // Render QR Code onto Canvas
+    function updateQrCode() {
+      validateInputs();
+      updateCardText();
+      currentPayload = computeWifiPayload();
+      rawPayloadDisplay.innerText = currentPayload || 'Enter network credentials above to generate payload...';
+
+      qrRenderTarget.innerHTML = '';
+      if (!currentPayload) {
+        qrRenderTarget.innerHTML = '<div class="w-48 h-48 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-muted">Enter SSID to preview</div>';
+        return;
+      }
+
+      let ecc = selectEcc.value; // 'L', 'M', 'Q', 'H'
+      if (toggleCenterLogo.checked && ecc === 'L') {
+        ecc = 'M'; // Ensure at least Medium recovery for logo
+      }
+
+      let qr;
+      try {
+        qr = qrcode(0, ecc);
+        qr.addData(currentPayload);
+        qr.make();
+      } catch (err) {
+        try {
+          qr = qrcode(4, ecc);
+          qr.addData(currentPayload);
+          qr.make();
+        } catch (e) {
+          qrRenderTarget.innerHTML = `<div class="p-4 rounded-xl bg-red-500/10 text-red-500 text-xs text-center font-medium">SSID or Password too long.</div>`;
+          return;
+        }
+      }
+
+      const moduleCount = qr.getModuleCount();
+      const size = parseInt(sliderSize.value, 10);
+      const margin = 2; // quiet zone in modules
+      const totalModules = moduleCount + margin * 2;
+      const cellSize = size / totalModules;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      canvas.id = 'wifi-qr-canvas';
+      canvas.className = 'max-w-full h-auto rounded-xl shadow-xs';
+      const ctx = canvas.getContext('2d');
+
+      // 1. Draw Background
+      ctx.fillStyle = inputColorLight.value;
+      ctx.fillRect(0, 0, size, size);
+
+      // 2. Draw Dark Modules
+      ctx.fillStyle = inputColorDark.value;
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const x = Math.round((c + margin) * cellSize);
+            const y = Math.round((r + margin) * cellSize);
+            const w = Math.ceil(cellSize);
+            const h = Math.ceil(cellSize);
+            ctx.fillRect(x, y, w, h);
+          }
+        }
+      }
+
+      // 3. Draw Center Wi-Fi Badge Overlay if enabled
+      if (toggleCenterLogo.checked && wifiLogoImg && (wifiLogoImg.complete || wifiLogoImg.naturalWidth > 0)) {
+        const logoSize = Math.round(size * 0.22);
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        const badgePadding = Math.max(5, Math.round(cellSize * 0.9));
+        const badgeSize = logoSize + badgePadding * 2;
+
+        // Draw Badge Circle Background (White with shadow)
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, badgeSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Wi-Fi Logo
+        ctx.save();
+        ctx.drawImage(wifiLogoImg, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      }
+
+      qrRenderTarget.innerHTML = '';
+      qrRenderTarget.appendChild(canvas);
+    }
+
+    // Event Listeners for Live Updates
+    inputSsid.addEventListener('input', updateQrCode);
+    selectSecurity.addEventListener('change', updateQrCode);
+    checkHidden.addEventListener('change', updateQrCode);
+    inputPassword.addEventListener('input', updateQrCode);
+    toggleCenterLogo.addEventListener('change', updateQrCode);
+
+    inputCardTitle.addEventListener('input', updateCardText);
+    inputCardSubtitle.addEventListener('input', updateCardText);
+    checkShowPasswordCard.addEventListener('change', updateCardText);
+
+    // Color pickers
+    pickerColorDark.addEventListener('input', (e) => { inputColorDark.value = e.target.value; updateQrCode(); });
+    inputColorDark.addEventListener('input', () => updateQrCode());
+    pickerColorLight.addEventListener('input', (e) => { inputColorLight.value = e.target.value; updateQrCode(); });
+    inputColorLight.addEventListener('input', () => updateQrCode());
+    selectEcc.addEventListener('change', updateQrCode);
+
+    sliderSize.addEventListener('input', (e) => {
+      labelSize.innerText = `${e.target.value} × ${e.target.value} px`;
+      updateQrCode();
+    });
+
+    // Export: Download PNG
+    btnDownloadPng.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const dataUrl = canvasEl.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const cleanName = (inputSsid.value || 'wifi').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `wifi-qr-${cleanName}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Downloaded Wi-Fi QR Code as PNG!');
+    });
+
+    // Export: Download SVG
+    btnDownloadSvg.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to download.');
+        return;
+      }
+
+      const size = parseInt(sliderSize.value, 10);
+      const dataUrl = canvasEl.toDataURL('image/png');
+
+      const svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <image width="${size}" height="${size}" xlink:href="${dataUrl}"/>
+</svg>`;
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanName = (inputSsid.value || 'wifi').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `wifi-qr-${cleanName}-${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded Wi-Fi QR Code as SVG!');
+    });
+
+    // Export: Copy Image to Clipboard
+    btnCopyQrImage.addEventListener('click', () => {
+      const canvasEl = qrRenderTarget.querySelector('canvas');
+      if (!canvasEl) {
+        showToast('No QR code to copy.');
+        return;
+      }
+
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => {
+            showToast('QR Code image copied to clipboard!');
+          });
+        } catch (e) {
+          showToast('Clipboard image copy not supported in this browser.');
+        }
+      });
+    });
+
+    // Export: Copy Raw Wi-Fi String
+    btnCopyRawWifi.addEventListener('click', () => {
+      if (!currentPayload) return;
+      navigator.clipboard.writeText(currentPayload).then(() => {
+        showToast('Raw Wi-Fi payload copied to clipboard!');
+      });
+    });
+
+    // Print Sign / Table Tent Card
+    btnPrintCard.addEventListener('click', () => {
+      // Temporarily switch to card mode for printing if in QR-only mode
+      const wasQrMode = !isCardMode;
+      if (wasQrMode) {
+        btnModeCard.click();
+      }
+
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize
+    initWifiLogo();
+  </script>
+</body>
+</html>

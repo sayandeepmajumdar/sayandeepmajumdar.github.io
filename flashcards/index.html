@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcards Study Studio & Spaced Repetition (SM-2) — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side Flashcard study app with SM-2 spaced repetition, 3D card flips, bulk CSV import/export, text-to-speech, and offline localStorage persistence." />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #2563eb;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+      --color-accent-hover: #3b82f6;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* 3D Flashcard Flip Animation */
+    .perspective-container {
+      perspective: 1200px;
+    }
+    .flashcard-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+    .flashcard-3d.is-flipped {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-face-back {
+      transform: rotateY(180deg);
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight">Flashcards Study Studio</h1>
+            <p class="text-xs sm:text-sm text-muted">Spaced repetition (SM-2) study app with 3D cards, bulk CSV import, and speech audio.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Header Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          id="btn-study-due-all"
+          type="button"
+          class="touch-target px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-xs flex items-center gap-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>Study Due Today (<span id="total-due-counter">0</span>)</span>
+        </button>
+
+        <button
+          id="btn-create-deck-modal"
+          type="button"
+          class="touch-target px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-all shadow-xs flex items-center gap-1.5"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>New Deck</span>
+        </button>
+
+        <button
+          id="btn-backup-menu"
+          type="button"
+          class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line text-ink hover:border-accent transition-all flex items-center gap-1.5"
+          title="Backup & Restore Decks"
+        >
+          <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span class="hidden sm:inline">Backup</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: DECKS DASHBOARD -->
+    <!-- ========================================================================= -->
+    <div id="view-dashboard" class="space-y-6">
+      
+      <!-- Stats Overview Banner -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="p-4 rounded-2xl bg-surface border border-line shadow-xs flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-muted block">Total Decks</span>
+            <span id="stat-total-decks" class="text-lg font-black text-ink font-mono">0</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface border border-line shadow-xs flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-muted block">Total Cards</span>
+            <span id="stat-total-cards" class="text-lg font-black text-ink font-mono">0</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface border border-line shadow-xs flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-muted block">Due Today</span>
+            <span id="stat-due-today" class="text-lg font-black text-emerald-600 font-mono">0</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-surface border border-line shadow-xs flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-muted block">Total Reviews</span>
+            <span id="stat-total-reviews" class="text-lg font-black text-ink font-mono">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decks Grid Header & Search -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <h2 class="text-base font-bold text-ink flex items-center gap-2">
+          <span>Your Flashcard Decks</span>
+          <span id="decks-count-badge" class="text-xs font-mono px-2 py-0.5 rounded-full bg-surface-alt border border-line text-muted">0</span>
+        </h2>
+
+        <div class="flex items-center gap-2">
+          <input
+            id="input-search-decks"
+            type="text"
+            placeholder="Search decks..."
+            class="px-3 py-1.5 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent w-48 sm:w-60"
+          />
+          <button id="btn-reset-sample-decks" type="button" class="text-xs text-accent hover:underline font-semibold whitespace-nowrap">Load Sample Decks</button>
+        </div>
+      </div>
+
+      <!-- Decks Grid Container -->
+      <div id="decks-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: STUDY MODE (3D FLIP & SM-2 ASSESSMENT) -->
+    <!-- ========================================================================= -->
+    <div id="view-study" class="hidden space-y-6 max-w-4xl mx-auto">
+      
+      <!-- Study Header Navigation -->
+      <div class="flex items-center justify-between p-4 rounded-2xl bg-surface border border-line shadow-xs">
+        <div class="flex items-center gap-3">
+          <button id="btn-exit-study" type="button" class="touch-target p-2 rounded-xl text-muted hover:text-ink hover:bg-surface-alt transition-colors" title="Exit Study Session">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          <div>
+            <h3 id="study-deck-title" class="text-sm font-bold text-ink">JavaScript Fundamentals</h3>
+            <p id="study-progress-text" class="text-xs text-muted font-mono">Card 1 of 12</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- TTS Read Aloud -->
+          <button
+            id="btn-study-tts"
+            type="button"
+            class="touch-target p-2 rounded-xl bg-surface-alt border border-line text-muted hover:text-accent transition-colors"
+            title="Read Card Aloud (R)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+          </button>
+
+          <!-- Shuffle Toggle -->
+          <button
+            id="btn-study-shuffle"
+            type="button"
+            class="touch-target px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-alt border border-line text-muted hover:text-ink transition-colors flex items-center gap-1"
+            title="Shuffle Deck (S)"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Shuffle</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Session Progress Bar -->
+      <div class="w-full h-1.5 bg-surface-alt rounded-full overflow-hidden border border-line">
+        <div id="study-progress-bar" class="h-full bg-accent transition-all duration-300" style="width: 0%;"></div>
+      </div>
+
+      <!-- 3D Flashcard Container -->
+      <div class="perspective-container w-full min-h-[340px] sm:min-h-[380px]">
+        <div id="active-flashcard" class="flashcard-3d relative w-full min-h-[340px] sm:min-h-[380px] cursor-pointer select-none">
+          
+          <!-- Card Front (Question) -->
+          <div class="card-face absolute inset-0 p-8 sm:p-12 rounded-3xl bg-surface border border-line shadow-md flex flex-col justify-between transition-colors">
+            <div class="flex items-center justify-between text-xs text-muted">
+              <span class="font-bold uppercase tracking-wider font-mono text-accent">Question / Prompt</span>
+              <span class="px-2.5 py-1 rounded-full bg-surface-alt border border-line text-[11px] font-semibold">Front</span>
+            </div>
+
+            <div class="my-auto text-center py-6">
+              <p id="card-front-text" class="text-xl sm:text-2xl font-bold text-ink leading-relaxed whitespace-pre-wrap">Card question goes here...</p>
+            </div>
+
+            <div class="flex items-center justify-center text-xs text-muted font-medium gap-2">
+              <span>Click or press <kbd class="px-2 py-0.5 rounded bg-surface-alt border border-line font-mono text-[10px]">Space</kbd> to flip</span>
+            </div>
+          </div>
+
+          <!-- Card Back (Answer) -->
+          <div class="card-face card-face-back absolute inset-0 p-8 sm:p-12 rounded-3xl bg-surface border border-line shadow-md flex flex-col justify-between transition-colors">
+            <div class="flex items-center justify-between text-xs text-muted">
+              <span class="font-bold uppercase tracking-wider font-mono text-emerald-500">Answer / Explanation</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[11px] font-semibold">Back</span>
+            </div>
+
+            <div class="my-auto text-center py-6">
+              <p id="card-back-text" class="text-lg sm:text-xl font-medium text-ink leading-relaxed whitespace-pre-wrap">Card answer goes here...</p>
+            </div>
+
+            <div class="flex items-center justify-center text-xs text-muted font-medium">
+              <span>Rate your recall below to schedule next review</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Spaced Repetition (SM-2) Rating Action Bar -->
+      <div id="study-rating-controls" class="p-4 rounded-2xl bg-surface border border-line shadow-sm transition-all">
+        <div class="text-center mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-muted">How well did you remember this?</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <!-- 1: Again -->
+          <button
+            id="btn-rate-again"
+            type="button"
+            class="touch-target p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all"
+          >
+            <div class="flex items-center gap-1.5">
+              <span>Again</span>
+              <kbd class="px-1.5 py-0.2 rounded bg-red-500/20 text-[10px] font-mono">1</kbd>
+            </div>
+            <span class="text-[10px] opacity-80 font-normal">&lt; 10 min</span>
+          </button>
+
+          <!-- 2: Hard -->
+          <button
+            id="btn-rate-hard"
+            type="button"
+            class="touch-target p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all"
+          >
+            <div class="flex items-center gap-1.5">
+              <span>Hard</span>
+              <kbd class="px-1.5 py-0.2 rounded bg-amber-500/20 text-[10px] font-mono">2</kbd>
+            </div>
+            <span class="text-[10px] opacity-80 font-normal">1 day</span>
+          </button>
+
+          <!-- 3: Good -->
+          <button
+            id="btn-rate-good"
+            type="button"
+            class="touch-target p-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all"
+          >
+            <div class="flex items-center gap-1.5">
+              <span>Good</span>
+              <kbd class="px-1.5 py-0.2 rounded bg-blue-500/20 text-[10px] font-mono">3</kbd>
+            </div>
+            <span class="text-[10px] opacity-80 font-normal">3-5 days</span>
+          </button>
+
+          <!-- 4: Easy -->
+          <button
+            id="btn-rate-easy"
+            type="button"
+            class="touch-target p-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex flex-col items-center justify-center gap-0.5 transition-all"
+          >
+            <div class="flex items-center gap-1.5">
+              <span>Easy</span>
+              <kbd class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[10px] font-mono">4</kbd>
+            </div>
+            <span class="text-[10px] opacity-80 font-normal">7+ days</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: SESSION SUMMARY SCREEN -->
+    <!-- ========================================================================= -->
+    <div id="view-summary" class="hidden space-y-6 max-w-xl mx-auto text-center py-6">
+      <div class="p-8 sm:p-10 rounded-3xl bg-surface border border-line shadow-lg space-y-6">
+        
+        <div class="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto shadow-inner">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+
+        <div class="space-y-1">
+          <h2 class="text-2xl font-black text-ink">Study Session Complete!</h2>
+          <p class="text-xs sm:text-sm text-muted">You've successfully completed this review round.</p>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-3 gap-3 pt-2">
+          <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Reviewed</span>
+            <span id="summary-cards-count" class="text-lg font-black text-ink font-mono">12</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Accuracy</span>
+            <span id="summary-accuracy" class="text-lg font-black text-emerald-600 font-mono">85%</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-muted block">Time Spent</span>
+            <span id="summary-time" class="text-lg font-black text-indigo-500 font-mono">1m 45s</span>
+          </div>
+        </div>
+
+        <!-- Rating Distribution Pills -->
+        <div class="flex items-center justify-center gap-2 pt-2 text-xs">
+          <span class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 font-bold">Again: <span id="sum-again">0</span></span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 font-bold">Hard: <span id="sum-hard">0</span></span>
+          <span class="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 font-bold">Good: <span id="sum-good">0</span></span>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 font-bold">Easy: <span id="sum-easy">0</span></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-4 border-t" style="border-color: var(--color-line);">
+          <button
+            id="btn-summary-restart"
+            type="button"
+            class="w-full touch-target px-5 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:bg-accent-hover transition-colors shadow-xs"
+          >
+            Study Again
+          </button>
+
+          <button
+            id="btn-summary-home"
+            type="button"
+            class="w-full touch-target px-5 py-3 rounded-xl font-bold text-xs bg-surface-alt border border-line hover:border-accent text-ink transition-colors"
+          >
+            Back to All Decks
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 4: DECK CARD MANAGER -->
+    <!-- ========================================================================= -->
+    <div id="view-card-manager" class="hidden space-y-6">
+      
+      <!-- Manager Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-surface border border-line shadow-xs">
+        <div class="flex items-center gap-3">
+          <button id="btn-back-to-decks" type="button" class="touch-target p-2 rounded-xl text-muted hover:text-ink hover:bg-surface-alt transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          <div>
+            <h2 id="manager-deck-title" class="text-base sm:text-lg font-bold text-ink">Manage Deck</h2>
+            <p id="manager-deck-desc" class="text-xs text-muted">0 cards in deck</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="btn-open-add-card"
+            type="button"
+            class="touch-target px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-all shadow-xs flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>Add Card</span>
+          </button>
+
+          <button
+            id="btn-open-bulk-import"
+            type="button"
+            class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line text-ink hover:border-accent transition-all flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>Import CSV</span>
+          </button>
+
+          <button
+            id="btn-export-deck-csv"
+            type="button"
+            class="touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line text-ink hover:border-accent transition-all flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Export</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Cards Filter -->
+      <div class="flex items-center justify-between gap-3">
+        <input
+          id="input-search-cards"
+          type="text"
+          placeholder="Filter cards by question or answer..."
+          class="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink focus:outline-none focus:border-accent"
+        />
+      </div>
+
+      <!-- Cards Table / List -->
+      <div class="p-5 rounded-2xl bg-surface border border-line shadow-xs space-y-3">
+        <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+          <span class="text-xs font-bold uppercase tracking-wider text-muted">Deck Cards List</span>
+          <span id="cards-count-badge" class="text-xs font-mono text-muted">0 cards</span>
+        </div>
+
+        <div id="cards-list-container" class="space-y-2.5 max-h-[500px] overflow-y-auto scrollbar-thin">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: CREATE / EDIT DECK -->
+  <!-- ========================================================================= -->
+  <div id="modal-deck" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl bg-surface border border-line p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+        <h3 id="modal-deck-title" class="text-sm font-bold text-ink">Create New Deck</h3>
+        <button id="btn-close-deck-modal" type="button" class="text-muted hover:text-ink">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <label for="input-deck-name" class="block text-xs font-bold uppercase tracking-wider text-muted">Deck Name <span class="text-red-500">*</span></label>
+          <input id="input-deck-name" type="text" placeholder="e.g. Design Patterns or Spanish A1" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink font-semibold focus:outline-none focus:border-accent" required />
+        </div>
+
+        <div class="space-y-1">
+          <label for="input-deck-description" class="block text-xs font-bold uppercase tracking-wider text-muted">Description (Optional)</label>
+          <textarea id="input-deck-description" rows="2" placeholder="e.g. High-frequency concepts and exam prep" class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line text-ink focus:outline-none focus:border-accent"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t" style="border-color: var(--color-line);">
+        <button id="btn-cancel-deck" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-muted hover:text-ink hover:bg-surface-alt">Cancel</button>
+        <button id="btn-save-deck" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover shadow-xs">Save Deck</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: ADD / EDIT CARD -->
+  <!-- ========================================================================= -->
+  <div id="modal-card" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-2xl bg-surface border border-line p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+        <h3 id="modal-card-title" class="text-sm font-bold text-ink">Add Flashcard</h3>
+        <button id="btn-close-card-modal" type="button" class="text-muted hover:text-ink">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <label for="input-card-front" class="block text-xs font-bold uppercase tracking-wider text-muted">Front (Question / Prompt) <span class="text-red-500">*</span></label>
+          <textarea id="input-card-front" rows="3" placeholder="What is a closure in JavaScript?" class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink font-semibold focus:outline-none focus:border-accent" required></textarea>
+        </div>
+
+        <div class="space-y-1">
+          <label for="input-card-back" class="block text-xs font-bold uppercase tracking-wider text-muted">Back (Answer / Definition) <span class="text-red-500">*</span></label>
+          <textarea id="input-card-back" rows="4" placeholder="A closure gives an inner function access to an outer function's scope..." class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line text-ink focus:outline-none focus:border-accent" required></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t" style="border-color: var(--color-line);">
+        <button id="btn-cancel-card" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-muted hover:text-ink hover:bg-surface-alt">Cancel</button>
+        <button id="btn-save-card" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover shadow-xs">Save Card</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: BULK CSV / TEXT IMPORT -->
+  <!-- ========================================================================= -->
+  <div id="modal-bulk" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-2xl bg-surface border border-line p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+        <h3 class="text-sm font-bold text-ink">Bulk Import Cards (CSV / TSV)</h3>
+        <button id="btn-close-bulk-modal" type="button" class="text-muted hover:text-ink">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-xs text-muted">Paste lines with <code class="px-1.5 py-0.5 rounded bg-surface-alt border font-mono">Front,Back</code> or <code class="px-1.5 py-0.5 rounded bg-surface-alt border font-mono">Front[Tab]Back</code>.</p>
+        <textarea id="input-bulk-text" rows="6" placeholder="What is hoisting?,Variables and function declarations moved to top of scope&#10;What is a Promise?,An object representing eventual completion of async operation" class="w-full px-3.5 py-2.5 rounded-xl text-xs font-mono bg-paper border border-line text-ink focus:outline-none focus:border-accent"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t" style="border-color: var(--color-line);">
+        <span id="bulk-detected-count" class="text-[11px] font-mono text-muted">0 cards detected</span>
+        <div class="flex items-center gap-2">
+          <button id="btn-cancel-bulk" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-muted hover:text-ink hover:bg-surface-alt">Cancel</button>
+          <button id="btn-submit-bulk" type="button" class="px-4 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover shadow-xs">Import Cards</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Action successful!</span>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'toolbox:flashcards_decks';
+    const STATS_KEY = 'toolbox:flashcards_stats';
+
+    // State
+    let decks = [];
+    let stats = { totalReviews: 0 };
+    let currentDeckId = null;
+    let editingCardId = null;
+    let editingDeckId = null;
+
+    // Study Session State
+    let studyQueue = [];
+    let studyIndex = 0;
+    let isFlipped = false;
+    let sessionStartTime = 0;
+    let sessionRatings = { again: 0, hard: 0, good: 0, easy: 0 };
+
+    // Sample Decks
+    const SAMPLE_DECKS = [
+      {
+        id: 'deck-c-lang',
+        name: 'C Programming & Memory Architecture',
+        description: 'Pointers, dynamic allocation (malloc/free), structs, memory layouts, and undefined behavior.',
+        cards: [
+          {
+            id: 'c_1',
+            front: 'What is the difference between malloc(), calloc(), and realloc() in C?',
+            back: '• malloc(size): Allocates uninitialized heap memory.\n• calloc(num, size): Allocates heap memory and zeroes out all bytes.\n• realloc(ptr, new_size): Resizes a previously allocated heap block, preserving contents up to the minimum of old and new sizes.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c_2',
+            front: 'What is the difference between a Dangling Pointer, a Wild Pointer, and a Memory Leak?',
+            back: '• Dangling Pointer: Points to memory that has already been deallocated/freed.\n• Wild Pointer: An uninitialized pointer pointing to an arbitrary memory address.\n• Memory Leak: Heap memory that was allocated but never freed and no longer has any reference.',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c_3',
+            front: 'What is the difference between a struct and a union in C?',
+            back: '• struct: Allocates separate memory for each member; total size is at least the sum of all members (plus padding for alignment).\n• union: All members share the same memory location; total size equals the size of its largest member.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c_4',
+            front: 'What is the purpose of the "volatile" keyword in C?',
+            back: 'It instructs the compiler that a variable\'s value may change at any moment outside the program\'s control (e.g. hardware register, memory-mapped I/O, interrupt/signal handler). This prevents the compiler from optimizing away reads or caching the value in a CPU register.',
+            reps: 0,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c_5',
+            front: 'What is Undefined Behavior (UB) in C and what are 3 common examples?',
+            back: 'UB occurs when code violates C standard rules, allowing the compiler to generate arbitrary machine code.\nExamples:\n1. Dereferencing a NULL or dangling pointer\n2. Signed integer overflow (e.g. INT_MAX + 1)\n3. Accessing array elements out of bounds.',
+            reps: 2,
+            interval: 4,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-csharp-dotnet',
+        name: 'C# & .NET Core Architecture',
+        description: 'CLR runtime, LINQ, async/await, memory allocation, generics, and garbage collection.',
+        cards: [
+          {
+            id: 'cs_1',
+            front: 'What is the difference between Value Types (struct) and Reference Types (class) in C#?',
+            back: '• Value Types (int, bool, struct): Stored directly where declared (Stack or inline in containing object); copied by value.\n• Reference Types (class, string, object): Stored on the Managed Heap; variables hold a reference/pointer to memory on the heap.',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'cs_2',
+            front: 'Explain the difference between IEnumerable<T> and IQueryable<T> in LINQ.',
+            back: '• IEnumerable<T>: Evaluated in-memory (LINQ to Objects) using client-side iteration.\n• IQueryable<T>: Represents expression trees translated and evaluated on remote data sources (e.g. Entity Framework / SQL), generating optimized SQL queries before execution.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'cs_3',
+            front: 'How does async/await work under the hood in C#?',
+            back: 'The C# compiler generates an asynchronous state machine struct (IAsyncStateMachine). When an awaited Task is incomplete, the method yields the thread back to the thread pool and resumes execution on a completion callback when the task finishes.',
+            reps: 2,
+            interval: 4,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'cs_4',
+            front: 'What is the purpose of the IDisposable interface and the "using" statement?',
+            back: '• IDisposable (Dispose()): Deterministic cleanup of unmanaged resources (file handles, database connections, sockets).\n• "using" statement/declaration: Syntactic sugar for a try-finally block ensuring Dispose() is always called even if exceptions occur.',
+            reps: 3,
+            interval: 6,
+            easeFactor: 2.7,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'cs_5',
+            front: 'Explain Boxing and Unboxing in C# and its performance impact.',
+            back: '• Boxing: Converting a value type to an object or interface type, allocating a new object on the heap.\n• Unboxing: Explicitly extracting the value type back from the object reference.\nImpact: Frequent boxing/unboxing causes heap allocations, GC pressure, and CPU overhead.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-java-jvm',
+        name: 'Java & JVM Deep Dive',
+        description: 'JVM memory model, Garbage Collection, concurrency, Streams, and OOP design.',
+        cards: [
+          {
+            id: 'jv_1',
+            front: 'Explain the JVM Memory Structure: Stack, Heap, and Metaspace.',
+            back: '• Stack: Thread-private memory storing primitive local variables and method call frames.\n• Heap: Shared memory where all objects and instance variables are allocated.\n• Metaspace (Java 8+): Native off-heap memory storing class metadata, method bytecode, and constant pools.',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'jv_2',
+            front: 'What is the contract between equals() and hashCode() in Java?',
+            back: '1. If two objects are equal according to equals(), they MUST have the same hashCode().\n2. If two objects have the same hashCode(), they are NOT necessarily equal (hash collision).\n3. If overridden, both methods must be updated together to maintain HashMap/HashSet correctness.',
+            reps: 3,
+            interval: 6,
+            easeFactor: 2.7,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'jv_3',
+            front: 'How does ConcurrentHashMap achieve thread safety in Java 8+?',
+            back: 'Instead of locking the entire map (like Hashtable), Java 8 ConcurrentHashMap uses CAS (Compare-And-Swap) for empty bucket insertions and synchronized locks on individual bucket head nodes (fine-grained locking), allowing concurrent reads and writes without blocking unrelated buckets.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'jv_4',
+            front: 'What is the difference between final, finally, and finalize() in Java?',
+            back: '• final: Keyword to declare constants, prevent method overriding, or prevent class inheritance.\n• finally: Block that always executes after try-catch (except system exit/crash).\n• finalize(): Deprecated Object method formerly called by GC before destroying an object.',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'jv_5',
+            front: 'What is the purpose of the "volatile" keyword in Java?',
+            back: '1. Visibility: Ensures changes made by one thread to a variable are immediately visible to all other threads (flushed to main memory, bypassing CPU caches).\n2. Ordering: Prevents compiler and CPU instruction reordering around volatile reads/writes.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-python-mastery',
+        name: 'Python Mastery & Internals',
+        description: 'GIL, generators, decorators, memory management, and OOP dunder protocols.',
+        cards: [
+          {
+            id: 'py_1',
+            front: 'What is the Global Interpreter Lock (GIL) in CPython and what are its implications?',
+            back: 'The GIL is a mutex that allows only one native thread to execute Python bytecode at a time in CPython. It prevents race conditions in reference counting memory management, but limits CPU-bound multi-threading (use "multiprocessing" or "asyncio" instead).',
+            reps: 2,
+            interval: 4,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'py_2',
+            front: 'How do Python Generators and the "yield" keyword work?',
+            back: 'Generators are iterator functions that pause execution and return an intermediate value using "yield". When next() is called, the generator resumes from where it left off, maintaining local state with O(1) memory instead of allocating full lists in memory.',
+            reps: 3,
+            interval: 5,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'py_3',
+            front: 'Why should you never use mutable default arguments (like def func(a=[])) in Python?',
+            back: 'Default arguments in Python are evaluated once when the function is defined, not each time it is called. A mutable default (like a list or dict) persists and mutates across subsequent calls.\nFix: Use "def func(a=None): if a is None: a = []".',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'py_4',
+            front: 'What is the difference between "is" and "==" in Python?',
+            back: '• "==" tests for equality of value (calls __eq__).\n• "is" tests for object identity (checks if both variables point to the exact same memory address using id()).',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'py_5',
+            front: 'Explain the difference between __str__ and __repr__ in Python classes.',
+            back: '• __str__: Returns a readable, user-friendly string representation (used by print() and str()).\n• __repr__: Returns an unambiguous, developer-friendly string (ideally valid Python code to recreate the object; used by interactive shell and repr()).',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-database-sql',
+        name: 'Database Systems & SQL Architecture',
+        description: 'ACID properties, B-Trees, normalization, indexing strategies, transactions, and query plans.',
+        cards: [
+          {
+            id: 'db_1',
+            front: 'Explain the ACID properties of relational database transactions.',
+            back: '• Atomicity: All operations in a transaction succeed, or all are rolled back (all-or-nothing).\n• Consistency: Database transitions from one valid state to another, upholding all constraints.\n• Isolation: Concurrent transactions execute independently without interfering with each other.\n• Durability: Once committed, data changes persist even in case of power failure or crash.',
+            reps: 3,
+            interval: 6,
+            easeFactor: 2.7,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'db_2',
+            front: 'How does a B-Tree / B+Tree Index work and why is it preferred over Hash Indexes in RDBMS?',
+            back: 'B+Trees are self-balancing search trees where all data pointers reside in leaf nodes connected as a doubly linked list.\nWhy preferred: Supports fast point lookups O(log N) AND efficient range scans (e.g. WHERE age BETWEEN 20 AND 30) and ORDER BY queries, whereas Hash Indexes only support exact equality (=).',
+            reps: 2,
+            interval: 4,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'db_3',
+            front: 'What is the difference between a Clustered Index and a Non-Clustered Index?',
+            back: '• Clustered Index: Determines the physical order of data rows in the table; only 1 clustered index per table (typically Primary Key).\n• Non-Clustered Index: A separate structure with key values and pointers (RID or clustered key) back to the actual table rows; multiple allowed per table.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'db_4',
+            front: 'Explain the 4 standard SQL Transaction Isolation Levels.',
+            back: '1. Read Uncommitted: Allows dirty reads (reading uncommitted data).\n2. Read Committed: Prevents dirty reads; allows non-repeatable reads.\n3. Repeatable Read: Prevents dirty & non-repeatable reads; allows phantom reads (new rows inserted).\n4. Serializable: Highest isolation; transactions execute as if sequentially.',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'db_5',
+            front: 'Explain the difference between INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL OUTER JOIN.',
+            back: '• INNER JOIN: Returns rows where there is a match in both tables.\n• LEFT JOIN: Returns all rows from left table, and matched rows from right table (NULL if no match).\n• RIGHT JOIN: Returns all rows from right table, and matched rows from left table.\n• FULL OUTER JOIN: Returns rows when there is a match in either table.',
+            reps: 3,
+            interval: 5,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-js-web',
+        name: 'JavaScript & Web Architecture',
+        description: 'Core ECMAScript, event loop, closures, and async patterns.',
+        cards: [
+          {
+            id: 'c1',
+            front: 'What is a Closure in JavaScript?',
+            back: 'A closure is the combination of a function bundled together with references to its surrounding lexical environment, allowing it to access outer scope variables even after the outer function has closed.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c2',
+            front: 'Explain the difference between Microtasks and Macrotasks in the Event Loop.',
+            back: 'Microtasks (Promises, queueMicrotask, MutationObserver) run immediately after the currently executing script and before the next rendering or Macrotask (setTimeout, setInterval, I/O, setImmediate).',
+            reps: 2,
+            interval: 3,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'c3',
+            front: 'What is the purpose of WeakMap and WeakSet?',
+            back: 'They hold weak references to object keys/values. When no other references to an object exist, it can be garbage collected, preventing memory leaks in DOM metadata or private variables.',
+            reps: 0,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-system-design',
+        name: 'System Design & Distributed Patterns',
+        description: 'Scalability, caching, consistency models, and fault tolerance.',
+        cards: [
+          {
+            id: 'sd1',
+            front: 'State the CAP Theorem trade-off in distributed data stores.',
+            back: 'A distributed system can guarantee at most two out of three properties: Consistency (all nodes see latest data), Availability (every request receives non-error response), and Partition Tolerance (system functions despite network drops).',
+            reps: 2,
+            interval: 4,
+            easeFactor: 2.6,
+            nextReviewDate: getTodayString()
+          },
+          {
+            id: 'sd2',
+            front: 'How does Consistent Hashing minimize data movement during node scaling?',
+            back: 'It maps both nodes and keys onto a virtual hash ring (0 to 2^32-1). When a server node is added or removed, only k/N keys need to be remapped on average, rather than rehashing all keys.',
+            reps: 1,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString()
+          }
+        ]
+      },
+      {
+        id: 'deck-spanish',
+        name: 'Spanish Essentials A1',
+        description: 'Essential conversational phrases and everyday vocabulary.',
+        cards: [
+          { id: 'sp1', front: '¿Cómo estás?', back: 'How are you? (Informal)', reps: 3, interval: 6, easeFactor: 2.7, nextReviewDate: getTodayString() },
+          { id: 'sp2', front: 'Mucho gusto', back: 'Nice to meet you', reps: 1, interval: 1, easeFactor: 2.5, nextReviewDate: getTodayString() },
+          { id: 'sp3', front: 'Por favor y gracias', back: 'Please and thank you', reps: 2, interval: 3, easeFactor: 2.5, nextReviewDate: getTodayString() }
+        ]
+      }
+    ];
+
+    function getTodayString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    // Load from LocalStorage
+    function loadDecks() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          decks = JSON.parse(saved);
+          // Check if any default sample decks are missing and auto-include them if user only has few decks
+          if (decks.length <= 3) {
+            SAMPLE_DECKS.forEach(sample => {
+              if (!decks.find(d => d.name === sample.name || d.id === sample.id)) {
+                decks.push(JSON.parse(JSON.stringify(sample)));
+              }
+            });
+            saveDecks();
+          }
+        } else {
+          decks = JSON.parse(JSON.stringify(SAMPLE_DECKS));
+          saveDecks();
+        }
+        const savedStats = localStorage.getItem(STATS_KEY);
+        if (savedStats) stats = JSON.parse(savedStats);
+      } catch (e) {
+        decks = JSON.parse(JSON.stringify(SAMPLE_DECKS));
+      }
+      renderDashboard();
+    }
+
+    function saveDecks() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(decks));
+        localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      } catch (e) {}
+    }
+
+    // Navigation Views
+    const viewDashboard = document.getElementById('view-dashboard');
+    const viewStudy = document.getElementById('view-study');
+    const viewSummary = document.getElementById('view-summary');
+    const viewCardManager = document.getElementById('view-card-manager');
+
+    function switchView(viewName) {
+      viewDashboard.classList.add('hidden');
+      viewStudy.classList.add('hidden');
+      viewSummary.classList.add('hidden');
+      viewCardManager.classList.add('hidden');
+
+      if (viewName === 'dashboard') viewDashboard.classList.remove('hidden');
+      else if (viewName === 'study') viewStudy.classList.remove('hidden');
+      else if (viewName === 'summary') viewSummary.classList.remove('hidden');
+      else if (viewName === 'manager') viewCardManager.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // DASHBOARD RENDERING
+    // ==========================================
+    const decksGridContainer = document.getElementById('decks-grid-container');
+    const statTotalDecks = document.getElementById('stat-total-decks');
+    const statTotalCards = document.getElementById('stat-total-cards');
+    const statDueToday = document.getElementById('stat-due-today');
+    const statTotalReviews = document.getElementById('stat-total-reviews');
+    const totalDueCounter = document.getElementById('total-due-counter');
+    const decksCountBadge = document.getElementById('decks-count-badge');
+    const inputSearchDecks = document.getElementById('input-search-decks');
+
+    function countDueCards(cardList) {
+      const today = getTodayString();
+      return cardList.filter(c => !c.nextReviewDate || c.nextReviewDate <= today).length;
+    }
+
+    function renderDashboard() {
+      const filterText = inputSearchDecks.value.trim().toLowerCase();
+      const filtered = decks.filter(d => d.name.toLowerCase().includes(filterText) || (d.description && d.description.toLowerCase().includes(filterText)));
+
+      let totalCards = 0;
+      let totalDue = 0;
+      decks.forEach(d => {
+        totalCards += d.cards.length;
+        totalDue += countDueCards(d.cards);
+      });
+
+      statTotalDecks.innerText = decks.length;
+      statTotalCards.innerText = totalCards;
+      statDueToday.innerText = totalDue;
+      statTotalReviews.innerText = stats.totalReviews || 0;
+      totalDueCounter.innerText = totalDue;
+      decksCountBadge.innerText = `${filtered.length} decks`;
+
+      decksGridContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        decksGridContainer.innerHTML = `
+          <div class="col-span-full p-12 text-center rounded-2xl bg-surface border border-line space-y-3">
+            <p class="text-sm font-bold text-ink">No decks found</p>
+            <p class="text-xs text-muted">Create a new deck or search with different keywords.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(deck => {
+        const dueCount = countDueCards(deck.cards);
+        const cardCount = deck.cards.length;
+
+        const card = document.createElement('div');
+        card.className = 'p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-4 shadow-xs hover:border-accent/50 transition-all flex flex-col justify-between';
+
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-base font-bold text-ink leading-snug">${escapeHtml(deck.name)}</h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${dueCount > 0 ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-surface-alt text-muted'}">
+                ${dueCount > 0 ? `${dueCount} Due` : 'Reviewed'}
+              </span>
+            </div>
+            <p class="text-xs text-muted line-clamp-2 leading-relaxed">${escapeHtml(deck.description || 'No description provided.')}</p>
+          </div>
+
+          <div class="space-y-3 pt-3 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center justify-between text-xs text-muted font-mono">
+              <span>${cardCount} ${cardCount === 1 ? 'card' : 'cards'}</span>
+              <span>SM-2 Spaced</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="btn-study-deck touch-target px-3 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-all flex items-center justify-center gap-1.5 shadow-2xs"
+                data-id="${deck.id}"
+                ${cardCount === 0 ? 'disabled class="opacity-50 cursor-not-allowed"' : ''}
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Study</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-manage-deck touch-target px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-all flex items-center justify-center gap-1.5"
+                data-id="${deck.id}"
+              >
+                <span>Cards</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-muted pt-1">
+              <button type="button" class="btn-edit-deck text-accent hover:underline font-semibold" data-id="${deck.id}">Edit Deck</button>
+              <button type="button" class="btn-delete-deck text-muted hover:text-red-500 transition-colors" data-id="${deck.id}">Delete</button>
+            </div>
+          </div>
+        `;
+
+        decksGridContainer.appendChild(card);
+      });
+    }
+
+    inputSearchDecks.addEventListener('input', renderDashboard);
+
+    // Load Sample Decks
+    document.getElementById('btn-reset-sample-decks').addEventListener('click', () => {
+      if (confirm('Load sample pre-made decks? Existing decks will remain.')) {
+        SAMPLE_DECKS.forEach(sample => {
+          if (!decks.find(d => d.name === sample.name)) {
+            decks.push(JSON.parse(JSON.stringify(sample)));
+          }
+        });
+        saveDecks();
+        renderDashboard();
+        showToast('Sample decks loaded!');
+      }
+    });
+
+    // ==========================================
+    // STUDY SESSION LOGIC (SM-2 ALGORITHM)
+    // ==========================================
+    const activeFlashcard = document.getElementById('active-flashcard');
+    const cardFrontText = document.getElementById('card-front-text');
+    const cardBackText = document.getElementById('card-back-text');
+    const studyDeckTitle = document.getElementById('study-deck-title');
+    const studyProgressText = document.getElementById('study-progress-text');
+    const studyProgressBar = document.getElementById('study-progress-bar');
+    const btnStudyTts = document.getElementById('btn-study-tts');
+    const btnStudyShuffle = document.getElementById('btn-study-shuffle');
+    const btnExitStudy = document.getElementById('btn-exit-study');
+
+    function startStudySession(cardList, title) {
+      if (!cardList || cardList.length === 0) {
+        showToast('No cards to study in this deck.');
+        return;
+      }
+
+      studyQueue = JSON.parse(JSON.stringify(cardList));
+      studyIndex = 0;
+      isFlipped = false;
+      sessionStartTime = Date.now();
+      sessionRatings = { again: 0, hard: 0, good: 0, easy: 0 };
+      studyDeckTitle.innerText = title;
+
+      switchView('study');
+      renderStudyCard();
+    }
+
+    function renderStudyCard() {
+      if (studyIndex >= studyQueue.length) {
+        finishStudySession();
+        return;
+      }
+
+      const card = studyQueue[studyIndex];
+      isFlipped = false;
+      activeFlashcard.classList.remove('is-flipped');
+
+      cardFrontText.innerText = card.front;
+      cardBackText.innerText = card.back;
+
+      const currentNum = studyIndex + 1;
+      const total = studyQueue.length;
+      studyProgressText.innerText = `Card ${currentNum} of ${total}`;
+      const pct = Math.round((studyIndex / total) * 100);
+      studyProgressBar.style.width = `${pct}%`;
+    }
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      activeFlashcard.classList.toggle('is-flipped', isFlipped);
+    }
+
+    activeFlashcard.addEventListener('click', flipCard);
+
+    // Apply SM-2 Spaced Repetition Rating
+    function rateCurrentCard(rating) {
+      const card = studyQueue[studyIndex];
+      let reps = card.reps || 0;
+      let interval = card.interval || 1;
+      let easeFactor = card.easeFactor || 2.5;
+
+      if (rating === 1) {
+        // Again: reset streak, review again today
+        sessionRatings.again++;
+        reps = 0;
+        interval = 1;
+        easeFactor = Math.max(1.3, easeFactor - 0.2);
+        // Append card to end of session queue so it resurfaces
+        studyQueue.push(card);
+      } else if (rating === 2) {
+        // Hard: shorter interval
+        sessionRatings.hard++;
+        reps = reps > 0 ? reps : 1;
+        interval = Math.max(1, Math.round(interval * 1.2));
+        easeFactor = Math.max(1.3, easeFactor - 0.15);
+      } else if (rating === 3) {
+        // Good: standard SM-2 progression
+        sessionRatings.good++;
+        if (reps === 0) interval = 1;
+        else if (reps === 1) interval = 3;
+        else interval = Math.round(interval * easeFactor);
+        reps++;
+      } else if (rating === 4) {
+        // Easy: bonus interval
+        sessionRatings.easy++;
+        if (reps === 0) interval = 3;
+        else if (reps === 1) interval = 6;
+        else interval = Math.round(interval * easeFactor * 1.35);
+        easeFactor += 0.15;
+        reps++;
+      }
+
+      // Calculate next review date
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + interval);
+      const nextReviewDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+
+      // Update actual card in deck
+      decks.forEach(d => {
+        const found = d.cards.find(c => c.id === card.id);
+        if (found) {
+          found.reps = reps;
+          found.interval = interval;
+          found.easeFactor = easeFactor;
+          found.nextReviewDate = nextReviewDateStr;
+          found.lastReviewed = Date.now();
+        }
+      });
+
+      stats.totalReviews = (stats.totalReviews || 0) + 1;
+      saveDecks();
+
+      studyIndex++;
+      renderStudyCard();
+    }
+
+    document.getElementById('btn-rate-again').addEventListener('click', (e) => { e.stopPropagation(); rateCurrentCard(1); });
+    document.getElementById('btn-rate-hard').addEventListener('click', (e) => { e.stopPropagation(); rateCurrentCard(2); });
+    document.getElementById('btn-rate-good').addEventListener('click', (e) => { e.stopPropagation(); rateCurrentCard(3); });
+    document.getElementById('btn-rate-easy').addEventListener('click', (e) => { e.stopPropagation(); rateCurrentCard(4); });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (viewStudy.classList.contains('hidden')) return;
+
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        flipCard();
+      } else if (e.key === '1') {
+        rateCurrentCard(1);
+      } else if (e.key === '2') {
+        rateCurrentCard(2);
+      } else if (e.key === '3') {
+        rateCurrentCard(3);
+      } else if (e.key === '4') {
+        rateCurrentCard(4);
+      } else if (e.key === 's' || e.key === 'S') {
+        shuffleStudyQueue();
+      } else if (e.key === 'r' || e.key === 'R') {
+        playTts();
+      }
+    });
+
+    // Shuffle Study Queue
+    function shuffleStudyQueue() {
+      const remaining = studyQueue.slice(studyIndex);
+      for (let i = remaining.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+      }
+      studyQueue = studyQueue.slice(0, studyIndex).concat(remaining);
+      renderStudyCard();
+      showToast('Shuffled remaining cards!');
+    }
+    btnStudyShuffle.addEventListener('click', shuffleStudyQueue);
+
+    // Native Speech Synthesis (TTS)
+    function playTts() {
+      if (!('speechSynthesis' in window)) {
+        showToast('Text-to-Speech not supported in this browser.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const textToRead = isFlipped ? cardBackText.innerText : cardFrontText.innerText;
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    }
+    btnStudyTts.addEventListener('click', playTts);
+
+    btnExitStudy.addEventListener('click', () => {
+      if (confirm('Exit study session? Progress so far is saved.')) {
+        switchView('dashboard');
+        renderDashboard();
+      }
+    });
+
+    // Session Completion Summary
+    function finishStudySession() {
+      const durationSec = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
+      const mins = Math.floor(durationSec / 60);
+      const secs = durationSec % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+      const totalRated = sessionRatings.again + sessionRatings.hard + sessionRatings.good + sessionRatings.easy;
+      const accurateCount = sessionRatings.good + sessionRatings.easy;
+      const accuracyPct = totalRated > 0 ? Math.round((accurateCount / totalRated) * 100) : 100;
+
+      document.getElementById('summary-cards-count').innerText = totalRated;
+      document.getElementById('summary-accuracy').innerText = `${accuracyPct}%`;
+      document.getElementById('summary-time').innerText = timeStr;
+
+      document.getElementById('sum-again').innerText = sessionRatings.again;
+      document.getElementById('sum-hard').innerText = sessionRatings.hard;
+      document.getElementById('sum-good').innerText = sessionRatings.good;
+      document.getElementById('sum-easy').innerText = sessionRatings.easy;
+
+      switchView('summary');
+    }
+
+    document.getElementById('btn-summary-home').addEventListener('click', () => {
+      switchView('dashboard');
+      renderDashboard();
+    });
+
+    document.getElementById('btn-summary-restart').addEventListener('click', () => {
+      if (currentDeckId) {
+        const deck = decks.find(d => d.id === currentDeckId);
+        if (deck) startStudySession(deck.cards, deck.name);
+      } else {
+        studyAllDueCards();
+      }
+    });
+
+    // Study All Due Today
+    function studyAllDueCards() {
+      const today = getTodayString();
+      const allDue = [];
+      decks.forEach(d => {
+        d.cards.forEach(c => {
+          if (!c.nextReviewDate || c.nextReviewDate <= today) {
+            allDue.push(c);
+          }
+        });
+      });
+
+      if (allDue.length === 0) {
+        showToast('No cards due today! Great work!');
+        return;
+      }
+
+      currentDeckId = null;
+      startStudySession(allDue, 'All Due Today');
+    }
+    document.getElementById('btn-study-due-all').addEventListener('click', studyAllDueCards);
+
+    // ==========================================
+    // DECK & CARD MANAGEMENT
+    // ==========================================
+    const managerDeckTitle = document.getElementById('manager-deck-title');
+    const managerDeckDesc = document.getElementById('manager-deck-desc');
+    const cardsListContainer = document.getElementById('cards-list-container');
+    const cardsCountBadge = document.getElementById('cards-count-badge');
+    const inputSearchCards = document.getElementById('input-search-cards');
+
+    function openCardManager(deckId) {
+      currentDeckId = deckId;
+      const deck = decks.find(d => d.id === deckId);
+      if (!deck) return;
+
+      managerDeckTitle.innerText = deck.name;
+      managerDeckDesc.innerText = `${deck.cards.length} cards • ${escapeHtml(deck.description || '')}`;
+      switchView('manager');
+      renderCardsList();
+    }
+
+    function renderCardsList() {
+      const deck = decks.find(d => d.id === currentDeckId);
+      if (!deck) return;
+
+      const q = inputSearchCards.value.trim().toLowerCase();
+      const filtered = deck.cards.filter(c => c.front.toLowerCase().includes(q) || c.back.toLowerCase().includes(q));
+
+      cardsCountBadge.innerText = `${filtered.length} of ${deck.cards.length} cards`;
+      cardsListContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        cardsListContainer.innerHTML = `
+          <div class="p-8 text-center text-xs text-muted border border-dashed rounded-xl">
+            No cards found. Click "Add Card" or "Import CSV" above.
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach((card, index) => {
+        const div = document.createElement('div');
+        div.className = 'p-3.5 rounded-xl bg-surface-alt border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs';
+
+        div.innerHTML = `
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-ink font-mono text-[11px]">#${index + 1}</span>
+              <p class="font-bold text-ink truncate">${escapeHtml(card.front)}</p>
+            </div>
+            <p class="text-muted line-clamp-2 text-[11px] leading-relaxed">${escapeHtml(card.back)}</p>
+            <div class="flex items-center gap-2 text-[10px] text-muted font-mono pt-1">
+              <span>Interval: ${card.interval || 1}d</span>
+              <span>•</span>
+              <span>Streak: ${card.reps || 0}</span>
+              <span>•</span>
+              <span>Due: ${card.nextReviewDate || 'Today'}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+            <button type="button" class="btn-edit-card px-2.5 py-1 rounded-lg bg-paper border border-line text-accent font-semibold hover:border-accent" data-id="${card.id}">Edit</button>
+            <button type="button" class="btn-del-card px-2.5 py-1 rounded-lg bg-paper border border-line text-muted hover:text-red-500 font-semibold" data-id="${card.id}">Delete</button>
+          </div>
+        `;
+
+        cardsListContainer.appendChild(div);
+      });
+    }
+
+    inputSearchCards.addEventListener('input', renderCardsList);
+    document.getElementById('btn-back-to-decks').addEventListener('click', () => {
+      switchView('dashboard');
+      renderDashboard();
+    });
+
+    // Decks Grid Click Delegation
+    decksGridContainer.addEventListener('click', (e) => {
+      const studyBtn = e.target.closest('.btn-study-deck');
+      if (studyBtn) {
+        const dId = studyBtn.dataset.id;
+        currentDeckId = dId;
+        const deck = decks.find(d => d.id === dId);
+        if (deck) startStudySession(deck.cards, deck.name);
+        return;
+      }
+
+      const manageBtn = e.target.closest('.btn-manage-deck');
+      if (manageBtn) {
+        openCardManager(manageBtn.dataset.id);
+        return;
+      }
+
+      const editBtn = e.target.closest('.btn-edit-deck');
+      if (editBtn) {
+        const dId = editBtn.dataset.id;
+        const deck = decks.find(d => d.id === dId);
+        if (deck) {
+          editingDeckId = dId;
+          document.getElementById('modal-deck-title').innerText = 'Edit Deck';
+          document.getElementById('input-deck-name').value = deck.name;
+          document.getElementById('input-deck-description').value = deck.description || '';
+          document.getElementById('modal-deck').classList.remove('hidden');
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-delete-deck');
+      if (delBtn) {
+        const dId = delBtn.dataset.id;
+        if (confirm('Delete this deck and all its cards? This cannot be undone.')) {
+          decks = decks.filter(d => d.id !== dId);
+          saveDecks();
+          renderDashboard();
+          showToast('Deck deleted.');
+        }
+        return;
+      }
+    });
+
+    // Cards List Click Delegation
+    cardsListContainer.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.btn-edit-card');
+      if (editBtn) {
+        const cId = editBtn.dataset.id;
+        const deck = decks.find(d => d.id === currentDeckId);
+        const card = deck?.cards.find(c => c.id === cId);
+        if (card) {
+          editingCardId = cId;
+          document.getElementById('modal-card-title').innerText = 'Edit Card';
+          document.getElementById('input-card-front').value = card.front;
+          document.getElementById('input-card-back').value = card.back;
+          document.getElementById('modal-card').classList.remove('hidden');
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('.btn-del-card');
+      if (delBtn) {
+        const cId = delBtn.dataset.id;
+        const deck = decks.find(d => d.id === currentDeckId);
+        if (deck) {
+          deck.cards = deck.cards.filter(c => c.id !== cId);
+          saveDecks();
+          renderCardsList();
+          showToast('Card deleted.');
+        }
+        return;
+      }
+    });
+
+    // ==========================================
+    // MODALS: DECK & CARD CREATION
+    // ==========================================
+    const modalDeck = document.getElementById('modal-deck');
+    const inputDeckName = document.getElementById('input-deck-name');
+    const inputDeckDesc = document.getElementById('input-deck-description');
+
+    document.getElementById('btn-create-deck-modal').addEventListener('click', () => {
+      editingDeckId = null;
+      document.getElementById('modal-deck-title').innerText = 'Create New Deck';
+      inputDeckName.value = '';
+      inputDeckDesc.value = '';
+      modalDeck.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-deck-modal').addEventListener('click', () => modalDeck.classList.add('hidden'));
+    document.getElementById('btn-cancel-deck').addEventListener('click', () => modalDeck.classList.add('hidden'));
+
+    document.getElementById('btn-save-deck').addEventListener('click', () => {
+      const name = inputDeckName.value.trim();
+      if (!name) {
+        showToast('Please enter a deck name.');
+        return;
+      }
+
+      if (editingDeckId) {
+        const deck = decks.find(d => d.id === editingDeckId);
+        if (deck) {
+          deck.name = name;
+          deck.description = inputDeckDesc.value.trim();
+        }
+      } else {
+        const newDeck = {
+          id: `deck-${Date.now()}`,
+          name: name,
+          description: inputDeckDesc.value.trim(),
+          cards: []
+        };
+        decks.unshift(newDeck);
+      }
+
+      saveDecks();
+      modalDeck.classList.add('hidden');
+      renderDashboard();
+      showToast('Deck saved!');
+    });
+
+    // Card Modal
+    const modalCard = document.getElementById('modal-card');
+    const inputCardFront = document.getElementById('input-card-front');
+    const inputCardBack = document.getElementById('input-card-back');
+
+    document.getElementById('btn-open-add-card').addEventListener('click', () => {
+      editingCardId = null;
+      document.getElementById('modal-card-title').innerText = 'Add Flashcard';
+      inputCardFront.value = '';
+      inputCardBack.value = '';
+      modalCard.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-card-modal').addEventListener('click', () => modalCard.classList.add('hidden'));
+    document.getElementById('btn-cancel-card').addEventListener('click', () => modalCard.classList.add('hidden'));
+
+    document.getElementById('btn-save-card').addEventListener('click', () => {
+      const front = inputCardFront.value.trim();
+      const back = inputCardBack.value.trim();
+      if (!front || !back) {
+        showToast('Please enter both front and back content.');
+        return;
+      }
+
+      const deck = decks.find(d => d.id === currentDeckId);
+      if (!deck) return;
+
+      if (editingCardId) {
+        const card = deck.cards.find(c => c.id === editingCardId);
+        if (card) {
+          card.front = front;
+          card.back = back;
+        }
+      } else {
+        const newCard = {
+          id: `card-${Date.now()}`,
+          front: front,
+          back: back,
+          reps: 0,
+          interval: 1,
+          easeFactor: 2.5,
+          nextReviewDate: getTodayString()
+        };
+        deck.cards.push(newCard);
+      }
+
+      saveDecks();
+      modalCard.classList.add('hidden');
+      renderCardsList();
+      showToast('Card saved!');
+    });
+
+    // ==========================================
+    // BULK IMPORT & CSV EXPORT
+    // ==========================================
+    const modalBulk = document.getElementById('modal-bulk');
+    const inputBulkText = document.getElementById('input-bulk-text');
+    const bulkDetectedCount = document.getElementById('bulk-detected-count');
+
+    document.getElementById('btn-open-bulk-import').addEventListener('click', () => {
+      inputBulkText.value = '';
+      bulkDetectedCount.innerText = '0 cards detected';
+      modalBulk.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-bulk-modal').addEventListener('click', () => modalBulk.classList.add('hidden'));
+    document.getElementById('btn-cancel-bulk').addEventListener('click', () => modalBulk.classList.add('hidden'));
+
+    function parseBulkInput(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const parsed = [];
+      lines.forEach(line => {
+        let parts = line.split('\t');
+        if (parts.length < 2) parts = line.split(',');
+        if (parts.length >= 2) {
+          parsed.push({
+            front: parts[0].trim(),
+            back: parts.slice(1).join(',').trim()
+          });
+        }
+      });
+      return parsed;
+    }
+
+    inputBulkText.addEventListener('input', () => {
+      const parsed = parseBulkInput(inputBulkText.value);
+      bulkDetectedCount.innerText = `${parsed.length} cards detected`;
+    });
+
+    document.getElementById('btn-submit-bulk').addEventListener('click', () => {
+      const parsed = parseBulkInput(inputBulkText.value);
+      if (parsed.length === 0) {
+        showToast('No valid Front/Back card pairs detected.');
+        return;
+      }
+
+      const deck = decks.find(d => d.id === currentDeckId);
+      if (!deck) return;
+
+      parsed.forEach(p => {
+        deck.cards.push({
+          id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          front: p.front,
+          back: p.back,
+          reps: 0,
+          interval: 1,
+          easeFactor: 2.5,
+          nextReviewDate: getTodayString()
+        });
+      });
+
+      saveDecks();
+      modalBulk.classList.add('hidden');
+      renderCardsList();
+      showToast(`Imported ${parsed.length} cards!`);
+    });
+
+    // Export Deck as CSV
+    document.getElementById('btn-export-deck-csv').addEventListener('click', () => {
+      const deck = decks.find(d => d.id === currentDeckId);
+      if (!deck || deck.cards.length === 0) {
+        showToast('No cards to export.');
+        return;
+      }
+
+      let csvContent = 'Front,Back\n';
+      deck.cards.forEach(c => {
+        const safeFront = `"${c.front.replace(/"/g, '""')}"`;
+        const safeBack = `"${c.back.replace(/"/g, '""')}"`;
+        csvContent += `${safeFront},${safeBack}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${deck.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_flashcards.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Exported deck as CSV!');
+    });
+
+    // Full Backup / Restore Menu
+    document.getElementById('btn-backup-menu').addEventListener('click', () => {
+      const json = JSON.stringify({ decks, stats, exportedAt: new Date().toISOString() }, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `toolzy_flashcards_backup_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded full flashcards backup JSON!');
+    });
+
+    // Helper: Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize
+    loadDecks();
+  </script>
+</body>
+</html>

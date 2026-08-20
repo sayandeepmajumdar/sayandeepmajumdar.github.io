@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Twitter/X Card Generator & Previewer — Toolzy</title>
+  <meta name="description" content="Generate and live-preview Twitter/X Card meta tags (Summary, Summary Large Image, App, Player) with live character counters, aspect-ratio diagnostics, Open Graph fallback, and mobile-friendly preview." />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'x-blue': '#1d9bf0',
+            'x-dark': '#000000',
+            'x-dim': '#15202b',
+            'x-card-border': '#2f3336',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-alt: #f1f5f9;
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-line: #e2e8f0;
+      --color-accent: #3b82f6;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #60a5fa;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Smooth transition */
+    .theme-transition {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen theme-transition pb-24 lg:pb-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    
+    <!-- Top Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6" style="border-color: var(--color-line);">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-black shadow-sm">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Twitter / X Card Generator</h1>
+            <p class="text-xs sm:text-sm text-muted">Generate, validate, and live-preview Twitter Card & Open Graph meta tags.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Presets & Quick Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-live-fetch-toggle" type="button" class="touch-target inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-surface-alt border border-line hover:border-accent text-ink transition-colors">
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Fetch from Live URL</span>
+        </button>
+
+        <button id="btn-preset-blog" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-medium bg-surface-alt border border-line hover:border-accent text-muted hover:text-ink transition-colors">
+          Sample Article
+        </button>
+
+        <button id="btn-reset" type="button" class="touch-target px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Live URL Fetcher Drawer (Collapsible) -->
+    <div id="fetch-drawer" class="hidden p-4 sm:p-5 rounded-2xl bg-surface border border-line shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+          <span>Inspect an Existing Live URL</span>
+        </h2>
+        <button id="btn-close-fetch" class="p-1 text-muted hover:text-ink">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <p class="text-xs text-muted leading-relaxed">
+        Enter any public webpage URL to extract its existing <code>&lt;meta name="twitter:*"&gt;</code> and <code>&lt;meta property="og:*"&gt;</code> tags.
+        <span class="block mt-1 text-[11px] text-amber-500 dark:text-amber-400">⚠️ Note: Only works on URLs that allow browser Cross-Origin (CORS) requests. If blocked by CORS, use the official <a href="https://cards-dev.twitter.com/validator" target="_blank" rel="noopener noreferrer" class="underline font-semibold">X Card Validator</a>.</span>
+      </p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input
+          id="fetch-url-input"
+          type="url"
+          placeholder="https://example.com/blog/my-post"
+          class="flex-1 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+        />
+        <button
+          id="btn-do-fetch"
+          type="button"
+          class="touch-target px-4 py-2.5 rounded-xl text-xs font-semibold bg-accent text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shrink-0"
+        >
+          <span id="fetch-spinner" class="hidden w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <span>Fetch & Pre-fill</span>
+        </button>
+      </div>
+      <div id="fetch-error" class="hidden text-xs text-red-500 bg-red-500/10 p-3 rounded-xl border border-red-500/20"></div>
+    </div>
+
+    <!-- Main Workspace Grid: Form (Left) & Live Preview / Code (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Form Controls (7 cols on desktop) -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- Card Type Selector (Segmented Tabs) -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center justify-between">
+            <span>1. Card Type</span>
+            <span id="card-type-desc" class="text-[11px] font-normal text-muted normal-case">Large 2:1 hero image (Recommended)</span>
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 rounded-2xl bg-surface border border-line">
+            <button
+              type="button"
+              data-card-type="summary_large_image"
+              class="card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 bg-accent text-white shadow-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                <path d="M3 14l5-5 4 4 4-4 5 5" stroke-width="2"/>
+              </svg>
+              <span>Large Image</span>
+            </button>
+
+            <button
+              type="button"
+              data-card-type="summary"
+              class="card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 text-muted hover:text-ink hover:bg-surface-alt"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                <rect x="14" y="7" width="4" height="4" stroke-width="2"/>
+              </svg>
+              <span>Summary</span>
+            </button>
+
+            <button
+              type="button"
+              data-card-type="app"
+              class="card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 text-muted hover:text-ink hover:bg-surface-alt"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="5" y="2" width="14" height="20" rx="3" stroke-width="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2"/>
+              </svg>
+              <span>App Card</span>
+            </button>
+
+            <button
+              type="button"
+              data-card-type="player"
+              class="card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 text-muted hover:text-ink hover:bg-surface-alt"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+              </svg>
+              <span>Player Card</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Form Card Container -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-surface border border-line space-y-5 shadow-xs">
+          
+          <!-- Canonical URL & Handles Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-3">
+              <label for="input-url" class="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
+                Canonical Destination URL <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="input-url"
+                type="url"
+                value="https://example.com/blog/modern-web-architecture"
+                placeholder="https://yourdomain.com/page-url"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="input-site" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  Site Handle
+                </label>
+                <button id="btn-fix-site-at" type="button" class="hidden text-[10px] font-bold text-accent hover:underline">
+                  + Add @
+                </button>
+              </div>
+              <input
+                id="input-site"
+                type="text"
+                value="@techchronicle"
+                placeholder="@mywebsite"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <div class="sm:col-span-2">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="input-creator" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                  Author / Creator Handle
+                </label>
+                <button id="btn-fix-creator-at" type="button" class="hidden text-[10px] font-bold text-accent hover:underline">
+                  + Add @
+                </button>
+              </div>
+              <input
+                id="input-creator"
+                type="text"
+                value="@alex_dev"
+                placeholder="@author_username"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+          </div>
+
+          <!-- Title Input with Live Counter -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-title" class="text-xs font-bold uppercase tracking-wider text-muted">
+                Card Title <span class="text-red-500">*</span>
+              </label>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span id="title-counter" class="font-mono font-bold text-ink">0</span>
+                <span class="text-muted">/ 70 rec (max ~100)</span>
+              </div>
+            </div>
+            <input
+              id="input-title"
+              type="text"
+              value="Building Scalable High-Performance Web Applications in 2026"
+              placeholder="Catchy, descriptive title (Twitter truncates after ~70 characters)"
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink font-medium"
+            />
+            <!-- Progress Bar -->
+            <div class="w-full h-1.5 bg-surface-alt rounded-full overflow-hidden">
+              <div id="title-progress" class="h-full bg-emerald-500 transition-all duration-200" style="width: 50%;"></div>
+            </div>
+            <p id="title-warning" class="hidden text-[11px] text-amber-500 dark:text-amber-400">
+              ⚠️ Title is over 70 characters and may get truncated in some Twitter feeds.
+            </p>
+          </div>
+
+          <!-- Description Input with Live Counter -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="input-description" class="text-xs font-bold uppercase tracking-wider text-muted">
+                Card Description <span class="text-red-500">*</span>
+              </label>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span id="desc-counter" class="font-mono font-bold text-ink">0</span>
+                <span class="text-muted">/ 200 rec</span>
+              </div>
+            </div>
+            <textarea
+              id="input-description"
+              rows="3"
+              placeholder="Concise summary of your page or article. Keep under 200 characters for optimal display across mobile and desktop."
+              class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink leading-relaxed"
+            >Explore modern architecture patterns, responsive design systems, and client-side optimization techniques for next-generation web platforms.</textarea>
+            <!-- Progress Bar -->
+            <div class="w-full h-1.5 bg-surface-alt rounded-full overflow-hidden">
+              <div id="desc-progress" class="h-full bg-emerald-500 transition-all duration-200" style="width: 50%;"></div>
+            </div>
+            <p id="desc-warning" class="hidden text-[11px] text-amber-500 dark:text-amber-400">
+              ⚠️ Description is over 200 characters and may get truncated.
+            </p>
+          </div>
+
+          <!-- Image URL / Local Upload Section -->
+          <div class="space-y-3 pt-2 border-t" style="border-color: var(--color-line);">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label class="text-xs font-bold uppercase tracking-wider text-muted">
+                Card Image & Preview Source
+              </label>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-muted text-[11px]">Recommended:</span>
+                <span id="rec-dimensions-badge" class="px-2 py-0.5 rounded-md bg-surface-alt text-ink font-mono font-bold text-[11px]">
+                  1200 × 630 px (2:1)
+                </span>
+              </div>
+            </div>
+
+            <!-- Image Input Tabs -->
+            <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-surface-alt">
+              <button
+                id="btn-img-mode-url"
+                type="button"
+                class="touch-target py-1.5 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all"
+              >
+                Image URL (HTTPS)
+              </button>
+              <button
+                id="btn-img-mode-upload"
+                type="button"
+                class="touch-target py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all"
+              >
+                Local Upload (Preview Only)
+              </button>
+            </div>
+
+            <!-- URL Input Container -->
+            <div id="img-url-container" class="space-y-1.5">
+              <input
+                id="input-image-url"
+                type="url"
+                value="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80"
+                placeholder="https://yourdomain.com/images/card-hero.jpg"
+                class="w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+              <p class="text-[11px] text-muted">
+                Must be an absolute HTTPS URL (e.g. <code>https://...</code>). Relative paths do not work in meta tags.
+              </p>
+            </div>
+
+            <!-- File Upload Container -->
+            <div id="img-upload-container" class="hidden space-y-2">
+              <label
+                for="file-upload-input"
+                class="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer hover:border-accent transition-colors text-center bg-paper"
+                style="border-color: var(--color-line);"
+              >
+                <svg class="w-8 h-8 text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-xs font-semibold text-ink">Choose an image or take a photo</span>
+                <span class="text-[11px] text-muted mt-1">Supports JPG, PNG, WEBP, GIF</span>
+                <input id="file-upload-input" type="file" accept="image/*" class="hidden" />
+              </label>
+              <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 leading-relaxed">
+                ℹ️ <strong>Preview Note:</strong> Since this is 100% client-side, your uploaded file stays inside your browser. Remember to upload your final image to your web server/CDN and paste that URL before publishing.
+              </div>
+            </div>
+
+            <!-- Image Accessibility Alt Text -->
+            <div class="space-y-1">
+              <label for="input-image-alt" class="block text-xs font-bold uppercase tracking-wider text-muted">
+                Image Alt Text (Accessibility)
+              </label>
+              <input
+                id="input-image-alt"
+                type="text"
+                value="Preview of Toolzy developer tools platform dashboard"
+                placeholder="Brief description of the image for screen readers and accessibility"
+                class="w-full px-3.5 py-2 rounded-xl text-xs bg-paper border border-line focus:outline-none focus:border-accent text-ink"
+              />
+            </div>
+
+            <!-- Live Aspect Ratio & Dimension Diagnostics -->
+            <div id="aspect-ratio-box" class="p-3 rounded-xl bg-surface-alt border border-line text-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span id="aspect-badge" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <div>
+                  <div class="font-bold text-ink flex items-center gap-2">
+                    <span id="detected-dimensions">Detecting image...</span>
+                    <span id="detected-ratio" class="text-[11px] font-normal text-muted"></span>
+                  </div>
+                  <p id="aspect-feedback" class="text-[11px] text-muted">Checking aspect ratio against Twitter card standards...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TYPE SPECIFIC: App Card Fields -->
+          <div id="fields-app-card" class="hidden space-y-4 pt-4 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              <span>App Card Store IDs</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">iPhone App Name</label>
+                <input id="input-app-iphone-name" type="text" placeholder="My App" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">iPhone App ID</label>
+                <input id="input-app-iphone-id" type="text" placeholder="e.g. 123456789" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Google Play App Name</label>
+                <input id="input-app-google-name" type="text" placeholder="My App" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Google Play Package ID</label>
+                <input id="input-app-google-id" type="text" placeholder="com.example.app" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-muted mb-1">App Country (if restricted)</label>
+                <input id="input-app-country" type="text" placeholder="US, GB, IN (Optional)" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TYPE SPECIFIC: Player Card Fields -->
+          <div id="fields-player-card" class="hidden space-y-4 pt-4 border-t" style="border-color: var(--color-line);">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Player Card Stream & Embed Configuration</span>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Player Embed URL (HTTPS iframe) <span class="text-red-500">*</span></label>
+                <input id="input-player-url" type="url" placeholder="https://yourdomain.com/embed/video-id" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Player Width (px)</label>
+                  <input id="input-player-width" type="number" value="1280" placeholder="1280" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-muted mb-1">Player Height (px)</label>
+                  <input id="input-player-height" type="number" value="720" placeholder="720" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-muted mb-1">Direct Stream URL (.mp4 / .m3u8 Optional)</label>
+                <input id="input-player-stream" type="url" placeholder="https://yourdomain.com/stream.mp4" class="w-full px-3 py-2 rounded-xl text-xs bg-paper border border-line text-ink" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Live X Card Preview & Output (5 cols on desktop) -->
+      <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-6">
+        
+        <!-- Preview Section Header -->
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <span>2. Live X / Twitter Timeline Mockup</span>
+          </label>
+          <!-- Mockup Theme Switcher -->
+          <div class="flex items-center gap-1 p-1 rounded-xl bg-surface border border-line text-xs">
+            <button id="btn-preview-theme-dark" type="button" class="px-2.5 py-1 rounded-lg font-semibold bg-surface-alt text-ink transition-all">
+              Dark
+            </button>
+            <button id="btn-preview-theme-light" type="button" class="px-2.5 py-1 rounded-lg font-semibold text-muted hover:text-ink transition-all">
+              Light
+            </button>
+          </div>
+        </div>
+
+        <!-- Rendered X Post Container -->
+        <div id="x-preview-container" class="rounded-2xl p-4 sm:p-5 border transition-colors bg-[#000000] text-white border-[#2f3336]">
+          
+          <!-- Post Author Header -->
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm">
+                T
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-sm leading-tight text-white" id="preview-author-name">Tech Chronicle</span>
+                  <!-- Verified Badge -->
+                  <svg class="w-4 h-4 fill-[#1d9bf0]" viewBox="0 0 24 24">
+                    <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.79-4-4-4-.495 0-.965.084-1.4.238C14.55 2.475 13.18 1.6 11.6 1.6S8.65 2.475 7.81 3.738c-.435-.154-.905-.238-1.4-.238-2.21 0-4 1.79-4 4 0 .495.084.965.238 1.4C1.375 9.55.5 10.92.5 12.5s.875 2.95 2.148 3.6c-.154.435-.238.905-.238 1.4 0 2.21 1.79 4 4 4 .495 0 .965-.084 1.4-.238 1.26 1.263 2.63 2.138 4.21 2.138s2.95-.875 3.6-2.148c.435.154.905.238 1.4.238 2.21 0 4-1.79 4-4 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.8 4.2l-4.2-4.2 1.4-1.4 2.8 2.8 7.2-7.2 1.4 1.4-8.6 8.6z"/>
+                  </svg>
+                </div>
+                <span class="text-xs text-zinc-500 font-mono" id="preview-author-handle">@techchronicle · 2h</span>
+              </div>
+            </div>
+            <button class="text-zinc-500 hover:text-zinc-300">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Sample Tweet Body -->
+          <p class="text-xs sm:text-sm text-zinc-200 mb-3 leading-relaxed" id="preview-post-text">
+            Discover the latest architectural patterns, Core Web Vitals optimization, and modern responsive web design 👇
+          </p>
+
+          <!-- 1. SUMMARY LARGE IMAGE CARD MOCKUP -->
+          <div id="mockup-large-image" class="card-mockup rounded-2xl overflow-hidden border border-[#2f3336] bg-[#16181c] cursor-pointer hover:opacity-95 transition-opacity">
+            <div class="relative w-full aspect-[1.91/1] bg-zinc-900 overflow-hidden">
+              <img id="mockup-large-img-src" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="Preview" class="w-full h-full object-cover" />
+            </div>
+            <div class="p-3 space-y-1">
+              <div class="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <span id="mockup-large-domain" class="truncate">example.com</span>
+              </div>
+              <h3 id="mockup-large-title" class="font-bold text-xs sm:text-sm leading-snug line-clamp-2 text-white">
+                Building Scalable High-Performance Web Applications in 2026
+              </h3>
+              <p id="mockup-large-desc" class="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                Explore modern architecture patterns, responsive design systems, and client-side optimization techniques for next-generation web platforms.
+              </p>
+            </div>
+          </div>
+
+          <!-- 2. SUMMARY (SMALL IMAGE) CARD MOCKUP -->
+          <div id="mockup-summary" class="hidden card-mockup rounded-2xl overflow-hidden border border-[#2f3336] bg-[#16181c] flex items-stretch cursor-pointer hover:opacity-95 transition-opacity">
+            <div class="w-28 sm:w-32 aspect-square bg-zinc-900 overflow-hidden shrink-0">
+              <img id="mockup-summary-img-src" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="Preview" class="w-full h-full object-cover" />
+            </div>
+            <div class="p-3 flex flex-col justify-center space-y-1 flex-1 min-w-0">
+              <div class="text-zinc-400 text-[11px] truncate" id="mockup-summary-domain">
+                example.com
+              </div>
+              <h3 id="mockup-summary-title" class="font-bold text-xs sm:text-sm leading-snug line-clamp-2 text-white">
+                Building Scalable High-Performance Web Applications in 2026
+              </h3>
+              <p id="mockup-summary-desc" class="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                Explore modern architecture patterns, responsive design systems, and client-side optimization techniques.
+              </p>
+            </div>
+          </div>
+
+          <!-- 3. APP CARD MOCKUP -->
+          <div id="mockup-app" class="hidden card-mockup rounded-2xl overflow-hidden border border-[#2f3336] bg-[#16181c] p-3 cursor-pointer hover:opacity-95 transition-opacity">
+            <div class="flex items-center gap-3">
+              <div class="w-16 h-16 rounded-xl bg-zinc-800 overflow-hidden shrink-0 border border-zinc-700">
+                <img id="mockup-app-img-src" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="App Icon" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 id="mockup-app-title" class="font-bold text-xs sm:text-sm text-white truncate">
+                  TechPulse Mobile App
+                </h3>
+                <p class="text-[11px] text-zinc-400">★★★★☆ (4.8) • Free</p>
+                <p id="mockup-app-desc" class="text-xs text-zinc-400 line-clamp-1 mt-0.5">
+                  Developer news, architecture guides, and engineering updates on the go.
+                </p>
+              </div>
+              <button class="px-3 py-1 rounded-full bg-white text-black font-bold text-xs shrink-0">
+                Install
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. PLAYER CARD MOCKUP -->
+          <div id="mockup-player" class="hidden card-mockup rounded-2xl overflow-hidden border border-[#2f3336] bg-[#16181c] cursor-pointer hover:opacity-95 transition-opacity">
+            <div class="relative w-full aspect-[1.91/1] bg-black overflow-hidden flex items-center justify-center">
+              <img id="mockup-player-img-src" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80" alt="Video Preview" class="w-full h-full object-cover opacity-80" />
+              <!-- Big Play Button -->
+              <div class="absolute w-12 h-12 rounded-full bg-black/70 backdrop-blur-xs flex items-center justify-center text-white border border-white/20 shadow-lg">
+                <svg class="w-6 h-6 fill-white ml-0.5" viewBox="0 0 24 24">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+              <span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white">
+                VIDEO
+              </span>
+            </div>
+            <div class="p-3 space-y-1">
+              <div class="text-zinc-400 text-[11px] truncate" id="mockup-player-domain">
+                example.com
+              </div>
+              <h3 id="mockup-player-title" class="font-bold text-xs sm:text-sm leading-snug line-clamp-2 text-white">
+                Modern Web Performance & Architecture Walkthrough
+              </h3>
+            </div>
+          </div>
+
+          <!-- Mockup Timeline Action Icons -->
+          <div class="flex items-center justify-between text-zinc-500 text-xs mt-4 pt-3 border-t border-[#2f3336]">
+            <span class="flex items-center gap-1.5">💬 12</span>
+            <span class="flex items-center gap-1.5">🔁 48</span>
+            <span class="flex items-center gap-1.5">❤️ 214</span>
+            <span class="flex items-center gap-1.5">📊 1.4K</span>
+            <span>🔖</span>
+          </div>
+        </div>
+
+        <!-- Generated Meta Tags Output Box -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-muted">
+              3. Generated HTML Meta Tags
+            </label>
+
+            <!-- Open Graph Fallback Toggle -->
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input id="toggle-og" type="checkbox" checked class="w-4 h-4 rounded text-accent focus:ring-accent accent-accent" />
+              <span class="text-xs font-semibold text-ink">Include Open Graph (<code>og:*</code>)</span>
+            </label>
+          </div>
+
+          <!-- Code Block with Copy Actions -->
+          <div class="relative rounded-2xl bg-surface-alt border border-line overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2 bg-surface border-b border-line text-xs font-mono text-muted">
+              <span>&lt;head&gt; snippet</span>
+              <span id="tag-count-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-alt text-ink">8 tags</span>
+            </div>
+
+            <pre class="p-4 text-xs font-mono overflow-x-auto text-ink leading-relaxed max-h-64 scrollbar-thin"><code id="code-output"></code></pre>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              id="btn-copy-tags"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-accent text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-6a2 2 0 00-2-2z"/>
+              </svg>
+              <span id="copy-btn-text">Copy All Meta Tags</span>
+            </button>
+
+            <button
+              id="btn-download-snippet"
+              type="button"
+              class="touch-target px-4 py-3 rounded-xl font-bold text-xs bg-surface border border-line hover:border-accent text-ink transition-colors flex items-center justify-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span>Download .html Snippet</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-ink text-paper text-xs font-semibold shadow-xl flex items-center gap-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // State
+    let currentCardType = 'summary_large_image';
+    let imageSourceType = 'url'; // 'url' | 'upload'
+    let localImageObjectURL = '';
+    let previewTheme = 'dark'; // 'dark' | 'light'
+
+    // DOM Elements
+    const cardTypeTabs = document.querySelectorAll('.card-type-tab');
+    const cardTypeDesc = document.getElementById('card-type-desc');
+    const recDimensionsBadge = document.getElementById('rec-dimensions-badge');
+
+    const inputUrl = document.getElementById('input-url');
+    const inputSite = document.getElementById('input-site');
+    const inputCreator = document.getElementById('input-creator');
+    const inputTitle = document.getElementById('input-title');
+    const inputDesc = document.getElementById('input-description');
+    const inputImgUrl = document.getElementById('input-image-url');
+    const inputImgAlt = document.getElementById('input-image-alt');
+    const fileUploadInput = document.getElementById('file-upload-input');
+    const toggleOg = document.getElementById('toggle-og');
+
+    const titleCounter = document.getElementById('title-counter');
+    const titleProgress = document.getElementById('title-progress');
+    const titleWarning = document.getElementById('title-warning');
+
+    const descCounter = document.getElementById('desc-counter');
+    const descProgress = document.getElementById('desc-progress');
+    const descWarning = document.getElementById('desc-warning');
+
+    const btnFixSiteAt = document.getElementById('btn-fix-site-at');
+    const btnFixCreatorAt = document.getElementById('btn-fix-creator-at');
+
+    const btnImgModeUrl = document.getElementById('btn-img-mode-url');
+    const btnImgModeUpload = document.getElementById('btn-img-mode-upload');
+    const imgUrlContainer = document.getElementById('img-url-container');
+    const imgUploadContainer = document.getElementById('img-upload-container');
+
+    const fieldsAppCard = document.getElementById('fields-app-card');
+    const fieldsPlayerCard = document.getElementById('fields-player-card');
+
+    const codeOutput = document.getElementById('code-output');
+    const tagCountBadge = document.getElementById('tag-count-badge');
+    const btnCopyTags = document.getElementById('btn-copy-tags');
+    const copyBtnText = document.getElementById('copy-btn-text');
+    const btnDownloadSnippet = document.getElementById('btn-download-snippet');
+    const btnReset = document.getElementById('btn-reset');
+
+    const btnLiveFetchToggle = document.getElementById('btn-live-fetch-toggle');
+    const fetchDrawer = document.getElementById('fetch-drawer');
+    const btnCloseFetch = document.getElementById('btn-close-fetch');
+    const fetchUrlInput = document.getElementById('fetch-url-input');
+    const btnDoFetch = document.getElementById('btn-do-fetch');
+    const fetchSpinner = document.getElementById('fetch-spinner');
+    const fetchError = document.getElementById('fetch-error');
+    const btnPresetBlog = document.getElementById('btn-preset-blog');
+
+    const xPreviewContainer = document.getElementById('x-preview-container');
+    const btnPreviewThemeDark = document.getElementById('btn-preview-theme-dark');
+    const btnPreviewThemeLight = document.getElementById('btn-preview-theme-light');
+
+    const aspectBadge = document.getElementById('aspect-badge');
+    const detectedDimensions = document.getElementById('detected-dimensions');
+    const detectedRatio = document.getElementById('detected-ratio');
+    const aspectFeedback = document.getElementById('aspect-feedback');
+
+    // Mockup elements
+    const mockups = {
+      summary_large_image: document.getElementById('mockup-large-image'),
+      summary: document.getElementById('mockup-summary'),
+      app: document.getElementById('mockup-app'),
+      player: document.getElementById('mockup-player'),
+    };
+
+    // Helper: Extract domain from URL
+    function extractDomain(url) {
+      try {
+        if (!url) return 'yourdomain.com';
+        const parsed = new URL(url.startsWith('http') ? url : 'https://' + url);
+        return parsed.hostname.replace(/^www\./, '');
+      } catch (e) {
+        return url.split('/')[0] || 'yourdomain.com';
+      }
+    }
+
+    // Show Toast
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Card Type Selection
+    function setCardType(type) {
+      currentCardType = type;
+      cardTypeTabs.forEach((tab) => {
+        if (tab.dataset.cardType === type) {
+          tab.className = 'card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 bg-accent text-white shadow-sm';
+        } else {
+          tab.className = 'card-type-tab touch-target px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center text-center gap-1 text-muted hover:text-ink hover:bg-surface-alt';
+        }
+      });
+
+      // Update descriptions and recommendations
+      if (type === 'summary_large_image') {
+        cardTypeDesc.innerText = 'Large 2:1 hero image (Recommended)';
+        recDimensionsBadge.innerText = '1200 × 630 px (2:1)';
+        fieldsAppCard.classList.add('hidden');
+        fieldsPlayerCard.classList.add('hidden');
+      } else if (type === 'summary') {
+        cardTypeDesc.innerText = 'Compact 1:1 square thumbnail';
+        recDimensionsBadge.innerText = '300 × 300 px (1:1 min 144×144)';
+        fieldsAppCard.classList.add('hidden');
+        fieldsPlayerCard.classList.add('hidden');
+      } else if (type === 'app') {
+        cardTypeDesc.innerText = 'Promote iOS & Android mobile apps';
+        recDimensionsBadge.innerText = 'App Icon (1:1 square)';
+        fieldsAppCard.classList.remove('hidden');
+        fieldsPlayerCard.classList.add('hidden');
+      } else if (type === 'player') {
+        cardTypeDesc.innerText = 'Embedded video / audio media player';
+        recDimensionsBadge.innerText = 'Player dimensions (e.g. 1280×720)';
+        fieldsAppCard.classList.add('hidden');
+        fieldsPlayerCard.classList.remove('hidden');
+      }
+
+      // Switch Visible Mockup
+      Object.keys(mockups).forEach((k) => {
+        if (k === type) {
+          mockups[k].classList.remove('hidden');
+        } else {
+          mockups[k].classList.add('hidden');
+        }
+      });
+
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+    }
+
+    cardTypeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => setCardType(tab.dataset.cardType));
+    });
+
+    // Character Counter & Progress Bar Logic
+    function updateCounters() {
+      // Title
+      const titleLen = inputTitle.value.length;
+      titleCounter.innerText = titleLen;
+      const titlePct = Math.min(100, (titleLen / 70) * 100);
+      titleProgress.style.width = `${titlePct}%`;
+      if (titleLen > 70) {
+        titleProgress.className = 'h-full bg-amber-500 transition-all duration-200';
+        titleWarning.classList.remove('hidden');
+      } else {
+        titleProgress.className = 'h-full bg-emerald-500 transition-all duration-200';
+        titleWarning.classList.add('hidden');
+      }
+
+      // Description
+      const descLen = inputDesc.value.length;
+      descCounter.innerText = descLen;
+      const descPct = Math.min(100, (descLen / 200) * 100);
+      descProgress.style.width = `${descPct}%`;
+      if (descLen > 200) {
+        descProgress.className = 'h-full bg-amber-500 transition-all duration-200';
+        descWarning.classList.remove('hidden');
+      } else {
+        descProgress.className = 'h-full bg-emerald-500 transition-all duration-200';
+        descWarning.classList.add('hidden');
+      }
+
+      // Site & Creator @ helpers
+      if (inputSite.value && !inputSite.value.startsWith('@')) {
+        btnFixSiteAt.classList.remove('hidden');
+      } else {
+        btnFixSiteAt.classList.add('hidden');
+      }
+
+      if (inputCreator.value && !inputCreator.value.startsWith('@')) {
+        btnFixCreatorAt.classList.remove('hidden');
+      } else {
+        btnFixCreatorAt.classList.add('hidden');
+      }
+    }
+
+    btnFixSiteAt.addEventListener('click', () => {
+      inputSite.value = '@' + inputSite.value;
+      updateCounters();
+      generateMetaTags();
+    });
+
+    btnFixCreatorAt.addEventListener('click', () => {
+      inputCreator.value = '@' + inputCreator.value;
+      updateCounters();
+      generateMetaTags();
+    });
+
+    // Image Mode Switching
+    btnImgModeUrl.addEventListener('click', () => {
+      imageSourceType = 'url';
+      btnImgModeUrl.className = 'touch-target py-1.5 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all';
+      btnImgModeUpload.className = 'touch-target py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all';
+      imgUrlContainer.classList.remove('hidden');
+      imgUploadContainer.classList.add('hidden');
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+    });
+
+    btnImgModeUpload.addEventListener('click', () => {
+      imageSourceType = 'upload';
+      btnImgModeUpload.className = 'touch-target py-1.5 rounded-lg text-xs font-semibold bg-paper text-ink shadow-xs transition-all';
+      btnImgModeUrl.className = 'touch-target py-1.5 rounded-lg text-xs font-semibold text-muted hover:text-ink transition-all';
+      imgUploadContainer.classList.remove('hidden');
+      imgUrlContainer.classList.add('hidden');
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+    });
+
+    // Handle Local File Upload
+    fileUploadInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (localImageObjectURL) URL.revokeObjectURL(localImageObjectURL);
+      localImageObjectURL = URL.createObjectURL(file);
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+    });
+
+    // Aspect Ratio & Image Diagnostics
+    function updateDiagnosticsAndMockup() {
+      const activeImgSrc = imageSourceType === 'upload' && localImageObjectURL
+        ? localImageObjectURL
+        : (inputImgUrl.value || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80');
+
+      const domain = extractDomain(inputUrl.value);
+      const title = inputTitle.value || 'Card Title Placeholder';
+      const desc = inputDesc.value || 'Card description summary will appear here.';
+
+      // Update Large Image Mockup
+      document.getElementById('mockup-large-img-src').src = activeImgSrc;
+      document.getElementById('mockup-large-domain').innerText = domain;
+      document.getElementById('mockup-large-title').innerText = title;
+      document.getElementById('mockup-large-desc').innerText = desc;
+
+      // Update Summary Mockup
+      document.getElementById('mockup-summary-img-src').src = activeImgSrc;
+      document.getElementById('mockup-summary-domain').innerText = domain;
+      document.getElementById('mockup-summary-title').innerText = title;
+      document.getElementById('mockup-summary-desc').innerText = desc;
+
+      // Update App Mockup
+      document.getElementById('mockup-app-img-src').src = activeImgSrc;
+      document.getElementById('mockup-app-title').innerText = title;
+      document.getElementById('mockup-app-desc').innerText = desc;
+
+      // Update Player Mockup
+      document.getElementById('mockup-player-img-src').src = activeImgSrc;
+      document.getElementById('mockup-player-domain').innerText = domain;
+      document.getElementById('mockup-player-title').innerText = title;
+
+      // Check Real Image Dimensions & Aspect Ratio
+      const img = new Image();
+      img.onload = function () {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const ratio = (w / h).toFixed(2);
+        detectedDimensions.innerText = `${w} × ${h} px`;
+        detectedRatio.innerText = `(${ratio}:1 aspect ratio)`;
+
+        if (currentCardType === 'summary_large_image') {
+          if (w < 300 || h < 157) {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shrink-0';
+            aspectFeedback.innerText = '⚠️ Image is too small. Twitter requires at least 300×157px for Large Image cards.';
+          } else if (ratio >= 1.7 && ratio <= 2.1) {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
+            aspectFeedback.innerText = '✅ Optimal ~2:1 aspect ratio. Image will render without awkward cropping.';
+          } else {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0';
+            aspectFeedback.innerText = `⚠️ Ratio is ${ratio}:1. Twitter displays Large Image cards at ~2:1, so edges may be cropped.`;
+          }
+        } else if (currentCardType === 'summary' || currentCardType === 'app') {
+          if (w < 144 || h < 144) {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shrink-0';
+            aspectFeedback.innerText = '⚠️ Image is too small. Minimum dimension is 144×144px.';
+          } else if (ratio >= 0.95 && ratio <= 1.05) {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
+            aspectFeedback.innerText = '✅ Perfect 1:1 square image.';
+          } else {
+            aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0';
+            aspectFeedback.innerText = `⚠️ Image is ${ratio}:1 (not square). Twitter will center-crop it to 1:1.`;
+          }
+        } else {
+          aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0';
+          aspectFeedback.innerText = 'Image ready for media player preview.';
+        }
+      };
+      img.onerror = function () {
+        detectedDimensions.innerText = 'Image Load Error';
+        detectedRatio.innerText = '';
+        aspectBadge.className = 'w-2.5 h-2.5 rounded-full bg-red-500 shrink-0';
+        aspectFeedback.innerText = 'Could not load image. Please verify the URL or file.';
+      };
+      img.src = activeImgSrc;
+    }
+
+    // Generate Meta Tags HTML
+    function generateMetaTags() {
+      const cardType = currentCardType;
+      const url = inputUrl.value.trim();
+      const site = inputSite.value.trim();
+      const creator = inputCreator.value.trim();
+      const title = inputTitle.value.trim();
+      const desc = inputDesc.value.trim();
+      const imgUrl = imageSourceType === 'upload' ? 'https://yourdomain.com/path/to/uploaded-image.jpg' : inputImgUrl.value.trim();
+      const imgAlt = inputImgAlt.value.trim();
+      const includeOg = toggleOg.checked;
+
+      let lines = [];
+      let tagCount = 0;
+
+      lines.push('<!-- Twitter / X Card Meta Tags -->');
+      lines.push(`<meta name="twitter:card" content="${cardType}">`);
+      tagCount++;
+
+      if (site) {
+        lines.push(`<meta name="twitter:site" content="${site}">`);
+        tagCount++;
+      }
+      if (creator) {
+        lines.push(`<meta name="twitter:creator" content="${creator}">`);
+        tagCount++;
+      }
+      if (title) {
+        lines.push(`<meta name="twitter:title" content="${escapeHtml(title)}">`);
+        tagCount++;
+      }
+      if (desc) {
+        lines.push(`<meta name="twitter:description" content="${escapeHtml(desc)}">`);
+        tagCount++;
+      }
+      if (imgUrl) {
+        lines.push(`<meta name="twitter:image" content="${escapeHtml(imgUrl)}">`);
+        tagCount++;
+      }
+      if (imgAlt) {
+        lines.push(`<meta name="twitter:image:alt" content="${escapeHtml(imgAlt)}">`);
+        tagCount++;
+      }
+
+      // App Card specific tags
+      if (cardType === 'app') {
+        const iphoneName = document.getElementById('input-app-iphone-name').value.trim();
+        const iphoneId = document.getElementById('input-app-iphone-id').value.trim();
+        const googleName = document.getElementById('input-app-google-name').value.trim();
+        const googleId = document.getElementById('input-app-google-id').value.trim();
+        const country = document.getElementById('input-app-country').value.trim();
+
+        if (iphoneName) { lines.push(`<meta name="twitter:app:name:iphone" content="${escapeHtml(iphoneName)}">`); tagCount++; }
+        if (iphoneId) { lines.push(`<meta name="twitter:app:id:iphone" content="${escapeHtml(iphoneId)}">`); tagCount++; }
+        if (googleName) { lines.push(`<meta name="twitter:app:name:googleplay" content="${escapeHtml(googleName)}">`); tagCount++; }
+        if (googleId) { lines.push(`<meta name="twitter:app:id:googleplay" content="${escapeHtml(googleId)}">`); tagCount++; }
+        if (country) { lines.push(`<meta name="twitter:app:country" content="${escapeHtml(country)}">`); tagCount++; }
+      }
+
+      // Player Card specific tags
+      if (cardType === 'player') {
+        const playerUrl = document.getElementById('input-player-url').value.trim();
+        const playerWidth = document.getElementById('input-player-width').value.trim();
+        const playerHeight = document.getElementById('input-player-height').value.trim();
+        const playerStream = document.getElementById('input-player-stream').value.trim();
+
+        if (playerUrl) { lines.push(`<meta name="twitter:player" content="${escapeHtml(playerUrl)}">`); tagCount++; }
+        if (playerWidth) { lines.push(`<meta name="twitter:player:width" content="${escapeHtml(playerWidth)}">`); tagCount++; }
+        if (playerHeight) { lines.push(`<meta name="twitter:player:height" content="${escapeHtml(playerHeight)}">`); tagCount++; }
+        if (playerStream) { lines.push(`<meta name="twitter:player:stream" content="${escapeHtml(playerStream)}">`); tagCount++; }
+      }
+
+      // Open Graph Fallback Tags
+      if (includeOg) {
+        lines.push('');
+        lines.push('<!-- Open Graph (OG) Fallback Tags -->');
+        if (title) { lines.push(`<meta property="og:title" content="${escapeHtml(title)}">`); tagCount++; }
+        if (desc) { lines.push(`<meta property="og:description" content="${escapeHtml(desc)}">`); tagCount++; }
+        if (url) { lines.push(`<meta property="og:url" content="${escapeHtml(url)}">`); tagCount++; }
+        if (imgUrl) { lines.push(`<meta property="og:image" content="${escapeHtml(imgUrl)}">`); tagCount++; }
+        lines.push(`<meta property="og:type" content="website">`);
+        tagCount++;
+        if (site) {
+          const siteName = site.replace(/^@/, '');
+          lines.push(`<meta property="og:site_name" content="${escapeHtml(siteName)}">`);
+          tagCount++;
+        }
+      }
+
+      codeOutput.textContent = lines.join('\n');
+      tagCountBadge.innerText = `${tagCount} tags`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/"/g, '&quot;');
+    }
+
+    // Event Listeners for inputs
+    [inputUrl, inputSite, inputCreator, inputTitle, inputDesc, inputImgUrl, inputImgAlt, toggleOg].forEach((el) => {
+      el.addEventListener('input', () => {
+        updateCounters();
+        updateDiagnosticsAndMockup();
+        generateMetaTags();
+      });
+      el.addEventListener('change', () => {
+        updateCounters();
+        updateDiagnosticsAndMockup();
+        generateMetaTags();
+      });
+    });
+
+    ['input-app-iphone-name', 'input-app-iphone-id', 'input-app-google-name', 'input-app-google-id', 'input-app-country', 'input-player-url', 'input-player-width', 'input-player-height', 'input-player-stream'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          generateMetaTags();
+        });
+      }
+    });
+
+    // Copy to Clipboard
+    btnCopyTags.addEventListener('click', () => {
+      const code = codeOutput.textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Meta tags copied to clipboard!');
+        copyBtnText.innerText = 'Copied!';
+        setTimeout(() => { copyBtnText.innerText = 'Copy All Meta Tags'; }, 1800);
+      });
+    });
+
+    // Download as .html snippet
+    btnDownloadSnippet.addEventListener('click', () => {
+      const code = codeOutput.textContent;
+      const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'twitter-cards-meta.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded twitter-cards-meta.html snippet!');
+    });
+
+    // Reset Form
+    btnReset.addEventListener('click', () => {
+      inputUrl.value = 'https://example.com/';
+      inputSite.value = '@mybrand';
+      inputCreator.value = '@author';
+      inputTitle.value = 'My Project — Fast, Clean & Modern Web App';
+      inputDesc.value = 'A short and compelling summary of your page to engage Twitter and social media followers.';
+      inputImgUrl.value = 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80';
+      inputImgAlt.value = 'Preview banner image';
+      setCardType('summary_large_image');
+      updateCounters();
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+      showToast('Form reset to default values.');
+    });
+
+    // Preset Sample
+    btnPresetBlog.addEventListener('click', () => {
+      inputUrl.value = 'https://example.com/blog/modern-web-architecture';
+      inputSite.value = '@techchronicle';
+      inputCreator.value = '@alex_dev';
+      inputTitle.value = 'Building Scalable High-Performance Web Applications in 2026';
+      inputDesc.value = 'Explore modern architecture patterns, responsive design systems, and client-side optimization techniques for next-generation web platforms.';
+      inputImgUrl.value = 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop&q=80';
+      inputImgAlt.value = 'Code editor showing modern web application architecture';
+      setCardType('summary_large_image');
+      updateCounters();
+      updateDiagnosticsAndMockup();
+      generateMetaTags();
+      showToast('Loaded Sample Article preset!');
+    });
+
+    // Preview Theme Toggle
+    btnPreviewThemeDark.addEventListener('click', () => {
+      previewTheme = 'dark';
+      xPreviewContainer.className = 'rounded-2xl p-4 sm:p-5 border transition-colors bg-[#000000] text-white border-[#2f3336]';
+      document.getElementById('preview-author-name').className = 'font-bold text-sm leading-tight text-white';
+      document.getElementById('preview-post-text').className = 'text-xs sm:text-sm text-zinc-200 mb-3 leading-relaxed';
+      btnPreviewThemeDark.className = 'px-2.5 py-1 rounded-lg font-semibold bg-surface-alt text-ink transition-all';
+      btnPreviewThemeLight.className = 'px-2.5 py-1 rounded-lg font-semibold text-muted hover:text-ink transition-all';
+    });
+
+    btnPreviewThemeLight.addEventListener('click', () => {
+      previewTheme = 'light';
+      xPreviewContainer.className = 'rounded-2xl p-4 sm:p-5 border transition-colors bg-[#ffffff] text-black border-slate-200 shadow-sm';
+      document.getElementById('preview-author-name').className = 'font-bold text-sm leading-tight text-black';
+      document.getElementById('preview-post-text').className = 'text-xs sm:text-sm text-slate-800 mb-3 leading-relaxed';
+      btnPreviewThemeLight.className = 'px-2.5 py-1 rounded-lg font-semibold bg-surface-alt text-ink transition-all';
+      btnPreviewThemeDark.className = 'px-2.5 py-1 rounded-lg font-semibold text-muted hover:text-ink transition-all';
+    });
+
+    // Live URL Fetcher
+    btnLiveFetchToggle.addEventListener('click', () => {
+      fetchDrawer.classList.toggle('hidden');
+    });
+
+    btnCloseFetch.addEventListener('click', () => {
+      fetchDrawer.classList.add('hidden');
+    });
+
+    btnDoFetch.addEventListener('click', async () => {
+      const targetUrl = fetchUrlInput.value.trim();
+      if (!targetUrl) return;
+
+      fetchSpinner.classList.remove('hidden');
+      fetchError.classList.add('hidden');
+      btnDoFetch.disabled = true;
+
+      try {
+        const res = await fetch(targetUrl, { mode: 'cors' });
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+        const html = await res.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const getMeta = (name) => {
+          const el = doc.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
+          return el ? el.getAttribute('content') : null;
+        };
+
+        const card = getMeta('twitter:card') || 'summary_large_image';
+        const title = getMeta('twitter:title') || getMeta('og:title') || doc.title || '';
+        const desc = getMeta('twitter:description') || getMeta('og:description') || '';
+        const image = getMeta('twitter:image') || getMeta('og:image') || '';
+        const imageAlt = getMeta('twitter:image:alt') || '';
+        const site = getMeta('twitter:site') || '';
+        const creator = getMeta('twitter:creator') || '';
+
+        inputUrl.value = targetUrl;
+        if (title) inputTitle.value = title;
+        if (desc) inputDesc.value = desc;
+        if (image) {
+          // Resolve relative URL to absolute
+          const fullImgUrl = new URL(image, targetUrl).href;
+          inputImgUrl.value = fullImgUrl;
+        }
+        if (imageAlt) inputImgAlt.value = imageAlt;
+        if (site) inputSite.value = site;
+        if (creator) inputCreator.value = creator;
+
+        if (['summary', 'summary_large_image', 'app', 'player'].includes(card)) {
+          setCardType(card);
+        }
+
+        updateCounters();
+        updateDiagnosticsAndMockup();
+        generateMetaTags();
+        fetchDrawer.classList.add('hidden');
+        showToast('Successfully extracted meta tags from URL!');
+      } catch (err) {
+        fetchError.classList.remove('hidden');
+        fetchError.innerHTML = `<strong>Fetch Blocked:</strong> ${err.message}.<br><span class="mt-1 block">Most third-party websites block browser-direct cross-origin (CORS) fetches for security. You can test live URLs using X's official <a href="https://cards-dev.twitter.com/validator" target="_blank" rel="noopener noreferrer" class="underline font-bold">Card Validator</a> or fill the fields manually.</span>`;
+      } finally {
+        fetchSpinner.classList.add('hidden');
+        btnDoFetch.disabled = false;
+      }
+    });
+
+    // Initialize
+    updateCounters();
+    updateDiagnosticsAndMockup();
+    generateMetaTags();
+  </script>
+</body>
+</html>

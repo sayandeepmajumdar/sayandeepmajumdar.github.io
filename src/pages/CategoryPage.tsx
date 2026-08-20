@@ -68,6 +68,12 @@ export const CategoryPage: React.FC = () => {
           description={`We are actively building high-performance, 100% client-side tools for the ${categoryInfo.name} category. Check back soon or explore other categories.`}
           actionText="Browse All Tools"
           actionHref="/"
+          secondaryActionText={`Request ${categoryInfo.name} Tool`}
+          secondaryActionHref={`mailto:developerslab101@gmail.com?subject=New%20${encodeURIComponent(
+            categoryInfo.name
+          )}%20Tool%20Request%20-%20Toolzy&body=Hi%20Toolzy%20Team%2C%0A%0AI%20would%20like%20to%20request%20a%20new%20tool%20for%20the%20${encodeURIComponent(
+            categoryInfo.name
+          )}%20category%3A%0A%0A-%20Tool%20Name%3A%20%0A-%20Description%20%26%20Use%20Case%3A%20%0A-%20Key%20Features%3A%20%0A%0AThank%20you!`}
         />
       )}
     </div>

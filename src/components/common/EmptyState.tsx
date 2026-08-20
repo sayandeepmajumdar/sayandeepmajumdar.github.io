@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DynamicIcon } from './DynamicIcon';
 import { cn } from '../../lib/utils';
@@ -11,6 +11,8 @@ interface EmptyStateProps {
   actionText?: string;
   actionHref?: string;
   onAction?: () => void;
+  secondaryActionText?: string;
+  secondaryActionHref?: string;
   className?: string;
 }
 
@@ -21,6 +23,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionText,
   actionHref,
   onAction,
+  secondaryActionText,
+  secondaryActionHref,
   className = '',
 }) => {
   return (
@@ -37,26 +41,38 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <h3 className="text-lg font-bold text-ink mb-1.5">{title}</h3>
       <p className="text-sm text-muted max-w-md mb-6 leading-relaxed">{description}</p>
 
-      {actionText && actionHref && (
-        <Link
-          to={actionHref}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-all shadow-sm"
-        >
-          <span>{actionText}</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      )}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {actionText && actionHref && (
+          <Link
+            to={actionHref}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-all shadow-sm"
+          >
+            <span>{actionText}</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
 
-      {actionText && onAction && !actionHref && (
-        <button
-          type="button"
-          onClick={onAction}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-all shadow-sm"
-        >
-          <span>{actionText}</span>
-          <Sparkles className="w-4 h-4" />
-        </button>
-      )}
+        {actionText && onAction && !actionHref && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-medium text-sm hover:bg-accent-hover transition-all shadow-sm"
+          >
+            <span>{actionText}</span>
+            <Sparkles className="w-4 h-4" />
+          </button>
+        )}
+
+        {secondaryActionText && secondaryActionHref && (
+          <a
+            href={secondaryActionHref}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-alt border border-line text-ink font-medium text-sm hover:border-accent hover:text-accent transition-all shadow-2xs"
+          >
+            <Mail className="w-4 h-4 text-accent" />
+            <span>{secondaryActionText}</span>
+          </a>
+        )}
+      </div>
     </div>
   );
 };
