@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSA Key Generator (2048, 3072, 4096-bit) — Web Crypto | sayandeep.dev</title>
+  <meta name="description" content="Generate cryptographically secure RSA key pairs (2048, 3072, 4096-bit) in your browser using the native Web Crypto API. Export SPKI / PKCS#8 PEM and JWK formats for RSA-OAEP, RSASSA-PKCS1-v1_5, and RSA-PSS. 100% client-side with zero persistence." />
+  <meta name="keywords" content="rsa key generator, rsa 4096, rsa 2048, rsa-oaep, rsassa-pkcs1-v1_5, rsa-pss, pem private key, spki public key, jwk, web crypto rsa, client side rsa generator" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/rsa-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔑</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --surface-hover: #e7e5e4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-glow: rgba(79, 70, 229, 0.18);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --surface-hover: #3f3f46;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.14);
+      --accent-glow: rgba(129, 140, 248, 0.25);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.5rem 0 3rem;
+    }
+
+    /* Security Notice Callout */
+    .security-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.75rem 1.15rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .security-notice-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--success);
+      font-weight: 700;
+      background: var(--success-bg);
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    .destruction-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--warning);
+      font-weight: 700;
+      background: var(--warning-bg);
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    /* Configuration Card */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-label {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-hint {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      height: 42px;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Purpose Educational Callout */
+    .purpose-info-box {
+      background: var(--surface-alt);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .purpose-info-box strong {
+      color: var(--text);
+    }
+
+    /* Advanced Collapsible Options */
+    .advanced-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0;
+      transition: color var(--transition);
+    }
+
+    .advanced-toggle-btn:hover {
+      color: var(--accent);
+    }
+
+    .advanced-panel {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+
+    /* Generate Action Row */
+    .generate-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .btn-generate-hero {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #ffffff;
+      padding: 0 1.75rem;
+      height: 46px;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+      white-space: nowrap;
+    }
+
+    .btn-generate-hero:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-generate-hero:active {
+      transform: translateY(0);
+    }
+
+    .btn-generate-hero:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .gen-timing-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Key Pairs Display Container */
+    .keys-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Key Card Box */
+    .key-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .key-card.private-key-card {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .key-card-header {
+      padding: 0.85rem 1.25rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .key-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .key-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .key-badge-pub {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+    }
+
+    .key-badge-priv {
+      background: var(--warning-bg);
+      color: var(--warning);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+    }
+
+    /* Key Format Tabs */
+    .key-tabs {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      gap: 2px;
+    }
+
+    .key-tab-btn {
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .key-tab-btn.active {
+      background: var(--surface-alt);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Key Content Area */
+    .key-content-box {
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 240px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      line-height: 1.45;
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      white-space: pre;
+      overflow-x: auto;
+      user-select: all;
+    }
+
+    .code-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* Shield / Mask Overlay for Private Key */
+    .private-shield-overlay {
+      position: absolute;
+      top: 48px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(var(--surface-rgb), 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.85rem;
+      padding: 1.5rem;
+      text-align: center;
+      z-index: 5;
+      transition: opacity 0.25s ease;
+    }
+
+    .shield-icon {
+      font-size: 2.2rem;
+    }
+
+    .shield-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .shield-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      max-width: 320px;
+      line-height: 1.4;
+    }
+
+    .btn-reveal {
+      background: var(--warning);
+      border: 1px solid var(--warning);
+      color: #000000;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+    }
+
+    .btn-reveal:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Key Card Footer Action Buttons */
+    .key-card-footer {
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-action-sm {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-action-sm:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Fingerprint & Metadata Card */
+    .specs-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .specs-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .spec-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .spec-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .spec-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-all;
+      user-select: all;
+    }
+
+    /* Bundle Actions Bar */
+    .bundle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-xl);
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .bundle-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .bundle-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .bundle-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    .bundle-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Interactive Testing Playground Card */
+    .playground-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .playground-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .playground-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .playground-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .play-step-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .play-step-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .play-textarea {
+      width: 100%;
+      height: 90px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+    }
+
+    .play-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .play-result-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+    }
+
+    /* FAQ Section */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .faq-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .faq-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .faq-card p {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .keys-layout {
+        grid-template-columns: 1fr;
+      }
+      .playground-grid {
+        grid-template-columns: 1fr;
+      }
+      .brand-title {
+        display: none;
+      }
+      .bundle-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">RSA Key Generator</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Security & Zero-Persistence Guarantee Notice -->
+      <div class="security-notice">
+        <div class="security-notice-left">
+          <span class="security-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            100% In-Browser Cryptography
+          </span>
+          <span class="destruction-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Zero Persistence: Discarded on Tab Close
+          </span>
+          <span>Generated exclusively via <code>crypto.subtle.generateKey()</code>. Private key material is never sent to any server or stored locally.</span>
+        </div>
+      </div>
+
+      <!-- Configuration Card -->
+      <div class="config-card">
+        <div class="config-grid">
+          <!-- Key Purpose -->
+          <div class="form-group">
+            <label for="select-purpose" class="form-label">
+              <span>Key Purpose / Algorithm</span>
+            </label>
+            <select id="select-purpose" class="form-select">
+              <option value="RSA-OAEP" selected>🔒 Encryption / Decryption (RSA-OAEP)</option>
+              <option value="RSASSA-PKCS1-v1_5">✍️ Digital Signatures (RSASSA-PKCS1-v1_5)</option>
+              <option value="RSA-PSS">🛡️ Digital Signatures (RSA-PSS Modern)</option>
+            </select>
+          </div>
+
+          <!-- Modulus Length (Key Size) -->
+          <div class="form-group">
+            <label for="select-keysize" class="form-label">
+              <span>Key Size (Modulus Length)</span>
+              <span class="form-hint" id="size-hint">Standard Security</span>
+            </label>
+            <select id="select-keysize" class="form-select">
+              <option value="2048" selected>2048-bit (Current Standard Minimum - Fast)</option>
+              <option value="3072">3072-bit (NIST Recommended &gt; 2030 - High)</option>
+              <option value="4096">4096-bit (Maximum Security Margin - Slower)</option>
+            </select>
+          </div>
+
+          <!-- Hash Function -->
+          <div class="form-group">
+            <label for="select-hash" class="form-label">
+              <span>Hash Algorithm</span>
+              <span class="form-hint">For OAEP padding / Signing</span>
+            </label>
+            <select id="select-hash" class="form-select">
+              <option value="SHA-256" selected>SHA-256 (Universally Recommended)</option>
+              <option value="SHA-384">SHA-384 (NSA Suite B)</option>
+              <option value="SHA-512">SHA-512 (High Security)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Purpose Guidance Callout -->
+        <div class="purpose-info-box" id="purpose-guidance">
+          <strong>Cryptographic Best Practice:</strong> Keys generated for <em>encryption (RSA-OAEP)</em> should never be reused for <em>digital signatures (RSASSA / RSA-PSS)</em>. Reusing a single RSA key pair across both purposes breaks cryptographic security proofs and exposes the key to chosen-ciphertext signature oracle attacks.
+        </div>
+
+        <!-- Advanced Options Toggle -->
+        <div>
+          <button id="btn-toggle-advanced" class="advanced-toggle-btn">
+            <span id="adv-arrow">▶</span>
+            <span>Advanced Parameters (Public Exponent &amp; Salt)</span>
+          </button>
+        </div>
+
+        <div id="advanced-panel" class="advanced-panel">
+          <div class="form-group">
+            <label for="input-exponent" class="form-label">
+              <span>Public Exponent (e)</span>
+              <span class="form-hint">Fermat F4 Prime</span>
+            </label>
+            <select id="select-exponent" class="form-select">
+              <option value="65537" selected>65537 (0x10001 - Universally Standard)</option>
+              <option value="3">3 (Legacy / Low Exponent Testing Only)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-salt-len" style="display:none;">
+            <label for="input-salt-length" class="form-label">
+              <span>PSS Salt Length (bytes)</span>
+              <span class="form-hint">Matches hash length by default</span>
+            </label>
+            <input type="number" id="input-salt-length" class="form-input" value="32" min="0" max="64" />
+          </div>
+        </div>
+
+        <!-- Generate Action Row -->
+        <div class="generate-actions-row">
+          <button id="btn-generate" class="btn-generate-hero">
+            <span id="gen-icon">⚡</span>
+            <span id="gen-text">Generate RSA Key Pair</span>
+          </button>
+
+          <div class="gen-timing-badge" id="gen-timing-badge" style="display:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span id="gen-timing-text">Generated in 180 ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generated Key Pair Layout (Public & Private Cards) -->
+      <div class="keys-layout" id="keys-layout">
+        <!-- Public Key Card -->
+        <div class="key-card">
+          <div class="key-card-header">
+            <div class="key-title-group">
+              <span class="key-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Public Key
+              </span>
+              <span class="key-badge-pub">Shareable</span>
+            </div>
+
+            <div class="key-tabs">
+              <button class="key-tab-btn active" id="tab-pub-pem">PEM (SPKI)</button>
+              <button class="key-tab-btn" id="tab-pub-jwk">JWK (JSON)</button>
+            </div>
+          </div>
+
+          <div class="key-content-box">
+            <textarea id="output-pub-key" class="code-textarea" readonly spellcheck="false" placeholder="Generating key pair..."></textarea>
+          </div>
+
+          <div class="key-card-footer">
+            <button class="btn-action-sm" id="btn-copy-pub">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Public Key</span>
+            </button>
+            <button class="btn-action-sm" id="btn-download-pub">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Download (.pem)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Private Key Card -->
+        <div class="key-card private-key-card" id="card-private">
+          <div class="key-card-header">
+            <div class="key-title-group">
+              <span class="key-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                Private Key
+              </span>
+              <span class="key-badge-priv">Confidential</span>
+            </div>
+
+            <div class="key-tabs">
+              <button class="key-tab-btn active" id="tab-priv-pem">PEM (PKCS#8)</button>
+              <button class="key-tab-btn" id="tab-priv-jwk">JWK (JSON)</button>
+            </div>
+          </div>
+
+          <div class="key-content-box">
+            <textarea id="output-priv-key" class="code-textarea" readonly spellcheck="false" placeholder="Generating key pair..."></textarea>
+
+            <!-- Screen-Share & Shoulder Surfing Shield Overlay -->
+            <div class="private-shield-overlay" id="private-shield-overlay">
+              <span class="shield-icon">🛡️</span>
+              <span class="shield-title">Private Key Concealed</span>
+              <p class="shield-desc">To protect against accidental screen-sharing or shoulder surfing, click below to reveal the private key.</p>
+              <button class="btn-reveal" id="btn-reveal-private">
+                <span>👁️ Click to Reveal Private Key</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="key-card-footer">
+            <button class="btn-action-sm" id="btn-copy-priv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Private Key</span>
+            </button>
+            <button class="btn-action-sm" id="btn-download-priv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Download (.pem)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fingerprint & Metadata Card -->
+      <div class="specs-card">
+        <span class="specs-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          Key Fingerprints &amp; Technical Specifications
+        </span>
+
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-label">SHA-256 Public Key Fingerprint (Hex)</span>
+            <span class="spec-value" id="spec-fp-sha256">Computing...</span>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-label">SHA-256 Fingerprint (Base64)</span>
+            <span class="spec-value" id="spec-fp-b64">Computing...</span>
+          </div>
+
+          <div class="spec-item">
+            <span class="spec-label">Key Parameters &amp; Usage</span>
+            <span class="spec-value" id="spec-params">RSA 2048-bit (e=65537) • SHA-256 • Encryption</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bundle Export & Re-generation Bar -->
+      <div class="bundle-bar">
+        <div class="bundle-left">
+          <span class="bundle-title">Key Pair Bundle &amp; Actions</span>
+          <span class="bundle-desc">Copy both keys with labeled delimiters or download a complete key package.</span>
+        </div>
+
+        <div class="bundle-actions">
+          <button class="btn-action-sm" id="btn-copy-bundle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copy Both Keys Bundle</span>
+          </button>
+          <button class="btn-action-sm" id="btn-download-bundle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download Key Bundle (.txt)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- In-Browser Crypto Verification Playground -->
+      <div class="playground-card" id="playground-card">
+        <div class="playground-header">
+          <span class="playground-title">
+            <span>🧪 In-Browser Key Verification Playground</span>
+          </span>
+          <span id="play-mode-badge" style="font-size:0.75rem; font-weight:700; color:var(--accent); background:var(--accent-light); padding:0.2rem 0.55rem; border-radius:var(--radius-sm);">
+            RSA-OAEP Encryption Test
+          </span>
+        </div>
+
+        <p style="font-size:0.8125rem; color:var(--muted); line-height:1.4;">
+          Test your generated RSA key pair immediately in the browser using the Web Crypto API to ensure correct round-trip functionality.
+        </p>
+
+        <!-- Encryption Playground (RSA-OAEP) -->
+        <div id="play-encryption-view" class="playground-grid">
+          <div class="play-step-box">
+            <span class="play-step-title">
+              <span>1. Plaintext Input</span>
+              <button class="btn-action-sm" id="btn-play-encrypt" style="padding:0.2rem 0.6rem; font-size:0.75rem;">🔒 Encrypt</button>
+            </span>
+            <textarea id="play-plain-input" class="play-textarea" placeholder="Type a message to encrypt...">Hello, RSA-OAEP secure message test!</textarea>
+          </div>
+
+          <div class="play-step-box">
+            <span class="play-step-title">
+              <span>2. Ciphertext (Base64)</span>
+              <button class="btn-action-sm" id="btn-play-decrypt" style="padding:0.2rem 0.6rem; font-size:0.75rem;">🔓 Decrypt</button>
+            </span>
+            <textarea id="play-cipher-output" class="play-textarea" readonly placeholder="Click Encrypt to generate ciphertext..."></textarea>
+          </div>
+        </div>
+
+        <!-- Signature Playground (RSASSA / RSA-PSS) -->
+        <div id="play-signature-view" class="playground-grid" style="display:none;">
+          <div class="play-step-box">
+            <span class="play-step-title">
+              <span>1. Message to Sign</span>
+              <button class="btn-action-sm" id="btn-play-sign" style="padding:0.2rem 0.6rem; font-size:0.75rem;">✍️ Sign</button>
+            </span>
+            <textarea id="play-sign-input" class="play-textarea" placeholder="Type a message to digitally sign...">Authentic cryptographic statement payload.</textarea>
+          </div>
+
+          <div class="play-step-box">
+            <span class="play-step-title">
+              <span>2. Digital Signature (Base64)</span>
+              <button class="btn-action-sm" id="btn-play-verify" style="padding:0.2rem 0.6rem; font-size:0.75rem;">✓ Verify</button>
+            </span>
+            <textarea id="play-sig-output" class="play-textarea" readonly placeholder="Click Sign to generate digital signature..."></textarea>
+          </div>
+        </div>
+
+        <div id="play-status-result" style="display:none; padding:0.6rem 0.85rem; border-radius:var(--radius-sm); font-size:0.8125rem; font-weight:600;">
+          <!-- Verification / Decryption status output -->
+        </div>
+      </div>
+
+      <!-- Cryptographic FAQ & Knowledge Section -->
+      <div class="faq-grid">
+        <div class="faq-card">
+          <h3>🔐 Web Crypto Hardware Acceleration</h3>
+          <p>Key generation runs in browser-native C++/Rust via <code>crypto.subtle</code>. Unlike slow pure-JavaScript libraries, Web Crypto leverages OS entropy pools and constant-time execution paths.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>📦 SPKI vs. PKCS#8 Format Standards</h3>
+          <p>Public keys are formatted as <strong>SubjectPublicKeyInfo (SPKI)</strong> and private keys as <strong>PKCS#8</strong> (RFC 5208)—the universal modern standard for OpenSSL, OpenSSH, AWS, and Node.js.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>⚡ 2048 vs 3072 vs 4096 Bits</h3>
+          <p>2048-bit provides ~112-bit symmetric equivalent security. NIST recommends <strong>3072-bit</strong> (~128-bit equivalence) for data requiring protection beyond 2030. 4096-bit offers a high security margin with increased compute time.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>🛡️ Why Not Reuse Keys?</h3>
+          <p>Using the same RSA key for both encryption (OAEP) and signing (RSASSA/PSS) is dangerous. Dual-use keys weaken cryptographic security proofs and can allow attackers to obtain signatures on chosen plaintexts.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 sayandeep.dev • 100% Client-Side Developer Utilities</p>
+      <div style="display:flex; gap:1rem;">
+        <a href="../tools/">All Tools</a>
+        <a href="../password-generator/">Password Generator</a>
+        <a href="../hash-generator/">Hash Generator</a>
+        <a href="../jwt-decoder/">JWT Decoder</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // --- STATE ---
+    let currentKeyPair = null;
+    let currentPubPem = '';
+    let currentPrivPem = '';
+    let currentPubJwk = null;
+    let currentPrivJwk = null;
+    let currentSpkiDer = null;
+    let currentAlgorithm = 'RSA-OAEP';
+    let currentKeySize = 2048;
+    let currentHash = 'SHA-256';
+    let isPrivateRevealed = false;
+    let pubFormat = 'pem'; // 'pem' or 'jwk'
+    let privFormat = 'pem'; // 'pem' or 'jwk'
+
+    // --- CONVERSION UTILITIES ---
+    function derToPem(buffer, label) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      const lines = base64.match(/.{1,64}/g) || [];
+      return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----`;
+    }
+
+    function arrayBufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(':');
+    }
+
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    // --- KEY GENERATION ENGINE ---
+    async function generateRsaKeyPair() {
+      const btn = document.getElementById('btn-generate');
+      const genText = document.getElementById('gen-text');
+      const genIcon = document.getElementById('gen-icon');
+      const timingBadge = document.getElementById('gen-timing-badge');
+      const timingText = document.getElementById('gen-timing-text');
+
+      btn.disabled = true;
+      genText.textContent = `Generating ${currentKeySize}-bit RSA Key...`;
+      genIcon.textContent = '⏳';
+
+      const startTime = performance.now();
+
+      try {
+        const exponentVal = parseInt(document.getElementById('select-exponent').value, 10) || 65537;
+        const publicExponent = exponentVal === 3 ? new Uint8Array([0x03]) : new Uint8Array([0x01, 0x00, 0x01]);
+
+        let keyUsages = [];
+        if (currentAlgorithm === 'RSA-OAEP') {
+          keyUsages = ['encrypt', 'decrypt'];
+        } else {
+          keyUsages = ['sign', 'verify'];
+        }
+
+        const algorithmConfig = {
+          name: currentAlgorithm,
+          modulusLength: currentKeySize,
+          publicExponent: publicExponent,
+          hash: currentHash
+        };
+
+        // Browser-native Web Crypto API call
+        const keyPair = await window.crypto.subtle.generateKey(
+          algorithmConfig,
+          true, // extractable
+          keyUsages
+        );
+
+        currentKeyPair = keyPair;
+
+        // Export Public Key in SPKI DER and JWK
+        const spkiBuffer = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
+        currentSpkiDer = spkiBuffer;
+        currentPubPem = derToPem(spkiBuffer, 'PUBLIC KEY');
+        currentPubJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+
+        // Export Private Key in PKCS#8 DER and JWK
+        const pkcs8Buffer = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+        currentPrivPem = derToPem(pkcs8Buffer, 'PRIVATE KEY');
+        currentPrivJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
+
+        // Calculate SHA-256 Fingerprint
+        const sha256Hash = await window.crypto.subtle.digest('SHA-256', spkiBuffer);
+        const hexFingerprint = arrayBufferToHex(sha256Hash);
+        const b64Fingerprint = arrayBufferToBase64(sha256Hash);
+
+        const endTime = performance.now();
+        const duration = Math.round(endTime - startTime);
+
+        timingText.textContent = `Generated in ${duration} ms`;
+        timingBadge.style.display = 'inline-flex';
+
+        // Update UI Displays
+        renderKeyDisplays();
+        renderFingerprints(hexFingerprint, b64Fingerprint);
+        updatePlaygroundView();
+
+        showToast(`✓ Generated ${currentKeySize}-bit ${currentAlgorithm} key pair!`);
+      } catch (err) {
+        console.error('RSA Key generation error:', err);
+        showToast('Error generating RSA key pair: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        genText.textContent = 'Generate RSA Key Pair';
+        genIcon.textContent = '⚡';
+      }
+    }
+
+    // --- UI RENDERERS ---
+    function renderKeyDisplays() {
+      const pubBox = document.getElementById('output-pub-key');
+      const privBox = document.getElementById('output-priv-key');
+
+      if (pubFormat === 'pem') {
+        pubBox.value = currentPubPem;
+      } else {
+        pubBox.value = JSON.stringify(currentPubJwk, null, 2);
+      }
+
+      if (privFormat === 'pem') {
+        privBox.value = currentPrivPem;
+      } else {
+        privBox.value = JSON.stringify(currentPrivJwk, null, 2);
+      }
+    }
+
+    function renderFingerprints(hexFp, b64Fp) {
+      document.getElementById('spec-fp-sha256').textContent = `SHA256:${hexFp}`;
+      document.getElementById('spec-fp-b64').textContent = `SHA256:${b64Fp}`;
+      document.getElementById('spec-params').textContent = `RSA ${currentKeySize}-bit (e=65537) • ${currentHash} • ${currentAlgorithm === 'RSA-OAEP' ? 'Encryption' : 'Signing'}`;
+    }
+
+    function updatePlaygroundView() {
+      const encView = document.getElementById('play-encryption-view');
+      const sigView = document.getElementById('play-signature-view');
+      const badge = document.getElementById('play-mode-badge');
+      const statusBox = document.getElementById('play-status-result');
+
+      statusBox.style.display = 'none';
+
+      if (currentAlgorithm === 'RSA-OAEP') {
+        encView.style.display = 'grid';
+        sigView.style.display = 'none';
+        badge.textContent = 'RSA-OAEP Encryption & Decryption';
+        document.getElementById('play-cipher-output').value = '';
+      } else {
+        encView.style.display = 'none';
+        sigView.style.display = 'grid';
+        badge.textContent = `${currentAlgorithm} Digital Signing & Verification`;
+        document.getElementById('play-sig-output').value = '';
+      }
+    }
+
+    // --- PLAYGROUND ACTIONS ---
+    async function playEncrypt() {
+      if (!currentKeyPair || currentAlgorithm !== 'RSA-OAEP') return;
+      try {
+        const text = document.getElementById('play-plain-input').value;
+        const encoded = new TextEncoder().encode(text);
+        const encrypted = await window.crypto.subtle.encrypt(
+          { name: 'RSA-OAEP' },
+          currentKeyPair.publicKey,
+          encoded
+        );
+        const b64Cipher = arrayBufferToBase64(encrypted);
+        document.getElementById('play-cipher-output').value = b64Cipher;
+        showPlaygroundStatus('✓ Encrypted message with RSA Public Key!', 'success');
+      } catch (err) {
+        showPlaygroundStatus('Encryption error: ' + err.message, 'error');
+      }
+    }
+
+    async function playDecrypt() {
+      if (!currentKeyPair || currentAlgorithm !== 'RSA-OAEP') return;
+      try {
+        const b64Cipher = document.getElementById('play-cipher-output').value.trim();
+        if (!b64Cipher) {
+          showPlaygroundStatus('Please encrypt a message first.', 'error');
+          return;
+        }
+        const binaryStr = atob(b64Cipher);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const decrypted = await window.crypto.subtle.decrypt(
+          { name: 'RSA-OAEP' },
+          currentKeyPair.privateKey,
+          bytes
+        );
+        const plainText = new TextDecoder().decode(decrypted);
+        showPlaygroundStatus(`✓ Decrypted with Private Key: "${plainText}"`, 'success');
+      } catch (err) {
+        showPlaygroundStatus('Decryption error: ' + err.message, 'error');
+      }
+    }
+
+    async function playSign() {
+      if (!currentKeyPair || currentAlgorithm === 'RSA-OAEP') return;
+      try {
+        const message = document.getElementById('play-sign-input').value;
+        const encoded = new TextEncoder().encode(message);
+
+        let signParams = { name: currentAlgorithm };
+        if (currentAlgorithm === 'RSA-PSS') {
+          const saltLen = parseInt(document.getElementById('input-salt-length').value, 10) || 32;
+          signParams = { name: 'RSA-PSS', saltLength: saltLen };
+        }
+
+        const signature = await window.crypto.subtle.sign(
+          signParams,
+          currentKeyPair.privateKey,
+          encoded
+        );
+        const b64Sig = arrayBufferToBase64(signature);
+        document.getElementById('play-sig-output').value = b64Sig;
+        showPlaygroundStatus('✓ Generated Digital Signature with Private Key!', 'success');
+      } catch (err) {
+        showPlaygroundStatus('Signing error: ' + err.message, 'error');
+      }
+    }
+
+    async function playVerify() {
+      if (!currentKeyPair || currentAlgorithm === 'RSA-OAEP') return;
+      try {
+        const message = document.getElementById('play-sign-input').value;
+        const b64Sig = document.getElementById('play-sig-output').value.trim();
+        if (!b64Sig) {
+          showPlaygroundStatus('Please sign a message first.', 'error');
+          return;
+        }
+        const binaryStr = atob(b64Sig);
+        const sigBytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          sigBytes[i] = binaryStr.charCodeAt(i);
+        }
+        const encodedMsg = new TextEncoder().encode(message);
+
+        let verifyParams = { name: currentAlgorithm };
+        if (currentAlgorithm === 'RSA-PSS') {
+          const saltLen = parseInt(document.getElementById('input-salt-length').value, 10) || 32;
+          verifyParams = { name: 'RSA-PSS', saltLength: saltLen };
+        }
+
+        const isValid = await window.crypto.subtle.verify(
+          verifyParams,
+          currentKeyPair.publicKey,
+          sigBytes,
+          encodedMsg
+        );
+
+        if (isValid) {
+          showPlaygroundStatus('✓ Digital Signature is VALID! Verified with Public Key.', 'success');
+        } else {
+          showPlaygroundStatus('❌ Signature Verification FAILED! Message was altered or invalid.', 'error');
+        }
+      } catch (err) {
+        showPlaygroundStatus('Verification error: ' + err.message, 'error');
+      }
+    }
+
+    function showPlaygroundStatus(msg, type) {
+      const box = document.getElementById('play-status-result');
+      box.style.display = 'block';
+      box.textContent = msg;
+      if (type === 'success') {
+        box.style.background = 'var(--success-bg)';
+        box.style.color = 'var(--success)';
+        box.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+      } else {
+        box.style.background = 'var(--error-bg)';
+        box.style.color = 'var(--error)';
+        box.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      }
+    }
+
+    // --- CLIPBOARD & DOWNLOAD ACTIONS ---
+    async function copyText(text, label) {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(`✓ Copied ${label} to clipboard!`);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(`✓ Copied ${label} to clipboard!`);
+      }
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // --- EVENT LISTENERS ---
+    function initEvents() {
+      // Algorithm purpose change
+      const purposeSelect = document.getElementById('select-purpose');
+      const guidanceBox = document.getElementById('purpose-guidance');
+      const saltGroup = document.getElementById('group-salt-len');
+
+      purposeSelect.addEventListener('change', (e) => {
+        currentAlgorithm = e.target.value;
+        if (currentAlgorithm === 'RSA-OAEP') {
+          guidanceBox.innerHTML = '<strong>Cryptographic Best Practice:</strong> Keys generated for <em>encryption (RSA-OAEP)</em> should never be reused for <em>digital signatures</em>. Reusing a single RSA key pair across both purposes breaks cryptographic security proofs.';
+          saltGroup.style.display = 'none';
+        } else if (currentAlgorithm === 'RSASSA-PKCS1-v1_5') {
+          guidanceBox.innerHTML = '<strong>RSASSA-PKCS1-v1_5:</strong> Standard deterministic RSA signature scheme widely used in TLS, JWTs (RS256), and legacy certificate authorities.';
+          saltGroup.style.display = 'none';
+        } else {
+          guidanceBox.innerHTML = '<strong>RSA-PSS (Probabilistic Signature Scheme):</strong> Modern signature scheme with provable cryptographic security, randomized salt, and superior resistance to side-channel attacks.';
+          saltGroup.style.display = 'flex';
+        }
+        generateRsaKeyPair();
+      });
+
+      // Key Size change
+      const keySizeSelect = document.getElementById('select-keysize');
+      const sizeHint = document.getElementById('size-hint');
+      keySizeSelect.addEventListener('change', (e) => {
+        currentKeySize = parseInt(e.target.value, 10);
+        if (currentKeySize === 2048) sizeHint.textContent = 'Standard Security';
+        else if (currentKeySize === 3072) sizeHint.textContent = 'High Security (> 2030)';
+        else sizeHint.textContent = 'Maximum Security Margin';
+        generateRsaKeyPair();
+      });
+
+      // Hash change
+      document.getElementById('select-hash').addEventListener('change', (e) => {
+        currentHash = e.target.value;
+        generateRsaKeyPair();
+      });
+
+      // Advanced toggle
+      document.getElementById('btn-toggle-advanced').addEventListener('click', () => {
+        const panel = document.getElementById('advanced-panel');
+        const arrow = document.getElementById('adv-arrow');
+        const isHidden = panel.style.display === 'none' || !panel.style.display;
+        panel.style.display = isHidden ? 'grid' : 'none';
+        arrow.textContent = isHidden ? '▼' : '▶';
+      });
+
+      // Exponent change
+      document.getElementById('select-exponent').addEventListener('change', () => {
+        generateRsaKeyPair();
+      });
+
+      // Generate button
+      document.getElementById('btn-generate').addEventListener('click', () => {
+        generateRsaKeyPair();
+      });
+
+      // Public key format tabs
+      document.getElementById('tab-pub-pem').addEventListener('click', () => {
+        pubFormat = 'pem';
+        document.getElementById('tab-pub-pem').classList.add('active');
+        document.getElementById('tab-pub-jwk').classList.remove('active');
+        renderKeyDisplays();
+      });
+
+      document.getElementById('tab-pub-jwk').addEventListener('click', () => {
+        pubFormat = 'jwk';
+        document.getElementById('tab-pub-jwk').classList.add('active');
+        document.getElementById('tab-pub-pem').classList.remove('active');
+        renderKeyDisplays();
+      });
+
+      // Private key format tabs
+      document.getElementById('tab-priv-pem').addEventListener('click', () => {
+        privFormat = 'pem';
+        document.getElementById('tab-priv-pem').classList.add('active');
+        document.getElementById('tab-priv-jwk').classList.remove('active');
+        renderKeyDisplays();
+      });
+
+      document.getElementById('tab-priv-jwk').addEventListener('click', () => {
+        privFormat = 'jwk';
+        document.getElementById('tab-priv-jwk').classList.add('active');
+        document.getElementById('tab-priv-pem').classList.remove('active');
+        renderKeyDisplays();
+      });
+
+      // Reveal private key
+      document.getElementById('btn-reveal-private').addEventListener('click', () => {
+        isPrivateRevealed = true;
+        document.getElementById('private-shield-overlay').style.display = 'none';
+      });
+
+      // Copy & Download Public Key
+      document.getElementById('btn-copy-pub').addEventListener('click', () => {
+        const val = document.getElementById('output-pub-key').value;
+        copyText(val, 'Public Key');
+      });
+
+      document.getElementById('btn-download-pub').addEventListener('click', () => {
+        if (pubFormat === 'pem') {
+          downloadFile('public_key.pem', currentPubPem, 'application/x-pem-file');
+        } else {
+          downloadFile('public_key.jwk.json', JSON.stringify(currentPubJwk, null, 2), 'application/json');
+        }
+      });
+
+      // Copy & Download Private Key
+      document.getElementById('btn-copy-priv').addEventListener('click', () => {
+        const val = document.getElementById('output-priv-key').value;
+        copyText(val, 'Private Key');
+      });
+
+      document.getElementById('btn-download-priv').addEventListener('click', () => {
+        if (privFormat === 'pem') {
+          downloadFile('private_key.pem', currentPrivPem, 'application/x-pem-file');
+        } else {
+          downloadFile('private_key.jwk.json', JSON.stringify(currentPrivJwk, null, 2), 'application/json');
+        }
+      });
+
+      // Copy & Download Key Bundle
+      document.getElementById('btn-copy-bundle').addEventListener('click', () => {
+        const bundle = [
+          `# RSA ${currentKeySize}-bit Key Pair (${currentAlgorithm} / ${currentHash})`,
+          `# Generated: ${new Date().toISOString()}`,
+          `# SHA-256 Fingerprint: ${document.getElementById('spec-fp-sha256').textContent}`,
+          '',
+          currentPubPem,
+          '',
+          currentPrivPem
+        ].join('\n');
+        copyText(bundle, 'Key Pair Bundle');
+      });
+
+      document.getElementById('btn-download-bundle').addEventListener('click', () => {
+        const bundle = [
+          `# RSA ${currentKeySize}-bit Key Pair (${currentAlgorithm} / ${currentHash})`,
+          `# Generated: ${new Date().toISOString()}`,
+          `# SHA-256 Fingerprint: ${document.getElementById('spec-fp-sha256').textContent}`,
+          '',
+          currentPubPem,
+          '',
+          currentPrivPem
+        ].join('\n');
+        downloadFile('rsa_keypair_bundle.txt', bundle, 'text/plain');
+      });
+
+      // Playground listeners
+      document.getElementById('btn-play-encrypt').addEventListener('click', playEncrypt);
+      document.getElementById('btn-play-decrypt').addEventListener('click', playDecrypt);
+      document.getElementById('btn-play-sign').addEventListener('click', playSign);
+      document.getElementById('btn-play-verify').addEventListener('click', playVerify);
+
+      // Theme toggle
+      const themeBtn = document.getElementById('theme-toggle');
+      themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+      initEvents();
+      generateRsaKeyPair();
+    });
+  </script>
+</body>
+</html>

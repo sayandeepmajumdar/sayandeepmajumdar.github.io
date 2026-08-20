@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BPMN 2.0 Diagram Studio — Visual Process Modeler &amp; XML Editor | sayandeep.dev</title>
+  <meta name="description" content="Free online BPMN 2.0 diagram editor. Design, model, validate, and export standards-compliant business process diagrams with pools, lanes, gateways, events, properties inspector, and Camunda/BPMN XML export." />
+  <meta name="keywords" content="bpmn editor, bpmn 2.0 modeler, business process diagram, workflow designer, camunda bpmn, process modeling, bpmn xml editor, swimlanes diagram" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/bpmn-editor/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- bpmn-js Official Modeler Stylesheets -->
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/diagram-js.css" />
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/bpmn-js.css" />
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/bpmn-font/css/bpmn.css" />
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.11.1/dist/assets/bpmn-font/css/bpmn-embedded.css" />
+
+  <!-- bpmn-js Official Modeler Script -->
+  <script src="https://unpkg.com/bpmn-js@17.11.1/dist/bpmn-modeler.production.min.js"></script>
+
+  <!-- Open Graph & Schema.org -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="BPMN 2.0 Diagram Studio | sayandeep.dev" />
+  <meta property="og:description" content="Design, model, validate, and export standards-compliant BPMN 2.0 business process workflows. 100% client-side with bpmn-js." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/bpmn-editor/" />
+  <meta property="og:image" content="https://sayandeepmajumdar.github.io/assets/img/profile.jpg" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "BPMN 2.0 Diagram Studio",
+    "url": "https://sayandeepmajumdar.github.io/bpmn-editor/",
+    "description": "Standards-compliant BPMN 2.0 business process modeler and diagram editor with properties inspector, process validation, swimlanes, and BPMN/SVG/PNG export.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "All",
+    "author": {
+      "@type": "Person",
+      "name": "Sayandeep Majumdar"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-light: #eff6ff;
+      --accent-glow: rgba(37, 99, 235, 0.15);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-light: rgba(96, 165, 250, 0.12);
+      --accent-glow: rgba(96, 165, 250, 0.2);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 54px;
+      padding: 0 1rem;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text);
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.02rem;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+      text-decoration: none;
+      height: 34px;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      background: var(--error-bg);
+      border-color: var(--error);
+    }
+
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+      height: 30px;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      flex-shrink: 0;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .form-select, .form-input {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      height: 34px;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    /* Sub-Toolbar */
+    .sub-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      height: 42px;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .sub-toolbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--line);
+      margin: 0 0.2rem;
+      flex-shrink: 0;
+    }
+
+    .toolbar-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-right: 0.15rem;
+      white-space: nowrap;
+    }
+
+    /* Studio Main Layout */
+    .studio-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      min-height: 0;
+      background: var(--bg);
+      position: relative;
+    }
+
+    /* Center BPMN Canvas Area */
+    .canvas-viewport {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      overflow: hidden;
+      display: flex;
+      min-height: 0;
+    }
+
+    /* BPMN Canvas Container */
+    #bpmn-canvas {
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+    }
+
+    /* bpmn-js Palette Styling */
+    .djs-palette {
+      top: 16px !important;
+      left: 16px !important;
+      border-radius: var(--radius-md) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+      border: 1px solid #cbd5e1 !important;
+      background: rgba(255, 255, 255, 0.98) !important;
+      backdrop-filter: blur(8px);
+      z-index: 20 !important;
+    }
+
+    .djs-palette .entry,
+    .djs-palette .djs-palette-toggle {
+      color: #334155 !important;
+    }
+
+    .djs-palette .entry:hover {
+      color: var(--accent) !important;
+    }
+
+    .djs-palette .separator {
+      border-bottom-color: #e2e8f0 !important;
+    }
+
+    /* bpmn-js Context Pad (Side Helper / Quick Action Icons) */
+    .djs-context-pad {
+      z-index: 100 !important;
+    }
+
+    .djs-context-pad .entry {
+      background-color: #ffffff !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+      border-radius: 4px !important;
+      color: #1e293b !important;
+      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+    }
+
+    .djs-context-pad .entry:hover {
+      background-color: #f1f5f9 !important;
+      color: var(--accent) !important;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3), 0 0 0 1px var(--accent) !important;
+      transform: scale(1.12);
+    }
+
+    /* Ensure BPMN icon font glyphs inherit explicit dark color inside canvas popups */
+    .djs-context-pad [class^="bpmn-icon-"]:before,
+    .djs-context-pad [class*=" bpmn-icon-"]:before,
+    .djs-palette [class^="bpmn-icon-"]:before,
+    .djs-palette [class*=" bpmn-icon-"]:before,
+    .djs-popup [class^="bpmn-icon-"]:before,
+    .djs-popup [class*=" bpmn-icon-"]:before {
+      color: inherit !important;
+    }
+
+    /* bpmn-js Replace / Morph Popup Menu */
+    .djs-popup {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: var(--radius-md) !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18) !important;
+      color: #1e293b !important;
+      z-index: 150 !important;
+    }
+
+    .djs-popup .entry {
+      color: #1e293b !important;
+      border-radius: 4px !important;
+    }
+
+    .djs-popup .entry:hover,
+    .djs-popup .entry.selected {
+      background-color: #eff6ff !important;
+      color: var(--accent) !important;
+    }
+
+    .djs-popup .djs-popup-header {
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+
+    .djs-popup .djs-popup-body {
+      background: #ffffff !important;
+      color: #1e293b !important;
+    }
+
+    /* Right Sidebar: Properties Inspector */
+    .sidebar-right {
+      background: var(--surface);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .inspector-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-alt);
+    }
+
+    .inspector-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .element-type-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .inspector-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .prop-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .prop-section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .prop-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .prop-row label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .prop-textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      min-height: 56px;
+    }
+
+    .prop-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    /* Color Swatches Grid */
+    .color-swatches {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+    }
+
+    .color-swatch {
+      height: 26px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Bottom Collapsible Issues & Code Drawers */
+    .bottom-drawer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 320px;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      height: 220px;
+      z-index: 30;
+      box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.06);
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bottom-drawer.open {
+      transform: translateY(0);
+    }
+
+    .drawer-header {
+      height: 36px;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      font-size: 0.775rem;
+      font-weight: 700;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 1rem;
+    }
+
+    .issues-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .issue-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      font-size: 0.775rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .issue-card:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .issue-card.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .issue-card.error {
+      border-left: 4px solid var(--error);
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      padding: 0.5rem;
+      border: none;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: none;
+      white-space: pre;
+    }
+
+    /* Modal Component */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 580px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 120;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 900px) {
+      header .container {
+        height: 52px;
+        padding: 0 0.75rem;
+        gap: 0.4rem;
+      }
+
+      .brand-title {
+        font-size: 0.9rem;
+      }
+
+      .studio-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+      }
+
+      .sidebar-right {
+        border-left: none;
+        border-top: 1px solid var(--line);
+        max-height: 240px;
+      }
+
+      .bottom-drawer {
+        right: 0;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .brand-badge {
+        display: none;
+      }
+      .brand-title {
+        font-size: 0.875rem;
+      }
+      .nav-back-link {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.725rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="BPMN 2.0 Studio Homepage">
+        <span class="brand-badge">BPMN</span>
+        <span class="brand-title">BPMN 2.0 Diagram Studio</span>
+      </a>
+
+      <div class="header-actions">
+        <select id="select-diagram" class="form-select" style="min-width: 140px; max-width: 200px;">
+          <!-- Injected saved diagrams -->
+        </select>
+
+        <button id="btn-new-diagram" class="btn btn--sm" title="Create new blank process diagram">
+          📄 New
+        </button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sub-Toolbar (Process Templates, Undo/Redo, Zoom, Exports) -->
+  <div class="sub-toolbar">
+    <div class="toolbar-group">
+      <span class="toolbar-label">Template:</span>
+      <select id="select-template" class="form-select" style="min-width: 170px;">
+        <option value="" disabled selected>✨ Load Process Pattern...</option>
+        <option value="expense_approval">💰 Expense Approval Workflow</option>
+        <option value="parallel_order">📦 Parallel Order Processing (Fork/Join)</option>
+        <option value="loan_underwriting">🏦 Loan Underwriting Decision Tree</option>
+        <option value="b2b_collaboration">🏢 B2B Collaboration (2 Pools &amp; Lanes)</option>
+        <option value="sla_escalation">⏱️ Event-Driven SLA Timer Escalation</option>
+      </select>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button id="btn-undo" class="btn btn--sm" title="Undo (Ctrl+Z)" disabled>
+        ↩️ Undo
+      </button>
+      <button id="btn-redo" class="btn btn--sm" title="Redo (Ctrl+Y)" disabled>
+        ↪️ Redo
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button id="btn-zoom-out" class="btn btn--sm" title="Zoom Out">−</button>
+      <span id="zoom-lbl" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700; padding:0 0.3rem;">100%</span>
+      <button id="btn-zoom-in" class="btn btn--sm" title="Zoom In">+</button>
+      <button id="btn-zoom-fit" class="btn btn--sm" title="Fit diagram to viewport">🎯 Fit</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <button id="btn-toggle-issues" class="btn btn--sm" title="Toggle Process Validation Linter">
+        <span id="issues-badge">✓ 0 Issues</span>
+      </button>
+
+      <button id="btn-toggle-xml" class="btn btn--sm" title="View / Edit Raw BPMN 2.0 XML">
+        💻 XML
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-group">
+      <input type="file" id="file-input-bpmn" accept=".bpmn,.xml" style="display: none;" />
+      <button id="btn-import-file" class="btn btn--sm" title="Open .bpmn / .xml file from computer">
+        📁 Import
+      </button>
+      <button id="btn-export-bpmn" class="btn btn--primary btn--sm" title="Download standard BPMN 2.0 XML file">
+        💾 .bpmn
+      </button>
+      <button id="btn-export-svg" class="btn btn--primary btn--sm" title="Download vector SVG">
+        💾 SVG
+      </button>
+      <button id="btn-export-png" class="btn btn--primary btn--sm" title="Download high-resolution PNG">
+        🖼️ PNG (2x)
+      </button>
+    </div>
+  </div>
+
+  <!-- Studio Main Workspace -->
+  <div class="studio-workspace">
+    <!-- Center BPMN Canvas Area -->
+    <div class="canvas-viewport">
+      <div id="bpmn-canvas"></div>
+
+      <!-- Issues / Validation Bottom Drawer -->
+      <div class="bottom-drawer" id="drawer-issues">
+        <div class="drawer-header">
+          <span style="display:flex; align-items:center; gap:0.4rem;">
+            <span>🛡️ Process Validation &amp; Anti-Pattern Linter</span>
+            <span id="drawer-issues-count" style="font-size:0.7rem; font-weight:700; color:var(--muted);"></span>
+          </span>
+          <button id="btn-close-issues" class="btn-icon btn--sm" style="width:24px; height:24px;">✕</button>
+        </div>
+        <div class="drawer-content">
+          <div class="issues-list" id="issues-list-container">
+            <!-- Injected issues -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw XML Code Bottom Drawer -->
+      <div class="bottom-drawer" id="drawer-xml">
+        <div class="drawer-header">
+          <span>💻 Raw BPMN 2.0 XML Source</span>
+          <div style="display:flex; gap:0.4rem;">
+            <button id="btn-copy-xml" class="btn btn--sm" style="height:24px; font-size:0.7rem;">📋 Copy XML</button>
+            <button id="btn-apply-xml" class="btn btn--primary btn--sm" style="height:24px; font-size:0.7rem;">Apply Changes</button>
+            <button id="btn-close-xml" class="btn-icon btn--sm" style="width:24px; height:24px;">✕</button>
+          </div>
+        </div>
+        <div class="drawer-content" style="padding:0;">
+          <textarea id="xml-code-textarea" class="code-textarea" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar: Properties Inspector -->
+    <aside class="sidebar-right">
+      <div class="inspector-header">
+        <div class="inspector-title">
+          <span>⚙️ Properties</span>
+        </div>
+        <span class="element-type-badge" id="insp-type-badge">Process</span>
+      </div>
+
+      <div class="inspector-body" id="inspector-content">
+        <!-- General Section -->
+        <div class="prop-section">
+          <span class="prop-section-title">General</span>
+          <div class="prop-row">
+            <label for="prop-id">Element ID</label>
+            <input type="text" id="prop-id" class="form-input" placeholder="e.g. Activity_1" />
+          </div>
+          <div class="prop-row">
+            <label for="prop-name">Name / Label</label>
+            <input type="text" id="prop-name" class="form-input" placeholder="e.g. Approve Expense Report" />
+          </div>
+          <div class="prop-row">
+            <label for="prop-doc">Documentation</label>
+            <textarea id="prop-doc" class="prop-textarea" placeholder="Process step instructions or notes..."></textarea>
+          </div>
+        </div>
+
+        <!-- Process Details Section (Process / Pool) -->
+        <div class="prop-section" id="section-process" style="display: none;">
+          <span class="prop-section-title">Process Details</span>
+          <div class="prop-row" style="flex-direction:row; align-items:center; gap:0.5rem;">
+            <input type="checkbox" id="prop-executable" style="width:16px; height:16px; cursor:pointer;" />
+            <label for="prop-executable" style="cursor:pointer; margin:0;">Is Executable (Engine Workflow)</label>
+          </div>
+        </div>
+
+        <!-- Sequence Flow Condition Section -->
+        <div class="prop-section" id="section-flow" style="display: none;">
+          <span class="prop-section-title">Sequence Flow</span>
+          <div class="prop-row">
+            <label for="prop-condition">Condition Expression</label>
+            <input type="text" id="prop-condition" class="form-input" placeholder="e.g. ${approved == true}" />
+          </div>
+        </div>
+
+        <!-- User Task Assignment Section -->
+        <div class="prop-section" id="section-user-task" style="display: none;">
+          <span class="prop-section-title">User Task Assignment</span>
+          <div class="prop-row">
+            <label for="prop-assignee">Assignee</label>
+            <input type="text" id="prop-assignee" class="form-input" placeholder="e.g. john.doe" />
+          </div>
+          <div class="prop-row">
+            <label for="prop-candidate-groups">Candidate Groups</label>
+            <input type="text" id="prop-candidate-groups" class="form-input" placeholder="e.g. finance, managers" />
+          </div>
+          <div class="prop-row">
+            <label for="prop-due-date">Due Date</label>
+            <input type="text" id="prop-due-date" class="form-input" placeholder="e.g. ${dateTime().plusDays(3)}" />
+          </div>
+        </div>
+
+        <!-- Event Details Section -->
+        <div class="prop-section" id="section-event" style="display: none;">
+          <span class="prop-section-title">Event Definition</span>
+          <div class="prop-row">
+            <label for="prop-timer-def">Timer Expression</label>
+            <input type="text" id="prop-timer-def" class="form-input" placeholder="e.g. PT48H or R/PT15M" />
+          </div>
+        </div>
+
+        <!-- Visual Color Swatches Section -->
+        <div class="prop-section" style="border-top:1px solid var(--line); padding-top:0.75rem;">
+          <span class="prop-section-title">Visual Styling</span>
+          <div class="color-swatches">
+            <div class="color-swatch" style="background:#ffffff; border-color:#2563eb;" data-fill="#ffffff" data-stroke="#2563eb" title="Default Blue"></div>
+            <div class="color-swatch" style="background:#dcfce7; border-color:#16a34a;" data-fill="#dcfce7" data-stroke="#16a34a" title="Success Green"></div>
+            <div class="color-swatch" style="background:#fef3c7; border-color:#d97706;" data-fill="#fef3c7" data-stroke="#d97706" title="Warning Amber"></div>
+            <div class="color-swatch" style="background:#fee2e2; border-color:#dc2626;" data-fill="#fee2e2" data-stroke="#dc2626" title="Danger Red"></div>
+            <div class="color-swatch" style="background:#f3e8ff; border-color:#7c3aed;" data-fill="#f3e8ff" data-stroke="#7c3aed" title="Purple"></div>
+            <div class="color-swatch" style="background:#f1f5f9; border-color:#475569;" data-fill="#f1f5f9" data-stroke="#475569" title="Slate"></div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.3rem;">
+              <label style="font-size:0.7rem; color:var(--muted);">Fill:</label>
+              <input type="color" id="prop-color-fill" style="width:28px; height:24px; border:none; cursor:pointer;" value="#ffffff" />
+            </div>
+            <div style="display:flex; align-items:center; gap:0.3rem;">
+              <label style="font-size:0.7rem; color:var(--muted);">Stroke:</label>
+              <input type="color" id="prop-color-stroke" style="width:28px; height:24px; border:none; cursor:pointer;" value="#2563eb" />
+            </div>
+            <button id="btn-apply-custom-color" class="btn btn--sm" style="flex:1; height:24px; font-size:0.7rem;">Apply Color</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- BPMN 2.0 STUDIO APPLICATION LOGIC -->
+  <script>
+    /**
+     * BPMN 2.0 Diagram Studio
+     * 100% Client-Side implementation powered by bpmn-js.
+     */
+
+    // --- DEFAULT INITIAL BPMN 2.0 TEMPLATES ---
+    const BPMN_TEMPLATES = {
+      blank: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Process Started" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`,
+
+      expense_approval: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Expense" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_ExpenseApproval" name="Expense Approval Process" isExecutable="true">
+    <bpmn:startEvent id="Start_Expense" name="Expense Submitted">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_Review" name="Manager Review Expense">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_Approved" name="Approved?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Disburse" name="Disburse Funds via Stripe">
+      <bpmn:incoming>Flow_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Task_NotifyReject" name="Send Rejection Email">
+      <bpmn:incoming>Flow_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_Approved" name="Expense Paid">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Rejected" name="Expense Rejected">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Expense" targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Review" targetRef="Gateway_Approved" />
+    <bpmn:sequenceFlow id="Flow_Yes" name="Yes" sourceRef="Gateway_Approved" targetRef="Task_Disburse" />
+    <bpmn:sequenceFlow id="Flow_No" name="No" sourceRef="Gateway_Approved" targetRef="Task_NotifyReject" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Disburse" targetRef="End_Approved" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_NotifyReject" targetRef="End_Rejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_ExpenseApproval">
+      <bpmndi:BPMNShape id="Start_Expense_di" bpmnElement="Start_Expense">
+        <dc:Bounds x="160" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="154" y="185" width="49" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Review_di" bpmnElement="Task_Review">
+        <dc:Bounds x="250" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Approved_di" bpmnElement="Gateway_Approved" isMarkerVisible="true">
+        <dc:Bounds x="405" y="135" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="403" y="111" width="54" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Disburse_di" bpmnElement="Task_Disburse">
+        <dc:Bounds x="510" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyReject_di" bpmnElement="Task_NotifyReject">
+        <dc:Bounds x="510" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Approved_di" bpmnElement="End_Approved">
+        <dc:Bounds x="672" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="656" y="185" width="69" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="672" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="646" y="295" width="89" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="160" /><di:waypoint x="250" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="160" /><di:waypoint x="405" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Yes_di" bpmnElement="Flow_Yes">
+        <di:waypoint x="455" y="160" /><di:waypoint x="510" y="160" />
+        <bpmndi:BPMNLabel><dc:Bounds x="474" y="142" width="18" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_No_di" bpmnElement="Flow_No">
+        <di:waypoint x="430" y="185" /><di:waypoint x="430" y="270" /><di:waypoint x="510" y="270" />
+        <bpmndi:BPMNLabel><dc:Bounds x="438" y="225" width="15" height="14" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="610" y="160" /><di:waypoint x="672" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="610" y="270" /><di:waypoint x="672" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`,
+
+      parallel_order: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Order" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Order" name="Parallel Order Fulfillment" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" name="Order Placed">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_Fork" name="Parallel Fork">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPack</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToPay</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="Task_Pack" name="Warehouse Pack Items">
+      <bpmn:incoming>Flow_ToPack</bpmn:incoming>
+      <bpmn:outgoing>Flow_Packed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_Pay" name="Authorize Payment Card">
+      <bpmn:incoming>Flow_ToPay</bpmn:incoming>
+      <bpmn:outgoing>Flow_Paid</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="Gateway_Join" name="Parallel Join">
+      <bpmn:incoming>Flow_Packed</bpmn:incoming>
+      <bpmn:incoming>Flow_Paid</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToShip</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="Task_Ship" name="Courier Dispatch &amp; Ship">
+      <bpmn:incoming>Flow_ToShip</bpmn:incoming>
+      <bpmn:outgoing>Flow_Done</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Order" name="Order Delivered">
+      <bpmn:incoming>Flow_Done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Order" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_ToPack" sourceRef="Gateway_Fork" targetRef="Task_Pack" />
+    <bpmn:sequenceFlow id="Flow_ToPay" sourceRef="Gateway_Fork" targetRef="Task_Pay" />
+    <bpmn:sequenceFlow id="Flow_Packed" sourceRef="Task_Pack" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_Paid" sourceRef="Task_Pay" targetRef="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_ToShip" sourceRef="Gateway_Join" targetRef="Task_Ship" />
+    <bpmn:sequenceFlow id="Flow_Done" sourceRef="Task_Ship" targetRef="End_Order" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Order">
+      <bpmndi:BPMNShape id="Start_Order_di" bpmnElement="Start_Order"><dc:Bounds x="152" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Fork_di" bpmnElement="Gateway_Fork"><dc:Bounds x="245" y="155" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pack_di" bpmnElement="Task_Pack"><dc:Bounds x="350" y="90" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pay_di" bpmnElement="Task_Pay"><dc:Bounds x="350" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Join_di" bpmnElement="Gateway_Join"><dc:Bounds x="505" y="155" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Ship_di" bpmnElement="Task_Ship"><dc:Bounds x="610" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Order_di" bpmnElement="End_Order"><dc:Bounds x="762" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="180" /><di:waypoint x="245" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPack_di" bpmnElement="Flow_ToPack"><di:waypoint x="270" y="155" /><di:waypoint x="270" y="130" /><di:waypoint x="350" y="130" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPay_di" bpmnElement="Flow_ToPay"><di:waypoint x="270" y="205" /><di:waypoint x="270" y="250" /><di:waypoint x="350" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Packed_di" bpmnElement="Flow_Packed"><di:waypoint x="450" y="130" /><di:waypoint x="530" y="130" /><di:waypoint x="530" y="155" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Paid_di" bpmnElement="Flow_Paid"><di:waypoint x="450" y="250" /><di:waypoint x="530" y="250" /><di:waypoint x="530" y="205" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToShip_di" bpmnElement="Flow_ToShip"><di:waypoint x="555" y="180" /><di:waypoint x="610" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Done_di" bpmnElement="Flow_Done"><di:waypoint x="710" y="180" /><di:waypoint x="762" y="180" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`,
+
+      loan_underwriting: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Loan" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_Loan" name="Loan Underwriting Decision Tree" isExecutable="true">
+    <bpmn:startEvent id="Start_App" name="Application Received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_Score" name="Query Credit Bureau Score">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Tier" name="Credit Score Tier">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_High</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Med</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Low</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Underwriter" name="Senior Underwriter Manual Review">
+      <bpmn:incoming>Flow_Med</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Task_Approve" name="Generate Loan Agreement &amp; Disburse">
+      <bpmn:incoming>Flow_High</bpmn:incoming>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_Done</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_Declined" name="Application Auto-Declined">
+      <bpmn:incoming>Flow_Low</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Approved" name="Loan Active">
+      <bpmn:incoming>Flow_Done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_App" targetRef="Task_Score" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Score" targetRef="Gateway_Tier" />
+    <bpmn:sequenceFlow id="Flow_High" name="Score &#62;= 720" sourceRef="Gateway_Tier" targetRef="Task_Approve" />
+    <bpmn:sequenceFlow id="Flow_Med" name="Score 600-719" sourceRef="Gateway_Tier" targetRef="Task_Underwriter" />
+    <bpmn:sequenceFlow id="Flow_Low" name="Score &#60; 600" sourceRef="Gateway_Tier" targetRef="End_Declined" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Underwriter" targetRef="Task_Approve" />
+    <bpmn:sequenceFlow id="Flow_Done" sourceRef="Task_Approve" targetRef="End_Approved" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Loan">
+      <bpmndi:BPMNShape id="Start_App_di" bpmnElement="Start_App"><dc:Bounds x="152" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Score_di" bpmnElement="Task_Score"><dc:Bounds x="240" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Tier_di" bpmnElement="Gateway_Tier" isMarkerVisible="true"><dc:Bounds x="395" y="155" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Underwriter_di" bpmnElement="Task_Underwriter"><dc:Bounds x="500" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Approve_di" bpmnElement="Task_Approve"><dc:Bounds x="650" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Declined_di" bpmnElement="End_Declined"><dc:Bounds x="532" y="272" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Approved_di" bpmnElement="End_Approved"><dc:Bounds x="802" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="180" /><di:waypoint x="240" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="340" y="180" /><di:waypoint x="395" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_High_di" bpmnElement="Flow_High"><di:waypoint x="420" y="155" /><di:waypoint x="420" y="100" /><di:waypoint x="700" y="100" /><di:waypoint x="700" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Med_di" bpmnElement="Flow_Med"><di:waypoint x="445" y="180" /><di:waypoint x="500" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Low_di" bpmnElement="Flow_Low"><di:waypoint x="420" y="205" /><di:waypoint x="420" y="290" /><di:waypoint x="532" y="290" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="600" y="180" /><di:waypoint x="650" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Done_di" bpmnElement="Flow_Done"><di:waypoint x="750" y="180" /><di:waypoint x="802" y="180" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`,
+
+      b2b_collaboration: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Collab" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Customer" name="Customer Organization" processRef="Process_Customer" />
+    <bpmn:participant id="Participant_Vendor" name="E-Commerce Vendor" processRef="Process_Vendor" />
+    <bpmn:messageFlow id="MsgFlow_Order" name="Purchase Order" sourceRef="Task_CustOrder" targetRef="Start_VendorOrder" />
+    <bpmn:messageFlow id="MsgFlow_Invoice" name="Invoice &amp; Tracking" sourceRef="Task_VendorInvoice" targetRef="Task_CustPay" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Customer" isExecutable="false">
+    <bpmn:startEvent id="Start_Cust" name="Need Supplies"><bpmn:outgoing>Flow_c1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_CustOrder" name="Place Purchase Order"><bpmn:incoming>Flow_c1</bpmn:incoming><bpmn:outgoing>Flow_c2</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_CustPay" name="Receive Goods &amp; Pay Invoice"><bpmn:incoming>Flow_c2</bpmn:incoming><bpmn:outgoing>Flow_c3</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="End_Cust" name="Order Completed"><bpmn:incoming>Flow_c3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_c1" sourceRef="Start_Cust" targetRef="Task_CustOrder" />
+    <bpmn:sequenceFlow id="Flow_c2" sourceRef="Task_CustOrder" targetRef="Task_CustPay" />
+    <bpmn:sequenceFlow id="Flow_c3" sourceRef="Task_CustPay" targetRef="End_Cust" />
+  </bpmn:process>
+  <bpmn:process id="Process_Vendor" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Sales" name="Sales &amp; Accounts">
+        <bpmn:flowNodeRef>Start_VendorOrder</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_VendorInvoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Vendor</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Warehouse" name="Fulfillment &amp; Shipping">
+        <bpmn:flowNodeRef>Task_VendorPack</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_VendorOrder" name="PO Received"><bpmn:outgoing>Flow_v1</bpmn:outgoing><bpmn:messageEventDefinition id="MessageEventDefinition_1" /></bpmn:startEvent>
+    <bpmn:userTask id="Task_VendorPack" name="Pick &amp; Pack Inventory"><bpmn:incoming>Flow_v1</bpmn:incoming><bpmn:outgoing>Flow_v2</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="Task_VendorInvoice" name="Generate Invoice &amp; Dispatch"><bpmn:incoming>Flow_v2</bpmn:incoming><bpmn:outgoing>Flow_v3</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="End_Vendor" name="Fulfillment Closed"><bpmn:incoming>Flow_v3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_v1" sourceRef="Start_VendorOrder" targetRef="Task_VendorPack" />
+    <bpmn:sequenceFlow id="Flow_v2" sourceRef="Task_VendorPack" targetRef="Task_VendorInvoice" />
+    <bpmn:sequenceFlow id="Flow_v3" sourceRef="Task_VendorInvoice" targetRef="End_Vendor" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_Customer_di" bpmnElement="Participant_Customer" isHorizontal="true">
+        <dc:Bounds x="120" y="80" width="680" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Cust_di" bpmnElement="Start_Cust"><dc:Bounds x="182" y="132" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CustOrder_di" bpmnElement="Task_CustOrder"><dc:Bounds x="270" y="110" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CustPay_di" bpmnElement="Task_CustPay"><dc:Bounds x="540" y="110" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Cust_di" bpmnElement="End_Cust"><dc:Bounds x="692" y="132" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_c1_di" bpmnElement="Flow_c1"><di:waypoint x="218" y="150" /><di:waypoint x="270" y="150" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c2_di" bpmnElement="Flow_c2"><di:waypoint x="370" y="150" /><di:waypoint x="540" y="150" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_c3_di" bpmnElement="Flow_c3"><di:waypoint x="640" y="150" /><di:waypoint x="692" y="150" /></bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNShape id="Participant_Vendor_di" bpmnElement="Participant_Vendor" isHorizontal="true">
+        <dc:Bounds x="120" y="280" width="680" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Sales_di" bpmnElement="Lane_Sales" isHorizontal="true"><dc:Bounds x="150" y="280" width="650" height="130" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Warehouse_di" bpmnElement="Lane_Warehouse" isHorizontal="true"><dc:Bounds x="150" y="410" width="650" height="130" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_VendorOrder_di" bpmnElement="Start_VendorOrder"><dc:Bounds x="202" y="322" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VendorPack_di" bpmnElement="Task_VendorPack"><dc:Bounds x="320" y="440" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VendorInvoice_di" bpmnElement="Task_VendorInvoice"><dc:Bounds x="500" y="310" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Vendor_di" bpmnElement="End_Vendor"><dc:Bounds x="692" y="332" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_v1_di" bpmnElement="Flow_v1"><di:waypoint x="238" y="340" /><di:waypoint x="279" y="340" /><di:waypoint x="279" y="480" /><di:waypoint x="320" y="480" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_v2_di" bpmnElement="Flow_v2"><di:waypoint x="420" y="480" /><di:waypoint x="460" y="480" /><di:waypoint x="460" y="350" /><di:waypoint x="500" y="350" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_v3_di" bpmnElement="Flow_v3"><di:waypoint x="600" y="350" /><di:waypoint x="692" y="350" /></bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="MsgFlow_Order_di" bpmnElement="MsgFlow_Order"><di:waypoint x="320" y="190" /><di:waypoint x="320" y="256" /><di:waypoint x="220" y="256" /><di:waypoint x="220" y="322" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MsgFlow_Invoice_di" bpmnElement="MsgFlow_Invoice"><di:waypoint x="550" y="310" /><di:waypoint x="550" y="250" /><di:waypoint x="590" y="250" /><di:waypoint x="590" y="190" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`,
+
+      sla_escalation: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_SLA" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_SLA" name="SLA Timer Escalation" isExecutable="true">
+    <bpmn:startEvent id="Start_Ticket" name="Support Ticket Logged"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_Resolve" name="L1 Engineer Resolve Issue"><bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_Normal</bpmn:outgoing></bpmn:userTask>
+    <bpmn:boundaryEvent id="Boundary_Timer" name="48h SLA Breached" attachedToRef="Task_Resolve">
+      <bpmn:outgoing>Flow_Escalate</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDef_1"><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT48H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Task_Escalate" name="Tech Lead Priority Escalation"><bpmn:incoming>Flow_Escalate</bpmn:incoming><bpmn:outgoing>Flow_EscResolved</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="Task_Survey" name="Send Customer Survey"><bpmn:incoming>Flow_Normal</bpmn:incoming><bpmn:incoming>Flow_EscResolved</bpmn:incoming><bpmn:outgoing>Flow_Done</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="End_Ticket" name="Ticket Closed"><bpmn:incoming>Flow_Done</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Ticket" targetRef="Task_Resolve" />
+    <bpmn:sequenceFlow id="Flow_Normal" sourceRef="Task_Resolve" targetRef="Task_Survey" />
+    <bpmn:sequenceFlow id="Flow_Escalate" sourceRef="Boundary_Timer" targetRef="Task_Escalate" />
+    <bpmn:sequenceFlow id="Flow_EscResolved" sourceRef="Task_Escalate" targetRef="Task_Survey" />
+    <bpmn:sequenceFlow id="Flow_Done" sourceRef="Task_Survey" targetRef="End_Ticket" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_SLA">
+      <bpmndi:BPMNShape id="Start_Ticket_di" bpmnElement="Start_Ticket"><dc:Bounds x="152" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Resolve_di" bpmnElement="Task_Resolve"><dc:Bounds x="250" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_Timer_di" bpmnElement="Boundary_Timer"><dc:Bounds x="302" y="202" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Escalate_di" bpmnElement="Task_Escalate"><dc:Bounds x="390" y="260" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Survey_di" bpmnElement="Task_Survey"><dc:Bounds x="540" y="140" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Ticket_di" bpmnElement="End_Ticket"><dc:Bounds x="692" y="162" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="180" /><di:waypoint x="250" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Normal_di" bpmnElement="Flow_Normal"><di:waypoint x="350" y="180" /><di:waypoint x="540" y="180" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Escalate_di" bpmnElement="Flow_Escalate"><di:waypoint x="320" y="238" /><di:waypoint x="320" y="300" /><di:waypoint x="390" y="300" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EscResolved_di" bpmnElement="Flow_EscResolved"><di:waypoint x="490" y="300" /><di:waypoint x="590" y="300" /><di:waypoint x="590" y="220" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Done_di" bpmnElement="Flow_Done"><di:waypoint x="640" y="180" /><di:waypoint x="692" y="180" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`
+    };
+
+    // --- APPLICATION STATE & INDEXEDDB ---
+    let modeler = null;
+    let currentSelectedElement = null;
+    let activeDiagramId = 'default_diagram';
+
+    const DB_NAME = 'bpmn_studio_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'diagrams';
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbSaveDiagram(diagram) {
+      try {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(diagram);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (e) {
+        localStorage.setItem('bpmn_fallback_' + diagram.id, JSON.stringify(diagram));
+      }
+    }
+
+    async function dbGetAllDiagrams() {
+      try {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).getAll();
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (e) {
+        return [];
+      }
+    }
+
+    // --- MODELER INITIALIZATION ---
+    async function initModeler() {
+      modeler = new BpmnJS({
+        container: '#bpmn-canvas',
+        keyboard: {
+          bindTo: document
+        }
+      });
+
+      // Event listeners
+      const eventBus = modeler.get('eventBus');
+      const commandStack = modeler.get('commandStack');
+
+      eventBus.on('selection.changed', (e) => {
+        const selection = e && e.newSelection;
+        if (selection && selection.length > 0) {
+          selectElement(selection[0]);
+        } else {
+          try {
+            const canvas = modeler.get('canvas');
+            const rootElement = canvas && canvas.getRootElement();
+            if (rootElement && rootElement.businessObject) {
+              selectElement(rootElement);
+            } else {
+              selectElement(null);
+            }
+          } catch (err) {
+            selectElement(null);
+          }
+        }
+      });
+
+      eventBus.on('element.changed', (e) => {
+        if (!e || !e.element) return;
+        if (currentSelectedElement && currentSelectedElement.id === e.element.id) {
+          updateInspectorFields(e.element);
+        }
+        debouncedAutosave();
+        runValidation();
+      });
+
+      eventBus.on('commandStack.changed', () => {
+        updateUndoRedoButtons();
+        debouncedAutosave();
+        runValidation();
+      });
+
+      eventBus.on('canvas.viewbox.changed', () => {
+        updateZoomLabel();
+      });
+
+      // Load initial diagram
+      await loadInitialDiagram();
+    }
+
+    async function loadInitialDiagram() {
+      const diagrams = await dbGetAllDiagrams();
+      const select = document.getElementById('select-diagram');
+      select.innerHTML = '';
+
+      if (diagrams && diagrams.length > 0) {
+        diagrams.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = `📁 ${d.name}`;
+          if (d.id === activeDiagramId) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        const activeDiag = diagrams.find(d => d.id === activeDiagramId) || diagrams[0];
+        activeDiagramId = activeDiag.id;
+        await importBpmnXml(activeDiag.xml);
+      } else {
+        // Create initial default expense approval diagram
+        const defaultDiag = {
+          id: 'default_diagram',
+          name: 'Expense Approval Workflow',
+          xml: BPMN_TEMPLATES.expense_approval,
+          updatedAt: Date.now()
+        };
+        await dbSaveDiagram(defaultDiag);
+
+        const opt = document.createElement('option');
+        opt.value = defaultDiag.id;
+        opt.textContent = `📁 ${defaultDiag.name}`;
+        opt.selected = true;
+        select.appendChild(opt);
+
+        await importBpmnXml(defaultDiag.xml);
+      }
+    }
+
+    async function importBpmnXml(xml) {
+      try {
+        await modeler.importXML(xml);
+        modeler.get('canvas').zoom('fit-viewport');
+        updateUndoRedoButtons();
+        runValidation();
+        updateXmlDrawerText(xml);
+      } catch (err) {
+        console.error('Error importing BPMN XML:', err);
+        showToast('Error importing BPMN diagram.', false);
+      }
+    }
+
+    // --- AUTOSAVE ENGINE ---
+    let autosaveTimer = null;
+    function debouncedAutosave() {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(async () => {
+        try {
+          const { xml } = await modeler.saveXML({ format: true });
+          const select = document.getElementById('select-diagram');
+          const currentName = select.options[select.selectedIndex]?.textContent.replace(/^📁\s*/, '') || 'My Process Diagram';
+          
+          await dbSaveDiagram({
+            id: activeDiagramId,
+            name: currentName,
+            xml: xml,
+            updatedAt: Date.now()
+          });
+          updateXmlDrawerText(xml);
+        } catch (e) {}
+      }, 500);
+    }
+
+    // --- UNDO / REDO & ZOOM CONTROLS ---
+    function updateUndoRedoButtons() {
+      try {
+        const commandStack = modeler.get('commandStack');
+        document.getElementById('btn-undo').disabled = !commandStack.canUndo();
+        document.getElementById('btn-redo').disabled = !commandStack.canRedo();
+      } catch (e) {}
+    }
+
+    function initToolbarControls() {
+      // Undo & Redo
+      document.getElementById('btn-undo').addEventListener('click', () => {
+        modeler.get('commandStack').undo();
+      });
+      document.getElementById('btn-redo').addEventListener('click', () => {
+        modeler.get('commandStack').redo();
+      });
+
+      // Zoom Controls
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        modeler.get('zoomScroll').stepZoom(1);
+        updateZoomLabel();
+      });
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        modeler.get('zoomScroll').stepZoom(-1);
+        updateZoomLabel();
+      });
+      document.getElementById('btn-zoom-fit').addEventListener('click', () => {
+        modeler.get('canvas').zoom('fit-viewport');
+        updateZoomLabel();
+      });
+
+      // Template selector
+      document.getElementById('select-template').addEventListener('change', async (e) => {
+        const key = e.target.value;
+        if (BPMN_TEMPLATES[key]) {
+          await importBpmnXml(BPMN_TEMPLATES[key]);
+          showToast(`Loaded ${e.target.options[e.target.selectedIndex].text}`);
+          debouncedAutosave();
+        }
+      });
+
+      // New Diagram button
+      document.getElementById('btn-new-diagram').addEventListener('click', async () => {
+        const name = prompt('Enter a name for the new BPMN diagram:', 'New Business Process');
+        if (!name) return;
+
+        const newId = 'diag_' + Date.now();
+        const newDiag = {
+          id: newId,
+          name: name.trim(),
+          xml: BPMN_TEMPLATES.blank,
+          updatedAt: Date.now()
+        };
+
+        await dbSaveDiagram(newDiag);
+        activeDiagramId = newId;
+
+        const select = document.getElementById('select-diagram');
+        const opt = document.createElement('option');
+        opt.value = newId;
+        opt.textContent = `📁 ${newDiag.name}`;
+        opt.selected = true;
+        select.appendChild(opt);
+
+        await importBpmnXml(newDiag.xml);
+        showToast('Created new BPMN diagram');
+      });
+
+      // Switch Diagram
+      document.getElementById('select-diagram').addEventListener('change', async (e) => {
+        const id = e.target.value;
+        activeDiagramId = id;
+        const diagrams = await dbGetAllDiagrams();
+        const found = diagrams.find(d => d.id === id);
+        if (found) {
+          await importBpmnXml(found.xml);
+          showToast(`Opened ${found.name}`);
+        }
+      });
+    }
+
+    function updateZoomLabel() {
+      try {
+        if (!modeler) return;
+        const canvas = modeler.get('canvas');
+        if (canvas) {
+          const zoom = canvas.zoom();
+          if (typeof zoom === 'number' && !isNaN(zoom) && isFinite(zoom)) {
+            const lbl = document.getElementById('zoom-lbl');
+            if (lbl) lbl.textContent = `${Math.round(zoom * 100)}%`;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // --- PROPERTIES INSPECTOR ---
+    function selectElement(element) {
+      currentSelectedElement = (element && element.businessObject) ? element : null;
+      updateInspectorFields(currentSelectedElement);
+    }
+
+    function updateInspectorFields(element) {
+      const badge = document.getElementById('insp-type-badge');
+      const propId = document.getElementById('prop-id');
+      const propName = document.getElementById('prop-name');
+      const propDoc = document.getElementById('prop-doc');
+      const secProcess = document.getElementById('section-process');
+      const secFlow = document.getElementById('section-flow');
+      const secUserTask = document.getElementById('section-user-task');
+      const secEvent = document.getElementById('section-event');
+
+      if (!element || !element.businessObject) {
+        if (badge) badge.textContent = 'None';
+        if (propId) propId.value = '';
+        if (propName) propName.value = '';
+        if (propDoc) propDoc.value = '';
+        if (secProcess) secProcess.style.display = 'none';
+        if (secFlow) secFlow.style.display = 'none';
+        if (secUserTask) secUserTask.style.display = 'none';
+        if (secEvent) secEvent.style.display = 'none';
+        return;
+      }
+
+      const bo = element.businessObject;
+      const type = bo.$type || '';
+
+      // Badge
+      const typeName = type.replace(/^bpmn:/, '') || 'Element';
+      if (badge) badge.textContent = typeName;
+
+      // ID & Name
+      if (propId) propId.value = bo.id || '';
+      if (propName) propName.value = bo.name || '';
+
+      // Documentation
+      const docs = bo.documentation || [];
+      if (propDoc) propDoc.value = (docs.length > 0 && docs[0]) ? (docs[0].text || '') : '';
+
+      // Sections visibility
+      if (secProcess) secProcess.style.display = (type === 'bpmn:Process' || type === 'bpmn:Participant') ? 'flex' : 'none';
+      if (secFlow) secFlow.style.display = (type === 'bpmn:SequenceFlow') ? 'flex' : 'none';
+      if (secUserTask) secUserTask.style.display = (type === 'bpmn:UserTask') ? 'flex' : 'none';
+      if (secEvent) secEvent.style.display = (type.includes('Event')) ? 'flex' : 'none';
+
+      // Values for specific sections
+      if (type === 'bpmn:Process' || type === 'bpmn:Participant') {
+        const exec = document.getElementById('prop-executable');
+        if (exec) exec.checked = !!bo.isExecutable;
+      }
+
+      if (type === 'bpmn:SequenceFlow') {
+        const cond = document.getElementById('prop-condition');
+        if (cond) cond.value = bo.conditionExpression?.body || '';
+      }
+
+      if (type === 'bpmn:UserTask') {
+        const assignee = document.getElementById('prop-assignee');
+        const candidateGroups = document.getElementById('prop-candidate-groups');
+        const dueDate = document.getElementById('prop-due-date');
+        if (assignee) assignee.value = bo.assignee || '';
+        if (candidateGroups) candidateGroups.value = bo.candidateGroups || '';
+        if (dueDate) dueDate.value = bo.dueDate || '';
+      }
+
+      if (type.includes('Event')) {
+        const timerDef = document.getElementById('prop-timer-def');
+        if (timerDef) {
+          let timerVal = '';
+          if (bo.eventDefinitions && bo.eventDefinitions.length > 0) {
+            const tDef = bo.eventDefinitions.find(ed => ed && ed.$type === 'bpmn:TimerEventDefinition');
+            if (tDef) {
+              timerVal = tDef.timeDuration?.body || tDef.timeCycle?.body || tDef.timeDate?.body || '';
+            }
+          }
+          timerDef.value = timerVal;
+        }
+      }
+    }
+
+    function initInspectorEvents() {
+      const modeling = modeler.get('modeling');
+
+      // ID Change
+      document.getElementById('prop-id').addEventListener('change', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        const newId = e.target.value.trim();
+        if (newId) {
+          try {
+            modeling.updateProperties(currentSelectedElement, { id: newId });
+          } catch (err) {
+            console.warn('Could not update ID:', err);
+          }
+        }
+      });
+
+      // Name Change
+      document.getElementById('prop-name').addEventListener('input', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        try {
+          modeling.updateProperties(currentSelectedElement, { name: e.target.value });
+        } catch (err) {}
+      });
+
+      // Documentation Change
+      document.getElementById('prop-doc').addEventListener('change', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        try {
+          const bpmnFactory = modeler.get('bpmnFactory');
+          const docObj = bpmnFactory.create('bpmn:Documentation', { text: e.target.value });
+          modeling.updateProperties(currentSelectedElement, { documentation: [docObj] });
+        } catch (err) {}
+      });
+
+      // Executable checkbox
+      document.getElementById('prop-executable').addEventListener('change', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        try {
+          modeling.updateProperties(currentSelectedElement, { isExecutable: e.target.checked });
+        } catch (err) {}
+      });
+
+      // Sequence Flow Condition
+      document.getElementById('prop-condition').addEventListener('change', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        try {
+          const bpmnFactory = modeler.get('bpmnFactory');
+          const condition = bpmnFactory.create('bpmn:FormalExpression', { body: e.target.value });
+          modeling.updateProperties(currentSelectedElement, { conditionExpression: condition });
+        } catch (err) {}
+      });
+
+      // User Task Assignee
+      document.getElementById('prop-assignee').addEventListener('change', (e) => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+        try {
+          modeling.updateProperties(currentSelectedElement, { assignee: e.target.value });
+        } catch (err) {}
+      });
+
+      // Event Timer Expression
+      const timerInput = document.getElementById('prop-timer-def');
+      if (timerInput) {
+        timerInput.addEventListener('change', (e) => {
+          if (!currentSelectedElement || !currentSelectedElement.businessObject) return;
+          try {
+            const bpmnFactory = modeler.get('bpmnFactory');
+            const timeDuration = bpmnFactory.create('bpmn:FormalExpression', { body: e.target.value });
+            const timerDef = bpmnFactory.create('bpmn:TimerEventDefinition', { timeDuration });
+            modeling.updateProperties(currentSelectedElement, { eventDefinitions: [timerDef] });
+          } catch (err) {}
+        });
+      }
+
+      // Color Swatches
+      document.querySelectorAll('.color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+          if (!currentSelectedElement || !currentSelectedElement.businessObject) {
+            showToast('Select an element on canvas to color', false);
+            return;
+          }
+          try {
+            const fill = swatch.dataset.fill;
+            const stroke = swatch.dataset.stroke;
+            modeling.setColor(currentSelectedElement, { fill, stroke });
+          } catch (err) {}
+        });
+      });
+
+      // Custom Color Apply
+      document.getElementById('btn-apply-custom-color').addEventListener('click', () => {
+        if (!currentSelectedElement || !currentSelectedElement.businessObject) {
+          showToast('Select an element on canvas to color', false);
+          return;
+        }
+        try {
+          const fill = document.getElementById('prop-color-fill').value;
+          const stroke = document.getElementById('prop-color-stroke').value;
+          modeling.setColor(currentSelectedElement, { fill, stroke });
+        } catch (err) {}
+      });
+    }
+
+    // --- VALIDATION & ANTI-PATTERN LINTER ---
+    function runValidation() {
+      try {
+        if (!modeler) return;
+        const elementRegistry = modeler.get('elementRegistry');
+        if (!elementRegistry) return;
+        const allElements = elementRegistry.getAll();
+        const issues = [];
+
+        let hasStart = false;
+        let hasEnd = false;
+        const tasksAndGateways = [];
+
+        allElements.forEach(el => {
+          if (!el || !el.businessObject) return;
+          const bo = el.businessObject;
+          const type = bo.$type;
+          if (!type) return;
+
+          if (type === 'bpmn:StartEvent') hasStart = true;
+          if (type === 'bpmn:EndEvent') hasEnd = true;
+
+          // Check End event with outgoing flows
+          if (type === 'bpmn:EndEvent' && bo.outgoing && bo.outgoing.length > 0) {
+            issues.push({
+              level: 'error',
+              elementId: el.id,
+              name: bo.name || el.id,
+              msg: 'End Event must not have outgoing sequence flows.'
+            });
+          }
+
+          // Check Start event with incoming flows
+          if (type === 'bpmn:StartEvent' && bo.incoming && bo.incoming.length > 0) {
+            issues.push({
+              level: 'error',
+              elementId: el.id,
+              name: bo.name || el.id,
+              msg: 'Start Event should not have incoming sequence flows.'
+            });
+          }
+
+          // Collect tasks & gateways
+          if (type.includes('Task') || type.includes('Gateway') || type.includes('Event')) {
+            if (type !== 'bpmn:Process' && type !== 'bpmn:Participant' && type !== 'bpmn:Lane') {
+              tasksAndGateways.push(el);
+            }
+          }
+
+          // Unlabeled Exclusive Gateways with multiple outputs
+          if (type === 'bpmn:ExclusiveGateway' && bo.outgoing && bo.outgoing.length > 1) {
+            const unlabeledBranches = bo.outgoing.filter(f => !f.name && !f.conditionExpression);
+            if (unlabeledBranches.length > 1) {
+              issues.push({
+                level: 'warning',
+                elementId: el.id,
+                name: bo.name || el.id,
+                msg: 'Exclusive Gateway has multiple outgoing paths without condition labels.'
+              });
+            }
+          }
+        });
+
+        // Check for orphan / disconnected nodes
+        tasksAndGateways.forEach(el => {
+          if (!el || !el.businessObject) return;
+          const bo = el.businessObject;
+          const incomingCount = (bo.incoming || []).length;
+          const outgoingCount = (bo.outgoing || []).length;
+
+          if (bo.$type !== 'bpmn:StartEvent' && bo.$type !== 'bpmn:EndEvent' && bo.$type !== 'bpmn:BoundaryEvent') {
+            if (incomingCount === 0 && outgoingCount === 0) {
+              issues.push({
+                level: 'error',
+                elementId: el.id,
+                name: bo.name || el.id,
+                msg: 'Disconnected element: No incoming or outgoing flows connected.'
+              });
+            } else if (incomingCount === 0) {
+              issues.push({
+                level: 'warning',
+                elementId: el.id,
+                name: bo.name || el.id,
+                msg: 'Unreachable step: No incoming sequence flows.'
+              });
+            } else if (outgoingCount === 0) {
+              issues.push({
+                level: 'warning',
+                elementId: el.id,
+                name: bo.name || el.id,
+                msg: 'Dead end: No outgoing sequence flows leading to an End Event.'
+              });
+            }
+          }
+        });
+
+        // Global process missing start / end
+        if (tasksAndGateways.length > 0 && !hasStart) {
+          issues.push({
+            level: 'error',
+            elementId: '',
+            name: 'Process Flow',
+            msg: 'Process is missing a Start Event.'
+          });
+        }
+        if (tasksAndGateways.length > 0 && !hasEnd) {
+          issues.push({
+            level: 'warning',
+            elementId: '',
+            name: 'Process Flow',
+            msg: 'Process is missing an End Event.'
+          });
+        }
+
+        renderIssuesList(issues);
+      } catch (e) {
+        console.warn('Validation error:', e);
+      }
+    }
+
+    function renderIssuesList(issues) {
+      const badge = document.getElementById('issues-badge');
+      const countLabel = document.getElementById('drawer-issues-count');
+      const container = document.getElementById('issues-list-container');
+      container.innerHTML = '';
+
+      if (issues.length === 0) {
+        badge.textContent = '✓ 0 Issues';
+        badge.style.color = 'var(--success)';
+        countLabel.textContent = '(0 issues detected - diagram is clean)';
+        container.innerHTML = '<div style="color:var(--muted); font-size:0.8125rem; padding:0.5rem 0;">🎉 No modeling errors or anti-patterns detected. Your BPMN diagram conforms to standards.</div>';
+      } else {
+        const errors = issues.filter(i => i.level === 'error').length;
+        const warnings = issues.filter(i => i.level === 'warning').length;
+        badge.textContent = `⚠️ ${issues.length} Issues (${errors} errors, ${warnings} warnings)`;
+        badge.style.color = errors > 0 ? 'var(--error)' : 'var(--warning)';
+        countLabel.textContent = `(${errors} errors, ${warnings} warnings)`;
+
+        issues.forEach(issue => {
+          const card = document.createElement('div');
+          card.className = `issue-card ${issue.level}`;
+          card.innerHTML = `
+            <div>
+              <strong style="color:var(--text);">${issue.name}:</strong>
+              <span style="color:var(--muted); margin-left:0.3rem;">${issue.msg}</span>
+            </div>
+            <span style="font-size:0.7rem; font-weight:700; color:${issue.level === 'error' ? 'var(--error)' : 'var(--warning)'}; text-transform:uppercase;">
+              ${issue.level}
+            </span>
+          `;
+
+          if (issue.elementId) {
+            card.addEventListener('click', () => {
+              const el = modeler.get('elementRegistry').get(issue.elementId);
+              if (el) {
+                modeler.get('selection').select(el);
+                modeler.get('canvas').scrollToElement(el);
+              }
+            });
+          }
+
+          container.appendChild(card);
+        });
+      }
+    }
+
+    // --- DRAWERS & MODALS ---
+    function initDrawers() {
+      const drawerIssues = document.getElementById('drawer-issues');
+      const drawerXml = document.getElementById('drawer-xml');
+
+      document.getElementById('btn-toggle-issues').addEventListener('click', () => {
+        drawerXml.classList.remove('open');
+        drawerIssues.classList.toggle('open');
+        runValidation();
+      });
+      document.getElementById('btn-close-issues').addEventListener('click', () => {
+        drawerIssues.classList.remove('open');
+      });
+
+      document.getElementById('btn-toggle-xml').addEventListener('click', async () => {
+        drawerIssues.classList.remove('open');
+        drawerXml.classList.toggle('open');
+        if (drawerXml.classList.contains('open')) {
+          const { xml } = await modeler.saveXML({ format: true });
+          updateXmlDrawerText(xml);
+        }
+      });
+      document.getElementById('btn-close-xml').addEventListener('click', () => {
+        drawerXml.classList.remove('open');
+      });
+
+      // Copy XML
+      document.getElementById('btn-copy-xml').addEventListener('click', () => {
+        const text = document.getElementById('xml-code-textarea').value;
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('BPMN 2.0 XML copied to clipboard!');
+        });
+      });
+
+      // Apply XML Changes
+      document.getElementById('btn-apply-xml').addEventListener('click', async () => {
+        const xml = document.getElementById('xml-code-textarea').value;
+        try {
+          await importBpmnXml(xml);
+          showToast('Applied BPMN XML changes!');
+          debouncedAutosave();
+        } catch (e) {
+          showToast('Failed to apply XML: Invalid syntax', false);
+        }
+      });
+    }
+
+    function updateXmlDrawerText(xml) {
+      const textarea = document.getElementById('xml-code-textarea');
+      if (textarea) textarea.value = xml;
+    }
+
+    // --- EXPORT SUITE ---
+    function initExportControls() {
+      // Export .bpmn XML
+      document.getElementById('btn-export-bpmn').addEventListener('click', async () => {
+        try {
+          const { xml } = await modeler.saveXML({ format: true });
+          downloadFile('process-diagram.bpmn', xml, 'application/xml');
+          showToast('Downloaded process-diagram.bpmn');
+        } catch (e) {
+          showToast('Error exporting BPMN file', false);
+        }
+      });
+
+      // Export SVG
+      document.getElementById('btn-export-svg').addEventListener('click', async () => {
+        try {
+          const { svg } = await modeler.saveSVG();
+          downloadFile('process-diagram.svg', svg, 'image/svg+xml;charset=utf-8');
+          showToast('Downloaded process-diagram.svg');
+        } catch (e) {
+          showToast('Error exporting SVG', false);
+        }
+      });
+
+      // Export PNG (2x Scale)
+      document.getElementById('btn-export-png').addEventListener('click', async () => {
+        try {
+          const { svg } = await modeler.saveSVG();
+          const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(svgBlob);
+          const img = new Image();
+
+          img.onload = () => {
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+
+            // Fill white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, img.width, img.height);
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob((blob) => {
+              const pngUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = pngUrl;
+              a.download = 'process-diagram-2x.png';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(pngUrl);
+              URL.revokeObjectURL(url);
+              showToast('Downloaded process-diagram-2x.png');
+            }, 'image/png');
+          };
+
+          img.src = url;
+        } catch (e) {
+          showToast('Error exporting PNG', false);
+        }
+      });
+
+      // File Import
+      const fileInput = document.getElementById('file-input-bpmn');
+      document.getElementById('btn-import-file').addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const xml = evt.target.result;
+          await importBpmnXml(xml);
+          showToast(`Imported ${file.name}`);
+          debouncedAutosave();
+        };
+        reader.readAsText(file);
+      });
+
+      // Drag and drop file onto canvas
+      window.addEventListener('dragover', (e) => e.preventDefault());
+      window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          const file = files[0];
+          if (file.name.endsWith('.bpmn') || file.name.endsWith('.xml')) {
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+              await importBpmnXml(evt.target.result);
+              showToast(`Imported ${file.name}`);
+              debouncedAutosave();
+            };
+            reader.readAsText(file);
+          }
+        }
+      });
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+      toastMsg.textContent = msg;
+      toastIcon.textContent = isSuccess ? '✓' : '⚠️';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // --- INITIALIZE APPLICATION ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Theme switcher
+      (function initTheme() {
+        const mode = localStorage.getItem('theme-mode');
+        const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
+
+        const btn = document.getElementById('theme-toggle');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const dark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+          });
+        }
+      })();
+
+      await initModeler();
+      initToolbarControls();
+      initInspectorEvents();
+      initDrawers();
+      initExportControls();
+    });
+  </script>
+</body>
+</html>

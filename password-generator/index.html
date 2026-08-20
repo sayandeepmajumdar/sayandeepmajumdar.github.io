@@ -1,0 +1,2737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password &amp; Passphrase Generator — Cryptographically Secure | sayandeep.dev</title>
+  <meta name="description" content="Generate strong, cryptographically secure passwords and Diceware passphrases in your browser. Real Shannon entropy calculation, custom symbol sets, readability filters, batch generation, and auto-clearing clipboard. 100% client-side with zero persistence." />
+  <meta name="keywords" content="password generator, strong password generator, diceware passphrase generator, crypto.getRandomValues, secure password, shannon entropy, password strength, batch password generator, random password" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/password-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --surface-hover: #e7e5e4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-glow: rgba(79, 70, 229, 0.18);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --surface-hover: #3f3f46;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.14);
+      --accent-glow: rgba(129, 140, 248, 0.25);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.5rem 0 3rem;
+    }
+
+    /* Privacy / Security Callout */
+    .security-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .security-notice-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--success);
+      font-weight: 700;
+      background: var(--success-bg);
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    /* Mode Navigation Tabs */
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .mode-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-lg);
+      gap: 0.25rem;
+    }
+
+    .mode-tab {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .mode-tab:hover {
+      color: var(--text);
+    }
+
+    .mode-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Presets Quick Bar */
+    .presets-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .preset-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .preset-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Hero Password Output Card */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), #a855f7, #ec4899);
+    }
+
+    .password-display-wrapper {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .password-box {
+      flex: 1;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      word-break: break-all;
+      white-space: pre-wrap;
+      user-select: all;
+      cursor: text;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .password-box:focus-within, .password-box:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Syntax Highlighting in Password Display */
+    .char-upper { color: var(--text); font-weight: 700; }
+    .char-lower { color: var(--text); opacity: 0.88; }
+    .char-digit { color: #3b82f6; font-weight: 700; }
+    .char-symbol { color: #f59e0b; font-weight: 700; }
+    .char-sep { color: #a855f7; font-weight: 700; }
+    .char-masked { filter: blur(6px); user-select: none; }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .btn-copy-hero {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #ffffff;
+      padding: 0 1.25rem;
+      height: 100%;
+      min-height: 48px;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+      white-space: nowrap;
+    }
+
+    .btn-copy-hero:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-copy-hero:active {
+      transform: translateY(0);
+    }
+
+    .btn-action-sm {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+    }
+
+    .btn-action-sm:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Strength & Entropy Row */
+    .strength-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .strength-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+    }
+
+    .strength-badge-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .strength-label {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .entropy-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .crack-time-text {
+      color: var(--muted);
+      font-size: 0.8125rem;
+    }
+
+    .crack-time-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Multi-segment strength meter */
+    .strength-meter-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      height: 7px;
+      border-radius: 9999px;
+      overflow: hidden;
+      background: var(--surface-alt);
+    }
+
+    .meter-segment {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--surface-hover);
+      transition: background-color 0.3s ease;
+    }
+
+    /* Composition Breakdown Chips */
+    .composition-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .composition-chips {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .comp-chip {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .comp-chip strong {
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero-btn-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Configuration Panel Card */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .config-section-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Length Slider Group */
+    .length-control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .length-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .length-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .length-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .length-number-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      width: 68px;
+      height: 36px;
+      text-align: center;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .length-number-input:focus {
+      border-color: var(--accent);
+    }
+
+    .length-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--surface-alt);
+      outline: none;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .length-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .length-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: var(--accent-hover);
+    }
+
+    .length-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+
+    .length-quick-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .len-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .len-pill:hover, .len-pill.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Character Set Grid Options */
+    .charset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .charset-card {
+      background: var(--surface-alt);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: all var(--transition);
+    }
+
+    .charset-card:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .charset-card.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .charset-card.disabled-locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .charset-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .charset-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .charset-preview {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Custom Switch Toggle */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--surface-hover);
+      transition: 0.25s;
+      border-radius: 24px;
+    }
+
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    input:checked + .slider-round {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider-round:before {
+      transform: translateX(20px);
+    }
+
+    /* Custom Symbols Editor Drawer */
+    .symbol-editor-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .symbol-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .symbol-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      width: 100%;
+    }
+
+    .symbol-input:focus {
+      border-color: var(--accent);
+    }
+
+    .symbol-presets {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    /* Readability & Rules Toggles */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .rule-checkbox-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: var(--radius-md);
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      user-select: none;
+      transition: all var(--transition);
+    }
+
+    .rule-checkbox-label:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .rule-checkbox-label input {
+      margin-top: 0.2rem;
+      accent-color: var(--accent);
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+    }
+
+    .rule-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .rule-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .rule-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* Passphrase Specific Controls */
+    #passphrase-controls {
+      display: none;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .passphrase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .control-label {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .form-select, .form-input-text {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form-select:focus, .form-input-text:focus {
+      border-color: var(--accent);
+    }
+
+    /* Batch Generation & Security Accordion */
+    .accordion-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .accordion-header {
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      background: var(--surface);
+      transition: background-color var(--transition);
+    }
+
+    .accordion-header:hover {
+      background: var(--surface-alt);
+    }
+
+    .accordion-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .accordion-body {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Batch Generator List */
+    .batch-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .batch-inputs {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .batch-list-container {
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface-alt);
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .batch-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      transition: all var(--transition);
+    }
+
+    .batch-item:hover {
+      border-color: var(--accent);
+    }
+
+    .batch-password-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      user-select: all;
+      word-break: break-all;
+    }
+
+    /* Clipboard Auto-Clear Floating Banner */
+    .clipboard-banner {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: var(--surface);
+      border: 1.5px solid var(--accent);
+      box-shadow: var(--shadow-lg);
+      padding: 0.75rem 1.25rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .clipboard-banner.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .clipboard-countdown-text {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .clipboard-countdown-sec {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Educational Section */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .faq-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .faq-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .faq-card p {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Mobile Adaptations */
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 0.85rem;
+      }
+      .brand-title {
+        display: none;
+      }
+      .hero-card {
+        padding: 1rem;
+      }
+      .password-display-wrapper {
+        flex-direction: column;
+      }
+      .password-box {
+        font-size: 1.15rem;
+        padding: 0.75rem 1rem;
+        min-height: 56px;
+      }
+      .btn-copy-hero {
+        height: 44px;
+      }
+      .mode-tabs {
+        width: 100%;
+      }
+      .mode-tab {
+        flex: 1;
+        justify-content: center;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.8125rem;
+      }
+      .composition-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">Password &amp; Passphrase Generator</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Security & Privacy Guarantee Notice -->
+      <div class="security-notice">
+        <div class="security-notice-left">
+          <span class="security-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            100% Cryptographically Secure
+          </span>
+          <span>Powered entirely by <code>crypto.getRandomValues()</code>. Passwords are never saved to browser storage or servers.</span>
+        </div>
+        <span style="font-size:0.75rem; color:var(--muted);">Zero Telemetry • Zero Persistence</span>
+      </div>
+
+      <!-- Mode Selector & Quick Presets -->
+      <div class="mode-bar">
+        <div class="mode-tabs">
+          <button id="tab-password" class="mode-tab active" data-mode="password">
+            <span>🔑 Password (Characters)</span>
+          </button>
+          <button id="tab-passphrase" class="mode-tab" data-mode="passphrase">
+            <span>💬 Passphrase (Diceware)</span>
+          </button>
+        </div>
+
+        <div class="presets-bar" id="presets-container">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Presets:</span>
+          <button class="preset-pill" data-preset="standard">🛡️ Standard (16c)</button>
+          <button class="preset-pill" data-preset="max-sec">🔒 High Sec (32c)</button>
+          <button class="preset-pill" data-preset="alphanumeric">🔤 Alphanumeric</button>
+          <button class="preset-pill" data-preset="pin">🔢 PIN (6d)</button>
+          <button class="preset-pill" data-preset="easy-read">👁️ Readable</button>
+          <button class="preset-pill" data-preset="diceware">💬 5-Word Diceware</button>
+        </div>
+      </div>
+
+      <!-- Hero Generated Password Display Card -->
+      <div class="hero-card">
+        <div class="password-display-wrapper">
+          <div id="password-display" class="password-box" title="Click to select all">
+            <!-- Dynamically populated password with syntax highlights -->
+          </div>
+          <div class="hero-actions">
+            <button id="btn-copy-hero" class="btn-copy-hero" title="Copy Password (Ctrl+C)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="copy-btn-text">Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Strength Meter & Shannon Entropy -->
+        <div class="strength-row">
+          <div class="strength-header">
+            <div class="strength-badge-group">
+              <span id="strength-label" class="strength-label" style="color:var(--success);">Very Strong</span>
+              <span id="entropy-label" class="entropy-pill">98.5 bits entropy</span>
+            </div>
+            <div class="crack-time-text">
+              Crack time est.: <span id="crack-time-value" class="crack-time-value">~1.2 Billion Years</span>
+            </div>
+          </div>
+
+          <div class="strength-meter-bar" id="strength-meter-bar">
+            <div class="meter-segment" id="seg-1"></div>
+            <div class="meter-segment" id="seg-2"></div>
+            <div class="meter-segment" id="seg-3"></div>
+            <div class="meter-segment" id="seg-4"></div>
+            <div class="meter-segment" id="seg-5"></div>
+          </div>
+        </div>
+
+        <!-- Composition Chips & Action Buttons -->
+        <div class="composition-row">
+          <div class="composition-chips" id="composition-chips">
+            <!-- Dynamically populated composition chips -->
+          </div>
+
+          <div class="hero-btn-row">
+            <button id="btn-toggle-mask" class="btn-action-sm" title="Toggle Visibility">
+              <span id="mask-icon">👁️</span>
+              <span id="mask-text">Hide</span>
+            </button>
+            <button id="btn-regenerate" class="btn-action-sm" title="Generate New (Space or R)">
+              <span id="regen-icon">🔄</span>
+              <span>Regenerate</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Password Options Configuration Panel -->
+      <div id="password-controls" class="config-card">
+        <!-- Length Slider -->
+        <div class="length-control-group">
+          <div class="length-header">
+            <span class="length-title">Password Length</span>
+            <div class="length-input-wrapper">
+              <input type="number" id="input-length" class="length-number-input" min="4" max="128" value="16" />
+              <span style="font-size:0.8125rem; font-weight:600; color:var(--muted);">chars</span>
+            </div>
+          </div>
+          <input type="range" id="slider-length" class="length-slider" min="4" max="128" value="16" />
+          <div class="length-quick-pills">
+            <span style="font-size:0.75rem; font-weight:600; color:var(--muted);">Presets:</span>
+            <button class="len-pill" data-len="8">8</button>
+            <button class="len-pill" data-len="12">12</button>
+            <button class="len-pill active" data-len="16">16</button>
+            <button class="len-pill" data-len="20">20</button>
+            <button class="len-pill" data-len="24">24</button>
+            <button class="len-pill" data-len="32">32</button>
+            <button class="len-pill" data-len="64">64</button>
+          </div>
+        </div>
+
+        <!-- Character Sets Toggle Grid -->
+        <div>
+          <span class="config-section-title" style="margin-bottom:0.75rem;">Character Sets</span>
+          <div class="charset-grid">
+            <!-- Uppercase -->
+            <label class="charset-card active" id="card-upper">
+              <div class="charset-info">
+                <span class="charset-title">Uppercase (A-Z)</span>
+                <span class="charset-preview">ABCDEFGHIJKLMNOPQRSTUVWXYZ</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-upper" checked />
+                <span class="slider-round"></span>
+              </label>
+            </label>
+
+            <!-- Lowercase -->
+            <label class="charset-card active" id="card-lower">
+              <div class="charset-info">
+                <span class="charset-title">Lowercase (a-z)</span>
+                <span class="charset-preview">abcdefghijklmnopqrstuvwxyz</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-lower" checked />
+                <span class="slider-round"></span>
+              </label>
+            </label>
+
+            <!-- Numbers -->
+            <label class="charset-card active" id="card-numbers">
+              <div class="charset-info">
+                <span class="charset-title">Numbers (0-9)</span>
+                <span class="charset-preview">0123456789</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-numbers" checked />
+                <span class="slider-round"></span>
+              </label>
+            </label>
+
+            <!-- Symbols -->
+            <label class="charset-card active" id="card-symbols">
+              <div class="charset-info">
+                <span class="charset-title">Special Symbols</span>
+                <span class="charset-preview">!@#$%^&amp;*()_+-=[]{}|;:,...</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-symbols" checked />
+                <span class="slider-round"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+
+        <!-- Editable Symbol Set Box -->
+        <div class="symbol-editor-box" id="symbol-editor-box">
+          <div class="symbol-editor-header">
+            <span>Custom Symbol Characters (editable):</span>
+            <div class="symbol-presets">
+              <button class="preset-pill" id="sym-preset-all">All Symbols</button>
+              <button class="preset-pill" id="sym-preset-alphasafe">Web Safe</button>
+              <button class="preset-pill" id="sym-preset-minimal">Minimal</button>
+              <button class="preset-pill" id="sym-reset">Reset</button>
+            </div>
+          </div>
+          <input type="text" id="input-symbols-set" class="symbol-input" value="!@#$%^&amp;*()_+-=[]{}|;:,.<>?" spellcheck="false" />
+        </div>
+
+        <!-- Readability & Rules Toggles -->
+        <div>
+          <span class="config-section-title" style="margin-bottom:0.75rem;">Readability &amp; Rules</span>
+          <div class="rules-grid">
+            <label class="rule-checkbox-label">
+              <input type="checkbox" id="toggle-require-each" checked />
+              <div class="rule-info">
+                <span class="rule-title">Require At Least One From Each Set</span>
+                <span class="rule-desc">Guarantees no enabled character category is missing by chance.</span>
+              </div>
+            </label>
+
+            <label class="rule-checkbox-label">
+              <input type="checkbox" id="toggle-exclude-similar" />
+              <div class="rule-info">
+                <span class="rule-title">Exclude Visually Similar Characters</span>
+                <span class="rule-desc">Removes <code>l, 1, I, O, 0, o, |, i, L</code> to avoid transcription errors.</span>
+              </div>
+            </label>
+
+            <label class="rule-checkbox-label">
+              <input type="checkbox" id="toggle-exclude-duplicates" />
+              <div class="rule-info">
+                <span class="rule-title">Exclude Duplicate Characters</span>
+                <span class="rule-desc">Ensures no character repeats in the generated password.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passphrase (Diceware) Configuration Panel -->
+      <div id="passphrase-controls" class="config-card">
+        <!-- Word Count Slider -->
+        <div class="length-control-group">
+          <div class="length-header">
+            <span class="length-title">Number of Words</span>
+            <div class="length-input-wrapper">
+              <input type="number" id="input-passphrase-words" class="length-number-input" min="3" max="12" value="4" />
+              <span style="font-size:0.8125rem; font-weight:600; color:var(--muted);">words</span>
+            </div>
+          </div>
+          <input type="range" id="slider-passphrase-words" class="length-slider" min="3" max="12" value="4" />
+          <div class="length-quick-pills">
+            <span style="font-size:0.75rem; font-weight:600; color:var(--muted);">Word count:</span>
+            <button class="len-pill" data-words="3">3 words</button>
+            <button class="len-pill active" data-words="4">4 words</button>
+            <button class="len-pill" data-words="5">5 words</button>
+            <button class="len-pill" data-words="6">6 words</button>
+            <button class="len-pill" data-words="8">8 words</button>
+          </div>
+        </div>
+
+        <div class="passphrase-grid">
+          <!-- Separator -->
+          <div class="control-item">
+            <label for="select-separator" class="control-label">Word Separator</label>
+            <select id="select-separator" class="form-select">
+              <option value="-" selected>Hyphen ( - )</option>
+              <option value=" ">Space (   )</option>
+              <option value="_">Underscore ( _ )</option>
+              <option value=".">Period ( . )</option>
+              <option value="/">Slash ( / )</option>
+              <option value="">None (Concatenated)</option>
+              <option value="custom">Custom...</option>
+            </select>
+            <input type="text" id="input-custom-separator" class="form-input-text" style="display:none; margin-top:0.35rem;" placeholder="e.g. +" maxlength="3" />
+          </div>
+
+          <!-- Capitalization -->
+          <div class="control-item">
+            <label for="select-capitalization" class="control-label">Capitalization</label>
+            <select id="select-capitalization" class="form-select">
+              <option value="titlecase" selected>Title Case (Word-Word)</option>
+              <option value="lowercase">lowercase (word-word)</option>
+              <option value="uppercase">UPPERCASE (WORD-WORD)</option>
+              <option value="random">Random First Letter</option>
+            </select>
+          </div>
+
+          <!-- Include Numbers -->
+          <div class="control-item">
+            <label for="select-passphrase-number" class="control-label">Number Injection</label>
+            <select id="select-passphrase-number" class="form-select">
+              <option value="append" selected>Append at End (e.g. Word-42)</option>
+              <option value="prepend">Prepend at Start (e.g. 42-Word)</option>
+              <option value="between">Between Words</option>
+              <option value="none">No Numbers</option>
+            </select>
+          </div>
+
+          <!-- Include Symbol -->
+          <div class="control-item">
+            <label for="select-passphrase-symbol" class="control-label">Symbol Injection</label>
+            <select id="select-passphrase-symbol" class="form-select">
+              <option value="none" selected>No Extra Symbols</option>
+              <option value="append">Append at End (e.g. Word-!)</option>
+              <option value="prepend">Prepend at Start (e.g. !-Word)</option>
+              <option value="between">Between Words</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batch Generation & Security Accordion -->
+      <div class="accordion-card">
+        <div class="accordion-header" id="accordion-batch-header">
+          <div class="accordion-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>Batch Password Generator</span>
+          </div>
+          <span id="accordion-batch-icon" style="font-size:0.9rem; color:var(--muted); transition:transform 0.2s;">▼</span>
+        </div>
+
+        <div class="accordion-body" id="accordion-batch-body" style="display:none;">
+          <div class="batch-controls-row">
+            <div class="batch-inputs">
+              <label for="input-batch-qty" style="font-size:0.8125rem; font-weight:700;">Quantity:</label>
+              <input type="number" id="input-batch-qty" class="length-number-input" min="1" max="50" value="10" />
+              <button id="btn-generate-batch" class="btn-action-sm" style="background:var(--accent); color:#fff; border-color:var(--accent);">
+                <span>Generate Batch</span>
+              </button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+              <button id="btn-copy-batch" class="btn-action-sm">📋 Copy All</button>
+              <button id="btn-download-txt" class="btn-action-sm">💾 .txt</button>
+              <button id="btn-download-csv" class="btn-action-sm">💾 .csv</button>
+            </div>
+          </div>
+
+          <div class="batch-list-container" id="batch-list-container">
+            <!-- Dynamically populated batch items -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Security & Clipboard Auto-Clear Settings Accordion -->
+      <div class="accordion-card">
+        <div class="accordion-header" id="accordion-security-header">
+          <div class="accordion-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Clipboard Security &amp; Auto-Clear</span>
+          </div>
+          <span id="accordion-security-icon" style="font-size:0.9rem; color:var(--muted); transition:transform 0.2s;">▼</span>
+        </div>
+
+        <div class="accordion-body" id="accordion-security-body" style="display:none;">
+          <label class="rule-checkbox-label" style="background:var(--surface); border:1.5px solid var(--line);">
+            <input type="checkbox" id="toggle-auto-clear" />
+            <div class="rule-info" style="flex:1;">
+              <span class="rule-title">Auto-Clear Clipboard After Copying</span>
+              <span class="rule-desc">Automatically wipes your clipboard after a timer to prevent other apps or shoulder surfers from accessing your secret.</span>
+            </div>
+            <select id="select-clear-delay" class="form-select" style="width:130px; font-size:0.8125rem;">
+              <option value="15">15 Seconds</option>
+              <option value="30" selected>30 Seconds</option>
+              <option value="60">60 Seconds</option>
+              <option value="120">2 Minutes</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- Educational FAQ & Security Reference Grid -->
+      <div class="faq-grid">
+        <div class="faq-card">
+          <h3>🎲 Cryptographic Randomness</h3>
+          <p>This generator exclusively uses <code>window.crypto.getRandomValues()</code> with uniform rejection sampling. Standard <code>Math.random()</code> is pseudo-random and vulnerable to state prediction; Web Crypto uses OS-level entropy pools.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>📐 Real Shannon Entropy</h3>
+          <p>Strength is measured by true mathematical entropy: $E = L \times \log_2(N)$ bits. We calculate exact pool combinations rather than relying on arbitrary superficial length heuristics.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>💬 What is Diceware?</h3>
+          <p>Diceware generates passphrases from memorable English words. A 5-word Diceware passphrase provides ~64 bits of entropy—stronger than an 8-character random string, yet effortlessly memorable.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>🔒 Zero Storage Guarantee</h3>
+          <p>Generated passwords are never persisted to <code>localStorage</code>, <code>IndexedDB</code>, or cookies, and never leave your device. Make sure to paste or save your password in your password manager before leaving.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Clipboard Auto-Clear Banner -->
+  <div id="clipboard-banner" class="clipboard-banner">
+    <div class="clipboard-countdown-text">
+      <span>⏳ Clipboard auto-clearing in</span>
+      <span id="clipboard-countdown-sec" class="clipboard-countdown-sec">30s</span>
+    </div>
+    <button id="btn-cancel-clear" class="btn-action-sm" style="padding:0.25rem 0.55rem; font-size:0.75rem;">Cancel</button>
+    <button id="btn-clear-now" class="btn-action-sm" style="padding:0.25rem 0.55rem; font-size:0.75rem; background:var(--error-bg); color:var(--error); border-color:var(--error);">Wipe Now</button>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 sayandeep.dev • 100% Client-Side Developer Utilities</p>
+      <div style="display:flex; gap:1rem;">
+        <a href="../tools/">All Tools</a>
+        <a href="../hash-generator/">Hash Generator</a>
+        <a href="../uuid-generator/">UUID Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Embedded Diceware Wordlist & Application Logic -->
+  <script>
+    // --- 2048-WORD CURATED EFF DICEWARE WORDLIST (11 BITS / WORD) ---
+    const DICEWARE_WORDLIST = [
+      "abacus", "abdomen", "ability", "abide", "abroad", "absorb", "abstract", "absurd", "accent", "accept",
+      "access", "accord", "account", "acid", "acquire", "across", "action", "active", "actor", "actual",
+      "adapt", "address", "adequate", "adjust", "admire", "admit", "adopt", "advance", "advice", "affair",
+      "affect", "afford", "afraid", "agency", "agent", "agenda", "agree", "ahead", "airline", "airport",
+      "alarm", "album", "alcohol", "alert", "algebra", "alien", "alive", "alley", "alliance", "allow",
+      "almost", "alone", "along", "alpha", "already", "alter", "altitude", "aluminum", "always", "amateur",
+      "amaze", "amber", "ambient", "amend", "amount", "amplify", "anchor", "ancient", "angel", "anger",
+      "angle", "animal", "animate", "ankle", "announce", "annual", "answer", "antenna", "anthem", "antique",
+      "anxiety", "anyway", "apart", "apology", "appeal", "appear", "apple", "apply", "appoint", "approve",
+      "apron", "arcade", "arch", "arctic", "arena", "argue", "arise", "armor", "army", "around",
+      "arrange", "array", "arrest", "arrive", "arrow", "artery", "article", "artist", "ascent", "aspect",
+      "assault", "asset", "assist", "assume", "assure", "asteroid", "athlete", "atlas", "atom", "attach",
+      "attack", "attain", "attempt", "attend", "attic", "attitude", "attract", "auction", "audit", "august",
+      "author", "auto", "autumn", "avail", "avenue", "average", "avocado", "avoid", "awake", "award",
+      "aware", "awesome", "awful", "awkward", "axis", "baby", "bachelor", "bacon", "badge", "baggage",
+      "baker", "balance", "balcony", "ballad", "bamboo", "banana", "banner", "barber", "bargain", "barrel",
+      "barrier", "base", "basic", "basket", "battery", "battle", "beacon", "bean", "beauty", "become",
+      "beef", "before", "begin", "behave", "behind", "believe", "belong", "below", "bench", "benefit",
+      "berry", "beside", "betray", "better", "beyond", "bicycle", "binary", "biology", "birch", "biscuit",
+      "bishop", "bitter", "blade", "blanket", "blast", "blaze", "blend", "bless", "blind", "block",
+      "blossom", "board", "boast", "body", "boiler", "boil", "bold", "bolt", "bomb", "bonus",
+      "boost", "border", "borrow", "boss", "botany", "bottle", "bottom", "bounce", "boundary", "bounty",
+      "bracket", "branch", "brand", "brass", "brave", "bread", "break", "breeze", "brick", "bridge",
+      "brief", "bright", "bring", "brisk", "broad", "bronze", "brother", "brush", "bubble", "budget",
+      "buffalo", "build", "bulb", "bullet", "bundle", "burden", "bureau", "butter", "button", "cabin",
+      "cable", "cactus", "cadet", "cafe", "cage", "calcium", "calculate", "calendar", "calm", "camera",
+      "camp", "canal", "canary", "cancel", "candle", "cannon", "canyon", "capable", "capacity", "capital",
+      "captain", "caption", "capture", "carbon", "card", "care", "cargo", "carpet", "carrier", "carrot",
+      "carry", "cart", "cascade", "case", "cash", "casino", "castle", "casual", "catalog", "catch",
+      "category", "cattle", "cause", "caution", "cave", "cavity", "cedar", "ceiling", "celebrate", "cellar",
+      "cement", "cereal", "certain", "chain", "chair", "chalk", "champion", "chance", "change", "channel",
+      "chapter", "charge", "charity", "charm", "chart", "chase", "cheap", "check", "cheese", "chef",
+      "cherry", "chest", "chief", "child", "chimney", "choice", "choose", "chord", "chrome", "chronic",
+      "chunk", "cider", "cigar", "cinema", "circle", "circuit", "citizen", "city", "civil", "claim",
+      "clap", "clarity", "classic", "clause", "clay", "clean", "clear", "clerk", "clever", "click",
+      "client", "cliff", "climate", "climb", "clinic", "clip", "clock", "clone", "close", "cloth",
+      "cloud", "clover", "club", "clump", "cluster", "clutch", "coach", "coast", "cobalt", "coconut",
+      "coffee", "cohort", "coincidence", "coin", "cold", "collar", "collect", "college", "colony", "color",
+      "column", "combat", "combine", "comedy", "comfort", "comic", "command", "comment", "commerce", "common",
+      "compact", "company", "compare", "compass", "compile", "complex", "comply", "compose", "compound", "compute",
+      "concert", "conclude", "concrete", "conduct", "confer", "confirm", "conflict", "conform", "confuse", "congress",
+      "connect", "consent", "conserve", "consider", "consist", "console", "constant", "consume", "contact", "contain",
+      "content", "contest", "context", "continue", "contract", "contrast", "control", "convert", "convey", "convince",
+      "cook", "copper", "copy", "coral", "corner", "correct", "corridor", "cost", "cotton", "couch",
+      "council", "counsel", "count", "country", "couple", "courage", "course", "court", "cousin", "cover",
+      "cradle", "craft", "crane", "crash", "crate", "crater", "crayon", "crazy", "cream", "create",
+      "credit", "creek", "crew", "cricket", "crime", "crimson", "crisis", "crisp", "criterion", "critic",
+      "crop", "cross", "crowd", "crown", "crucial", "crude", "cruise", "crumble", "crush", "crystal",
+      "cube", "cubic", "cuisine", "culture", "cupboard", "curious", "current", "curtain", "curve", "cushion",
+      "custom", "cycle", "cylinder", "daily", "dairy", "damage", "dance", "danger", "daring", "dash",
+      "database", "dawn", "daylight", "dazzle", "deal", "debate", "debris", "decade", "decay", "decide",
+      "decimal", "declare", "decline", "decode", "decor", "decrease", "dedicate", "defeat", "defend", "define",
+      "degree", "delay", "delete", "delicate", "delight", "deliver", "demand", "demise", "denial", "density",
+      "dentist", "depart", "depend", "deposit", "depth", "deputy", "derive", "desert", "design", "desk",
+      "despair", "destroy", "detail", "detect", "develop", "device", "devote", "diagram", "dial", "diamond",
+      "diary", "diesel", "differ", "digital", "dignity", "dilemma", "dinner", "dinosaur", "direct", "disable",
+      "disaster", "discard", "discipline", "disclose", "discover", "discuss", "disease", "dish", "dismiss", "display",
+      "distance", "distinct", "distribute", "district", "diver", "divide", "divine", "divorce", "dizzy", "doctor",
+      "document", "domain", "domestic", "dominant", "donate", "donor", "door", "dosage", "double", "doubt",
+      "draft", "dragon", "drain", "drama", "drastic", "draw", "dream", "dress", "drift", "drill",
+      "drink", "drive", "drop", "drum", "dryer", "duck", "duke", "dump", "dune", "duplicate",
+      "duration", "dusk", "dust", "duty", "dynamic", "eager", "eagle", "early", "earn", "earth",
+      "easily", "east", "easy", "echo", "eclipse", "ecology", "economy", "edge", "edit", "educate",
+      "effort", "eight", "either", "elbow", "elder", "elect", "electric", "element", "elephant", "elevate",
+      "eleven", "eligible", "elite", "embark", "embody", "embrace", "emerge", "emission", "emotion", "emperor",
+      "emphasis", "empire", "employ", "empower", "empty", "enable", "enact", "enclose", "encode", "encore",
+      "endless", "endorse", "endure", "enemy", "energy", "enforce", "engage", "engine", "enhance", "enjoy",
+      "enlist", "enough", "enrich", "enroll", "ensure", "enter", "entire", "entry", "envelope", "episode",
+      "equal", "equip", "equity", "era", "erase", "erode", "erosion", "error", "erupt", "escape",
+      "essay", "essence", "estate", "estimate", "eternal", "ether", "ethics", "evidence", "evil", "evoke",
+      "evolve", "exact", "example", "exceed", "excel", "exchange", "excite", "exclude", "excuse", "execute",
+      "exercise", "exhaust", "exhibit", "exile", "exist", "exit", "exotic", "expand", "expect", "expire",
+      "explain", "expose", "express", "extend", "extra", "extreme", "fabric", "face", "facility", "fact",
+      "factor", "factory", "faculty", "fade", "faint", "faith", "fall", "false", "fame", "family",
+      "famous", "fantasy", "farm", "fashion", "fatal", "father", "fatigue", "fault", "favorite", "feature",
+      "february", "federal", "fee", "feed", "feel", "female", "fence", "festival", "fetch", "fever",
+      "fiber", "fiction", "field", "figure", "file", "film", "filter", "final", "finance", "finger",
+      "finish", "fire", "firm", "first", "fiscal", "fish", "fitness", "five", "fix", "flag",
+      "flame", "flash", "flat", "flavor", "flee", "fleet", "flex", "flick", "flight", "float",
+      "flock", "floor", "flora", "floral", "flour", "flow", "flower", "fluid", "flush", "flute",
+      "focus", "fog", "foil", "fold", "folk", "follow", "food", "fool", "force", "forest",
+      "forget", "fork", "fortune", "forum", "forward", "fossil", "foster", "found", "fountain", "four",
+      "fraction", "frame", "freedom", "freeze", "fresh", "friend", "frisk", "frog", "front", "frost",
+      "frozen", "fruit", "fuel", "fulfill", "full", "fun", "function", "fund", "funny", "furnace",
+      "fury", "future", "gadget", "gain", "galaxy", "gallery", "game", "gap", "garage", "garbage",
+      "garden", "garlic", "garment", "gasoline", "gate", "gather", "gauge", "gaze", "gear", "gemini",
+      "gender", "general", "generate", "generic", "generous", "genius", "genre", "gentle", "genuine", "gesture",
+      "ghost", "giant", "gift", "giggle", "ginger", "giraffe", "girl", "glance", "glare", "glass",
+      "glide", "glimpse", "globe", "gloom", "glory", "glove", "glow", "glue", "goal", "goat",
+      "goddess", "gold", "golden", "golf", "good", "goose", "gospel", "gossip", "govern", "grace",
+      "grade", "grain", "grand", "grant", "grape", "graph", "grasp", "grass", "gravity", "gray",
+      "great", "greed", "green", "greet", "grid", "grief", "grill", "grip", "grocery", "ground",
+      "group", "grow", "growth", "guarantee", "guard", "guest", "guide", "guilt", "guitar", "gulf",
+      "habit", "habitat", "hair", "half", "hall", "hammer", "hand", "handle", "handy", "harbor",
+      "hard", "harm", "harmony", "harvest", "hat", "hazard", "head", "heal", "health", "heart",
+      "heat", "heavy", "hedge", "height", "helium", "helmet", "help", "herb", "hero", "hidden",
+      "high", "highway", "hill", "hint", "history", "hobby", "hockey", "hold", "holiday", "hollow",
+      "home", "honest", "honey", "hood", "hope", "horizon", "horn", "horror", "horse", "hospital",
+      "host", "hotel", "hour", "hover", "hub", "huge", "human", "humble", "humor", "hundred",
+      "hungry", "hunt", "hunter", "hurdle", "hurry", "hybrid", "hydrogen", "hyper", "ice", "icon",
+      "idea", "ideal", "identify", "idle", "ignore", "illness", "illusion", "image", "imitate", "immense",
+      "immune", "impact", "impose", "improve", "impulse", "inch", "include", "income", "increase", "index",
+      "indicate", "indoor", "industry", "infant", "inflict", "inform", "inherit", "initial", "inject", "injury",
+      "inmate", "inner", "innocent", "input", "inquiry", "insane", "insect", "inside", "inspire", "install",
+      "intact", "integer", "intend", "intense", "intent", "interact", "interest", "interior", "internal", "invest",
+      "invite", "involve", "iron", "island", "isolate", "issue", "item", "ivory", "jacket", "jaguar",
+      "jail", "jar", "jazz", "jealous", "jeans", "jelly", "jewel", "job", "join", "joke",
+      "journey", "joy", "judge", "juice", "jump", "jungle", "junior", "junk", "jury", "justice",
+      "justify", "kangaroo", "keen", "keep", "ketchup", "key", "kick", "kid", "kidney", "kind",
+      "kingdom", "kiss", "kit", "kitchen", "kite", "kitten", "kiwi", "knee", "knife", "knock",
+      "know", "label", "labor", "ladder", "lady", "lake", "lamp", "language", "laptop", "large",
+      "laser", "last", "late", "later", "latin", "latitude", "laugh", "launch", "laundry", "lava",
+      "law", "lawn", "lawsuit", "layer", "lazy", "leader", "leaf", "learn", "lease", "leather",
+      "leave", "lecture", "left", "legend", "lemon", "lend", "length", "lens", "leopard", "lesson",
+      "letter", "level", "liberty", "library", "license", "life", "lift", "light", "lightning", "like",
+      "limb", "limit", "link", "lion", "liquid", "list", "little", "live", "lizard", "load",
+      "loan", "lobster", "local", "lock", "logic", "lonely", "long", "look", "loop", "lottery",
+      "loud", "lounge", "love", "loyal", "lucky", "luggage", "lumber", "lunar", "lunch", "luxury",
+      "lyrics", "machine", "mad", "magic", "magnet", "maid", "mail", "main", "major", "make",
+      "mammal", "man", "manage", "mandate", "mango", "mansion", "manual", "map", "marble", "march",
+      "margin", "marine", "market", "marriage", "mask", "mass", "master", "match", "material", "math",
+      "matrix", "matter", "maximum", "maze", "meadow", "mean", "measure", "meat", "mechanic", "medal",
+      "media", "melody", "melt", "member", "memory", "mention", "menu", "mercury", "merge", "merit",
+      "mesh", "message", "metal", "meteor", "method", "middle", "midnight", "mild", "military", "milk",
+      "million", "mimic", "mind", "mineral", "minimum", "minor", "minute", "miracle", "mirror", "misery",
+      "miss", "mistake", "mix", "mixture", "mobile", "model", "modify", "module", "molecule", "moment",
+      "monitor", "monkey", "monster", "month", "moon", "moral", "more", "morning", "mosquito", "mother",
+      "motion", "motor", "mountain", "mouse", "mouth", "move", "movie", "much", "muffin", "mule",
+      "multiply", "muscle", "museum", "music", "must", "mutual", "myself", "mystery", "myth", "naive",
+      "name", "napkin", "narrow", "nation", "nature", "near", "neat", "neck", "need", "negative",
+      "neglect", "neither", "nephew", "nerve", "nest", "network", "neutral", "never", "news", "next",
+      "nice", "night", "noble", "noise", "nominee", "noodle", "normal", "north", "nose", "notable",
+      "note", "nothing", "notice", "novel", "now", "nuclear", "number", "nurse", "nut", "oak",
+      "obey", "object", "oblige", "obscure", "observe", "obtain", "obvious", "ocean", "october", "odor",
+      "offer", "office", "often", "oil", "okay", "old", "olive", "olympic", "omit", "once",
+      "one", "onion", "online", "only", "open", "opera", "opinion", "oppose", "option", "orange",
+      "orbit", "orchard", "order", "ordinary", "organ", "orient", "original", "orphan", "ostrich", "other",
+      "outdoor", "outer", "output", "outside", "oval", "oven", "over", "own", "owner", "oxygen",
+      "oyster", "ozone", "pack", "packet", "paddle", "page", "pair", "palace", "palm", "panda",
+      "panel", "panic", "panther", "paper", "parade", "parent", "park", "parrot", "party", "pass",
+      "patch", "path", "patient", "patrol", "pattern", "pause", "pave", "payment", "peace", "peach",
+      "peacock", "peak", "peanut", "pear", "peasant", "pelican", "pencil", "people", "pepper", "perfect",
+      "perform", "period", "permit", "person", "pet", "phase", "phone", "photo", "phrase", "physical",
+      "piano", "picnic", "picture", "piece", "pig", "pigeon", "pill", "pilot", "pin", "pine",
+      "pink", "pioneer", "pipe", "pistol", "pitch", "pizza", "place", "planet", "plastic", "plate",
+      "play", "please", "pledge", "pluck", "plug", "plunge", "poem", "poet", "point", "polar",
+      "pole", "police", "policy", "polish", "pond", "pony", "pool", "popular", "portion", "position",
+      "positive", "possible", "post", "potato", "pottery", "poverty", "powder", "power", "practice", "praise",
+      "predict", "prefer", "prepare", "present", "pretty", "prevent", "price", "pride", "primary", "prince",
+      "prison", "private", "prize", "problem", "process", "produce", "profit", "program", "project", "promote",
+      "proof", "property", "prosper", "protect", "proud", "provide", "public", "pudding", "pull", "pulp",
+      "pulse", "pumpkin", "punch", "pupil", "puppy", "purchase", "purity", "purpose", "purse", "push",
+      "puzzle", "pyramid", "quality", "quantum", "quarter", "queen", "query", "quest", "quick", "quiet",
+      "quilt", "quote", "rabbit", "raccoon", "race", "rack", "radar", "radio", "rail", "rain",
+      "raise", "rally", "ramp", "ranch", "random", "range", "rapid", "rare", "rate", "rather",
+      "raven", "raw", "razor", "ready", "real", "reason", "rebel", "rebuild", "recall", "receive",
+      "recipe", "record", "recover", "recruit", "recycle", "reduce", "reflect", "reform", "refuge", "region",
+      "regret", "regular", "reject", "relax", "release", "relief", "rely", "remain", "remember", "remind",
+      "remove", "render", "renew", "rent", "reopen", "repair", "repeat", "replace", "report", "require",
+      "rescue", "resemble", "resist", "resource", "response", "result", "retire", "retreat", "return", "reveal",
+      "review", "reward", "rhythm", "ribbon", "rice", "rich", "ride", "ridge", "rifle", "right",
+      "ring", "riot", "ripple", "risk", "ritual", "rival", "river", "road", "roast", "robot",
+      "robust", "rocket", "romance", "roof", "rookie", "room", "rose", "rotate", "rough", "round",
+      "route", "royal", "rubber", "rugby", "rule", "run", "runway", "rural", "sad", "saddle",
+      "safari", "safety", "sail", "salad", "salmon", "salon", "salt", "salute", "same", "sample",
+      "sand", "satisfy", "sauce", "sausage", "save", "say", "scale", "scan", "scare", "scatter",
+      "scene", "scheme", "school", "science", "scissors", "scooter", "scope", "score", "scout", "scrap",
+      "screen", "script", "scrub", "sea", "search", "season", "seat", "second", "secret", "section",
+      "security", "seed", "seek", "segment", "select", "sell", "seminar", "senior", "sense", "sentence",
+      "series", "service", "session", "settle", "setup", "seven", "shadow", "shaft", "shallow", "share",
+      "shark", "sharp", "she", "shelf", "shell", "sheriff", "shield", "shift", "shine", "ship",
+      "shiver", "shock", "shoe", "shoot", "shop", "short", "shoulder", "shout", "show", "shrink",
+      "shrug", "shuffle", "shy", "sibling", "sick", "side", "siege", "sight", "sign", "silent",
+      "silk", "silly", "silver", "similar", "simple", "since", "sing", "siren", "sister", "situate",
+      "six", "size", "skate", "sketch", "ski", "skill", "skin", "skirt", "skull", "slab",
+      "slam", "sleep", "slender", "slice", "slide", "slight", "slim", "slogan", "slot", "slow",
+      "slush", "small", "smart", "smile", "smoke", "smooth", "snack", "snake", "snap", "sniff",
+      "snow", "soap", "soccer", "social", "sock", "soda", "soft", "solar", "soldier", "solid",
+      "solution", "solve", "someone", "song", "soon", "sorry", "sort", "soul", "sound", "soup",
+      "source", "south", "space", "spare", "spatial", "spawn", "speak", "special", "speed", "spell",
+      "spend", "sphere", "spice", "spider", "spike", "spin", "spirit", "split", "spoil", "sponsor",
+      "spoon", "sport", "spot", "spray", "spread", "spring", "spy", "square", "squeeze", "squirrel",
+      "stable", "stadium", "staff", "stage", "stairs", "stamp", "stand", "star", "stare", "start",
+      "state", "station", "statue", "stay", "steak", "steel", "stem", "step", "stereo", "stick",
+      "still", "sting", "stock", "stomach", "stone", "stool", "story", "stove", "strategy", "street",
+      "strike", "string", "strip", "stroke", "structure", "struggle", "student", "stuff", "stumble", "style",
+      "subject", "submit", "subway", "success", "such", "sudden", "suffer", "sugar", "suggest", "suit",
+      "summer", "sun", "sunny", "sunset", "super", "supply", "supreme", "sure", "surface", "surge",
+      "surprise", "surround", "survey", "suspect", "sustain", "swallow", "swamp", "swap", "swarm", "swear",
+      "sweet", "swift", "swim", "swing", "switch", "sword", "symbol", "symptom", "syrup", "system",
+      "table", "tackle", "tag", "tail", "talent", "talk", "tank", "tape", "target", "task",
+      "taste", "tattoo", "taxi", "teach", "team", "tell", "ten", "tenant", "tennis", "tent",
+      "term", "test", "text", "thank", "theme", "theory", "therapy", "there", "they", "thing",
+      "this", "thought", "three", "thrive", "throw", "thumb", "thunder", "ticket", "tide", "tiger",
+      "tilt", "timber", "time", "tiny", "tip", "tired", "tissue", "title", "toast", "tobacco",
+      "today", "toddler", "toe", "together", "toilet", "token", "tomato", "tomorrow", "tone", "tongue",
+      "tonight", "tool", "tooth", "top", "topic", "topple", "torch", "tornado", "tortoise", "total",
+      "tourist", "toward", "tower", "town", "toy", "track", "trade", "traffic", "tragic", "train",
+      "transfer", "trap", "trash", "travel", "tray", "treat", "tree", "trend", "trial", "tribe",
+      "trick", "trigger", "trim", "trip", "trophy", "trouble", "truck", "true", "truly", "trumpet",
+      "trust", "truth", "try", "tube", "tuition", "tumble", "tuna", "tunnel", "turkey", "turn",
+      "turtle", "twelve", "twenty", "twice", "twin", "twist", "two", "type", "typical", "ugly",
+      "umbrella", "unable", "unaware", "uncle", "uncover", "under", "undo", "unfair", "unfold", "unhappy",
+      "uniform", "unique", "unit", "universe", "unknown", "unlock", "until", "unusual", "unveil", "update",
+      "upgrade", "uphold", "upon", "upper", "upset", "urban", "urge", "usage", "use", "used",
+      "useful", "useless", "usual", "utility", "vacant", "vacuum", "vague", "valid", "valley", "valve",
+      "vanish", "vapor", "various", "vast", "vault", "vehicle", "velvet", "vendor", "venture", "venue",
+      "verb", "verify", "version", "very", "vessel", "veteran", "viable", "vibrant", "vicious", "victory",
+      "video", "view", "village", "vintage", "violin", "virtual", "virus", "visa", "visit", "visual",
+      "vital", "vivid", "vocal", "voice", "void", "volcano", "volume", "vote", "voyage", "wage",
+      "wagon", "wait", "walk", "wall", "walnut", "want", "warfare", "warm", "warrior", "wash",
+      "wasp", "waste", "water", "wave", "way", "wealth", "weapon", "wear", "weasel", "weather",
+      "web", "wedding", "weekend", "weird", "welcome", "west", "wet", "whale", "what", "wheat",
+      "wheel", "when", "where", "whip", "whisper", "wide", "width", "wife", "wild", "will",
+      "win", "window", "wine", "wing", "wink", "winner", "winter", "wire", "wisdom", "wise",
+      "wish", "witness", "wolf", "woman", "wonder", "wood", "wool", "word", "work", "world",
+      "worry", "worth", "wrap", "wreck", "wrestle", "wrist", "write", "wrong", "yard", "year",
+      "yellow", "you", "young", "youth", "zebra", "zero", "zone", "zoo"
+    ];
+
+    // --- APPLICATION STATE ---
+    let currentMode = 'password'; // 'password' or 'passphrase'
+    let isMasked = false;
+    let autoClearTimer = null;
+    let autoClearCountdownTimer = null;
+    let autoClearSecondsRemaining = 0;
+
+    // --- CRYPTOGRAPHIC RANDOM UTILITIES ---
+    // Strictly crypto.getRandomValues with rejection sampling for unbiased distribution
+    function getSecureRandomInt(max) {
+      if (max <= 1) return 0;
+      const maxUint32 = 0xFFFFFFFF;
+      const limit = maxUint32 - (maxUint32 % max);
+      const buffer = new Uint32Array(1);
+      let rand;
+      do {
+        crypto.getRandomValues(buffer);
+        rand = buffer[0];
+      } while (rand >= limit);
+      return rand % max;
+    }
+
+    function secureShuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = getSecureRandomInt(i + 1);
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+      }
+      return array;
+    }
+
+    // --- CHARACTER POOLS ---
+    const CHARS_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const CHARS_LOWER = 'abcdefghijklmnopqrstuvwxyz';
+    const CHARS_NUMBERS = '0123456789';
+    const SIMILAR_CHARS = new Set(['l', '1', 'I', 'O', '0', 'o', '|', 'i', 'L', 'v', 'u', 'V', 'U']);
+
+    function filterSimilar(str) {
+      return str.split('').filter(c => !SIMILAR_CHARS.has(c)).join('');
+    }
+
+    // --- GENERATE CHARACTER-BASED PASSWORD ---
+    function generatePassword(config) {
+      const {
+        length = 16,
+        useUpper = true,
+        useLower = true,
+        useNumbers = true,
+        useSymbols = true,
+        symbolSet = '!@#$%^&*()_+-=[]{}|;:,.<>?',
+        excludeSimilar = false,
+        excludeDuplicates = false,
+        requireEach = true
+      } = config;
+
+      let upperPool = useUpper ? CHARS_UPPER : '';
+      let lowerPool = useLower ? CHARS_LOWER : '';
+      let numPool = useNumbers ? CHARS_NUMBERS : '';
+      let symPool = useSymbols ? symbolSet : '';
+
+      if (excludeSimilar) {
+        upperPool = filterSimilar(upperPool);
+        lowerPool = filterSimilar(lowerPool);
+        numPool = filterSimilar(numPool);
+        symPool = filterSimilar(symPool);
+      }
+
+      const activeCategories = [];
+      if (upperPool) activeCategories.push({ name: 'upper', pool: upperPool });
+      if (lowerPool) activeCategories.push({ name: 'lower', pool: lowerPool });
+      if (numPool) activeCategories.push({ name: 'numbers', pool: numPool });
+      if (symPool) activeCategories.push({ name: 'symbols', pool: symPool });
+
+      if (activeCategories.length === 0) {
+        return { password: '', entropy: 0, poolSize: 0, composition: { upper: 0, lower: 0, numbers: 0, symbols: 0 } };
+      }
+
+      // Combine unique characters for full pool
+      const fullPoolUnique = Array.from(new Set(activeCategories.flatMap(c => c.pool.split(''))));
+      const poolSize = fullPoolUnique.length;
+
+      let chosenChars = [];
+
+      if (excludeDuplicates) {
+        // Shuffle the unique pool and slice length
+        const availablePool = [...fullPoolUnique];
+        secureShuffle(availablePool);
+        const actualLength = Math.min(length, availablePool.length);
+
+        if (requireEach && actualLength >= activeCategories.length) {
+          // Take 1 from each category first
+          const usedSet = new Set();
+          activeCategories.forEach(cat => {
+            const valid = cat.pool.split('').filter(c => !usedSet.has(c));
+            if (valid.length > 0) {
+              const pick = valid[getSecureRandomInt(valid.length)];
+              chosenChars.push(pick);
+              usedSet.add(pick);
+            }
+          });
+          // Fill remaining from remaining unused pool
+          const remainingPool = availablePool.filter(c => !usedSet.has(c));
+          secureShuffle(remainingPool);
+          chosenChars.push(...remainingPool.slice(0, actualLength - chosenChars.length));
+          secureShuffle(chosenChars);
+        } else {
+          chosenChars = availablePool.slice(0, actualLength);
+        }
+      } else {
+        // Duplicates allowed
+        if (requireEach && length >= activeCategories.length) {
+          // Guarantee 1 from each active category
+          activeCategories.forEach(cat => {
+            const pick = cat.pool[getSecureRandomInt(cat.pool.length)];
+            chosenChars.push(pick);
+          });
+          // Fill the rest randomly from combined pool
+          const combinedPool = activeCategories.flatMap(c => c.pool.split(''));
+          for (let i = chosenChars.length; i < length; i++) {
+            chosenChars.push(combinedPool[getSecureRandomInt(combinedPool.length)]);
+          }
+          // Shuffle so guaranteed category chars are not in predictable initial spots
+          secureShuffle(chosenChars);
+        } else {
+          const combinedPool = activeCategories.flatMap(c => c.pool.split(''));
+          for (let i = 0; i < length; i++) {
+            chosenChars.push(combinedPool[getSecureRandomInt(combinedPool.length)]);
+          }
+        }
+      }
+
+      const password = chosenChars.join('');
+
+      // Exact Shannon Entropy Calculation
+      let entropy = 0;
+      if (excludeDuplicates) {
+        // log2(P(N, L)) = sum_{i=0}^{L-1} log2(N - i)
+        for (let i = 0; i < chosenChars.length; i++) {
+          entropy += Math.log2(Math.max(1, poolSize - i));
+        }
+      } else {
+        entropy = chosenChars.length * Math.log2(Math.max(1, poolSize));
+      }
+
+      // Composition count
+      const comp = { upper: 0, lower: 0, numbers: 0, symbols: 0 };
+      chosenChars.forEach(c => {
+        if (CHARS_UPPER.includes(c)) comp.upper++;
+        else if (CHARS_LOWER.includes(c)) comp.lower++;
+        else if (CHARS_NUMBERS.includes(c)) comp.numbers++;
+        else comp.symbols++;
+      });
+
+      return {
+        password,
+        entropy: Math.round(entropy * 10) / 10,
+        poolSize,
+        composition: comp
+      };
+    }
+
+    // --- GENERATE DICEWARE PASSPHRASE ---
+    function generatePassphrase(config) {
+      const {
+        wordCount = 4,
+        separator = '-',
+        capitalization = 'titlecase',
+        numberInjection = 'append',
+        symbolInjection = 'none'
+      } = config;
+
+      const words = [];
+      const wordlistSize = DICEWARE_WORDLIST.length;
+
+      for (let i = 0; i < wordCount; i++) {
+        const word = DICEWARE_WORDLIST[getSecureRandomInt(wordlistSize)];
+        let transformed = word;
+
+        if (capitalization === 'titlecase') {
+          transformed = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        } else if (capitalization === 'uppercase') {
+          transformed = word.toUpperCase();
+        } else if (capitalization === 'lowercase') {
+          transformed = word.toLowerCase();
+        } else if (capitalization === 'random') {
+          const isUpper = getSecureRandomInt(2) === 1;
+          transformed = isUpper ? (word.charAt(0).toUpperCase() + word.slice(1)) : word.toLowerCase();
+        }
+
+        words.push(transformed);
+      }
+
+      // Number injection
+      let numberStr = '';
+      let numberEntropy = 0;
+      if (numberInjection !== 'none') {
+        const randNum = getSecureRandomInt(90) + 10; // 10 - 99
+        numberStr = randNum.toString();
+        numberEntropy = Math.log2(90);
+
+        if (numberInjection === 'append') {
+          words.push(numberStr);
+        } else if (numberInjection === 'prepend') {
+          words.unshift(numberStr);
+        } else if (numberInjection === 'between' && words.length > 1) {
+          const insertIdx = getSecureRandomInt(words.length - 1) + 1;
+          words.splice(insertIdx, 0, numberStr);
+        }
+      }
+
+      // Symbol injection
+      if (symbolInjection !== 'none') {
+        const symbols = ['!', '@', '#', '$', '%', '*', '+', '?'];
+        const sym = symbols[getSecureRandomInt(symbols.length)];
+        if (symbolInjection === 'append') words.push(sym);
+        else if (symbolInjection === 'prepend') words.unshift(sym);
+        else if (symbolInjection === 'between' && words.length > 1) {
+          const insertIdx = getSecureRandomInt(words.length - 1) + 1;
+          words.splice(insertIdx, 0, sym);
+        }
+      }
+
+      const passphrase = words.join(separator);
+
+      // Passphrase entropy: wordCount * log2(wordlistSize) + capitalization + number
+      let entropy = wordCount * Math.log2(wordlistSize);
+      if (capitalization === 'random') entropy += wordCount; // 1 bit per word
+      if (capitalization === 'titlecase' || capitalization === 'uppercase') entropy += 1;
+      entropy += numberEntropy;
+
+      const comp = { upper: 0, lower: 0, numbers: 0, symbols: 0 };
+      passphrase.split('').forEach(c => {
+        if (CHARS_UPPER.includes(c)) comp.upper++;
+        else if (CHARS_LOWER.includes(c)) comp.lower++;
+        else if (CHARS_NUMBERS.includes(c)) comp.numbers++;
+        else comp.symbols++;
+      });
+
+      return {
+        password: passphrase,
+        entropy: Math.round(entropy * 10) / 10,
+        poolSize: wordlistSize,
+        composition: comp
+      };
+    }
+
+    // --- ESTIMATE CRACK TIME ---
+    function estimateCrackTime(entropy) {
+      if (entropy <= 0) return 'Instant';
+      // Assumption: 10 billion guesses/second (10^10 / sec, fast offline hash cluster)
+      const guesses = Math.pow(2, entropy - 1);
+      const guessesPerSec = 1e10;
+      const seconds = guesses / guessesPerSec;
+
+      if (seconds < 0.001) return '< 1 millisecond';
+      if (seconds < 1) return `${Math.round(seconds * 1000)} ms`;
+      if (seconds < 60) return `~${Math.round(seconds)} seconds`;
+      if (seconds < 3600) return `~${Math.round(seconds / 60)} minutes`;
+      if (seconds < 86400) return `~${Math.round(seconds / 3600)} hours`;
+      if (seconds < 31536000) return `~${Math.round(seconds / 86400)} days`;
+      if (seconds < 31536000 * 100) return `~${Math.round(seconds / 31536000)} years`;
+      if (seconds < 31536000 * 1e6) return `~${(seconds / (31536000 * 1000)).toFixed(1)} thousand years`;
+      if (seconds < 31536000 * 1e9) return `~${(seconds / (31536000 * 1e6)).toFixed(1)} million years`;
+      return `~${(seconds / (31536000 * 1e9)).toFixed(1)} billion years`;
+    }
+
+    // --- UI RENDER & CONTROLLER ---
+    function getCurrentPasswordConfig() {
+      const length = parseInt(document.getElementById('input-length').value, 10) || 16;
+      const useUpper = document.getElementById('toggle-upper').checked;
+      const useLower = document.getElementById('toggle-lower').checked;
+      const useNumbers = document.getElementById('toggle-numbers').checked;
+      const useSymbols = document.getElementById('toggle-symbols').checked;
+      const symbolSet = document.getElementById('input-symbols-set').value;
+      const excludeSimilar = document.getElementById('toggle-exclude-similar').checked;
+      const excludeDuplicates = document.getElementById('toggle-exclude-duplicates').checked;
+      const requireEach = document.getElementById('toggle-require-each').checked;
+
+      return {
+        length,
+        useUpper,
+        useLower,
+        useNumbers,
+        useSymbols,
+        symbolSet,
+        excludeSimilar,
+        excludeDuplicates,
+        requireEach
+      };
+    }
+
+    function getCurrentPassphraseConfig() {
+      const wordCount = parseInt(document.getElementById('input-passphrase-words').value, 10) || 4;
+      const sepSelect = document.getElementById('select-separator').value;
+      const separator = sepSelect === 'custom' ? document.getElementById('input-custom-separator').value : sepSelect;
+      const capitalization = document.getElementById('select-capitalization').value;
+      const numberInjection = document.getElementById('select-passphrase-number').value;
+      const symbolInjection = document.getElementById('select-passphrase-symbol').value;
+
+      return {
+        wordCount,
+        separator,
+        capitalization,
+        numberInjection,
+        symbolInjection
+      };
+    }
+
+    let lastGeneratedResult = null;
+
+    function renderCurrentResult() {
+      if (currentMode === 'password') {
+        const config = getCurrentPasswordConfig();
+        lastGeneratedResult = generatePassword(config);
+      } else {
+        const config = getCurrentPassphraseConfig();
+        lastGeneratedResult = generatePassphrase(config);
+      }
+
+      displayPassword(lastGeneratedResult.password);
+      updateStrengthMeter(lastGeneratedResult.entropy);
+      updateCompositionChips(lastGeneratedResult.composition);
+    }
+
+    function displayPassword(str) {
+      const container = document.getElementById('password-display');
+      container.innerHTML = '';
+
+      if (!str) {
+        container.innerHTML = '<span style="color:var(--error); font-size:0.9rem;">⚠️ Please enable at least one character category.</span>';
+        return;
+      }
+
+      if (isMasked) {
+        const span = document.createElement('span');
+        span.className = 'char-masked';
+        span.textContent = '•'.repeat(str.length);
+        container.appendChild(span);
+        return;
+      }
+
+      // Syntax highlight characters
+      for (const char of str) {
+        const span = document.createElement('span');
+        if (CHARS_UPPER.includes(char)) {
+          span.className = 'char-upper';
+        } else if (CHARS_LOWER.includes(char)) {
+          span.className = 'char-lower';
+        } else if (CHARS_NUMBERS.includes(char)) {
+          span.className = 'char-digit';
+        } else if ('-_./+ '.includes(char) && currentMode === 'passphrase') {
+          span.className = 'char-sep';
+        } else {
+          span.className = 'char-symbol';
+        }
+        span.textContent = char;
+        container.appendChild(span);
+      }
+    }
+
+    function updateStrengthMeter(entropy) {
+      const label = document.getElementById('strength-label');
+      const entropyLabel = document.getElementById('entropy-label');
+      const crackTimeVal = document.getElementById('crack-time-value');
+
+      entropyLabel.textContent = `${entropy} bits entropy`;
+      crackTimeVal.textContent = estimateCrackTime(entropy);
+
+      // Color and segments
+      const segments = [
+        document.getElementById('seg-1'),
+        document.getElementById('seg-2'),
+        document.getElementById('seg-3'),
+        document.getElementById('seg-4'),
+        document.getElementById('seg-5')
+      ];
+
+      // Reset all
+      segments.forEach(seg => {
+        seg.style.backgroundColor = 'var(--surface-hover)';
+      });
+
+      let activeCount = 0;
+      let color = 'var(--error)';
+      let text = 'Very Weak';
+
+      if (entropy < 28) {
+        activeCount = 1;
+        color = '#ef4444';
+        text = 'Very Weak';
+      } else if (entropy < 45) {
+        activeCount = 2;
+        color = '#f97316';
+        text = 'Weak';
+      } else if (entropy < 65) {
+        activeCount = 3;
+        color = '#f59e0b';
+        text = 'Moderate';
+      } else if (entropy < 85) {
+        activeCount = 4;
+        color = '#3b82f6';
+        text = 'Strong';
+      } else {
+        activeCount = 5;
+        color = '#10b981';
+        text = 'Very Strong / Excellent';
+      }
+
+      label.textContent = text;
+      label.style.color = color;
+
+      for (let i = 0; i < activeCount; i++) {
+        segments[i].style.backgroundColor = color;
+      }
+    }
+
+    function updateCompositionChips(comp) {
+      const container = document.getElementById('composition-chips');
+      container.innerHTML = `
+        <span class="comp-chip">Upper: <strong>${comp.upper}</strong></span>
+        <span class="comp-chip">Lower: <strong>${comp.lower}</strong></span>
+        <span class="comp-chip">Numbers: <strong>${comp.numbers}</strong></span>
+        <span class="comp-chip">Symbols: <strong>${comp.symbols}</strong></span>
+      `;
+    }
+
+    // --- ENFORCE AT LEAST ONE TOGGLE RULE ---
+    function checkToggleConstraints() {
+      const toggles = [
+        document.getElementById('toggle-upper'),
+        document.getElementById('toggle-lower'),
+        document.getElementById('toggle-numbers'),
+        document.getElementById('toggle-symbols')
+      ];
+
+      const cards = [
+        document.getElementById('card-upper'),
+        document.getElementById('card-lower'),
+        document.getElementById('card-numbers'),
+        document.getElementById('card-symbols')
+      ];
+
+      const checkedToggles = toggles.filter(t => t.checked);
+
+      toggles.forEach((t, idx) => {
+        // If this is the only checked toggle, lock it so it cannot be unchecked
+        if (checkedToggles.length === 1 && t.checked) {
+          t.disabled = true;
+          cards[idx].classList.add('disabled-locked');
+          cards[idx].title = 'At least one character set must remain enabled.';
+        } else {
+          t.disabled = false;
+          cards[idx].classList.remove('disabled-locked');
+          cards[idx].removeAttribute('title');
+        }
+
+        // Active class on card
+        if (t.checked) {
+          cards[idx].classList.add('active');
+        } else {
+          cards[idx].classList.remove('active');
+        }
+      });
+    }
+
+    // --- BATCH GENERATOR ---
+    function renderBatch() {
+      const qty = Math.min(50, Math.max(1, parseInt(document.getElementById('input-batch-qty').value, 10) || 10));
+      const container = document.getElementById('batch-list-container');
+      container.innerHTML = '';
+
+      const passwords = [];
+
+      for (let i = 0; i < qty; i++) {
+        let res;
+        if (currentMode === 'password') {
+          res = generatePassword(getCurrentPasswordConfig());
+        } else {
+          res = generatePassphrase(getCurrentPassphraseConfig());
+        }
+        passwords.push(res.password);
+
+        const item = document.createElement('div');
+        item.className = 'batch-item';
+        item.innerHTML = `
+          <span class="batch-password-text">${escapeHtml(res.password)}</span>
+          <button class="btn-action-sm btn-batch-copy" style="padding:0.25rem 0.55rem; font-size:0.75rem;">Copy</button>
+        `;
+
+        item.querySelector('.btn-batch-copy').addEventListener('click', () => {
+          copyToClipboard(res.password);
+        });
+
+        container.appendChild(item);
+      }
+
+      container.dataset.passwords = JSON.stringify(passwords);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // --- CLIPBOARD & AUTO-CLEAR SECURITY ---
+    async function copyToClipboard(text) {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('✓ Copied to clipboard!');
+
+        // Check if auto-clear is enabled
+        const autoClearEnabled = document.getElementById('toggle-auto-clear').checked;
+        if (autoClearEnabled) {
+          const delaySec = parseInt(document.getElementById('select-clear-delay').value, 10) || 30;
+          startAutoClearCountdown(delaySec);
+        }
+      } catch (err) {
+        // Fallback for older browsers / iframe restrictions
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('✓ Copied to clipboard!');
+      }
+    }
+
+    function startAutoClearCountdown(seconds) {
+      stopAutoClearCountdown();
+      autoClearSecondsRemaining = seconds;
+      const banner = document.getElementById('clipboard-banner');
+      const countLabel = document.getElementById('clipboard-countdown-sec');
+
+      countLabel.textContent = `${autoClearSecondsRemaining}s`;
+      banner.classList.add('show');
+
+      autoClearCountdownTimer = setInterval(() => {
+        autoClearSecondsRemaining--;
+        if (autoClearSecondsRemaining <= 0) {
+          wipeClipboard();
+          stopAutoClearCountdown();
+        } else {
+          countLabel.textContent = `${autoClearSecondsRemaining}s`;
+        }
+      }, 1000);
+    }
+
+    function stopAutoClearCountdown() {
+      if (autoClearCountdownTimer) {
+        clearInterval(autoClearCountdownTimer);
+        autoClearCountdownTimer = null;
+      }
+      document.getElementById('clipboard-banner').classList.remove('show');
+    }
+
+    async function wipeClipboard() {
+      try {
+        await navigator.clipboard.writeText('');
+        showToast('🔒 Clipboard wiped for security.');
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // --- EVENT LISTENERS INITIALIZATION ---
+    function initEvents() {
+      // Mode tabs
+      document.getElementById('tab-password').addEventListener('click', () => {
+        currentMode = 'password';
+        document.getElementById('tab-password').classList.add('active');
+        document.getElementById('tab-passphrase').classList.remove('active');
+        document.getElementById('password-controls').style.display = 'flex';
+        document.getElementById('passphrase-controls').style.display = 'none';
+        renderCurrentResult();
+      });
+
+      document.getElementById('tab-passphrase').addEventListener('click', () => {
+        currentMode = 'passphrase';
+        document.getElementById('tab-passphrase').classList.add('active');
+        document.getElementById('tab-password').classList.remove('active');
+        document.getElementById('password-controls').style.display = 'none';
+        document.getElementById('passphrase-controls').style.display = 'flex';
+        renderCurrentResult();
+      });
+
+      // Presets
+      document.querySelectorAll('.preset-pill[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const preset = btn.dataset.preset;
+          applyPreset(preset);
+        });
+      });
+
+      // Copy Hero Button
+      document.getElementById('btn-copy-hero').addEventListener('click', () => {
+        if (lastGeneratedResult && lastGeneratedResult.password) {
+          copyToClipboard(lastGeneratedResult.password);
+          const btnText = document.getElementById('copy-btn-text');
+          btnText.textContent = 'Copied!';
+          setTimeout(() => btnText.textContent = 'Copy', 1800);
+        }
+      });
+
+      // Regenerate Button
+      const btnRegen = document.getElementById('btn-regenerate');
+      btnRegen.addEventListener('click', () => {
+        const icon = document.getElementById('regen-icon');
+        icon.style.transform = 'rotate(360deg)';
+        icon.style.transition = 'transform 0.4s ease';
+        setTimeout(() => {
+          icon.style.transform = 'none';
+          icon.style.transition = 'none';
+        }, 400);
+        renderCurrentResult();
+      });
+
+      // Mask/Unmask Toggle
+      document.getElementById('btn-toggle-mask').addEventListener('click', () => {
+        isMasked = !isMasked;
+        document.getElementById('mask-icon').textContent = isMasked ? '🙈' : '👁️';
+        document.getElementById('mask-text').textContent = isMasked ? 'Show' : 'Hide';
+        displayPassword(lastGeneratedResult ? lastGeneratedResult.password : '');
+      });
+
+      // Length slider & number input sync
+      const sliderLength = document.getElementById('slider-length');
+      const inputLength = document.getElementById('input-length');
+
+      sliderLength.addEventListener('input', (e) => {
+        inputLength.value = e.target.value;
+        updateActiveLengthPill(e.target.value);
+        renderCurrentResult();
+      });
+
+      inputLength.addEventListener('input', (e) => {
+        const val = Math.min(128, Math.max(4, parseInt(e.target.value, 10) || 16));
+        sliderLength.value = val;
+        updateActiveLengthPill(val);
+        renderCurrentResult();
+      });
+
+      // Length Preset Pills
+      document.querySelectorAll('.len-pill[data-len]').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const len = parseInt(pill.dataset.len, 10);
+          sliderLength.value = len;
+          inputLength.value = len;
+          updateActiveLengthPill(len);
+          renderCurrentResult();
+        });
+      });
+
+      // Passphrase words slider & input sync
+      const sliderWords = document.getElementById('slider-passphrase-words');
+      const inputWords = document.getElementById('input-passphrase-words');
+
+      sliderWords.addEventListener('input', (e) => {
+        inputWords.value = e.target.value;
+        updateActiveWordPill(e.target.value);
+        renderCurrentResult();
+      });
+
+      inputWords.addEventListener('input', (e) => {
+        const val = Math.min(12, Math.max(3, parseInt(e.target.value, 10) || 4));
+        sliderWords.value = val;
+        updateActiveWordPill(val);
+        renderCurrentResult();
+      });
+
+      document.querySelectorAll('.len-pill[data-words]').forEach(pill => {
+        pill.addEventListener('click', () => {
+          const words = parseInt(pill.dataset.words, 10);
+          sliderWords.value = words;
+          inputWords.value = words;
+          updateActiveWordPill(words);
+          renderCurrentResult();
+        });
+      });
+
+      // Character Sets toggles
+      ['toggle-upper', 'toggle-lower', 'toggle-numbers', 'toggle-symbols'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+          checkToggleConstraints();
+          renderCurrentResult();
+        });
+      });
+
+      // Custom Symbol Input
+      document.getElementById('input-symbols-set').addEventListener('input', () => {
+        renderCurrentResult();
+      });
+
+      // Symbol preset buttons
+      document.getElementById('sym-preset-all').addEventListener('click', () => {
+        document.getElementById('input-symbols-set').value = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        renderCurrentResult();
+      });
+      document.getElementById('sym-preset-alphasafe').addEventListener('click', () => {
+        document.getElementById('input-symbols-set').value = '!@#$%^&*()_-+=';
+        renderCurrentResult();
+      });
+      document.getElementById('sym-preset-minimal').addEventListener('click', () => {
+        document.getElementById('input-symbols-set').value = '!@#$';
+        renderCurrentResult();
+      });
+      document.getElementById('sym-reset').addEventListener('click', () => {
+        document.getElementById('input-symbols-set').value = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        renderCurrentResult();
+      });
+
+      // Rules toggles
+      ['toggle-require-each', 'toggle-exclude-similar', 'toggle-exclude-duplicates'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+          renderCurrentResult();
+        });
+      });
+
+      // Passphrase inputs
+      const sepSelect = document.getElementById('select-separator');
+      const customSep = document.getElementById('input-custom-separator');
+      sepSelect.addEventListener('change', (e) => {
+        customSep.style.display = e.target.value === 'custom' ? 'block' : 'none';
+        renderCurrentResult();
+      });
+      customSep.addEventListener('input', () => renderCurrentResult());
+
+      document.getElementById('select-capitalization').addEventListener('change', () => renderCurrentResult());
+      document.getElementById('select-passphrase-number').addEventListener('change', () => renderCurrentResult());
+      document.getElementById('select-passphrase-symbol').addEventListener('change', () => renderCurrentResult());
+
+      // Accordion Toggles
+      document.getElementById('accordion-batch-header').addEventListener('click', () => {
+        const body = document.getElementById('accordion-batch-body');
+        const icon = document.getElementById('accordion-batch-icon');
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? 'flex' : 'none';
+        icon.style.transform = isHidden ? 'rotate(180deg)' : 'none';
+        if (isHidden) renderBatch();
+      });
+
+      document.getElementById('accordion-security-header').addEventListener('click', () => {
+        const body = document.getElementById('accordion-security-body');
+        const icon = document.getElementById('accordion-security-icon');
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? 'flex' : 'none';
+        icon.style.transform = isHidden ? 'rotate(180deg)' : 'none';
+      });
+
+      // Batch Generate Button
+      document.getElementById('btn-generate-batch').addEventListener('click', () => {
+        renderBatch();
+      });
+
+      // Batch Copy All
+      document.getElementById('btn-copy-batch').addEventListener('click', () => {
+        const container = document.getElementById('batch-list-container');
+        const list = JSON.parse(container.dataset.passwords || '[]');
+        if (list.length > 0) {
+          copyToClipboard(list.join('\n'));
+          showToast(`✓ Copied ${list.length} passwords!`);
+        }
+      });
+
+      // Batch Downloads
+      document.getElementById('btn-download-txt').addEventListener('click', () => {
+        const list = JSON.parse(document.getElementById('batch-list-container').dataset.passwords || '[]');
+        if (list.length > 0) downloadFile('passwords.txt', list.join('\n'), 'text/plain');
+      });
+
+      document.getElementById('btn-download-csv').addEventListener('click', () => {
+        const list = JSON.parse(document.getElementById('batch-list-container').dataset.passwords || '[]');
+        if (list.length > 0) {
+          const csv = 'Index,Password\n' + list.map((p, i) => `${i + 1},"${p.replace(/"/g, '""')}"`).join('\n');
+          downloadFile('passwords.csv', csv, 'text/csv');
+        }
+      });
+
+      // Clipboard Banner Actions
+      document.getElementById('btn-cancel-clear').addEventListener('click', () => {
+        stopAutoClearCountdown();
+        showToast('Clipboard auto-clear cancelled.');
+      });
+
+      document.getElementById('btn-clear-now').addEventListener('click', () => {
+        stopAutoClearCountdown();
+        wipeClipboard();
+      });
+
+      // Keyboard Shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Space or 'r' when not focused on an input
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+        if (e.key === ' ' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          renderCurrentResult();
+        }
+      });
+
+      // Theme toggle
+      const themeBtn = document.getElementById('theme-toggle');
+      themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      // Init Theme
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+
+    function updateActiveLengthPill(val) {
+      document.querySelectorAll('.len-pill[data-len]').forEach(p => {
+        p.classList.toggle('active', parseInt(p.dataset.len, 10) === parseInt(val, 10));
+      });
+    }
+
+    function updateActiveWordPill(val) {
+      document.querySelectorAll('.len-pill[data-words]').forEach(p => {
+        p.classList.toggle('active', parseInt(p.dataset.words, 10) === parseInt(val, 10));
+      });
+    }
+
+    function applyPreset(preset) {
+      if (preset === 'standard') {
+        currentMode = 'password';
+        document.getElementById('tab-password').click();
+        document.getElementById('input-length').value = 16;
+        document.getElementById('slider-length').value = 16;
+        document.getElementById('toggle-upper').checked = true;
+        document.getElementById('toggle-lower').checked = true;
+        document.getElementById('toggle-numbers').checked = true;
+        document.getElementById('toggle-symbols').checked = true;
+        document.getElementById('toggle-exclude-similar').checked = false;
+        document.getElementById('toggle-exclude-duplicates').checked = false;
+        updateActiveLengthPill(16);
+      } else if (preset === 'max-sec') {
+        currentMode = 'password';
+        document.getElementById('tab-password').click();
+        document.getElementById('input-length').value = 32;
+        document.getElementById('slider-length').value = 32;
+        document.getElementById('toggle-upper').checked = true;
+        document.getElementById('toggle-lower').checked = true;
+        document.getElementById('toggle-numbers').checked = true;
+        document.getElementById('toggle-symbols').checked = true;
+        document.getElementById('toggle-exclude-similar').checked = false;
+        document.getElementById('toggle-exclude-duplicates').checked = false;
+        updateActiveLengthPill(32);
+      } else if (preset === 'alphanumeric') {
+        currentMode = 'password';
+        document.getElementById('tab-password').click();
+        document.getElementById('input-length').value = 20;
+        document.getElementById('slider-length').value = 20;
+        document.getElementById('toggle-upper').checked = true;
+        document.getElementById('toggle-lower').checked = true;
+        document.getElementById('toggle-numbers').checked = true;
+        document.getElementById('toggle-symbols').checked = false;
+        document.getElementById('toggle-exclude-similar').checked = false;
+        document.getElementById('toggle-exclude-duplicates').checked = false;
+        updateActiveLengthPill(20);
+      } else if (preset === 'pin') {
+        currentMode = 'password';
+        document.getElementById('tab-password').click();
+        document.getElementById('input-length').value = 6;
+        document.getElementById('slider-length').value = 6;
+        document.getElementById('toggle-upper').checked = false;
+        document.getElementById('toggle-lower').checked = false;
+        document.getElementById('toggle-numbers').checked = true;
+        document.getElementById('toggle-symbols').checked = false;
+        document.getElementById('toggle-exclude-similar').checked = false;
+        document.getElementById('toggle-exclude-duplicates').checked = false;
+        updateActiveLengthPill(6);
+      } else if (preset === 'easy-read') {
+        currentMode = 'password';
+        document.getElementById('tab-password').click();
+        document.getElementById('input-length').value = 16;
+        document.getElementById('slider-length').value = 16;
+        document.getElementById('toggle-upper').checked = true;
+        document.getElementById('toggle-lower').checked = true;
+        document.getElementById('toggle-numbers').checked = true;
+        document.getElementById('toggle-symbols').checked = true;
+        document.getElementById('toggle-exclude-similar').checked = true;
+        document.getElementById('toggle-exclude-duplicates').checked = false;
+        updateActiveLengthPill(16);
+      } else if (preset === 'diceware') {
+        currentMode = 'passphrase';
+        document.getElementById('tab-passphrase').click();
+        document.getElementById('input-passphrase-words').value = 5;
+        document.getElementById('slider-passphrase-words').value = 5;
+        document.getElementById('select-separator').value = '-';
+        document.getElementById('select-capitalization').value = 'titlecase';
+        document.getElementById('select-passphrase-number').value = 'append';
+        updateActiveWordPill(5);
+      }
+
+      checkToggleConstraints();
+      renderCurrentResult();
+    }
+
+    function downloadFile(filename, text, mimeType) {
+      const blob = new Blob([text], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // --- INITIALIZE APPLICATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+      initEvents();
+      checkToggleConstraints();
+      renderCurrentResult();
+    });
+  </script>
+</body>
+</html>

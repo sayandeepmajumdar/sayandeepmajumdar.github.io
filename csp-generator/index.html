@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSP (Content Security Policy) Generator &amp; Validator | sayandeep.dev</title>
+  <meta name="description" content="Build, validate, test, and export Content Security Policy (CSP) headers. Interactive directive builder, risk analyzer, nonce/hash generator, sandbox violation test lab, and server snippets for Nginx, Apache, and Helmet. 100% client-side." />
+  <meta name="keywords" content="csp generator, content security policy builder, csp validator, csp nonce generator, csp hash calculator, security headers, xss protection, clickjacking, nginx csp, apache csp, helmet csp" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/csp-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --surface-hover: #e7e5e4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-glow: rgba(79, 70, 229, 0.18);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --surface-hover: #3f3f46;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.14);
+      --accent-glow: rgba(129, 140, 248, 0.25);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Content Layout */
+    main {
+      flex: 1;
+      padding: 1.5rem 0 3rem;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .app-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Top Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .nav-tabs {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-lg);
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .nav-tab:hover {
+      color: var(--text);
+    }
+
+    .nav-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--success);
+      font-weight: 700;
+      background: var(--success-bg);
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    /* Presets Selector Card */
+    .presets-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .presets-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .preset-pills-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .preset-pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      user-select: none;
+    }
+
+    .preset-pill:hover, .preset-pill.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* Directive Categories & Cards */
+    .category-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .category-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding-left: 0.25rem;
+    }
+
+    .directive-card {
+      background: var(--surface);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      transition: border-color var(--transition), opacity var(--transition);
+    }
+
+    .directive-card.active {
+      border-color: var(--accent);
+    }
+
+    .directive-card.disabled {
+      opacity: 0.65;
+    }
+
+    .directive-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .directive-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .directive-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .directive-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--surface-hover);
+      transition: 0.25s;
+      border-radius: 24px;
+    }
+
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    input:checked + .slider-round {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider-round:before {
+      transform: translateX(18px);
+    }
+
+    /* Source List Chips Container */
+    .source-list-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .chips-container {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      min-height: 32px;
+      background: var(--surface-alt);
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+    }
+
+    .source-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      user-select: none;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .source-chip.chip-self { color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.08); }
+    .source-chip.chip-none { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08); }
+    .source-chip.chip-unsafe { color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08); }
+    .source-chip.chip-nonce { color: #a855f7; border-color: rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.08); }
+    .source-chip.chip-scheme { color: #10b981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08); }
+
+    .btn-remove-chip {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      padding: 0 0 0 2px;
+    }
+
+    .btn-remove-chip:hover {
+      color: var(--error);
+    }
+
+    /* Quick Preset Source Buttons */
+    .quick-source-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .quick-chips-group {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-quick-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      border: 1px dashed var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-quick-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .btn-quick-chip.btn-unsafe:hover {
+      border-color: var(--warning);
+      color: var(--warning);
+      background: var(--warning-bg);
+    }
+
+    .add-custom-source-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .input-source-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      width: 170px;
+    }
+
+    .input-source-text:focus {
+      border-color: var(--accent);
+    }
+
+    /* Sticky Sidebar Output Card */
+    .sidebar-sticky-col {
+      position: sticky;
+      top: 76px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .hero-output-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+
+    .hero-output-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), #3b82f6, #10b981);
+    }
+
+    .hero-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .score-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .score-a { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .score-b { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .score-c { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .score-f { background: var(--error-bg); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .header-mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .header-mode-toggle select {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* Output Textarea & Tabs */
+    .output-box-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .output-tabs-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .output-format-tabs {
+      display: flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      gap: 2px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .out-tab-btn {
+      padding: 0.3rem 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition);
+      flex: 1;
+      text-align: center;
+      min-width: 65px;
+    }
+
+    .out-tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .output-code-area {
+      width: 100%;
+      min-height: 180px;
+      max-height: 280px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1.45;
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: all;
+    }
+
+    .output-code-area:focus {
+      border-color: var(--accent);
+    }
+
+    .output-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .header-size-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .hero-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+    }
+
+    .btn-action-sm {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition);
+      text-decoration: none;
+      flex: 1;
+    }
+
+    .btn-action-sm:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .btn-action-sm.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-action-sm.btn-primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Risk Analysis Card */
+    .risk-banner {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .risk-banner-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .risk-item {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      padding: 0.35rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .risk-item strong {
+      color: var(--text);
+    }
+
+    /* Tools & Test Lab View Cards */
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .tool-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    /* Violation Test Lab */
+    .testlab-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .testlab-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .test-controls-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .test-trigger-btn {
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all var(--transition);
+    }
+
+    .test-trigger-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .test-logs-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .violation-logs-list {
+      height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .violation-entry {
+      background: var(--surface-alt);
+      border-left: 3px solid var(--error);
+      padding: 0.5rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .violation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 700;
+      color: var(--error);
+    }
+
+    .violation-body {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* FAQ Section */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .faq-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .faq-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .faq-card p {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">CSP (Content Security Policy) Generator</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Navigation Tabs & Security Badge -->
+      <div class="nav-tabs-bar">
+        <div class="nav-tabs">
+          <button class="nav-tab active" id="tab-btn-builder" data-view="view-builder">
+            <span>🛠️ Policy Builder</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-tools" data-view="view-tools">
+            <span>⚡ Nonce &amp; Hash Tools</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-testlab" data-view="view-testlab">
+            <span>🧪 Sandbox Test Lab</span>
+          </button>
+          <button class="nav-tab" id="tab-btn-importer" data-view="view-importer">
+            <span>📥 Import &amp; Parse</span>
+          </button>
+        </div>
+
+        <span class="security-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          100% Client-Side Web Crypto
+        </span>
+      </div>
+
+      <!-- Main Split Application Grid -->
+      <div class="app-grid">
+        <!-- LEFT COLUMN: Active View Workspace -->
+        <div class="main-workspace-col">
+
+          <!-- VIEW 1: Directive Builder -->
+          <div id="view-builder" class="view-content-block">
+            <!-- Presets Selection Card -->
+            <div class="presets-card">
+              <div class="presets-header">
+                <span>Security Presets &amp; Templates:</span>
+                <button class="btn-action-sm" id="btn-reset-policy" style="padding:0.25rem 0.5rem; font-size:0.75rem; flex:none;">Reset Blank</button>
+              </div>
+              <div class="preset-pills-row">
+                <button class="preset-pill active" data-preset="strict-nonce">🛡️ Strict (Nonces &amp; strict-dynamic)</button>
+                <button class="preset-pill" data-preset="standard-strict">🔒 Standard Strict (No Inline)</button>
+                <button class="preset-pill" data-preset="moderate-cdn">🌐 Pragmatic CDNs (Fonts, Analytics)</button>
+                <button class="preset-pill" data-preset="report-baseline">📊 Report-Only Staged Rollout</button>
+                <button class="preset-pill" data-preset="lockdown">🛑 Zero Script Lockdown</button>
+                <button class="preset-pill" data-preset="spa-react">⚛️ SPA / React / Vite</button>
+              </div>
+            </div>
+
+            <!-- Directives Builder Container -->
+            <div id="directives-container"></div>
+          </div>
+
+          <!-- VIEW 2: Nonce & Hash Tools -->
+          <div id="view-tools" class="view-content-block" style="display:none;">
+            <!-- Nonce Generator -->
+            <div class="tool-card">
+              <span class="tool-card-title">
+                <span>🎲 Cryptographic Nonce Generator</span>
+              </span>
+              <p style="font-size:0.8125rem; color:var(--muted); line-height:1.45;">
+                Generates a cryptographically random 128-bit nonce encoded in Base64 via <code>crypto.getRandomValues()</code>.
+                <strong>Note:</strong> A real production nonce must be generated dynamically on every HTTP response by your backend server and injected into both the CSP header (<code>'nonce-...'</code>) and HTML (<code>&lt;script nonce="..."&gt;</code>).
+              </p>
+
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                <input type="text" id="output-nonce" class="input-source-text" style="font-size:0.9rem; width:220px; height:36px;" readonly spellcheck="false" />
+                <button class="btn-action-sm btn-primary" id="btn-gen-nonce" style="flex:none;">🎲 Fresh Nonce</button>
+                <button class="btn-action-sm" id="btn-copy-nonce" style="flex:none;">📋 Copy 'nonce-...'</button>
+                <button class="btn-action-sm" id="btn-insert-nonce" style="flex:none;">➕ Add to script-src</button>
+              </div>
+            </div>
+
+            <!-- Inline Script / Style Hash Calculator -->
+            <div class="tool-card">
+              <span class="tool-card-title">
+                <span>🔢 Inline Script / Style Hash Calculator</span>
+              </span>
+              <p style="font-size:0.8125rem; color:var(--muted); line-height:1.45;">
+                Paste the exact contents of your inline <code>&lt;script&gt;</code> or <code>&lt;style&gt;</code> block (excluding the HTML tags). The tool computes the binary digest via <code>crypto.subtle.digest()</code> and produces the exact CSP hash format.
+              </p>
+
+              <textarea id="input-hash-code" class="output-code-area" style="min-height:90px;" placeholder="console.log('Hello World');">console.log('Hello World');</textarea>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <label for="select-hash-algo" style="font-size:0.8rem; font-weight:700;">Algorithm:</label>
+                  <select id="select-hash-algo" class="input-source-text" style="width:110px;">
+                    <option value="SHA-256" selected>SHA-256</option>
+                    <option value="SHA-384">SHA-384</option>
+                    <option value="SHA-512">SHA-512</option>
+                  </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                  <button class="btn-action-sm" id="btn-copy-hash" style="flex:none;">📋 Copy Hash</button>
+                  <button class="btn-action-sm btn-primary" id="btn-insert-script-hash" style="flex:none;">➕ Add to script-src</button>
+                  <button class="btn-action-sm" id="btn-insert-style-hash" style="flex:none;">➕ Add to style-src</button>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:0.5rem; background:var(--surface-alt); padding:0.6rem 0.85rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--muted);">CSP Format:</span>
+                <span id="output-computed-hash" style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; font-weight:700; color:var(--accent); user-select:all;">'sha256-...'</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW 3: Sandbox Violation Test Lab -->
+          <div id="view-testlab" class="view-content-block" style="display:none;">
+            <div class="tool-card">
+              <span class="tool-card-title">
+                <span>🧪 Sandboxed CSP Violation Test Lab</span>
+              </span>
+              <p style="font-size:0.8125rem; color:var(--muted); line-height:1.45;">
+                Test your current CSP policy against real browser enforcement. An isolated sandboxed iframe is loaded with your current policy via <code>&lt;meta http-equiv="Content-Security-Policy"&gt;</code>. Trigger simulated security actions below to verify real <code>SecurityPolicyViolationEvent</code> detections.
+              </p>
+            </div>
+
+            <div class="testlab-grid">
+              <!-- Action Triggers -->
+              <div class="test-controls-box">
+                <span style="font-size:0.8125rem; font-weight:700;">Simulate Actions in Test Frame:</span>
+
+                <button class="test-trigger-btn" id="btn-test-inline-script">
+                  <span>1. Execute Inline Script</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">Tests script-src</span>
+                </button>
+
+                <button class="test-trigger-btn" id="btn-test-eval">
+                  <span>2. Execute eval()</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">Tests unsafe-eval</span>
+                </button>
+
+                <button class="test-trigger-btn" id="btn-test-external-script">
+                  <span>3. Load Untrusted External Script</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">evil.example/malicious.js</span>
+                </button>
+
+                <button class="test-trigger-btn" id="btn-test-inline-style">
+                  <span>4. Apply Inline Style Tag</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">Tests style-src</span>
+                </button>
+
+                <button class="test-trigger-btn" id="btn-test-untrusted-fetch">
+                  <span>5. Trigger fetch() to Unlisted API</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">Tests connect-src</span>
+                </button>
+
+                <button class="test-trigger-btn" id="btn-test-untrusted-img">
+                  <span>6. Render Untrusted Image</span>
+                  <span style="font-size:0.7rem; color:var(--muted);">Tests img-src</span>
+                </button>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.5rem; gap:0.5rem;">
+                  <button class="btn-action-sm btn-primary" id="btn-reload-sandbox">🔄 Apply Current Policy</button>
+                  <button class="btn-action-sm" id="btn-clear-logs">Clear Logs</button>
+                </div>
+              </div>
+
+              <!-- Real-time Violation Event Logs -->
+              <div class="test-logs-box">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <span style="font-size:0.8125rem; font-weight:700;">Security Violation Events:</span>
+                  <span id="violation-count-badge" style="font-size:0.72rem; font-weight:700; color:var(--error); background:var(--error-bg); padding:0.15rem 0.5rem; border-radius:9999px;">0 Violations</span>
+                </div>
+
+                <div class="violation-logs-list" id="violation-logs-list">
+                  <div style="color:var(--muted); font-size:0.75rem; text-align:center; padding-top:4rem;">
+                    No violations detected yet. Click a test trigger on the left to simulate blocked actions.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sandboxed Iframe -->
+            <iframe id="sandbox-iframe" sandbox="allow-scripts" style="width:100%; height:90px; border:1px solid var(--line); border-radius:var(--radius-md); background:#ffffff; margin-top:1rem;"></iframe>
+          </div>
+
+          <!-- VIEW 4: Import & Parse Existing Policy -->
+          <div id="view-importer" class="view-content-block" style="display:none;">
+            <div class="tool-card">
+              <span class="tool-card-title">
+                <span>📥 Import &amp; Parse Existing CSP Header</span>
+              </span>
+              <p style="font-size:0.8125rem; color:var(--muted); line-height:1.45;">
+                Paste any existing CSP string (from an HTTP response, HTML &lt;meta&gt; tag, or Nginx config). The parser will auto-load all directives and sources into the interactive builder.
+              </p>
+
+              <textarea id="input-import-csp" class="output-code-area" style="min-height:110px;" placeholder="default-src 'self'; script-src 'self' https://trustedscripts.example.com; object-src 'none';"></textarea>
+
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="btn-action-sm btn-primary" id="btn-parse-import" style="flex:none;">📥 Parse &amp; Load into Builder</button>
+                <button class="btn-action-sm" id="btn-clear-import" style="flex:none;">Clear</button>
+              </div>
+
+              <div id="import-status-msg" style="display:none; padding:0.6rem 0.85rem; border-radius:var(--radius-sm); font-size:0.8125rem; font-weight:600;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Sticky Output & Risk Analysis Sidebar -->
+        <div class="sidebar-sticky-col">
+          <!-- Live Policy Output Card -->
+          <div class="hero-output-card">
+            <div class="hero-header">
+              <span style="font-size:0.9rem; font-weight:700;">Live Policy Output</span>
+              <span id="score-badge" class="score-pill score-a">✓ Grade A+ (Strict)</span>
+            </div>
+
+            <div class="header-mode-toggle">
+              <label for="select-csp-mode" style="font-size:0.75rem; color:var(--muted);">Mode:</label>
+              <select id="select-csp-mode">
+                <option value="enforce" selected>Content-Security-Policy (Enforce)</option>
+                <option value="report-only">Content-Security-Policy-Report-Only (Monitor)</option>
+              </select>
+            </div>
+
+            <div class="output-box-wrapper">
+              <div class="output-tabs-row">
+                <div class="output-format-tabs">
+                  <button class="out-tab-btn active" data-fmt="raw">Raw</button>
+                  <button class="out-tab-btn" data-fmt="header">HTTP Header</button>
+                  <button class="out-tab-btn" data-fmt="meta">HTML &lt;meta&gt;</button>
+                  <button class="out-tab-btn" data-fmt="nginx">Nginx</button>
+                  <button class="out-tab-btn" data-fmt="apache">Apache</button>
+                  <button class="out-tab-btn" data-fmt="helmet">Helmet</button>
+                  <button class="out-tab-btn" data-fmt="netlify">Netlify</button>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.25rem;">
+                <label style="font-size:0.72rem; font-weight:600; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;">
+                  <input type="checkbox" id="toggle-multiline" checked />
+                  <span>Formatted Multi-Line</span>
+                </label>
+                <span class="header-size-badge" id="header-size-badge">0 chars (0 bytes)</span>
+              </div>
+
+              <textarea id="output-csp-text" class="output-code-area" readonly spellcheck="false"></textarea>
+            </div>
+
+            <div class="hero-btn-group">
+              <button class="btn-action-sm btn-primary" id="btn-copy-csp">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span id="copy-btn-label">Copy Policy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Risk Analysis Card -->
+          <div class="risk-banner" id="risk-banner">
+            <div class="risk-banner-title">
+              <span id="risk-banner-icon">🛡️</span>
+              <span id="risk-banner-text">Security Diagnostics</span>
+            </div>
+            <div id="risk-items-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="faq-grid">
+        <div class="faq-card">
+          <h3>🛡️ What is Content Security Policy?</h3>
+          <p>CSP is an HTTP response header that restricts which scripts, styles, images, and endpoints a browser is allowed to load, acting as the primary defense against Cross-Site Scripting (XSS) and data injection attacks.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>⚡ Nonces vs. Hashes vs. 'unsafe-inline'</h3>
+          <p>Using <code>'unsafe-inline'</code> allows attackers to execute injected <code>&lt;script&gt;</code> tags. Nonces (random one-time tokens) and cryptographic hashes allow specific legitimate inline scripts while blocking unauthorized code.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>🖼️ Clickjacking Protection with frame-ancestors</h3>
+          <p>The <code>frame-ancestors</code> directive obsoletes <code>X-Frame-Options</code>, specifying which parents can embed your page in an <code>&lt;iframe&gt;</code> to prevent UI redressing and clickjacking.</p>
+        </div>
+
+        <div class="faq-card">
+          <h3>📊 Report-Only Staged Rollout</h3>
+          <p>Before enforcing a strict policy on an existing website, deploy it as <code>Content-Security-Policy-Report-Only</code> with a reporting endpoint to detect and fix potential breakage before enforcement.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 sayandeep.dev • 100% Client-Side Developer Utilities</p>
+      <div style="display:flex; gap:1rem;">
+        <a href="../tools/">All Tools</a>
+        <a href="../rsa-generator/">RSA Key Generator</a>
+        <a href="../password-generator/">Password Generator</a>
+        <a href="../jwt-decoder/">JWT Decoder</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // --- CSP DIRECTIVES CONFIGURATION SCHEMA ---
+    const DIRECTIVES_SCHEMA = [
+      {
+        category: "Core & Fallbacks",
+        directives: [
+          {
+            name: "default-src",
+            desc: "Fallback for all other fetch directives when a specific directive is omitted.",
+            quickChips: ["'self'", "'none'", "https:", "data:", "*"]
+          },
+          {
+            name: "base-uri",
+            desc: "Restricts URLs allowed in <base href> tags to prevent hijacking relative URLs.",
+            quickChips: ["'self'", "'none'"]
+          },
+          {
+            name: "form-action",
+            desc: "Restricts valid target URLs for HTML <form> submissions.",
+            quickChips: ["'self'", "'none'", "https:"]
+          },
+          {
+            name: "frame-ancestors",
+            desc: "Specifies valid parents that can embed this page via <iframe> (Clickjacking protection).",
+            quickChips: ["'self'", "'none'", "https:"]
+          }
+        ]
+      },
+      {
+        category: "Scripts & Code Execution",
+        directives: [
+          {
+            name: "script-src",
+            desc: "Valid sources for JavaScript execution. Prefer nonces or hashes over 'unsafe-inline'.",
+            quickChips: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "'strict-dynamic'", "https:", "data:"]
+          },
+          {
+            name: "script-src-elem",
+            desc: "Specific sources for <script> elements (CSP Level 3).",
+            quickChips: ["'self'", "'unsafe-inline'", "https:"]
+          },
+          {
+            name: "script-src-attr",
+            desc: "Specific sources for inline event handlers like onclick (CSP Level 3).",
+            quickChips: ["'none'", "'unsafe-inline'"]
+          },
+          {
+            name: "worker-src",
+            desc: "Valid sources for Web Workers, SharedWorkers, or ServiceWorkers.",
+            quickChips: ["'self'", "'none'", "blob:"]
+          }
+        ]
+      },
+      {
+        category: "Styles & Fonts",
+        directives: [
+          {
+            name: "style-src",
+            desc: "Valid sources for stylesheets.",
+            quickChips: ["'self'", "'unsafe-inline'", "https:", "https://fonts.googleapis.com"]
+          },
+          {
+            name: "style-src-elem",
+            desc: "Specific sources for <style> and <link rel='stylesheet'> elements (CSP Level 3).",
+            quickChips: ["'self'", "'unsafe-inline'", "https:"]
+          },
+          {
+            name: "style-src-attr",
+            desc: "Specific sources for inline style='...' attributes (CSP Level 3).",
+            quickChips: ["'unsafe-inline'", "'none'"]
+          },
+          {
+            name: "font-src",
+            desc: "Valid sources for web fonts loaded via @font-face.",
+            quickChips: ["'self'", "https:", "data:", "https://fonts.gstatic.com"]
+          }
+        ]
+      },
+      {
+        category: "Media & Assets",
+        directives: [
+          {
+            name: "img-src",
+            desc: "Valid sources for images, favicons, and SVGs.",
+            quickChips: ["'self'", "data:", "blob:", "https:", "*"]
+          },
+          {
+            name: "media-src",
+            desc: "Valid sources for <audio> and <video> media streams.",
+            quickChips: ["'self'", "https:", "blob:"]
+          },
+          {
+            name: "object-src",
+            desc: "Valid sources for Flash/Java plugins (<object>, <embed>). Should almost always be 'none'.",
+            quickChips: ["'none'", "'self'"]
+          },
+          {
+            name: "manifest-src",
+            desc: "Valid sources for Web App Manifests (manifest.json).",
+            quickChips: ["'self'"]
+          }
+        ]
+      },
+      {
+        category: "Networking & Frames",
+        directives: [
+          {
+            name: "connect-src",
+            desc: "Valid endpoints for fetch(), XMLHttpRequest, WebSockets (wss:), and EventSource.",
+            quickChips: ["'self'", "https:", "wss:", "blob:"]
+          },
+          {
+            name: "frame-src",
+            desc: "Valid sources for child <iframe> elements embedded within this page.",
+            quickChips: ["'self'", "'none'", "https:", "https://www.youtube.com"]
+          },
+          {
+            name: "child-src",
+            desc: "Deprecated fallback for frame-src and worker-src.",
+            quickChips: ["'self'", "'none'"]
+          }
+        ]
+      },
+      {
+        category: "Enforcement & Reporting",
+        directives: [
+          {
+            name: "upgrade-insecure-requests",
+            desc: "Instructs browsers to treat all HTTP URL requests as HTTPS before fetching.",
+            isFlag: true
+          },
+          {
+            name: "block-all-mixed-content",
+            desc: "Prevents loading any mixed content assets via HTTP on an HTTPS page.",
+            isFlag: true
+          },
+          {
+            name: "report-uri",
+            desc: "URI where violation reports are sent via HTTP POST JSON.",
+            isTextInput: true,
+            defaultText: "/api/csp-report"
+          }
+        ]
+      }
+    ];
+
+    // --- APPLICATION STATE ---
+    const policyState = {};
+    let selectedFormat = 'raw';
+    let isMultiline = true;
+    let cspMode = 'enforce'; // 'enforce' or 'report-only'
+    let violationCount = 0;
+
+    // Reset all directives to clean state
+    function resetAllDirectives() {
+      DIRECTIVES_SCHEMA.forEach(cat => {
+        cat.directives.forEach(d => {
+          policyState[d.name] = {
+            enabled: false,
+            sources: [],
+            isFlag: !!d.isFlag,
+            isTextInput: !!d.isTextInput,
+            textValue: d.defaultText || ''
+          };
+        });
+      });
+    }
+
+    // Set specific directive
+    function setDirective(name, sources = [], textValue = '') {
+      if (policyState[name]) {
+        policyState[name].enabled = true;
+        policyState[name].sources = [...sources];
+        if (textValue) policyState[name].textValue = textValue;
+      }
+    }
+
+    // --- RENDER DIRECTIVE CARDS ---
+    function renderDirectiveCards() {
+      const container = document.getElementById('directives-container');
+      container.innerHTML = '';
+
+      DIRECTIVES_SCHEMA.forEach(cat => {
+        const catSection = document.createElement('div');
+        catSection.className = 'category-section';
+
+        const catTitle = document.createElement('span');
+        catTitle.className = 'category-title';
+        catTitle.textContent = cat.category;
+        catSection.appendChild(catTitle);
+
+        cat.directives.forEach(d => {
+          const state = policyState[d.name];
+          const isEnabled = state ? state.enabled : false;
+
+          const card = document.createElement('div');
+          card.className = `directive-card ${isEnabled ? 'active' : 'disabled'}`;
+          card.id = `card-${d.name}`;
+
+          let inner = `
+            <div class="directive-card-header">
+              <div class="directive-title-group">
+                <span class="directive-name">${d.name}</span>
+                <span class="directive-desc">${d.desc}</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="toggle-${d.name}" ${isEnabled ? 'checked' : ''} />
+                <span class="slider-round"></span>
+              </label>
+            </div>
+          `;
+
+          if (d.isFlag) {
+            inner += `
+              <div style="font-size:0.75rem; color:var(--muted);">
+                Directive flag without parameters. When enabled, it instructs the browser to enforce this mode.
+              </div>
+            `;
+          } else if (d.isTextInput) {
+            inner += `
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <input type="text" class="input-source-text" style="width:100%; font-size:0.8rem;" id="text-${d.name}" value="${escapeHtml(state ? state.textValue : '')}" placeholder="/api/csp-report" />
+              </div>
+            `;
+          } else {
+            inner += `
+              <div class="source-list-box" id="box-${d.name}">
+                <div class="chips-container" id="chips-${d.name}"></div>
+                <div class="quick-source-bar">
+                  <div class="quick-chips-group" id="quick-${d.name}"></div>
+                  <div class="add-custom-source-row">
+                    <input type="text" class="input-source-text" id="input-add-${d.name}" placeholder="e.g. *.example.com" />
+                    <button class="btn-action-sm" id="btn-add-${d.name}" style="padding:0.25rem 0.55rem; font-size:0.75rem; flex:none;">Add</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          card.innerHTML = inner;
+          catSection.appendChild(card);
+        });
+
+        container.appendChild(catSection);
+      });
+
+      bindDirectiveCardEvents();
+      updateAllChips();
+    }
+
+    function bindDirectiveCardEvents() {
+      DIRECTIVES_SCHEMA.forEach(cat => {
+        cat.directives.forEach(d => {
+          const toggle = document.getElementById(`toggle-${d.name}`);
+          const card = document.getElementById(`card-${d.name}`);
+
+          if (toggle) {
+            toggle.addEventListener('change', (e) => {
+              policyState[d.name].enabled = e.target.checked;
+              card.classList.toggle('active', e.target.checked);
+              card.classList.toggle('disabled', !e.target.checked);
+              updateGeneratedOutput();
+            });
+          }
+
+          if (d.isTextInput) {
+            const textInput = document.getElementById(`text-${d.name}`);
+            if (textInput) {
+              textInput.addEventListener('input', (e) => {
+                policyState[d.name].textValue = e.target.value.trim();
+                updateGeneratedOutput();
+              });
+            }
+          } else if (!d.isFlag) {
+            // Quick preset chips
+            const quickContainer = document.getElementById(`quick-${d.name}`);
+            if (quickContainer && d.quickChips) {
+              quickContainer.innerHTML = '<span style="font-size:0.7rem; color:var(--muted); font-weight:700;">+ Preset:</span>';
+              d.quickChips.forEach(chip => {
+                const btn = document.createElement('button');
+                btn.className = `btn-quick-chip ${chip.includes('unsafe') || chip === '*' ? 'btn-unsafe' : ''}`;
+                btn.textContent = chip;
+                btn.addEventListener('click', () => {
+                  addSourceToDirective(d.name, chip);
+                });
+                quickContainer.appendChild(btn);
+              });
+            }
+
+            // Custom source input
+            const addInput = document.getElementById(`input-add-${d.name}`);
+            const addBtn = document.getElementById(`btn-add-${d.name}`);
+
+            if (addInput && addBtn) {
+              const handleAdd = () => {
+                const val = addInput.value.trim();
+                if (val) {
+                  addSourceToDirective(d.name, val);
+                  addInput.value = '';
+                }
+              };
+
+              addBtn.addEventListener('click', handleAdd);
+              addInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAdd();
+                }
+              });
+            }
+          }
+        });
+      });
+    }
+
+    function addSourceToDirective(dirName, source) {
+      let cleaned = source.trim();
+      if (!cleaned) return;
+
+      // Ensure special keywords have single quotes
+      const keywords = ['self', 'none', 'unsafe-inline', 'unsafe-eval', 'strict-dynamic', 'wasm-unsafe-eval'];
+      if (keywords.includes(cleaned)) {
+        cleaned = `'${cleaned}'`;
+      }
+
+      const state = policyState[dirName];
+      if (!state.sources.includes(cleaned)) {
+        if (cleaned === "'none'") {
+          state.sources = ["'none'"];
+        } else {
+          state.sources = state.sources.filter(s => s !== "'none'");
+          state.sources.push(cleaned);
+        }
+
+        if (!state.enabled) {
+          state.enabled = true;
+          const toggle = document.getElementById(`toggle-${dirName}`);
+          const card = document.getElementById(`card-${dirName}`);
+          if (toggle) toggle.checked = true;
+          if (card) {
+            card.classList.add('active');
+            card.classList.remove('disabled');
+          }
+        }
+
+        renderDirectiveChips(dirName);
+        updateGeneratedOutput();
+      }
+    }
+
+    function removeSourceFromDirective(dirName, source) {
+      const state = policyState[dirName];
+      state.sources = state.sources.filter(s => s !== source);
+      renderDirectiveChips(dirName);
+      updateGeneratedOutput();
+    }
+
+    function renderDirectiveChips(dirName) {
+      const container = document.getElementById(`chips-${dirName}`);
+      if (!container) return;
+      container.innerHTML = '';
+
+      const sources = policyState[dirName].sources;
+      if (sources.length === 0) {
+        container.innerHTML = '<span style="font-size:0.75rem; color:var(--muted); font-style:italic;">No sources configured (directive omitted if empty)</span>';
+        return;
+      }
+
+      sources.forEach(src => {
+        const chip = document.createElement('span');
+        let chipClass = 'source-chip';
+        if (src === "'self'") chipClass += ' chip-self';
+        else if (src === "'none'") chipClass += ' chip-none';
+        else if (src.includes('unsafe') || src === '*') chipClass += ' chip-unsafe';
+        else if (src.startsWith("'nonce-") || src.startsWith("'sha")) chipClass += ' chip-nonce';
+        else if (src.endsWith(':')) chipClass += ' chip-scheme';
+
+        chip.className = chipClass;
+        chip.innerHTML = `
+          <span>${escapeHtml(src)}</span>
+          <button class="btn-remove-chip" title="Remove">&times;</button>
+        `;
+
+        chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
+          removeSourceFromDirective(dirName, src);
+        });
+
+        container.appendChild(chip);
+      });
+    }
+
+    function updateAllChips() {
+      DIRECTIVES_SCHEMA.forEach(cat => {
+        cat.directives.forEach(d => {
+          if (!d.isFlag && !d.isTextInput) {
+            renderDirectiveChips(d.name);
+          }
+        });
+      });
+    }
+
+    // --- ASSEMBLE RAW CSP TOKENS ---
+    function buildRawCsp() {
+      const tokens = [];
+
+      DIRECTIVES_SCHEMA.forEach(cat => {
+        cat.directives.forEach(d => {
+          const state = policyState[d.name];
+          if (state && state.enabled) {
+            if (d.isFlag) {
+              tokens.push(d.name);
+            } else if (d.isTextInput) {
+              if (state.textValue) {
+                tokens.push(`${d.name} ${state.textValue}`);
+              }
+            } else {
+              if (state.sources && state.sources.length > 0) {
+                tokens.push(`${d.name} ${state.sources.join(' ')}`);
+              }
+            }
+          }
+        });
+      });
+
+      return tokens;
+    }
+
+    // --- UPDATE OUTPUT AND DIAGNOSTICS ---
+    function updateGeneratedOutput() {
+      const tokens = buildRawCsp();
+      const headerName = cspMode === 'enforce' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only';
+
+      let formattedOutput = '';
+      const singleLinePolicy = tokens.join('; ');
+      const multiLinePolicy = tokens.join(';\n  ');
+
+      if (tokens.length === 0) {
+        document.getElementById('output-csp-text').value = '# No directives enabled.\n# Toggle directives on the left or select a preset to generate a policy.';
+        renderRiskDiagnostics([]);
+        updateScoreBadge('F', 'Empty Policy');
+        document.getElementById('header-size-badge').textContent = '0 chars (0 bytes)';
+        return;
+      }
+
+      if (selectedFormat === 'raw') {
+        formattedOutput = isMultiline ? `${multiLinePolicy};` : `${singleLinePolicy};`;
+      } else if (selectedFormat === 'header') {
+        formattedOutput = isMultiline
+          ? `${headerName}:\n  ${multiLinePolicy};`
+          : `${headerName}: ${singleLinePolicy};`;
+      } else if (selectedFormat === 'meta') {
+        formattedOutput = `<meta http-equiv="${headerName}"\n      content="${singleLinePolicy};">`;
+      } else if (selectedFormat === 'nginx') {
+        formattedOutput = `add_header ${headerName} "${singleLinePolicy};" always;`;
+      } else if (selectedFormat === 'apache') {
+        formattedOutput = `Header always set ${headerName} "${singleLinePolicy};"`;
+      } else if (selectedFormat === 'helmet') {
+        const helmetDirectives = {};
+        tokens.forEach(t => {
+          const parts = t.split(' ');
+          const dir = parts[0];
+          const srcs = parts.slice(1);
+          helmetDirectives[dir] = srcs.length > 0 ? srcs : true;
+        });
+
+        formattedOutput = `app.use(\n  helmet.contentSecurityPolicy({\n    reportOnly: ${cspMode === 'report-only'},\n    directives: ${JSON.stringify(helmetDirectives, null, 6).replace(/\n/g, '\n    ')}\n  })\n);`;
+      } else if (selectedFormat === 'netlify') {
+        formattedOutput = `/*\n  ${headerName}: ${singleLinePolicy};`;
+      }
+
+      document.getElementById('output-csp-text').value = formattedOutput;
+
+      // Header size badge
+      const byteLen = new TextEncoder().encode(singleLinePolicy).length;
+      const sizeBadge = document.getElementById('header-size-badge');
+      sizeBadge.textContent = `${singleLinePolicy.length} chars (${byteLen} bytes)`;
+      if (byteLen > 4096) {
+        sizeBadge.style.color = 'var(--error)';
+        sizeBadge.textContent += ' ⚠️ (>4KB limit)';
+      } else {
+        sizeBadge.style.color = 'var(--muted)';
+      }
+
+      evaluateSecurityRisks(tokens);
+    }
+
+    // --- SECURITY RISK ANALYZER ---
+    function evaluateSecurityRisks(tokens) {
+      const risks = [];
+      let score = 'A+';
+      let scoreLabel = 'Grade A+ (Strict & Safe)';
+
+      const policyMap = {};
+      tokens.forEach(t => {
+        const [dir, ...rest] = t.split(' ');
+        policyMap[dir] = rest;
+      });
+
+      // 1. Check 'unsafe-inline' in script-src
+      if (policyMap['script-src'] && policyMap['script-src'].includes("'unsafe-inline'")) {
+        const hasNonce = policyMap['script-src'].some(s => s.startsWith("'nonce-") || s.startsWith("'sha"));
+        if (!hasNonce) {
+          risks.push({
+            level: 'error',
+            title: "'unsafe-inline' in script-src destroys XSS protection",
+            desc: "Enables arbitrary injected <script> tags to execute. Replace with nonces or cryptographic hashes."
+          });
+          score = 'C';
+          scoreLabel = 'Grade C (Vulnerable to XSS)';
+        }
+      }
+
+      // 2. Check 'unsafe-eval' in script-src
+      if (policyMap['script-src'] && policyMap['script-src'].includes("'unsafe-eval'")) {
+        risks.push({
+          level: 'warning',
+          title: "'unsafe-eval' permits string-to-code execution (eval)",
+          desc: "Allows eval(), new Function(), and setTimeout('string'). Refactor code to eliminate eval."
+        });
+        if (score === 'A+') {
+          score = 'B';
+          scoreLabel = 'Grade B (Allows eval)';
+        }
+      }
+
+      // 3. Check Wildcard * in script-src or default-src
+      if ((policyMap['script-src'] && policyMap['script-src'].includes('*')) ||
+          (policyMap['default-src'] && policyMap['default-src'].includes('*'))) {
+        risks.push({
+          level: 'error',
+          title: "Wildcard '*' source allows scripts from any origin",
+          desc: "Permits loading scripts from any arbitrary internet domain, neutralizing CSP."
+        });
+        score = 'F';
+        scoreLabel = 'Grade F (Wildcard Script Sources)';
+      }
+
+      // 4. Missing object-src 'none'
+      if (!policyMap['object-src'] || !policyMap['object-src'].includes("'none'")) {
+        risks.push({
+          level: 'warning',
+          title: "Missing object-src 'none'",
+          desc: "Allows malicious Flash/Java applet plugins to execute code. Set object-src 'none'."
+        });
+        if (score === 'A+') {
+          score = 'A';
+          scoreLabel = 'Grade A (Good)';
+        }
+      }
+
+      // 5. Missing base-uri
+      if (!policyMap['base-uri']) {
+        risks.push({
+          level: 'info',
+          title: "Missing base-uri directive",
+          desc: "Attackers could inject <base href> to hijack relative script paths. Set base-uri 'self' or 'none'."
+        });
+      }
+
+      // 6. Missing frame-ancestors (Clickjacking)
+      if (!policyMap['frame-ancestors']) {
+        risks.push({
+          level: 'warning',
+          title: "Missing frame-ancestors directive",
+          desc: "Page can be embedded in external iframes, leaving it vulnerable to Clickjacking / UI Redressing."
+        });
+      }
+
+      renderRiskDiagnostics(risks);
+      updateScoreBadge(score, scoreLabel);
+    }
+
+    function renderRiskDiagnostics(risks) {
+      const container = document.getElementById('risk-items-list');
+      const icon = document.getElementById('risk-banner-icon');
+      const text = document.getElementById('risk-banner-text');
+
+      container.innerHTML = '';
+
+      if (risks.length === 0) {
+        icon.textContent = '🎉';
+        text.textContent = 'Zero Security Anti-Patterns';
+        container.innerHTML = '<div style="font-size:0.75rem; color:var(--success); padding-top:0.25rem;">Your Content Security Policy conforms to modern strict standards.</div>';
+        return;
+      }
+
+      icon.textContent = '⚠️';
+      text.textContent = `${risks.length} Security Notice${risks.length > 1 ? 's' : ''}`;
+
+      risks.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'risk-item';
+        item.innerHTML = `
+          <span>${r.level === 'error' ? '❌' : r.level === 'warning' ? '⚠️' : 'ℹ️'}</span>
+          <div>
+            <strong>${escapeHtml(r.title)}:</strong>
+            <span>${escapeHtml(r.desc)}</span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function updateScoreBadge(score, label) {
+      const badge = document.getElementById('score-badge');
+      badge.className = `score-pill score-${score.charAt(0).toLowerCase()}`;
+      badge.textContent = `✓ ${label}`;
+    }
+
+    // --- PRESETS IMPLEMENTATION ---
+    function applyPreset(name) {
+      resetAllDirectives();
+
+      if (name === 'strict-nonce') {
+        setDirective('default-src', ["'self'"]);
+        setDirective('script-src', ["'strict-dynamic'", "'nonce-rAnd0m123'", "https:"]);
+        setDirective('style-src', ["'self'", "https://fonts.googleapis.com"]);
+        setDirective('font-src', ["'self'", "https://fonts.gstatic.com", "data:"]);
+        setDirective('img-src', ["'self'", "data:", "https:"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('base-uri', ["'none'"]);
+        setDirective('frame-ancestors', ["'none'"]);
+        setDirective('form-action', ["'self'"]);
+      } else if (name === 'standard-strict') {
+        setDirective('default-src', ["'none'"]);
+        setDirective('script-src', ["'self'"]);
+        setDirective('style-src', ["'self'"]);
+        setDirective('img-src', ["'self'", "data:"]);
+        setDirective('font-src', ["'self'"]);
+        setDirective('connect-src', ["'self'"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('base-uri', ["'self'"]);
+        setDirective('form-action', ["'self'"]);
+        setDirective('frame-ancestors', ["'none'"]);
+      } else if (name === 'moderate-cdn') {
+        setDirective('default-src', ["'self'"]);
+        setDirective('script-src', ["'self'", "https://cdnjs.cloudflare.com", "https://www.google-analytics.com"]);
+        setDirective('style-src', ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"]);
+        setDirective('font-src', ["'self'", "https://fonts.gstatic.com", "data:"]);
+        setDirective('img-src', ["'self'", "data:", "https:"]);
+        setDirective('connect-src', ["'self'", "https://www.google-analytics.com"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('base-uri', ["'self'"]);
+        setDirective('form-action', ["'self'"]);
+        setDirective('frame-ancestors', ["'self'"]);
+      } else if (name === 'report-baseline') {
+        cspMode = 'report-only';
+        document.getElementById('select-csp-mode').value = 'report-only';
+        setDirective('default-src', ["'self'", "*"]);
+        setDirective('script-src', ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*"]);
+        setDirective('style-src', ["'self'", "'unsafe-inline'", "*"]);
+        setDirective('img-src', ["*"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('report-uri', [], "/api/csp-violation-report");
+      } else if (name === 'lockdown') {
+        setDirective('default-src', ["'none'"]);
+        setDirective('style-src', ["'self'"]);
+        setDirective('img-src', ["'self'"]);
+        setDirective('font-src', ["'self'"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('base-uri', ["'none'"]);
+        setDirective('form-action', ["'none'"]);
+        setDirective('frame-ancestors', ["'none'"]);
+      } else if (name === 'spa-react') {
+        setDirective('default-src', ["'self'"]);
+        setDirective('script-src', ["'self'"]);
+        setDirective('style-src', ["'self'", "'unsafe-inline'"]);
+        setDirective('img-src', ["'self'", "data:", "blob:"]);
+        setDirective('connect-src', ["'self'", "https:", "wss:"]);
+        setDirective('worker-src', ["'self'", "blob:"]);
+        setDirective('object-src', ["'none'"]);
+        setDirective('base-uri', ["'self'"]);
+        setDirective('form-action', ["'self'"]);
+        setDirective('frame-ancestors', ["'none'"]);
+      }
+
+      renderDirectiveCards();
+      updateGeneratedOutput();
+    }
+
+    // --- NONCE & HASH CALCULATOR ---
+    function generateCryptoNonce() {
+      const bytes = new Uint8Array(16);
+      window.crypto.getRandomValues(bytes);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    async function computeCodeHash(code, algo = 'SHA-256') {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(code);
+      const digest = await window.crypto.subtle.digest(algo, data);
+
+      const bytes = new Uint8Array(digest);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const b64 = btoa(binary);
+      const prefix = algo.toLowerCase().replace('-', '');
+      return `'${prefix}-${b64}'`;
+    }
+
+    // --- SANDBOX VIOLATION TEST LAB ---
+    function initSandboxFrame() {
+      const iframe = document.getElementById('sandbox-iframe');
+      const tokens = buildRawCsp();
+      const singleLineCsp = tokens.join('; ');
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta http-equiv="Content-Security-Policy" content="${escapeHtml(singleLineCsp)}">
+          <script>
+            document.addEventListener('securitypolicyviolation', (e) => {
+              window.parent.postMessage({
+                type: 'CSP_VIOLATION',
+                violatedDirective: e.violatedDirective,
+                effectiveDirective: e.effectiveDirective,
+                blockedURI: e.blockedURI,
+                disposition: e.disposition,
+                sourceFile: e.sourceFile,
+                lineNumber: e.lineNumber
+              }, '*');
+            });
+
+            window.addEventListener('message', (event) => {
+              const action = event.data && event.data.action;
+              if (!action) return;
+
+              if (action === 'inline-script') {
+                const s = document.createElement('script');
+                s.textContent = "console.log('Inline script ran'); document.getElementById('out').innerText = 'Inline script ran';";
+                document.body.appendChild(s);
+              } else if (action === 'eval') {
+                try {
+                  eval("console.log('eval ran'); document.getElementById('out').innerText = 'eval ran';");
+                } catch(e) {
+                  console.error(e);
+                }
+              } else if (action === 'external-script') {
+                const s = document.createElement('script');
+                s.src = 'https://untrusted-external-domain.example/malicious.js';
+                document.body.appendChild(s);
+              } else if (action === 'inline-style') {
+                const st = document.createElement('style');
+                st.textContent = "body { background-color: #fee2e2 !important; }";
+                document.head.appendChild(st);
+              } else if (action === 'untrusted-fetch') {
+                try {
+                  fetch('https://untrusted-api-domain.example/data').catch(() => {});
+                } catch(e) {}
+              } else if (action === 'untrusted-img') {
+                const img = document.createElement('img');
+                img.src = 'https://untrusted-cdn-image.example/logo.png';
+                document.body.appendChild(img);
+              }
+            });
+          <\/script>
+        </head>
+        <body style="font-family:sans-serif; padding:8px; font-size:11px; color:#444; background:#f9fafb;">
+          <div style="font-weight:bold; color:#10b981;">● Test Sandbox Active</div>
+          <div id="out" style="color:#666; margin-top:2px;">Policy applied: <code style="font-size:10px;">${escapeHtml(singleLineCsp.slice(0, 80))}...</code></div>
+        </body>
+        </html>
+      `;
+
+      iframe.srcdoc = htmlContent;
+    }
+
+    function triggerSandboxAction(actionType) {
+      const iframe = document.getElementById('sandbox-iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ action: actionType }, '*');
+      }
+    }
+
+    function handleViolationEvent(data) {
+      violationCount++;
+      const countBadge = document.getElementById('violation-count-badge');
+      countBadge.textContent = `${violationCount} Violation${violationCount > 1 ? 's' : ''}`;
+
+      const list = document.getElementById('violation-logs-list');
+      if (violationCount === 1) {
+        list.innerHTML = '';
+      }
+
+      const entry = document.createElement('div');
+      entry.className = 'violation-entry';
+      entry.innerHTML = `
+        <div class="violation-header">
+          <span>🚫 Blocked: ${escapeHtml(data.effectiveDirective || data.violatedDirective)}</span>
+          <span style="font-size:0.65rem; color:var(--muted);">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="violation-body">
+          <strong>Blocked URI:</strong> ${escapeHtml(data.blockedURI || '(inline)')}
+        </div>
+      `;
+
+      list.insertBefore(entry, list.firstChild);
+      showToast(`⚠️ CSP Blocked: ${data.effectiveDirective || data.violatedDirective}`, false);
+    }
+
+    // --- IMPORT & PARSE RAW CSP ---
+    function parseRawCsp(rawText) {
+      if (!rawText.trim()) return;
+
+      resetAllDirectives();
+
+      let cleaned = rawText
+        .replace(/^(Content-Security-Policy(-Report-Only)?:\s*)/i, '')
+        .replace(/^add_header\s+Content-Security-Policy(-Report-Only)?\s+["']/i, '')
+        .replace(/["']\s*(always)?;?$/i, '')
+        .replace(/<meta[^>]*content=["']([^"']*)["'][^>]*>/i, '$1')
+        .trim();
+
+      const directives = cleaned.split(';').map(d => d.trim()).filter(Boolean);
+
+      directives.forEach(dirStr => {
+        const [name, ...sources] = dirStr.split(/\s+/);
+        if (policyState[name]) {
+          policyState[name].enabled = true;
+          if (policyState[name].isTextInput) {
+            policyState[name].textValue = sources.join(' ');
+          } else if (!policyState[name].isFlag) {
+            policyState[name].sources = sources;
+          }
+        }
+      });
+
+      renderDirectiveCards();
+      updateGeneratedOutput();
+
+      const msg = document.getElementById('import-status-msg');
+      msg.style.display = 'block';
+      msg.style.background = 'var(--success-bg)';
+      msg.style.color = 'var(--success)';
+      msg.textContent = `✓ Successfully imported ${directives.length} directives into the builder!`;
+    }
+
+    // --- UTILITIES ---
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').textContent = isSuccess ? '✓' : '⚠️';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // --- INITIALIZE APPLICATION ---
+    function initApp() {
+      // Initialize state with default preset
+      applyPreset('strict-nonce');
+
+      // Nav View Tabs
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          const viewId = tab.dataset.view;
+          ['view-builder', 'view-tools', 'view-testlab', 'view-importer'].forEach(v => {
+            const el = document.getElementById(v);
+            if (el) el.style.display = v === viewId ? 'block' : 'none';
+          });
+
+          if (viewId === 'view-testlab') {
+            initSandboxFrame();
+          }
+        });
+      });
+
+      // Output Format Tabs
+      document.querySelectorAll('.out-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.out-tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedFormat = btn.dataset.fmt;
+          updateGeneratedOutput();
+        });
+      });
+
+      // Multiline toggle
+      document.getElementById('toggle-multiline').addEventListener('change', (e) => {
+        isMultiline = e.target.checked;
+        updateGeneratedOutput();
+      });
+
+      // Mode toggle
+      document.getElementById('select-csp-mode').addEventListener('change', (e) => {
+        cspMode = e.target.value;
+        updateGeneratedOutput();
+      });
+
+      // Copy CSP button
+      document.getElementById('btn-copy-csp').addEventListener('click', () => {
+        const text = document.getElementById('output-csp-text').value;
+        navigator.clipboard.writeText(text).then(() => {
+          const label = document.getElementById('copy-btn-label');
+          label.textContent = 'Copied!';
+          setTimeout(() => label.textContent = 'Copy Policy', 1800);
+          showToast('✓ Copied policy to clipboard!');
+        });
+      });
+
+      // Reset button
+      document.getElementById('btn-reset-policy').addEventListener('click', () => {
+        resetAllDirectives();
+        renderDirectiveCards();
+        updateGeneratedOutput();
+        showToast('Policy reset to blank.');
+      });
+
+      // Preset pills
+      document.querySelectorAll('.preset-pill[data-preset]').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          applyPreset(pill.dataset.preset);
+        });
+      });
+
+      // Nonce Generator Actions
+      document.getElementById('btn-gen-nonce').addEventListener('click', () => {
+        const nonce = generateCryptoNonce();
+        document.getElementById('output-nonce').value = nonce;
+      });
+
+      document.getElementById('btn-copy-nonce').addEventListener('click', () => {
+        const nonce = document.getElementById('output-nonce').value;
+        if (nonce) {
+          navigator.clipboard.writeText(`'nonce-${nonce}'`);
+          showToast("✓ Copied 'nonce-...' to clipboard!");
+        }
+      });
+
+      document.getElementById('btn-insert-nonce').addEventListener('click', () => {
+        const nonce = document.getElementById('output-nonce').value;
+        if (nonce) {
+          addSourceToDirective('script-src', `'nonce-${nonce}'`);
+          showToast("✓ Added nonce to script-src!");
+        }
+      });
+
+      // Hash Calculator Actions
+      const runHashCalc = async () => {
+        const code = document.getElementById('input-hash-code').value;
+        const algo = document.getElementById('select-hash-algo').value;
+        const hashStr = await computeCodeHash(code, algo);
+        document.getElementById('output-computed-hash').textContent = hashStr;
+      };
+
+      document.getElementById('input-hash-code').addEventListener('input', runHashCalc);
+      document.getElementById('select-hash-algo').addEventListener('change', runHashCalc);
+
+      document.getElementById('btn-copy-hash').addEventListener('click', () => {
+        const hashStr = document.getElementById('output-computed-hash').textContent;
+        if (hashStr) {
+          navigator.clipboard.writeText(hashStr);
+          showToast("✓ Copied hash to clipboard!");
+        }
+      });
+
+      document.getElementById('btn-insert-script-hash').addEventListener('click', async () => {
+        const code = document.getElementById('input-hash-code').value;
+        const algo = document.getElementById('select-hash-algo').value;
+        const hashStr = await computeCodeHash(code, algo);
+        addSourceToDirective('script-src', hashStr);
+        showToast("✓ Added hash to script-src!");
+      });
+
+      document.getElementById('btn-insert-style-hash').addEventListener('click', async () => {
+        const code = document.getElementById('input-hash-code').value;
+        const algo = document.getElementById('select-hash-algo').value;
+        const hashStr = await computeCodeHash(code, algo);
+        addSourceToDirective('style-src', hashStr);
+        showToast("✓ Added hash to style-src!");
+      });
+
+      // Test Lab Trigger buttons
+      document.getElementById('btn-test-inline-script').addEventListener('click', () => triggerSandboxAction('inline-script'));
+      document.getElementById('btn-test-eval').addEventListener('click', () => triggerSandboxAction('eval'));
+      document.getElementById('btn-test-external-script').addEventListener('click', () => triggerSandboxAction('external-script'));
+      document.getElementById('btn-test-inline-style').addEventListener('click', () => triggerSandboxAction('inline-style'));
+      document.getElementById('btn-test-untrusted-fetch').addEventListener('click', () => triggerSandboxAction('untrusted-fetch'));
+      document.getElementById('btn-test-untrusted-img').addEventListener('click', () => triggerSandboxAction('untrusted-img'));
+
+      document.getElementById('btn-reload-sandbox').addEventListener('click', () => {
+        violationCount = 0;
+        document.getElementById('violation-count-badge').textContent = '0 Violations';
+        initSandboxFrame();
+        showToast('✓ Updated sandbox with current policy!');
+      });
+
+      document.getElementById('btn-clear-logs').addEventListener('click', () => {
+        violationCount = 0;
+        document.getElementById('violation-count-badge').textContent = '0 Violations';
+        document.getElementById('violation-logs-list').innerHTML = '<div style="color:var(--muted); font-size:0.75rem; text-align:center; padding-top:4rem;">Logs cleared.</div>';
+      });
+
+      // Window message listener for sandbox violation events
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'CSP_VIOLATION') {
+          handleViolationEvent(e.data);
+        }
+      });
+
+      // Importer Actions
+      document.getElementById('btn-parse-import').addEventListener('click', () => {
+        const text = document.getElementById('input-import-csp').value;
+        parseRawCsp(text);
+      });
+      document.getElementById('btn-clear-import').addEventListener('click', () => {
+        document.getElementById('input-import-csp').value = '';
+        document.getElementById('import-status-msg').style.display = 'none';
+      });
+
+      // Theme toggle
+      const themeBtn = document.getElementById('theme-toggle');
+      themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+
+      // Initial nonce & hash values
+      document.getElementById('output-nonce').value = generateCryptoNonce();
+      runHashCalc();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>

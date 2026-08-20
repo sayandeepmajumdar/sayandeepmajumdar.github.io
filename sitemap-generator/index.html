@@ -1,0 +1,4090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XML Sitemap Generator &amp; Editor Studio — Free Client-Side Tool | sayandeep.dev</title>
+  <meta name="description" content="Generate, edit, validate, and export Google-compliant XML sitemaps directly in your browser. Features manual entry, bulk CSV/TXT import, CORS-aware crawling, sitemap merge, media extensions, auto-splitting, and Gzip compression. 100% private." />
+  <meta name="keywords" content="sitemap generator, xml sitemap creator, visual sitemap editor, sitemap validator, bulk sitemap generator, google sitemap tool, image sitemap, video sitemap, robots.txt generator, sitemap splitter, sitemap gzip" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/sitemap-generator/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Pako for client-side Gzip compression (.xml.gz export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+  <!-- Open Graph & Twitter Cards -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="XML Sitemap Generator &amp; Editor Studio | sayandeep.dev" />
+  <meta property="og:description" content="Create and manage standard XML sitemaps with bulk metadata editing, URL normalization, media extensions, and Gzip export. 100% client-side." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/sitemap-generator/" />
+  <meta property="og:image" content="https://sayandeepmajumdar.github.io/assets/img/profile.jpg" />
+
+  <!-- Schema.org WebApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "XML Sitemap Generator & Editor Studio",
+    "url": "https://sayandeepmajumdar.github.io/sitemap-generator/",
+    "description": "A privacy-first, 100% client-side XML sitemap generator and editor supporting manual input, CSV/TXT bulk import, CORS-aware crawling, sitemap XML parsing, image/video extensions, auto-splitting for large sites, and Gzip export.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "All",
+    "author": {
+      "@type": "Person",
+      "name": "Sayandeep Majumdar"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-glow: rgba(79, 70, 229, 0.15);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --info: #0284c7;
+      --info-bg: rgba(2, 132, 199, 0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.12);
+      --accent-glow: rgba(129, 140, 248, 0.2);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --info: #38bdf8;
+      --info-bg: rgba(56, 189, 248, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      text-decoration: none;
+      color: var(--text);
+      min-width: 0;
+      flex-shrink: 1;
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.25rem 0 3rem;
+    }
+
+    /* Top Bar & Privacy */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .tool-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .tool-heading {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .protocol-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      color: var(--muted);
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .privacy-badge svg {
+      color: var(--success);
+    }
+
+    /* Stats & Limit Monitor Card */
+    .stats-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .stats-group {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .stat-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .stat-badge.good {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .stat-badge.warn {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .stat-badge.err {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .storage-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .storage-status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    /* Warning Banner for Sitemap Protocol Limits */
+    .protocol-alert-banner {
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.8125rem;
+      color: var(--text);
+    }
+
+    .protocol-alert-banner.show {
+      display: flex;
+    }
+
+    /* Primary Navigation Tabs */
+    .input-tabs-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tabs-header {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+      transition: all var(--transition);
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .tab-badge {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: transparent;
+    }
+
+    .tab-content-pane {
+      padding: 1.25rem;
+      display: none;
+    }
+
+    .tab-content-pane.active {
+      display: block;
+    }
+
+    /* Common Buttons & Inputs */
+    .btn {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      white-space: nowrap;
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn--primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn--primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn--success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #ffffff;
+    }
+
+    .btn--success:hover {
+      opacity: 0.9;
+      color: #ffffff;
+    }
+
+    .btn--danger {
+      color: var(--error);
+    }
+
+    .btn--danger:hover {
+      border-color: var(--error);
+      background: var(--error-bg);
+    }
+
+    .btn--sm {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .code-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      tab-size: 2;
+    }
+
+    /* Drag & Drop Upload Zone */
+    .dropzone {
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      background: var(--surface-alt);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .dropzone-icon {
+      font-size: 2rem;
+      color: var(--accent);
+    }
+
+    .dropzone-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .dropzone-sub {
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    /* Crawler Section & Prominent CORS Notice */
+    .cors-notice-card {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .cors-notice-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      color: var(--warning);
+      margin-bottom: 0.35rem;
+      font-size: 0.875rem;
+    }
+
+    .crawl-form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: end;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 860px) {
+      .crawl-form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .crawl-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .crawler-console {
+      background: #09090b;
+      color: #fafafa;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.5;
+      margin-top: 0.75rem;
+      border: 1px solid #27272a;
+    }
+
+    .crawler-console .log-info { color: #38bdf8; }
+    .crawler-console .log-success { color: #4ade80; }
+    .crawler-console .log-warn { color: #fbbf24; }
+    .crawler-console .log-err { color: #f87171; }
+
+    /* Main Workspace Layout (Table on left/top, Live XML & Export on right/side) */
+    .workspace-layout {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Table & URL Manager Card */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Bulk Controls Bar */
+    .bulk-controls-bar {
+      padding: 0.75rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    .bulk-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .bulk-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-right: 0.2rem;
+    }
+
+    /* Filter & Search Bar */
+    .table-filter-bar {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      background: var(--surface);
+    }
+
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-input-wrap input {
+      width: 100%;
+      padding-left: 2rem;
+    }
+
+    .search-input-icon {
+      position: absolute;
+      left: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      width: 14px;
+      height: 14px;
+    }
+
+    /* URL Table */
+    .table-responsive {
+      overflow-x: auto;
+      max-height: 520px;
+      position: relative;
+    }
+
+    .url-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    .url-table th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      padding: 0.55rem 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .url-table th.sortable {
+      cursor: pointer;
+    }
+
+    .url-table th.sortable:hover {
+      color: var(--text);
+    }
+
+    .url-table td {
+      padding: 0.45rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .url-table tr:hover {
+      background: rgba(0, 0, 0, 0.015);
+    }
+
+    html.dark .url-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .url-table tr.selected {
+      background: var(--accent-light);
+    }
+
+    .url-table tr.is-dragging {
+      opacity: 0.4;
+      background: var(--accent-glow);
+    }
+
+    .url-table tr.drag-over-top {
+      border-top: 2px solid var(--accent);
+    }
+
+    .url-table tr.drag-over-bottom {
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--muted);
+      padding: 0 0.2rem;
+      user-select: none;
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .table-url-input {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.775rem;
+      width: 100%;
+      min-width: 220px;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      border-radius: var(--radius-sm);
+    }
+
+    .table-url-input:hover {
+      border-color: var(--line);
+      background: var(--surface-alt);
+    }
+
+    .table-url-input:focus {
+      border-color: var(--accent);
+      background: var(--surface);
+      outline: none;
+    }
+
+    .table-url-input.invalid {
+      color: var(--error);
+      font-weight: 600;
+    }
+
+    .status-pill {
+      font-size: 0.685rem;
+      font-weight: 600;
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .status-pill.valid {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .status-pill.invalid {
+      background: var(--error-bg);
+      color: var(--error);
+    }
+
+    .status-pill.duplicate {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .media-badge-btn {
+      font-size: 0.725rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .media-badge-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .media-badge-btn.has-media {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Table Footer & Pagination */
+    .table-footer-bar {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      margin-top: auto;
+    }
+
+    .pagination-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Right Side / Preview & Export Card */
+    .preview-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .preview-header {
+      padding: 0.65rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .preview-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .preview-tab {
+      padding: 0.3rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .preview-tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .xml-preview-box {
+      flex: 1;
+      padding: 0.85rem 1rem;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--surface);
+      overflow: auto;
+      max-height: 480px;
+      min-height: 380px;
+      white-space: pre;
+    }
+
+    .xml-part-selector {
+      padding: 0.4rem 0.75rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Export Actions Card / Bar */
+    .export-actions-grid {
+      padding: 1rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .export-btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      .export-btn-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Modal Component */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Normalization Checkbox List */
+    .norm-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+
+    .norm-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      cursor: pointer;
+    }
+
+    .norm-item:hover {
+      border-color: var(--accent);
+    }
+
+    .norm-item input {
+      margin-top: 0.2rem;
+      accent-color: var(--accent);
+    }
+
+    .norm-label {
+      font-weight: 600;
+      font-size: 0.8125rem;
+    }
+
+    .norm-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    .norm-preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .norm-preview-table th, .norm-preview-table td {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .norm-preview-table th {
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    /* Accordion & Informational Section */
+    .info-section {
+      margin-top: 2.5rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-heading {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-sub {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .accordion-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .accordion-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .accordion-header {
+      padding: 0.85rem 1.15rem;
+      background: var(--surface-alt);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background var(--transition);
+    }
+
+    .accordion-header:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    html.dark .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .accordion-body {
+      padding: 1.15rem;
+      font-size: 0.8125rem;
+      line-height: 1.65;
+      color: var(--text);
+      display: none;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .accordion-item.open .accordion-body {
+      display: block;
+    }
+
+    .accordion-item.open .accordion-arrow {
+      transform: rotate(180deg);
+    }
+
+    .accordion-arrow {
+      transition: transform 0.2s ease;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.75rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      background: var(--surface);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    /* Responsive Media Queries */
+    @media (max-width: 640px) {
+      .container {
+        padding: 0 0.75rem;
+      }
+
+      header .container {
+        height: 52px;
+        gap: 0.5rem;
+      }
+
+      .brand {
+        gap: 0.45rem;
+      }
+
+      .brand-badge {
+        font-size: 0.675rem;
+        padding: 0.15rem 0.4rem;
+      }
+
+      .brand-title {
+        font-size: 0.925rem;
+      }
+
+      .header-actions {
+        gap: 0.35rem;
+      }
+
+      .btn-icon {
+        width: 34px;
+        height: 34px;
+      }
+
+      .nav-back-link {
+        height: 34px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.775rem;
+      }
+
+      .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .tool-heading {
+        font-size: 1.15rem;
+      }
+
+      .stats-card {
+        padding: 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .stats-group {
+        gap: 0.75rem 1.25rem;
+      }
+
+      .tabs-header {
+        scrollbar-width: none;
+      }
+
+      .tabs-header::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tab-btn {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.775rem;
+      }
+
+      .bulk-controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+      }
+
+      .bulk-group {
+        width: 100%;
+      }
+
+      .table-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-input-wrap {
+        width: 100%;
+      }
+
+      .modal-dialog {
+        max-width: 100%;
+        max-height: 90vh;
+        margin: 0.5rem;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .brand-badge {
+        display: none;
+      }
+
+      .brand-title {
+        font-size: 0.885rem;
+      }
+
+      .nav-back-link {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sitemap Generator Homepage">
+        <span class="brand-badge">SEO TOOLS</span>
+        <span class="brand-title">XML Sitemap Studio</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Title & Privacy Bar -->
+      <div class="top-bar">
+        <div class="tool-title-row">
+          <h1 class="tool-heading">XML Sitemap Generator</h1>
+          <span class="protocol-badge">Sitemaps 0.9 Protocol</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span class="privacy-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>100% Client-Side. Private &amp; Offline-Ready.</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Stats & Protocol Limit Monitor -->
+      <div class="stats-card">
+        <div class="stats-group">
+          <div class="stat-item">
+            <span class="stat-label">Total URLs:</span>
+            <span class="stat-val" id="stat-total-urls">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Valid:</span>
+            <span class="stat-badge good" id="stat-valid-badge">0 Valid</span>
+          </div>
+          <div class="stat-item" id="stat-invalid-wrap" style="display:none;">
+            <span class="stat-label">Malformed:</span>
+            <span class="stat-badge err" id="stat-invalid-badge">0 Invalid</span>
+          </div>
+          <div class="stat-item" id="stat-dups-wrap" style="display:none;">
+            <span class="stat-label">Duplicates:</span>
+            <span class="stat-badge warn" id="stat-dups-badge" style="cursor:pointer;" title="Click to resolve duplicates">0 Duplicates</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Est. Size:</span>
+            <span class="stat-val" id="stat-est-size">0 KB</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <div class="storage-status" id="storage-status">
+            <span class="dot"></span>
+            <span id="storage-text">Autosaved</span>
+          </div>
+          <button id="btn-workspace-menu" class="btn btn--sm" title="Workspace options &amp; backup">
+            ⚙️ Workspace
+          </button>
+        </div>
+      </div>
+
+      <!-- Protocol Limit Exceeded Alert Banner -->
+      <div class="protocol-alert-banner" id="protocol-limit-banner">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <span style="font-size:1.2rem;">⚠️</span>
+          <div>
+            <strong>Sitemap Protocol Limit Exceeded:</strong>
+            <span id="protocol-limit-text">Your list exceeds the standard 50,000 URLs / 50MB per sitemap limit.</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button id="btn-auto-split" class="btn btn--primary btn--sm">
+            ⚡ Auto-Split into Sitemaps + Index File
+          </button>
+        </div>
+      </div>
+
+      <!-- Input Modes Card (Manual / Bulk / Crawl / Import) -->
+      <div class="input-tabs-card">
+        <div class="tabs-header" id="input-tabs-header">
+          <button class="tab-btn active" data-tab="manual">
+            <span>✏️ Manual Entry</span>
+            <span class="tab-badge">Fast &amp; Reliable</span>
+          </button>
+          <button class="tab-btn" data-tab="bulk">
+            <span>📁 Bulk File Import</span>
+            <span class="tab-badge">.TXT / .CSV</span>
+          </button>
+          <button class="tab-btn" data-tab="crawl">
+            <span>🕷️ Best-Effort Crawl</span>
+            <span class="tab-badge">CORS-Dependent</span>
+          </button>
+          <button class="tab-btn" data-tab="import">
+            <span>🔄 Sitemap Import / Merge</span>
+            <span class="tab-badge">.XML</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Manual Entry -->
+        <div class="tab-content-pane active" id="pane-manual">
+          <p style="font-size:0.8125rem; color:var(--muted); margin-bottom:0.75rem;">
+            Paste your URLs below, one per line. This is the most reliable input method with zero CORS restrictions.
+          </p>
+          <textarea id="manual-urls-input" class="form-textarea code-input" rows="5" style="width:100%; margin-bottom:0.85rem;" placeholder="https://example.com/
+https://example.com/about
+https://example.com/products/item-1
+https://example.com/blog/post-1"></textarea>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+              <label style="font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+                <input type="checkbox" id="manual-append-check" checked />
+                <span>Append to existing list</span>
+              </label>
+              <button id="btn-load-sample" class="btn btn--sm">✨ Load Sample URLs</button>
+              <button id="btn-clear-manual-input" class="btn btn--sm">Clear Text</button>
+            </div>
+            <button id="btn-submit-manual" class="btn btn--primary">
+              📥 Add URLs to Sitemap
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Bulk File Import -->
+        <div class="tab-content-pane" id="pane-bulk">
+          <div class="dropzone" id="bulk-dropzone">
+            <div class="dropzone-icon">📄</div>
+            <div class="dropzone-title">Drag &amp; drop your .TXT or .CSV file here</div>
+            <div class="dropzone-sub">Supports one URL per line (.txt) or table with columns: url, lastmod, changefreq, priority (.csv)</div>
+            <label class="btn btn--primary btn--sm" style="margin-top:0.5rem; cursor:pointer;">
+              Browse File
+              <input type="file" id="bulk-file-input" accept=".txt,.csv" style="display:none;" />
+            </label>
+          </div>
+
+          <!-- CSV Column Mapping Preview (hidden by default) -->
+          <div id="csv-preview-wrap" style="display:none; margin-top:1rem;">
+            <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.5rem;">CSV Preview &amp; Column Mapping:</div>
+            <div style="max-height:180px; overflow:auto; margin-bottom:0.75rem;">
+              <table class="norm-preview-table" id="csv-preview-table"></table>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+              <button id="btn-cancel-csv" class="btn btn--sm">Cancel</button>
+              <button id="btn-confirm-csv" class="btn btn--primary btn--sm">Import CSV Rows</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Best-Effort Crawl Mode -->
+        <div class="tab-content-pane" id="pane-crawl">
+          <!-- Mandatory CORS Notice -->
+          <div class="cors-notice-card">
+            <div class="cors-notice-title">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              <span>Browser CORS Limitation Notice (Client-Side Only)</span>
+            </div>
+            <p>
+              Direct in-browser crawling relies on standard JavaScript <code>fetch()</code> requests and is subject to the browser's <strong>Same-Origin Policy</strong>.
+              This mode <strong>only works if the target website explicitly enables cross-origin access</strong> (via <code>Access-Control-Allow-Origin: *</code>).
+              Because most websites block cross-origin browser requests by default, fetch errors are expected for non-CORS websites.
+              For complete reliability on any website, please use the <strong>Manual Entry</strong> or <strong>Bulk Import</strong> tabs.
+            </p>
+          </div>
+
+          <div class="crawl-form-grid">
+            <div>
+              <label for="crawl-start-url" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Starting URL:</label>
+              <input type="url" id="crawl-start-url" class="form-input" style="width:100%; margin-top:0.2rem;" placeholder="https://example.com" />
+            </div>
+            <div>
+              <label for="crawl-max-depth" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Max Crawl Depth:</label>
+              <select id="crawl-max-depth" class="form-select" style="width:100%; margin-top:0.2rem;">
+                <option value="1">Depth 1 (Direct Links)</option>
+                <option value="2" selected>Depth 2 (Sub-pages)</option>
+                <option value="3">Depth 3 (Deep)</option>
+              </select>
+            </div>
+            <div>
+              <label for="crawl-max-pages" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Max Pages:</label>
+              <input type="number" id="crawl-max-pages" class="form-input" style="width:100%; margin-top:0.2rem;" min="5" max="500" value="50" />
+            </div>
+            <div style="display:flex; gap:0.4rem;">
+              <button id="btn-start-crawl" class="btn btn--primary">
+                🚀 Start Crawl
+              </button>
+              <button id="btn-stop-crawl" class="btn btn--danger" style="display:none;">
+                ⏹ Stop
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Crawler Log Console -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.5rem;">
+            <span style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Live Crawler Console:</span>
+            <span id="crawl-stats-label" style="font-size:0.75rem; color:var(--muted);">Idle</span>
+          </div>
+          <div class="crawler-console" id="crawler-console">
+            <div class="log-info">[Ready] Enter a CORS-permissive starting URL and click Start Crawl.</div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Sitemap Import / Merge -->
+        <div class="tab-content-pane" id="pane-import">
+          <p style="font-size:0.8125rem; color:var(--muted); margin-bottom:0.75rem;">
+            Upload or paste an existing <code>sitemap.xml</code> or <code>sitemap_index.xml</code> to load, modify, and re-export your URLs and metadata.
+          </p>
+          <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
+            <label class="btn btn--sm" style="cursor:pointer;">
+              📁 Upload sitemap.xml
+              <input type="file" id="xml-file-input" accept=".xml" style="display:none;" />
+            </label>
+            <label style="font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="radio" name="xml-import-mode" value="replace" checked />
+              <span>Replace current list</span>
+            </label>
+            <label style="font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="radio" name="xml-import-mode" value="merge" />
+              <span>Merge with current list</span>
+            </label>
+          </div>
+          <textarea id="xml-paste-input" class="form-textarea code-input" rows="5" style="width:100%; margin-bottom:0.85rem;" placeholder="Paste existing <?xml version='1.0' encoding='UTF-8'?><urlset xmlns='...'>...</urlset> content here..."></textarea>
+          <div style="display:flex; justify-content:flex-end;">
+            <button id="btn-parse-xml-paste" class="btn btn--primary">
+              📥 Parse &amp; Load Sitemap XML
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid: Table Manager (Left) + Live XML Preview & Export (Right) -->
+      <div class="workspace-layout">
+        <!-- Left: URL Table & Bulk Manager -->
+        <div class="table-card">
+          <!-- Prominent Bulk Set Controls Bar -->
+          <div class="bulk-controls-bar">
+            <div class="bulk-group">
+              <span class="bulk-label">Bulk Set:</span>
+              <!-- LastMod Bulk -->
+              <input type="date" id="bulk-lastmod-val" class="form-input btn--sm" title="Bulk lastmod date" />
+              <button id="btn-bulk-today" class="btn btn--sm" title="Set lastmod to today">Today</button>
+
+              <!-- ChangeFreq Bulk -->
+              <select id="bulk-changefreq-val" class="form-select btn--sm" title="Bulk changefreq">
+                <option value="">ChangeFreq...</option>
+                <option value="always">always</option>
+                <option value="hourly">hourly</option>
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+                <option value="monthly">monthly</option>
+                <option value="yearly">yearly</option>
+                <option value="never">never</option>
+                <option value="__omit__">Omit tag</option>
+              </select>
+
+              <!-- Priority Bulk -->
+              <select id="bulk-priority-val" class="form-select btn--sm" title="Bulk priority">
+                <option value="">Priority...</option>
+                <option value="1.0">1.0 (Highest)</option>
+                <option value="0.9">0.9</option>
+                <option value="0.8">0.8 (Default)</option>
+                <option value="0.7">0.7</option>
+                <option value="0.6">0.6</option>
+                <option value="0.5">0.5 (Neutral)</option>
+                <option value="0.4">0.4</option>
+                <option value="0.3">0.3</option>
+                <option value="0.2">0.2</option>
+                <option value="0.1">0.1 (Lowest)</option>
+                <option value="__omit__">Omit tag</option>
+              </select>
+
+              <button id="btn-apply-bulk" class="btn btn--primary btn--sm" title="Apply to selected rows (or all if none selected)">
+                Apply
+              </button>
+            </div>
+
+            <div class="bulk-group">
+              <button id="btn-open-normalizer" class="btn btn--sm" title="Clean up URLs (HTTPS, trailing slashes, query params)">
+                🪄 Normalization Helpers
+              </button>
+              <button id="btn-add-row" class="btn btn--sm" title="Add a single URL row">
+                + Add URL
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Search, Filter & Quick Selection Bar -->
+          <div class="table-filter-bar">
+            <div class="search-input-wrap">
+              <svg class="search-input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="table-search-input" class="form-input btn--sm" placeholder="Filter URLs by keyword..." />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+              <select id="table-status-filter" class="form-select btn--sm">
+                <option value="all">All URLs</option>
+                <option value="valid">Valid Only</option>
+                <option value="invalid">Malformed Only</option>
+                <option value="duplicates">Duplicates Only</option>
+                <option value="has-media">Has Media</option>
+              </select>
+
+              <select id="table-sort-by" class="form-select btn--sm">
+                <option value="order-asc">Order (Original)</option>
+                <option value="url-asc">URL (A → Z)</option>
+                <option value="url-desc">URL (Z → A)</option>
+                <option value="priority-desc">Priority (High → Low)</option>
+                <option value="priority-asc">Priority (Low → High)</option>
+                <option value="lastmod-desc">Lastmod (Newest)</option>
+                <option value="lastmod-asc">Lastmod (Oldest)</option>
+              </select>
+
+              <button id="btn-delete-selected" class="btn btn--danger btn--sm" style="display:none;" title="Delete selected rows">
+                🗑️ Delete (<span id="selected-count-label">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Viewport -->
+          <div class="table-responsive">
+            <table class="url-table" id="url-table">
+              <thead>
+                <tr>
+                  <th style="width:36px; text-align:center;">
+                    <input type="checkbox" id="th-select-all" title="Select / Deselect all" />
+                  </th>
+                  <th style="width:24px;" title="Drag handle to reorder rows">::</th>
+                  <th style="width:70px;">Status</th>
+                  <th>URL (loc)</th>
+                  <th style="width:125px;">Lastmod</th>
+                  <th style="width:105px;">Changefreq</th>
+                  <th style="width:80px;">Priority</th>
+                  <th style="width:75px;">Media</th>
+                  <th style="width:75px; text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="url-table-body">
+                <!-- Rows injected dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Footer / Pagination Controls -->
+          <div class="table-footer-bar">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <span id="table-showing-label">Showing 0 of 0 URLs</span>
+              <select id="pagination-page-size" class="form-select btn--sm" style="padding:0.2rem 0.4rem;">
+                <option value="25">25 / page</option>
+                <option value="50" selected>50 / page</option>
+                <option value="100">100 / page</option>
+                <option value="250">250 / page</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+
+            <div class="pagination-wrap" id="pagination-controls">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live XML Preview, Validator & Export Suite -->
+        <div class="preview-card">
+          <!-- Preview Header with Tabs -->
+          <div class="preview-header">
+            <div class="preview-tabs" id="preview-tabs">
+              <button class="preview-tab active" data-view="xml">📄 XML Preview</button>
+              <button class="preview-tab" data-view="robots">🤖 robots.txt</button>
+              <button class="preview-tab" data-view="settings">⚙️ XML Config</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <button id="btn-copy-preview" class="btn btn--sm" title="Copy current preview text">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+
+          <!-- XML Part Selector (when split into multiple files) -->
+          <div class="xml-part-selector" id="xml-part-selector-bar" style="display:none;">
+            <span>Split Files:</span>
+            <select id="xml-part-select" class="form-select btn--sm" style="flex:1; max-width:260px; margin-left:0.5rem;"></select>
+          </div>
+
+          <!-- View 1: Live XML Preview -->
+          <div id="view-xml-preview" style="flex:1; display:flex; flex-direction:column; min-height:360px;">
+            <pre class="xml-preview-box" id="xml-output-code"></pre>
+          </div>
+
+          <!-- View 2: robots.txt Preview -->
+          <div id="view-robots-preview" style="display:none; flex:1; flex-direction:column; min-height:360px;">
+            <div style="padding:0.5rem 1rem; background:var(--surface-alt); border-bottom:1px solid var(--line); font-size:0.75rem; color:var(--muted);">
+              Add this directive to your <code>robots.txt</code> so search engine crawlers automatically discover your sitemap.
+            </div>
+            <pre class="xml-preview-box" id="robots-output-code"></pre>
+          </div>
+
+          <!-- View 3: XML Configuration & Namespaces -->
+          <div id="view-settings-preview" style="display:none; padding:1.25rem; flex:1; overflow-y:auto;">
+            <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.75rem;">Sitemap XML Output Settings</div>
+
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div>
+                <label for="cfg-indent" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">XML Indentation:</label>
+                <select id="cfg-indent" class="form-select" style="width:100%; margin-top:0.25rem;">
+                  <option value="2" selected>2 Spaces (Standard)</option>
+                  <option value="4">4 Spaces</option>
+                  <option value="min">Minified (Single Line)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="cfg-domain" style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Base Domain for robots.txt &amp; Index File:</label>
+                <input type="url" id="cfg-domain" class="form-input" style="width:100%; margin-top:0.25rem;" placeholder="https://example.com" />
+              </div>
+
+              <div style="border-top:1px solid var(--line); padding-top:0.75rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.4rem;">Media Namespaces:</div>
+                <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8125rem; margin-bottom:0.4rem; cursor:pointer;">
+                  <input type="checkbox" id="cfg-include-images" checked />
+                  <span>Include Google Image namespace (<code>xmlns:image</code>)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8125rem; cursor:pointer;">
+                  <input type="checkbox" id="cfg-include-videos" checked />
+                  <span>Include Google Video namespace (<code>xmlns:video</code>)</span>
+                </label>
+              </div>
+
+              <div style="border-top:1px solid var(--line); padding-top:0.75rem;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.4rem;">Sitemap Splitting Threshold:</div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <input type="number" id="cfg-split-limit" class="form-input" min="100" max="50000" step="500" value="50000" style="width:120px;" />
+                  <span style="font-size:0.75rem; color:var(--muted);">URLs per file (Max 50,000)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Suite Toolbar -->
+          <div class="export-actions-grid">
+            <div class="export-btn-row">
+              <button id="btn-download-xml" class="btn btn--primary">
+                💾 Download .xml
+              </button>
+              <button id="btn-download-gzip" class="btn btn--success" title="Export as compressed .xml.gz using client-side Pako gzip">
+                🗜️ Download .xml.gz
+              </button>
+            </div>
+            <div class="export-btn-row">
+              <button id="btn-download-csv" class="btn btn--sm">
+                📊 Export .CSV
+              </button>
+              <button id="btn-download-txt" class="btn btn--sm">
+                📝 Export .TXT (URLs only)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informational & Protocol Restrictions Guide Section -->
+      <section class="info-section">
+        <h2 class="info-heading">Sitemap Protocol 0.9 &amp; Browser Architecture Guide</h2>
+        <p class="info-sub">Everything you need to know about XML sitemaps, protocol constraints, browser limitations, and search engine best practices.</p>
+
+        <div class="accordion-group">
+          <!-- Accordion 1: Protocol Constraints -->
+          <div class="accordion-item open">
+            <div class="accordion-header">
+              <span>1. Sitemap Protocol 0.9 Hard Limits &amp; Specifications</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul style="padding-left:1.25rem; display:flex; flex-direction:column; gap:0.4rem;">
+                <li><strong>Maximum 50,000 URLs per Sitemap:</strong> A single <code>sitemap.xml</code> file must contain no more than 50,000 <code>&lt;url&gt;</code> entries. If your site has more pages, you must split them into multiple sitemaps and reference them inside a <code>sitemap_index.xml</code> file.</li>
+                <li><strong>Maximum 50MB Uncompressed File Size:</strong> Sitemaps cannot exceed 50 megabytes when uncompressed.</li>
+                <li><strong>UTF-8 Character Encoding:</strong> All XML sitemaps must be encoded in UTF-8. Special XML characters (<code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&quot;</code>, <code>&apos;</code>) must be escaped as entities.</li>
+                <li><strong>Canonical, Fully-Qualified Absolute URLs:</strong> All <code>&lt;loc&gt;</code> tags must include the protocol (e.g. <code>https://</code>) and full hostname. Relative URLs are invalid.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Accordion 2: Client-Side CORS Reality -->
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <span>2. Why In-Browser Crawlers Face CORS Restrictions</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <p style="margin-bottom:0.5rem;">
+                Unlike backend crawlers (like Googlebot or desktop software), web applications running in a browser are bound by the <strong>Same-Origin Policy</strong>.
+                When a web app attempts to <code>fetch()</code> a third-party webpage, the browser blocks the response unless the server explicitly responds with the HTTP header:
+              </p>
+              <pre style="background:var(--surface-alt); padding:0.5rem; border-radius:4px; font-family:'JetBrains Mono', monospace; font-size:0.75rem; margin-bottom:0.5rem;">Access-Control-Allow-Origin: *</pre>
+              <p>
+                Because standard production websites do not serve HTML with permissive CORS headers, automated client-side crawling will fail with a network error.
+                <strong>This is why our Manual Entry and Bulk CSV/TXT upload modes are the primary, 100% reliable workflow</strong> — all processing happens instantly in your browser with zero data leaving your computer.
+              </p>
+            </div>
+          </div>
+
+          <!-- Accordion 3: Search Engine Metadata Impact -->
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <span>3. How Google &amp; Search Engines Use Sitemaps, Lastmod &amp; Priority</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <ul style="padding-left:1.25rem; display:flex; flex-direction:column; gap:0.4rem;">
+                <li><strong>&lt;lastmod&gt;:</strong> Google actively uses accurate <code>&lt;lastmod&gt;</code> dates to prioritize re-crawling updated pages. Ensure this date is only updated when meaningful content changes occur.</li>
+                <li><strong>&lt;priority&gt; and &lt;changefreq&gt;:</strong> While part of the protocol, Googlebot generally disregards <code>&lt;priority&gt;</code> and <code>&lt;changefreq&gt;</code> in favor of its own machine learning crawl budget algorithms. However, other search engines (like Bing and Yandex) still utilize these hints.</li>
+                <li><strong>Discovery via robots.txt:</strong> Adding <code>Sitemap: https://yourdomain.com/sitemap.xml</code> to your <code>robots.txt</code> allows any compliant search bot to automatically discover your sitemap index.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Accordion 4: Media Extensions -->
+          <div class="accordion-item">
+            <div class="accordion-header">
+              <span>4. Google Image &amp; Video Sitemap Extensions</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+            <div class="accordion-body">
+              <p style="margin-bottom:0.5rem;">
+                Google supports extended XML schemas that associate media items with their parent page:
+              </p>
+              <ul style="padding-left:1.25rem; display:flex; flex-direction:column; gap:0.4rem;">
+                <li><strong>Image Sitemaps:</strong> Use <code>&lt;image:image&gt;</code> with <code>&lt;image:loc&gt;</code>, <code>&lt;image:title&gt;</code>, and <code>&lt;image:caption&gt;</code> to help Google Images discover images rendered via JavaScript or CDNs.</li>
+                <li><strong>Video Sitemaps:</strong> Use <code>&lt;video:video&gt;</code> with required <code>&lt;video:thumbnail_loc&gt;</code>, <code>&lt;video:title&gt;</code>, <code>&lt;video:description&gt;</code>, and <code>&lt;video:content_loc&gt;</code> to enable rich video search snippets.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Modal 1: URL Normalization Helpers -->
+  <div class="modal-backdrop" id="modal-normalizer">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">🪄 URL Normalization &amp; Bulk Cleanup</h3>
+        <button class="btn-icon btn--sm" id="btn-close-normalizer" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.8125rem; color:var(--muted); margin-bottom:1rem;">
+          Select transformations to standardize your URLs according to technical SEO best practices. Preview changes before applying.
+        </p>
+
+        <div class="norm-list">
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-https" checked />
+            <div>
+              <div class="norm-label">Force HTTPS (<code>http://</code> → <code>https://</code>)</div>
+              <div class="norm-desc">Upgrades insecure HTTP protocols to secure HTTPS.</div>
+            </div>
+          </label>
+
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-strip-slash" />
+            <div>
+              <div class="norm-label">Strip Trailing Slashes (e.g. <code>/page/</code> → <code>/page</code>)</div>
+              <div class="norm-desc">Removes ending slashes (except on root domain <code>example.com/</code>).</div>
+            </div>
+          </label>
+
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-add-slash" />
+            <div>
+              <div class="norm-label">Add Trailing Slashes (e.g. <code>/page</code> → <code>/page/</code>)</div>
+              <div class="norm-desc">Appends trailing slash to directory paths while preserving file extensions (like .html).</div>
+            </div>
+          </label>
+
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-strip-query" checked />
+            <div>
+              <div class="norm-label">Strip Query Parameters (<code>?utm_source=...</code>, <code>?ref=...</code>)</div>
+              <div class="norm-desc">Removes tracking and session query parameters from sitemap URLs.</div>
+            </div>
+          </label>
+
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-strip-hash" checked />
+            <div>
+              <div class="norm-label">Strip URL Fragments &amp; Hashes (<code>#section</code>)</div>
+              <div class="norm-desc">Removes in-page anchor fragments which search engines ignore in sitemaps.</div>
+            </div>
+          </label>
+
+          <label class="norm-item">
+            <input type="checkbox" id="norm-opt-lower-domain" checked />
+            <div>
+              <div class="norm-label">Lowercase Hostname (e.g. <code>HTTPS://Example.COM/Page</code> → <code>https://example.com/Page</code>)</div>
+              <div class="norm-desc">Ensures domain hostnames are uniformly lowercase without altering case-sensitive paths.</div>
+            </div>
+          </label>
+        </div>
+
+        <div style="font-size:0.8125rem; font-weight:700; margin-top:0.75rem;">
+          Preview Impact: <span id="norm-affected-count" style="color:var(--accent);">0 URLs would be updated</span>
+        </div>
+        <div style="max-height:160px; overflow-y:auto; margin-top:0.4rem;">
+          <table class="norm-preview-table" id="norm-diff-table">
+            <thead>
+              <tr>
+                <th>Original</th>
+                <th>Normalized Result</th>
+              </tr>
+            </thead>
+            <tbody id="norm-diff-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-normalizer" class="btn">Cancel</button>
+        <button id="btn-apply-normalizer" class="btn btn--primary">Apply Transformations</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Duplicate Resolution -->
+  <div class="modal-backdrop" id="modal-duplicates">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">🔂 Duplicate URL Resolution</h3>
+        <button class="btn-icon btn--sm" id="btn-close-duplicates" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.8125rem; color:var(--muted); margin-bottom:0.75rem;">
+          We detected duplicate or near-duplicate URLs in your list. Choose how you would like to resolve them.
+        </p>
+
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+          <button id="btn-dedup-keep-first" class="btn btn--primary btn--sm">Keep First Occurrence</button>
+          <button id="btn-dedup-keep-last" class="btn btn--sm">Keep Last Occurrence</button>
+          <button id="btn-dedup-keep-https" class="btn btn--sm">Prefer HTTPS &amp; Normalized</button>
+        </div>
+
+        <div style="max-height:260px; overflow-y:auto;">
+          <table class="norm-preview-table" id="duplicates-table">
+            <thead>
+              <tr>
+                <th>URL</th>
+                <th>Duplicates Found</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="duplicates-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-duplicates" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Media Extensions (Images & Videos) -->
+  <div class="modal-backdrop" id="modal-media">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">🖼️ Media Extensions (Images &amp; Videos)</h3>
+        <button class="btn-icon btn--sm" id="btn-close-media" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:0.8125rem; color:var(--muted); margin-bottom:0.75rem;">
+          Page URL: <strong id="media-modal-url-label" class="code-input" style="color:var(--text); word-break:break-all;"></strong>
+        </div>
+
+        <!-- Section: Images -->
+        <div style="margin-bottom:1.25rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+            <strong style="font-size:0.875rem;">Attached Images (&lt;image:image&gt;)</strong>
+            <button id="btn-add-image-row" class="btn btn--sm">+ Add Image</button>
+          </div>
+          <div id="media-images-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Section: Videos -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+            <strong style="font-size:0.875rem;">Attached Videos (&lt;video:video&gt;)</strong>
+            <button id="btn-add-video-row" class="btn btn--sm">+ Add Video</button>
+          </div>
+          <div id="media-videos-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-media" class="btn">Cancel</button>
+        <button id="btn-save-media" class="btn btn--primary">Save Media Attachments</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Workspace Settings & Backup -->
+  <div class="modal-backdrop" id="modal-workspace">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Workspace &amp; Storage Management</h3>
+        <button class="btn-icon btn--sm" id="btn-close-workspace" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div style="background:var(--surface-alt); padding:0.85rem; border-radius:var(--radius-sm); border:1px solid var(--line);">
+            <div style="font-weight:700; font-size:0.875rem; margin-bottom:0.25rem;">IndexedDB Browser Autosave</div>
+            <p style="font-size:0.8125rem; color:var(--muted);">
+              Your URL list and metadata are automatically persisted in your browser's local IndexedDB storage. Work survives accidental page reloads.
+            </p>
+          </div>
+
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button id="btn-backup-json" class="btn btn--sm">
+              💾 Export Workspace Backup (.JSON)
+            </button>
+            <label class="btn btn--sm" style="cursor:pointer;">
+              📂 Restore Workspace (.JSON)
+              <input type="file" id="restore-json-input" accept=".json" style="display:none;" />
+            </label>
+          </div>
+
+          <div style="border-top:1px solid var(--line); padding-top:0.85rem;">
+            <div style="font-weight:700; font-size:0.875rem; color:var(--error); margin-bottom:0.25rem;">Danger Zone</div>
+            <p style="font-size:0.8125rem; color:var(--muted); margin-bottom:0.6rem;">
+              Clear all URLs and reset your workspace to empty.
+            </p>
+            <button id="btn-clear-workspace" class="btn btn--danger btn--sm">
+              🗑️ Clear All URLs &amp; Reset Workspace
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-workspace-footer" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>© 2026 Sayandeep Majumdar · Powered by <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none;">DevelopersLab101</a> &amp; <a href="../index.html" style="color:var(--accent); text-decoration:none;">sayandeep.dev</a></p>
+      <div style="display:flex; gap:1.25rem; flex-wrap:wrap;">
+        <a href="../index.html">Portfolio</a>
+        <a href="../tools/">Tools Hub</a>
+        <a href="../sitemap.xml">Site Sitemap</a>
+        <a href="mailto:sayandeepmajumdar.official@gmail.com">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    /**
+     * XML Sitemap Generator & Studio
+     * 100% Client-side implementation.
+     * 
+     * TECHNICAL ARCHITECTURE & CORS NOTICE:
+     * - Crawl mode runs in-browser using window.fetch() and is subject to the browser's
+     *   Same-Origin Policy. Direct fetches will fail unless the target server returns
+     *   'Access-Control-Allow-Origin: *'.
+     * - Manual Entry & Bulk CSV/TXT modes are the reliable primary paths.
+     * - Persistence is handled via IndexedDB ('sitemap_studio_db') with graceful fallback.
+     * - Gzip compression uses pako.gzip from CDN.
+     */
+
+    // --- State Model ---
+    const AppState = {
+      items: [], // Array of URL entries: { id, loc, lastmod, changefreq, priority, images: [], videos: [], isValid, isDuplicate, originalIndex }
+      selectedIds: new Set(),
+      searchQuery: '',
+      statusFilter: 'all',
+      sortBy: 'order-asc',
+      pageSize: 50,
+      currentPage: 1,
+      splitThreshold: 50000,
+      activeSplitPart: 0,
+      config: {
+        indent: '2',
+        domain: '',
+        includeImages: true,
+        includeVideos: true,
+        splitLimit: 50000
+      },
+      crawler: {
+        isRunning: false,
+        abortController: null,
+        visited: new Set(),
+        queue: [],
+        maxDepth: 2,
+        maxPages: 50,
+        crawledCount: 0,
+        errorsCount: 0
+      }
+    };
+
+    // Sample URLs for quick demonstration
+    const SAMPLE_URLS = [
+      'https://example.com/',
+      'https://example.com/about',
+      'https://example.com/services',
+      'https://example.com/services/web-development',
+      'https://example.com/services/seo-optimization',
+      'https://example.com/products',
+      'https://example.com/products/item-101',
+      'https://example.com/products/item-102',
+      'https://example.com/blog',
+      'https://example.com/blog/getting-started-with-sitemaps',
+      'https://example.com/blog/technical-seo-guide-2026',
+      'https://example.com/contact',
+      'https://example.com/privacy-policy',
+      'https://example.com/terms-of-service'
+    ];
+
+    // --- IndexedDB Persistence Manager ---
+    const DB_NAME = 'sitemap_studio_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'workspace';
+
+    let dbInstance = null;
+
+    function openDatabase() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) {
+          resolve(null);
+          return;
+        }
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    let saveTimeout = null;
+    function scheduleAutoSave() {
+      const statusEl = document.getElementById('storage-text');
+      if (statusEl) statusEl.textContent = 'Saving...';
+
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => {
+        try {
+          if (dbInstance) {
+            const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            await store.put({
+              id: 'current_workspace',
+              items: AppState.items,
+              config: AppState.config,
+              updatedAt: new Date().toISOString()
+            });
+          } else {
+            localStorage.setItem('sitemap_studio_fallback', JSON.stringify({
+              items: AppState.items.slice(0, 5000), // LocalStorage quota safety
+              config: AppState.config
+            }));
+          }
+          if (statusEl) statusEl.textContent = 'Autosaved';
+        } catch (e) {
+          if (statusEl) statusEl.textContent = 'Saved (Memory)';
+        }
+      }, 600);
+    }
+
+    async function loadSavedWorkspace() {
+      try {
+        await openDatabase();
+        if (dbInstance) {
+          const tx = dbInstance.transaction(STORE_NAME, 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.get('current_workspace');
+          req.onsuccess = () => {
+            if (req.result && Array.isArray(req.result.items) && req.result.items.length > 0) {
+              AppState.items = req.result.items;
+              if (req.result.config) AppState.config = Object.assign(AppState.config, req.result.config);
+              syncConfigUI();
+              processAndRenderAll();
+            }
+          };
+        } else {
+          const raw = localStorage.getItem('sitemap_studio_fallback');
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (Array.isArray(data.items)) {
+              AppState.items = data.items;
+              if (data.config) AppState.config = Object.assign(AppState.config, data.config);
+              syncConfigUI();
+              processAndRenderAll();
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load workspace from storage:', e);
+      }
+    }
+
+    // --- Helper Utilities ---
+    function generateId() {
+      return 'url_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    }
+
+    function getTodayISO() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function escapeXml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function isValidUrl(str) {
+      if (!str || typeof str !== 'string') return false;
+      const trimmed = str.trim();
+      if (!/^https?:\/\//i.test(trimmed)) return false;
+      try {
+        new URL(trimmed);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-msg');
+      const iconEl = document.getElementById('toast-icon');
+      if (!toast || !msgEl) return;
+
+      msgEl.textContent = msg;
+      iconEl.textContent = isSuccess ? '✓' : '⚠️';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // --- URL Validation & Duplicate Auditing ---
+    function auditUrlItems() {
+      const seenExact = new Map();
+      const seenNormalized = new Map();
+
+      AppState.items.forEach((item, idx) => {
+        item.originalIndex = idx;
+        const loc = (item.loc || '').trim();
+        item.isValid = isValidUrl(loc);
+
+        // Normalize for near-duplicate detection
+        let norm = loc.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        
+        // Check exact duplicate
+        if (seenExact.has(loc)) {
+          item.isDuplicate = true;
+          seenExact.get(loc).push(item.id);
+        } else {
+          seenExact.set(loc, [item.id]);
+          item.isDuplicate = false;
+        }
+
+        // Tag near duplicate
+        if (!item.isDuplicate && seenNormalized.has(norm)) {
+          item.isNearDuplicate = true;
+        } else {
+          seenNormalized.set(norm, item.id);
+          item.isNearDuplicate = false;
+        }
+      });
+    }
+
+    // --- Table Sorting & Filtering ---
+    function getFilteredAndSortedItems() {
+      let result = [...AppState.items];
+
+      // Text search
+      if (AppState.searchQuery) {
+        const q = AppState.searchQuery.toLowerCase();
+        result = result.filter(item => (item.loc || '').toLowerCase().includes(q));
+      }
+
+      // Status filter
+      if (AppState.statusFilter === 'valid') {
+        result = result.filter(item => item.isValid);
+      } else if (AppState.statusFilter === 'invalid') {
+        result = result.filter(item => !item.isValid);
+      } else if (AppState.statusFilter === 'duplicates') {
+        result = result.filter(item => item.isDuplicate || item.isNearDuplicate);
+      } else if (AppState.statusFilter === 'has-media') {
+        result = result.filter(item => (item.images && item.images.length > 0) || (item.videos && item.videos.length > 0));
+      }
+
+      // Sort
+      switch (AppState.sortBy) {
+        case 'url-asc':
+          result.sort((a, b) => (a.loc || '').localeCompare(b.loc || ''));
+          break;
+        case 'url-desc':
+          result.sort((a, b) => (b.loc || '').localeCompare(a.loc || ''));
+          break;
+        case 'priority-desc':
+          result.sort((a, b) => parseFloat(b.priority || '0.5') - parseFloat(a.priority || '0.5'));
+          break;
+        case 'priority-asc':
+          result.sort((a, b) => parseFloat(a.priority || '0.5') - parseFloat(b.priority || '0.5'));
+          break;
+        case 'lastmod-desc':
+          result.sort((a, b) => (b.lastmod || '').localeCompare(a.lastmod || ''));
+          break;
+        case 'lastmod-asc':
+          result.sort((a, b) => (a.lastmod || '').localeCompare(b.lastmod || ''));
+          break;
+        case 'order-asc':
+        default:
+          result.sort((a, b) => a.originalIndex - b.originalIndex);
+          break;
+      }
+
+      return result;
+    }
+
+    // --- XML Generation Engine ---
+    function generateSitemapXml(itemsToInclude, indentSpaces = 2) {
+      const pad = indentSpaces === 'min' ? '' : ' '.repeat(Number(indentSpaces));
+      const nl = indentSpaces === 'min' ? '' : '\n';
+      const pad2 = indentSpaces === 'min' ? '' : pad.repeat(2);
+      const pad3 = indentSpaces === 'min' ? '' : pad.repeat(3);
+
+      const hasImages = AppState.config.includeImages && itemsToInclude.some(it => it.images && it.images.length > 0);
+      const hasVideos = AppState.config.includeVideos && itemsToInclude.some(it => it.videos && it.videos.length > 0);
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>` + nl;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"`;
+      if (hasImages) xml += ` xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"`;
+      if (hasVideos) xml += ` xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"`;
+      xml += `>` + nl;
+
+      for (const item of itemsToInclude) {
+        if (!item.loc || !item.loc.trim()) continue;
+        xml += `${pad}<url>` + nl;
+        xml += `${pad2}<loc>${escapeXml(item.loc.trim())}</loc>` + nl;
+
+        if (item.lastmod && item.lastmod.trim()) {
+          xml += `${pad2}<lastmod>${escapeXml(item.lastmod.trim())}</lastmod>` + nl;
+        }
+
+        if (item.changefreq && item.changefreq.trim() && item.changefreq !== '__omit__') {
+          xml += `${pad2}<changefreq>${escapeXml(item.changefreq.trim())}</changefreq>` + nl;
+        }
+
+        if (item.priority !== undefined && item.priority !== '' && item.priority !== '__omit__') {
+          xml += `${pad2}<priority>${escapeXml(String(item.priority))}</priority>` + nl;
+        }
+
+        // Image extensions
+        if (AppState.config.includeImages && item.images && item.images.length > 0) {
+          for (const img of item.images) {
+            if (!img.loc || !img.loc.trim()) continue;
+            xml += `${pad2}<image:image>` + nl;
+            xml += `${pad3}<image:loc>${escapeXml(img.loc.trim())}</image:loc>` + nl;
+            if (img.title && img.title.trim()) xml += `${pad3}<image:title>${escapeXml(img.title.trim())}</image:title>` + nl;
+            if (img.caption && img.caption.trim()) xml += `${pad3}<image:caption>${escapeXml(img.caption.trim())}</image:caption>` + nl;
+            if (img.geo_location && img.geo_location.trim()) xml += `${pad3}<image:geo_location>${escapeXml(img.geo_location.trim())}</image:geo_location>` + nl;
+            if (img.license && img.license.trim()) xml += `${pad3}<image:license>${escapeXml(img.license.trim())}</image:license>` + nl;
+            xml += `${pad2}</image:image>` + nl;
+          }
+        }
+
+        // Video extensions
+        if (AppState.config.includeVideos && item.videos && item.videos.length > 0) {
+          for (const vid of item.videos) {
+            if (!vid.thumbnail_loc || !vid.title) continue;
+            xml += `${pad2}<video:video>` + nl;
+            xml += `${pad3}<video:thumbnail_loc>${escapeXml(vid.thumbnail_loc.trim())}</video:thumbnail_loc>` + nl;
+            xml += `${pad3}<video:title>${escapeXml(vid.title.trim())}</video:title>` + nl;
+            xml += `${pad3}<video:description>${escapeXml(vid.description ? vid.description.trim() : vid.title.trim())}</video:description>` + nl;
+            if (vid.content_loc && vid.content_loc.trim()) xml += `${pad3}<video:content_loc>${escapeXml(vid.content_loc.trim())}</video:content_loc>` + nl;
+            if (vid.player_loc && vid.player_loc.trim()) xml += `${pad3}<video:player_loc>${escapeXml(vid.player_loc.trim())}</video:player_loc>` + nl;
+            if (vid.duration) xml += `${pad3}<video:duration>${escapeXml(String(vid.duration))}</video:duration>` + nl;
+            xml += `${pad2}</video:video>` + nl;
+          }
+        }
+
+        xml += `${pad}</url>` + nl;
+      }
+
+      xml += `</urlset>`;
+      return xml;
+    }
+
+    function generateSitemapIndexXml(partsCount, baseDomain, indentSpaces = 2) {
+      const pad = indentSpaces === 'min' ? '' : ' '.repeat(Number(indentSpaces));
+      const nl = indentSpaces === 'min' ? '' : '\n';
+      const pad2 = indentSpaces === 'min' ? '' : pad.repeat(2);
+
+      const domain = (baseDomain || 'https://example.com').replace(/\/+$/, '');
+      const today = getTodayISO();
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>` + nl;
+      xml += `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + nl;
+
+      for (let i = 1; i <= partsCount; i++) {
+        xml += `${pad}<sitemap>` + nl;
+        xml += `${pad2}<loc>${domain}/sitemap_${i}.xml</loc>` + nl;
+        xml += `${pad2}<lastmod>${today}</lastmod>` + nl;
+        xml += `${pad}</sitemap>` + nl;
+      }
+
+      xml += `</sitemapindex>`;
+      return xml;
+    }
+
+    function generateRobotsTxt(baseDomain) {
+      const domain = (baseDomain || 'https://example.com').replace(/\/+$/, '');
+      const splitLimit = AppState.config.splitLimit || 50000;
+      const isSplit = AppState.items.length > splitLimit;
+
+      let robots = `User-agent: *\nAllow: /\n\n`;
+      if (isSplit) {
+        robots += `Sitemap: ${domain}/sitemap_index.xml\n`;
+      } else {
+        robots += `Sitemap: ${domain}/sitemap.xml\n`;
+      }
+      return robots;
+    }
+
+    // --- UI Renderers ---
+    function renderStatsAndLimit() {
+      const total = AppState.items.length;
+      let validCount = 0;
+      let invalidCount = 0;
+      let dupCount = 0;
+
+      AppState.items.forEach(it => {
+        if (it.isValid) validCount++;
+        else invalidCount++;
+        if (it.isDuplicate || it.isNearDuplicate) dupCount++;
+      });
+
+      document.getElementById('stat-total-urls').textContent = total.toLocaleString();
+      document.getElementById('stat-valid-badge').textContent = `${validCount.toLocaleString()} Valid`;
+
+      const invalidWrap = document.getElementById('stat-invalid-wrap');
+      const invalidBadge = document.getElementById('stat-invalid-badge');
+      if (invalidCount > 0) {
+        invalidWrap.style.display = 'flex';
+        invalidBadge.textContent = `${invalidCount.toLocaleString()} Malformed`;
+      } else {
+        invalidWrap.style.display = 'none';
+      }
+
+      const dupsWrap = document.getElementById('stat-dups-wrap');
+      const dupsBadge = document.getElementById('stat-dups-badge');
+      if (dupCount > 0) {
+        dupsWrap.style.display = 'flex';
+        dupsBadge.textContent = `${dupCount.toLocaleString()} Duplicates (Fix)`;
+      } else {
+        dupsWrap.style.display = 'none';
+      }
+
+      // Estimate byte size (approx 120 bytes per standard url entry)
+      const estBytes = total * 140;
+      document.getElementById('stat-est-size').textContent = formatBytes(estBytes);
+
+      // Protocol limit warning (> 50,000 URLs or custom split)
+      const limitBanner = document.getElementById('protocol-limit-banner');
+      const splitLimit = AppState.config.splitLimit || 50000;
+      if (total > splitLimit) {
+        limitBanner.classList.add('show');
+        document.getElementById('protocol-limit-text').textContent = 
+          `Your list has ${total.toLocaleString()} URLs, exceeding the ${splitLimit.toLocaleString()} limit per sitemap file. Auto-splitting is recommended.`;
+      } else {
+        limitBanner.classList.remove('show');
+      }
+    }
+
+    function renderTable() {
+      const filtered = getFilteredAndSortedItems();
+      const total = filtered.length;
+      const pageSize = AppState.pageSize === 'all' ? total : Number(AppState.pageSize);
+      const totalPages = Math.max(1, Math.ceil(total / (pageSize || 1)));
+
+      if (AppState.currentPage > totalPages) AppState.currentPage = totalPages;
+
+      const startIdx = AppState.pageSize === 'all' ? 0 : (AppState.currentPage - 1) * pageSize;
+      const endIdx = AppState.pageSize === 'all' ? total : Math.min(startIdx + pageSize, total);
+      const pageItems = filtered.slice(startIdx, endIdx);
+
+      const tbody = document.getElementById('url-table-body');
+      tbody.innerHTML = '';
+
+      if (pageItems.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="9" style="text-align:center; padding:2.5rem; color:var(--muted);">
+          No URLs found. Use the tabs above to paste, import, or crawl URLs.
+        </td>`;
+        tbody.appendChild(tr);
+      } else {
+        pageItems.forEach((item, index) => {
+          const tr = document.createElement('tr');
+          tr.dataset.id = item.id;
+          tr.draggable = true;
+          if (AppState.selectedIds.has(item.id)) tr.classList.add('selected');
+
+          // Status Badge
+          let statusBadge = `<span class="status-pill valid">✓ Valid</span>`;
+          if (!item.isValid) {
+            statusBadge = `<span class="status-pill invalid" title="Malformed URL format">⚠ Invalid</span>`;
+          } else if (item.isDuplicate) {
+            statusBadge = `<span class="status-pill duplicate" title="Duplicate URL">🔂 Duplicate</span>`;
+          }
+
+          // Media Badge
+          const imgCount = item.images ? item.images.length : 0;
+          const vidCount = item.videos ? item.videos.length : 0;
+          const mediaCount = imgCount + vidCount;
+          const mediaClass = mediaCount > 0 ? 'media-badge-btn has-media' : 'media-badge-btn';
+          const mediaLabel = mediaCount > 0 ? `🖼️ ${mediaCount}` : `+ Media`;
+
+          tr.innerHTML = `
+            <td style="text-align:center;">
+              <input type="checkbox" class="row-checkbox" data-id="${item.id}" ${AppState.selectedIds.has(item.id) ? 'checked' : ''} />
+            </td>
+            <td><span class="drag-handle" title="Drag to reorder">⋮⋮</span></td>
+            <td>${statusBadge}</td>
+            <td>
+              <input type="text" class="table-url-input ${!item.isValid ? 'invalid' : ''}" data-id="${item.id}" value="${escapeXml(item.loc || '')}" placeholder="https://example.com/page" spellcheck="false" />
+            </td>
+            <td>
+              <input type="date" class="form-input btn--sm row-lastmod" data-id="${item.id}" value="${escapeXml(item.lastmod || '')}" style="width:115px; padding:0.2rem 0.35rem;" />
+            </td>
+            <td>
+              <select class="form-select btn--sm row-changefreq" data-id="${item.id}" style="padding:0.2rem 0.35rem;">
+                <option value="" ${!item.changefreq ? 'selected' : ''}>None</option>
+                <option value="always" ${item.changefreq === 'always' ? 'selected' : ''}>always</option>
+                <option value="hourly" ${item.changefreq === 'hourly' ? 'selected' : ''}>hourly</option>
+                <option value="daily" ${item.changefreq === 'daily' ? 'selected' : ''}>daily</option>
+                <option value="weekly" ${item.changefreq === 'weekly' ? 'selected' : ''}>weekly</option>
+                <option value="monthly" ${item.changefreq === 'monthly' ? 'selected' : ''}>monthly</option>
+                <option value="yearly" ${item.changefreq === 'yearly' ? 'selected' : ''}>yearly</option>
+                <option value="never" ${item.changefreq === 'never' ? 'selected' : ''}>never</option>
+              </select>
+            </td>
+            <td>
+              <input type="number" class="form-input btn--sm row-priority" data-id="${item.id}" min="0.0" max="1.0" step="0.1" value="${item.priority !== undefined ? item.priority : '0.8'}" style="width:58px; padding:0.2rem 0.35rem;" />
+            </td>
+            <td>
+              <button class="${mediaClass}" data-action="open-media" data-id="${item.id}" title="Attach images or video metadata">
+                ${mediaLabel}
+              </button>
+            </td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; gap:0.2rem;">
+                <button class="btn btn--sm" data-action="test-url" data-url="${escapeXml(item.loc || '')}" title="Open URL in new tab" style="padding:0.2rem 0.4rem;">🔗</button>
+                <button class="btn btn--sm" data-action="dup-row" data-id="${item.id}" title="Duplicate row" style="padding:0.2rem 0.4rem;">📋</button>
+                <button class="btn btn--sm btn--danger" data-action="delete-row" data-id="${item.id}" title="Delete row" style="padding:0.2rem 0.4rem;">✕</button>
+              </div>
+            </td>
+          `;
+
+          // Setup drag and drop events on row
+          setupRowDragAndDrop(tr);
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Update showing label & pagination
+      document.getElementById('table-showing-label').textContent = 
+        total > 0 ? `Showing ${startIdx + 1}–${endIdx} of ${total.toLocaleString()} URLs` : 'Showing 0 URLs';
+
+      renderPagination(totalPages);
+
+      // Selected items bar
+      const selCount = AppState.selectedIds.size;
+      const delSelBtn = document.getElementById('btn-delete-selected');
+      const selCountLbl = document.getElementById('selected-count-label');
+      if (selCount > 0) {
+        delSelBtn.style.display = 'inline-flex';
+        selCountLbl.textContent = selCount;
+      } else {
+        delSelBtn.style.display = 'none';
+      }
+
+      const selectAllCb = document.getElementById('th-select-all');
+      selectAllCb.checked = pageItems.length > 0 && pageItems.every(it => AppState.selectedIds.has(it.id));
+    }
+
+    function renderPagination(totalPages) {
+      const wrap = document.getElementById('pagination-controls');
+      wrap.innerHTML = '';
+      if (totalPages <= 1 || AppState.pageSize === 'all') return;
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'btn btn--sm';
+      prevBtn.textContent = '←';
+      prevBtn.disabled = AppState.currentPage === 1;
+      prevBtn.onclick = () => {
+        if (AppState.currentPage > 1) {
+          AppState.currentPage--;
+          renderTable();
+        }
+      };
+      wrap.appendChild(prevBtn);
+
+      const pageLabel = document.createElement('span');
+      pageLabel.style.fontSize = '0.75rem';
+      pageLabel.style.fontWeight = '600';
+      pageLabel.style.padding = '0 0.4rem';
+      pageLabel.textContent = `Page ${AppState.currentPage} of ${totalPages}`;
+      wrap.appendChild(pageLabel);
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn btn--sm';
+      nextBtn.textContent = '→';
+      nextBtn.disabled = AppState.currentPage === totalPages;
+      nextBtn.onclick = () => {
+        if (AppState.currentPage < totalPages) {
+          AppState.currentPage++;
+          renderTable();
+        }
+      };
+      wrap.appendChild(nextBtn);
+    }
+
+    function renderLivePreview() {
+      const splitLimit = AppState.config.splitLimit || 50000;
+      const total = AppState.items.length;
+      const isSplit = total > splitLimit;
+
+      const partBar = document.getElementById('xml-part-selector-bar');
+      const partSelect = document.getElementById('xml-part-select');
+
+      let currentXml = '';
+
+      if (isSplit) {
+        partBar.style.display = 'flex';
+        const numParts = Math.ceil(total / splitLimit);
+        
+        // Rebuild options if needed
+        partSelect.innerHTML = `<option value="index">sitemap_index.xml (Index File)</option>`;
+        for (let i = 1; i <= numParts; i++) {
+          const partStart = (i - 1) * splitLimit + 1;
+          const partEnd = Math.min(i * splitLimit, total);
+          partSelect.innerHTML += `<option value="${i}">sitemap_${i}.xml (${partStart}–${partEnd})</option>`;
+        }
+
+        if (AppState.activeSplitPart === 'index' || AppState.activeSplitPart === 0) {
+          partSelect.value = 'index';
+          currentXml = generateSitemapIndexXml(numParts, AppState.config.domain, AppState.config.indent);
+        } else {
+          const partNum = Number(AppState.activeSplitPart);
+          partSelect.value = String(partNum);
+          const sliceItems = AppState.items.slice((partNum - 1) * splitLimit, partNum * splitLimit);
+          currentXml = generateSitemapXml(sliceItems, AppState.config.indent);
+        }
+      } else {
+        partBar.style.display = 'none';
+        currentXml = generateSitemapXml(AppState.items, AppState.config.indent);
+      }
+
+      document.getElementById('xml-output-code').textContent = currentXml;
+
+      // robots.txt preview
+      document.getElementById('robots-output-code').textContent = generateRobotsTxt(AppState.config.domain);
+    }
+
+    function processAndRenderAll() {
+      auditUrlItems();
+      renderStatsAndLimit();
+      renderTable();
+      renderLivePreview();
+      scheduleAutoSave();
+    }
+
+    // --- Drag and Drop Reordering ---
+    let draggedRowId = null;
+
+    function setupRowDragAndDrop(tr) {
+      tr.addEventListener('dragstart', (e) => {
+        draggedRowId = tr.dataset.id;
+        tr.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedRowId);
+      });
+
+      tr.addEventListener('dragend', () => {
+        tr.classList.remove('is-dragging');
+        document.querySelectorAll('.url-table tr').forEach(r => {
+          r.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+      });
+
+      tr.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const rect = tr.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        tr.classList.remove('drag-over-top', 'drag-over-bottom');
+        if (e.clientY < mid) {
+          tr.classList.add('drag-over-top');
+        } else {
+          tr.classList.add('drag-over-bottom');
+        }
+      });
+
+      tr.addEventListener('dragleave', () => {
+        tr.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+
+      tr.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetId = tr.dataset.id;
+        if (!draggedRowId || draggedRowId === targetId) return;
+
+        const fromIdx = AppState.items.findIndex(it => it.id === draggedRowId);
+        const toIdx = AppState.items.findIndex(it => it.id === targetId);
+
+        if (fromIdx !== -1 && toIdx !== -1) {
+          const [moved] = AppState.items.splice(fromIdx, 1);
+          const rect = tr.getBoundingClientRect();
+          const insertIdx = e.clientY < (rect.top + rect.height / 2) ? toIdx : toIdx + 1;
+          AppState.items.splice(insertIdx > fromIdx ? insertIdx - 1 : insertIdx, 0, moved);
+          processAndRenderAll();
+        }
+      });
+    }
+
+    // --- Input Mode 1: Manual Entry ---
+    function handleManualSubmit() {
+      const textarea = document.getElementById('manual-urls-input');
+      const text = textarea.value.trim();
+      if (!text) {
+        showToast('Please enter at least one URL.', false);
+        return;
+      }
+
+      const append = document.getElementById('manual-append-check').checked;
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+      const defaultLastMod = getTodayISO();
+      const newItems = lines.map(url => ({
+        id: generateId(),
+        loc: url,
+        lastmod: defaultLastMod,
+        changefreq: 'weekly',
+        priority: 0.8,
+        images: [],
+        videos: []
+      }));
+
+      if (append) {
+        AppState.items = [...AppState.items, ...newItems];
+      } else {
+        AppState.items = newItems;
+      }
+
+      textarea.value = '';
+      showToast(`Added ${newItems.length.toLocaleString()} URLs to sitemap.`);
+      processAndRenderAll();
+    }
+
+    // --- Input Mode 2: Bulk CSV / TXT Import ---
+    function parseTxtContent(content, append = true) {
+      const lines = content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const defaultLastMod = getTodayISO();
+      const newItems = lines.map(url => ({
+        id: generateId(),
+        loc: url,
+        lastmod: defaultLastMod,
+        changefreq: 'weekly',
+        priority: 0.8,
+        images: [],
+        videos: []
+      }));
+
+      if (append) {
+        AppState.items = [...AppState.items, ...newItems];
+      } else {
+        AppState.items = newItems;
+      }
+      showToast(`Imported ${newItems.length.toLocaleString()} URLs from .txt file.`);
+      processAndRenderAll();
+    }
+
+    let parsedCsvRows = [];
+    function parseCsvContent(content) {
+      const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length === 0) return;
+
+      // Auto detect delimiter
+      const firstLine = lines[0];
+      let delim = ',';
+      if (firstLine.includes('\t')) delim = '\t';
+      else if (firstLine.includes(';') && !firstLine.includes(',')) delim = ';';
+
+      const parseRow = (line) => {
+        const result = [];
+        let curr = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === delim && !inQuotes) {
+            result.push(curr.trim());
+            curr = '';
+          } else {
+            curr += char;
+          }
+        }
+        result.push(curr.trim());
+        return result;
+      };
+
+      const rows = lines.map(parseRow);
+      parsedCsvRows = rows;
+
+      // Show mapping preview
+      const previewWrap = document.getElementById('csv-preview-wrap');
+      const table = document.getElementById('csv-preview-table');
+      previewWrap.style.display = 'block';
+
+      let html = '';
+      const sample = rows.slice(0, 5);
+      sample.forEach((r, idx) => {
+        html += `<tr>`;
+        if (idx === 0) {
+          r.forEach(c => html += `<th>${escapeXml(c)}</th>`);
+        } else {
+          r.forEach(c => html += `<td>${escapeXml(c)}</td>`);
+        }
+        html += `</tr>`;
+      });
+      table.innerHTML = html;
+    }
+
+    function confirmCsvImport() {
+      if (parsedCsvRows.length === 0) return;
+
+      const header = parsedCsvRows[0].map(h => h.toLowerCase());
+      const urlColIdx = header.findIndex(h => h.includes('url') || h.includes('loc') || h.includes('link') || h.includes('page'));
+      const lastmodIdx = header.findIndex(h => h.includes('lastmod') || h.includes('date') || h.includes('modified') || h.includes('updated'));
+      const changefreqIdx = header.findIndex(h => h.includes('freq') || h.includes('change'));
+      const priorityIdx = header.findIndex(h => h.includes('priority') || h.includes('weight'));
+
+      const dataRows = (urlColIdx !== -1 || lastmodIdx !== -1) ? parsedCsvRows.slice(1) : parsedCsvRows;
+      const resolvedUrlIdx = urlColIdx !== -1 ? urlColIdx : 0;
+
+      const defaultLastMod = getTodayISO();
+      const newItems = dataRows.map(row => {
+        const loc = row[resolvedUrlIdx] || '';
+        const lastmod = (lastmodIdx !== -1 && row[lastmodIdx]) ? row[lastmodIdx] : defaultLastMod;
+        const changefreq = (changefreqIdx !== -1 && row[changefreqIdx]) ? row[changefreqIdx] : 'weekly';
+        const priority = (priorityIdx !== -1 && row[priorityIdx]) ? parseFloat(row[priorityIdx]) || 0.8 : 0.8;
+
+        return {
+          id: generateId(),
+          loc,
+          lastmod,
+          changefreq,
+          priority,
+          images: [],
+          videos: []
+        };
+      }).filter(it => it.loc && it.loc.trim().length > 0);
+
+      AppState.items = [...AppState.items, ...newItems];
+      document.getElementById('csv-preview-wrap').style.display = 'none';
+      parsedCsvRows = [];
+      showToast(`Imported ${newItems.length.toLocaleString()} rows from CSV.`);
+      processAndRenderAll();
+    }
+
+    // --- Input Mode 3: Best-Effort Crawl Mode ---
+    async function startCrawl() {
+      const startUrlInput = document.getElementById('crawl-start-url');
+      const startUrl = startUrlInput.value.trim();
+
+      if (!isValidUrl(startUrl)) {
+        showToast('Please enter a valid starting URL (e.g. https://example.com).', false);
+        return;
+      }
+
+      const maxDepth = parseInt(document.getElementById('crawl-max-depth').value, 10) || 2;
+      const maxPages = parseInt(document.getElementById('crawl-max-pages').value, 10) || 50;
+
+      const consoleEl = document.getElementById('crawler-console');
+      consoleEl.innerHTML = '';
+
+      const log = (msg, type = 'info') => {
+        const div = document.createElement('div');
+        div.className = `log-${type}`;
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        consoleEl.appendChild(div);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      };
+
+      log(`Initiating crawl at ${startUrl} (Depth: ${maxDepth}, Max: ${maxPages})`, 'info');
+      log(`Note: Browser cross-origin fetch is subject to target CORS policies.`, 'warn');
+
+      AppState.crawler.isRunning = true;
+      AppState.crawler.abortController = new AbortController();
+      AppState.crawler.visited = new Set();
+      AppState.crawler.queue = [{ url: startUrl, depth: 1 }];
+      AppState.crawler.maxDepth = maxDepth;
+      AppState.crawler.maxPages = maxPages;
+      AppState.crawler.crawledCount = 0;
+      AppState.crawler.errorsCount = 0;
+
+      document.getElementById('btn-start-crawl').style.display = 'none';
+      document.getElementById('btn-stop-crawl').style.display = 'inline-flex';
+
+      const originHost = new URL(startUrl).hostname;
+      const discoveredUrls = new Set([startUrl]);
+
+      while (AppState.crawler.queue.length > 0 && AppState.crawler.isRunning) {
+        if (AppState.crawler.crawledCount >= maxPages) {
+          log(`Reached max pages limit (${maxPages}). Crawl finished.`, 'info');
+          break;
+        }
+
+        const current = AppState.crawler.queue.shift();
+        if (AppState.crawler.visited.has(current.url)) continue;
+        AppState.crawler.visited.add(current.url);
+
+        document.getElementById('crawl-stats-label').textContent = 
+          `Crawled: ${AppState.crawler.crawledCount} | Queue: ${AppState.crawler.queue.length} | Errors: ${AppState.crawler.errorsCount}`;
+
+        log(`Fetching [D${current.depth}] ${current.url}...`, 'info');
+
+        try {
+          // Attempt client-side fetch
+          const res = await fetch(current.url, {
+            signal: AppState.crawler.abortController.signal,
+            mode: 'cors'
+          });
+
+          if (!res.ok) {
+            AppState.crawler.errorsCount++;
+            log(`HTTP ${res.status} ${res.statusText} on ${current.url}`, 'err');
+            continue;
+          }
+
+          const htmlText = await res.text();
+          AppState.crawler.crawledCount++;
+          discoveredUrls.add(current.url);
+          log(`✓ Parsed ${current.url} (${formatBytes(htmlText.length)})`, 'success');
+
+          // Parse HTML for links if depth allows
+          if (current.depth < maxDepth) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const links = doc.querySelectorAll('a[href]');
+
+            let newLinksFound = 0;
+            links.forEach(a => {
+              try {
+                const href = a.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+                
+                const absUrl = new URL(href, current.url).href.split('#')[0];
+                const parsedAbs = new URL(absUrl);
+
+                // Same domain constraint
+                if (parsedAbs.hostname === originHost && !AppState.crawler.visited.has(absUrl)) {
+                  discoveredUrls.add(absUrl);
+                  if (!AppState.crawler.queue.some(q => q.url === absUrl)) {
+                    AppState.crawler.queue.push({ url: absUrl, depth: current.depth + 1 });
+                    newLinksFound++;
+                  }
+                }
+              } catch (e) {}
+            });
+            if (newLinksFound > 0) {
+              log(`Found ${newLinksFound} internal links at depth ${current.depth + 1}`, 'info');
+            }
+          }
+        } catch (err) {
+          AppState.crawler.errorsCount++;
+          if (err.name === 'AbortError') {
+            log(`Crawl stopped by user.`, 'warn');
+            break;
+          } else {
+            // Detailed CORS error reporting
+            log(`❌ Fetch blocked on ${current.url}: ${err.message}`, 'err');
+            log(`Explanation: The target site did not provide 'Access-Control-Allow-Origin' headers. Browsers block direct fetches to protect user security. Please use the 'Manual Entry' or 'Bulk Import' tab to add your URLs directly!`, 'warn');
+          }
+        }
+      }
+
+      // Add discovered URLs to workspace
+      const defaultLastMod = getTodayISO();
+      const newItems = Array.from(discoveredUrls).map(u => ({
+        id: generateId(),
+        loc: u,
+        lastmod: defaultLastMod,
+        changefreq: 'weekly',
+        priority: 0.8,
+        images: [],
+        videos: []
+      }));
+
+      AppState.items = [...AppState.items, ...newItems];
+      stopCrawl();
+      showToast(`Crawl complete. Added ${newItems.length} URLs to sitemap.`);
+      processAndRenderAll();
+    }
+
+    function stopCrawl() {
+      AppState.crawler.isRunning = false;
+      if (AppState.crawler.abortController) {
+        AppState.crawler.abortController.abort();
+      }
+      document.getElementById('btn-start-crawl').style.display = 'inline-flex';
+      document.getElementById('btn-stop-crawl').style.display = 'none';
+      document.getElementById('crawl-stats-label').textContent = 'Completed / Idle';
+    }
+
+    // --- Input Mode 4: Sitemap XML Import & Merge ---
+    function parseSitemapXmlContent(xmlString, mode = 'replace') {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlString, 'text/xml');
+
+        const parseError = doc.querySelector('parsererror');
+        if (parseError) {
+          showToast('Invalid XML syntax in uploaded file.', false);
+          return;
+        }
+
+        const defaultLastMod = getTodayISO();
+        const extracted = [];
+
+        // Check if standard urlset
+        const urlNodes = doc.querySelectorAll('url');
+        if (urlNodes.length > 0) {
+          urlNodes.forEach(uNode => {
+            const loc = uNode.querySelector('loc')?.textContent?.trim() || '';
+            const lastmod = uNode.querySelector('lastmod')?.textContent?.trim() || defaultLastMod;
+            const changefreq = uNode.querySelector('changefreq')?.textContent?.trim() || 'weekly';
+            const priority = parseFloat(uNode.querySelector('priority')?.textContent?.trim()) || 0.8;
+
+            // Extract images
+            const images = [];
+            const imgNodes = uNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'image');
+            for (let i = 0; i < imgNodes.length; i++) {
+              const iNode = imgNodes[i];
+              const iLoc = iNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'loc')[0]?.textContent?.trim() || '';
+              const iTitle = iNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'title')[0]?.textContent?.trim() || '';
+              const iCaption = iNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-image/1.1', 'caption')[0]?.textContent?.trim() || '';
+              if (iLoc) images.push({ loc: iLoc, title: iTitle, caption: iCaption });
+            }
+
+            // Extract videos
+            const videos = [];
+            const vidNodes = uNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-video/1.1', 'video');
+            for (let i = 0; i < vidNodes.length; i++) {
+              const vNode = vidNodes[i];
+              const thumb = vNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-video/1.1', 'thumbnail_loc')[0]?.textContent?.trim() || '';
+              const title = vNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-video/1.1', 'title')[0]?.textContent?.trim() || '';
+              const desc = vNode.getElementsByTagNameNS('http://www.google.com/schemas/sitemap-video/1.1', 'description')[0]?.textContent?.trim() || '';
+              if (thumb && title) videos.push({ thumbnail_loc: thumb, title, description: desc });
+            }
+
+            if (loc) {
+              extracted.push({
+                id: generateId(),
+                loc,
+                lastmod,
+                changefreq,
+                priority,
+                images,
+                videos
+              });
+            }
+          });
+        }
+
+        // Check if sitemapindex
+        const sitemapNodes = doc.querySelectorAll('sitemap');
+        if (sitemapNodes.length > 0 && extracted.length === 0) {
+          sitemapNodes.forEach(sNode => {
+            const loc = sNode.querySelector('loc')?.textContent?.trim() || '';
+            const lastmod = sNode.querySelector('lastmod')?.textContent?.trim() || defaultLastMod;
+            if (loc) {
+              extracted.push({
+                id: generateId(),
+                loc,
+                lastmod,
+                changefreq: 'monthly',
+                priority: 0.8,
+                images: [],
+                videos: []
+              });
+            }
+          });
+        }
+
+        if (extracted.length === 0) {
+          showToast('No <url> or <sitemap> entries found in XML.', false);
+          return;
+        }
+
+        if (mode === 'merge') {
+          AppState.items = [...AppState.items, ...extracted];
+        } else {
+          AppState.items = extracted;
+        }
+
+        showToast(`Loaded ${extracted.length.toLocaleString()} entries from Sitemap XML.`);
+        processAndRenderAll();
+      } catch (err) {
+        showToast('Error parsing XML: ' + err.message, false);
+      }
+    }
+
+    // --- URL Normalization Helpers ---
+    function computeNormalizedUrl(rawUrl, options) {
+      if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+      let url = rawUrl.trim();
+
+      // 1. Force HTTPS
+      if (options.forceHttps) {
+        url = url.replace(/^http:\/\//i, 'https://');
+      }
+
+      // 2. Strip fragment / hash
+      if (options.stripHash) {
+        url = url.split('#')[0];
+      }
+
+      // 3. Strip query parameters
+      if (options.stripQuery) {
+        url = url.split('?')[0];
+      }
+
+      // 4. Lowercase domain
+      if (options.lowerDomain) {
+        try {
+          const parsed = new URL(url);
+          parsed.hostname = parsed.hostname.toLowerCase();
+          url = parsed.toString();
+        } catch (e) {
+          url = url.replace(/^(https?:\/\/)([^/]+)/i, (_, proto, host) => proto + host.toLowerCase());
+        }
+      }
+
+      // 5. Strip trailing slashes
+      if (options.stripSlash) {
+        // preserve root domain trailing slash like https://example.com/
+        try {
+          const parsed = new URL(url);
+          if (parsed.pathname !== '/' && parsed.pathname.endsWith('/')) {
+            parsed.pathname = parsed.pathname.slice(0, -1);
+            url = parsed.toString();
+          }
+        } catch (e) {
+          if (!/https?:\/\/[^/]+\/?$/i.test(url)) {
+            url = url.replace(/\/+$/, '');
+          }
+        }
+      }
+
+      // 6. Add trailing slashes
+      if (options.addSlash) {
+        try {
+          const parsed = new URL(url);
+          // don't add slash if ends in file extension like .html, .php, .pdf
+          if (!parsed.pathname.endsWith('/') && !/\.[a-zA-Z0-9]{2,5}$/.test(parsed.pathname)) {
+            parsed.pathname = parsed.pathname + '/';
+            url = parsed.toString();
+          }
+        } catch (e) {
+          if (!/\.[a-zA-Z0-9]{2,5}$/.test(url) && !url.endsWith('/')) {
+            url = url + '/';
+          }
+        }
+      }
+
+      return url;
+    }
+
+    function previewNormalization() {
+      const options = {
+        forceHttps: document.getElementById('norm-opt-https').checked,
+        stripSlash: document.getElementById('norm-opt-strip-slash').checked,
+        addSlash: document.getElementById('norm-opt-add-slash').checked,
+        stripQuery: document.getElementById('norm-opt-strip-query').checked,
+        stripHash: document.getElementById('norm-opt-strip-hash').checked,
+        lowerDomain: document.getElementById('norm-opt-lower-domain').checked
+      };
+
+      let changedCount = 0;
+      const sampleDiffs = [];
+
+      AppState.items.forEach(it => {
+        const norm = computeNormalizedUrl(it.loc, options);
+        if (norm !== it.loc) {
+          changedCount++;
+          if (sampleDiffs.length < 5) {
+            sampleDiffs.push({ orig: it.loc, norm });
+          }
+        }
+      });
+
+      document.getElementById('norm-affected-count').textContent = 
+        `${changedCount.toLocaleString()} of ${AppState.items.length.toLocaleString()} URLs will be modified`;
+
+      const tbody = document.getElementById('norm-diff-tbody');
+      tbody.innerHTML = '';
+      if (sampleDiffs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2" style="color:var(--muted); text-align:center;">All URLs are already normalized according to these rules.</td></tr>`;
+      } else {
+        sampleDiffs.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="color:var(--muted); text-decoration:line-through;">${escapeXml(d.orig)}</td>
+            <td style="color:var(--success); font-weight:600;">${escapeXml(d.norm)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function applyNormalization() {
+      const options = {
+        forceHttps: document.getElementById('norm-opt-https').checked,
+        stripSlash: document.getElementById('norm-opt-strip-slash').checked,
+        addSlash: document.getElementById('norm-opt-add-slash').checked,
+        stripQuery: document.getElementById('norm-opt-strip-query').checked,
+        stripHash: document.getElementById('norm-opt-strip-hash').checked,
+        lowerDomain: document.getElementById('norm-opt-lower-domain').checked
+      };
+
+      let count = 0;
+      AppState.items.forEach(it => {
+        const norm = computeNormalizedUrl(it.loc, options);
+        if (norm !== it.loc) {
+          it.loc = norm;
+          count++;
+        }
+      });
+
+      document.getElementById('modal-normalizer').classList.remove('active');
+      showToast(`Normalized ${count.toLocaleString()} URLs.`);
+      processAndRenderAll();
+    }
+
+    // --- Duplicate Resolution Modal ---
+    function openDuplicateModal() {
+      const modal = document.getElementById('modal-duplicates');
+      const tbody = document.getElementById('duplicates-tbody');
+      tbody.innerHTML = '';
+
+      const dupClusters = new Map();
+      AppState.items.forEach(it => {
+        const key = (it.loc || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        if (!dupClusters.has(key)) dupClusters.set(key, []);
+        dupClusters.get(key).push(it);
+      });
+
+      let found = 0;
+      dupClusters.forEach((cluster, key) => {
+        if (cluster.length > 1) {
+          found++;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${escapeXml(cluster[0].loc)}</strong></td>
+            <td><span class="status-pill duplicate">${cluster.length} entries</span></td>
+            <td>
+              <button class="btn btn--sm btn--danger" data-dedup-key="${escapeXml(key)}">Deduplicate</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+
+      if (found === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--muted);">No duplicates detected.</td></tr>`;
+      }
+
+      modal.classList.add('active');
+    }
+
+    function resolveDuplicates(strategy = 'first') {
+      const seen = new Set();
+      const kept = [];
+
+      if (strategy === 'last') {
+        for (let i = AppState.items.length - 1; i >= 0; i--) {
+          const it = AppState.items[i];
+          const norm = (it.loc || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+          if (!seen.has(norm)) {
+            seen.add(norm);
+            kept.unshift(it);
+          }
+        }
+      } else {
+        // keep first or keep https
+        for (const it of AppState.items) {
+          const norm = (it.loc || '').toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+          if (!seen.has(norm)) {
+            seen.add(norm);
+            kept.push(it);
+          }
+        }
+      }
+
+      const removedCount = AppState.items.length - kept.length;
+      AppState.items = kept;
+      document.getElementById('modal-duplicates').classList.remove('active');
+      showToast(`Removed ${removedCount.toLocaleString()} duplicate URLs.`);
+      processAndRenderAll();
+    }
+
+    // --- Media Extensions Modal ---
+    let activeMediaItemId = null;
+
+    function openMediaModal(itemId) {
+      activeMediaItemId = itemId;
+      const item = AppState.items.find(it => it.id === itemId);
+      if (!item) return;
+
+      document.getElementById('media-modal-url-label').textContent = item.loc;
+      const imgList = document.getElementById('media-images-list');
+      const vidList = document.getElementById('media-videos-list');
+
+      imgList.innerHTML = '';
+      vidList.innerHTML = '';
+
+      // Render images
+      if (item.images && item.images.length > 0) {
+        item.images.forEach(img => addImageFormRow(img.loc, img.title, img.caption));
+      }
+
+      // Render videos
+      if (item.videos && item.videos.length > 0) {
+        item.videos.forEach(vid => addVideoFormRow(vid.thumbnail_loc, vid.title, vid.description, vid.content_loc));
+      }
+
+      document.getElementById('modal-media').classList.add('active');
+    }
+
+    function addImageFormRow(loc = '', title = '', caption = '') {
+      const list = document.getElementById('media-images-list');
+      const div = document.createElement('div');
+      div.className = 'media-image-row';
+      div.style.display = 'grid';
+      div.style.gridTemplateColumns = '2fr 1fr 1fr auto';
+      div.style.gap = '0.4rem';
+      div.style.alignItems = 'center';
+
+      div.innerHTML = `
+        <input type="url" class="form-input btn--sm img-loc" placeholder="Image URL (e.g. https://.../pic.jpg)" value="${escapeXml(loc)}" />
+        <input type="text" class="form-input btn--sm img-title" placeholder="Image Title (optional)" value="${escapeXml(title)}" />
+        <input type="text" class="form-input btn--sm img-caption" placeholder="Caption (optional)" value="${escapeXml(caption)}" />
+        <button class="btn btn--sm btn--danger" onclick="this.parentElement.remove()">✕</button>
+      `;
+      list.appendChild(div);
+    }
+
+    function addVideoFormRow(thumb = '', title = '', desc = '', content = '') {
+      const list = document.getElementById('media-videos-list');
+      const div = document.createElement('div');
+      div.className = 'media-video-row';
+      div.style.display = 'grid';
+      div.style.gridTemplateColumns = '1.5fr 1fr 1.5fr 1fr auto';
+      div.style.gap = '0.4rem';
+      div.style.alignItems = 'center';
+
+      div.innerHTML = `
+        <input type="url" class="form-input btn--sm vid-thumb" placeholder="Thumbnail URL" value="${escapeXml(thumb)}" />
+        <input type="text" class="form-input btn--sm vid-title" placeholder="Video Title" value="${escapeXml(title)}" />
+        <input type="text" class="form-input btn--sm vid-desc" placeholder="Description" value="${escapeXml(desc)}" />
+        <input type="url" class="form-input btn--sm vid-content" placeholder="Content/Player URL" value="${escapeXml(content)}" />
+        <button class="btn btn--sm btn--danger" onclick="this.parentElement.remove()">✕</button>
+      `;
+      list.appendChild(div);
+    }
+
+    function saveMediaModal() {
+      if (!activeMediaItemId) return;
+      const item = AppState.items.find(it => it.id === activeMediaItemId);
+      if (!item) return;
+
+      const imgRows = document.querySelectorAll('.media-image-row');
+      const images = [];
+      imgRows.forEach(row => {
+        const loc = row.querySelector('.img-loc').value.trim();
+        const title = row.querySelector('.img-title').value.trim();
+        const caption = row.querySelector('.img-caption').value.trim();
+        if (loc) images.push({ loc, title, caption });
+      });
+
+      const vidRows = document.querySelectorAll('.media-video-row');
+      const videos = [];
+      vidRows.forEach(row => {
+        const thumb = row.querySelector('.vid-thumb').value.trim();
+        const title = row.querySelector('.vid-title').value.trim();
+        const desc = row.querySelector('.vid-desc').value.trim();
+        const content = row.querySelector('.vid-content').value.trim();
+        if (thumb && title) videos.push({ thumbnail_loc: thumb, title, description: desc, content_loc: content });
+      });
+
+      item.images = images;
+      item.videos = videos;
+
+      document.getElementById('modal-media').classList.remove('active');
+      showToast('Media attachments saved.');
+      processAndRenderAll();
+    }
+
+    // --- Export Suite Handlers ---
+    function downloadTextFile(filename, content, mimeType = 'text/plain') {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportXml() {
+      const splitLimit = AppState.config.splitLimit || 50000;
+      const total = AppState.items.length;
+
+      if (total === 0) {
+        showToast('No URLs in sitemap to export.', false);
+        return;
+      }
+
+      if (total <= splitLimit) {
+        const xml = generateSitemapXml(AppState.items, AppState.config.indent);
+        downloadTextFile('sitemap.xml', xml, 'application/xml');
+        showToast('Downloaded sitemap.xml');
+      } else {
+        // Multi-file export
+        const numParts = Math.ceil(total / splitLimit);
+        const indexXml = generateSitemapIndexXml(numParts, AppState.config.domain, AppState.config.indent);
+        downloadTextFile('sitemap_index.xml', indexXml, 'application/xml');
+
+        for (let i = 1; i <= numParts; i++) {
+          const sliceItems = AppState.items.slice((i - 1) * splitLimit, i * splitLimit);
+          const partXml = generateSitemapXml(sliceItems, AppState.config.indent);
+          setTimeout(() => {
+            downloadTextFile(`sitemap_${i}.xml`, partXml, 'application/xml');
+          }, i * 200);
+        }
+        showToast(`Exported sitemap_index.xml and ${numParts} sub-sitemap files.`);
+      }
+    }
+
+    function exportGzipXml() {
+      if (!window.pako) {
+        showToast('Pako gzip library is not loaded. Please check your network connection.', false);
+        return;
+      }
+
+      if (AppState.items.length === 0) {
+        showToast('No URLs in sitemap to export.', false);
+        return;
+      }
+
+      const xml = generateSitemapXml(AppState.items, AppState.config.indent);
+      const binary = new TextEncoder().encode(xml);
+      const compressed = window.pako.gzip(binary);
+
+      const blob = new Blob([compressed], { type: 'application/gzip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sitemap.xml.gz';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const savedPct = Math.round((1 - (compressed.length / binary.length)) * 100);
+      showToast(`Downloaded sitemap.xml.gz (${savedPct}% size reduction)`);
+    }
+
+    function exportCsv() {
+      if (AppState.items.length === 0) {
+        showToast('No URLs to export.', false);
+        return;
+      }
+
+      let csv = 'loc,lastmod,changefreq,priority,image_count,video_count\n';
+      AppState.items.forEach(it => {
+        const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+        csv += `${escapeCsv(it.loc)},${escapeCsv(it.lastmod)},${escapeCsv(it.changefreq)},${it.priority !== undefined ? it.priority : 0.8},${it.images ? it.images.length : 0},${it.videos ? it.videos.length : 0}\n`;
+      });
+
+      downloadTextFile('sitemap_urls.csv', csv, 'text/csv');
+      showToast('Exported sitemap_urls.csv');
+    }
+
+    function exportTxt() {
+      if (AppState.items.length === 0) {
+        showToast('No URLs to export.', false);
+        return;
+      }
+
+      const txt = AppState.items.map(it => it.loc).filter(Boolean).join('\n');
+      downloadTextFile('sitemap_urls.txt', txt, 'text/plain');
+      showToast('Exported sitemap_urls.txt');
+    }
+
+    // --- Bulk Metadata Actions ---
+    function applyBulkMetadata() {
+      const lastmod = document.getElementById('bulk-lastmod-val').value;
+      const changefreq = document.getElementById('bulk-changefreq-val').value;
+      const priority = document.getElementById('bulk-priority-val').value;
+
+      if (!lastmod && !changefreq && !priority) {
+        showToast('Please select at least one metadata property to apply.', false);
+        return;
+      }
+
+      const targetItems = AppState.selectedIds.size > 0 
+        ? AppState.items.filter(it => AppState.selectedIds.has(it.id))
+        : AppState.items;
+
+      if (targetItems.length === 0) {
+        showToast('No URLs available to update.', false);
+        return;
+      }
+
+      targetItems.forEach(it => {
+        if (lastmod) it.lastmod = lastmod;
+        if (changefreq) it.changefreq = changefreq === '__omit__' ? '' : changefreq;
+        if (priority) it.priority = priority === '__omit__' ? '' : parseFloat(priority);
+      });
+
+      showToast(`Updated metadata for ${targetItems.length.toLocaleString()} URLs.`);
+      processAndRenderAll();
+    }
+
+    // --- Config UI Sync ---
+    function syncConfigUI() {
+      document.getElementById('cfg-indent').value = AppState.config.indent;
+      document.getElementById('cfg-domain').value = AppState.config.domain;
+      document.getElementById('cfg-include-images').checked = AppState.config.includeImages;
+      document.getElementById('cfg-include-videos').checked = AppState.config.includeVideos;
+      document.getElementById('cfg-split-limit').value = AppState.config.splitLimit;
+    }
+
+    // --- Event Listeners Setup ---
+    function initEventHandlers() {
+      // Dark mode toggle
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const isDark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+        });
+      }
+
+      // Input mode tabs
+      document.querySelectorAll('#input-tabs-header .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#input-tabs-header .tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content-pane').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          const tabKey = btn.dataset.tab;
+          document.getElementById(`pane-${tabKey}`).classList.add('active');
+        });
+      });
+
+      // Preview tabs
+      document.querySelectorAll('#preview-tabs .preview-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#preview-tabs .preview-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const viewKey = btn.dataset.view;
+          document.getElementById('view-xml-preview').style.display = viewKey === 'xml' ? 'flex' : 'none';
+          document.getElementById('view-robots-preview').style.display = viewKey === 'robots' ? 'flex' : 'none';
+          document.getElementById('view-settings-preview').style.display = viewKey === 'settings' ? 'block' : 'none';
+        });
+      });
+
+      // Split file selector
+      document.getElementById('xml-part-select').addEventListener('change', (e) => {
+        AppState.activeSplitPart = e.target.value;
+        renderLivePreview();
+      });
+
+      // Manual input buttons
+      document.getElementById('btn-submit-manual').addEventListener('click', handleManualSubmit);
+      document.getElementById('btn-load-sample').addEventListener('click', () => {
+        document.getElementById('manual-urls-input').value = SAMPLE_URLS.join('\n');
+      });
+      document.getElementById('btn-clear-manual-input').addEventListener('click', () => {
+        document.getElementById('manual-urls-input').value = '';
+      });
+
+      // Bulk file dropzone
+      const dropzone = document.getElementById('bulk-dropzone');
+      const fileInput = document.getElementById('bulk-file-input');
+
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleBulkFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleBulkFileUpload(e.target.files[0]);
+        }
+      });
+
+      function handleBulkFileUpload(file) {
+        const reader = new FileReader();
+        const isCsv = file.name.endsWith('.csv');
+        reader.onload = (e) => {
+          const content = e.target.result;
+          if (isCsv) {
+            parseCsvContent(content);
+          } else {
+            parseTxtContent(content);
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      document.getElementById('btn-confirm-csv').addEventListener('click', confirmCsvImport);
+      document.getElementById('btn-cancel-csv').addEventListener('click', () => {
+        document.getElementById('csv-preview-wrap').style.display = 'none';
+      });
+
+      // Sitemap XML file input & paste
+      document.getElementById('xml-file-input').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const mode = document.querySelector('input[name="xml-import-mode"]:checked').value;
+          const reader = new FileReader();
+          reader.onload = (evt) => parseSitemapXmlContent(evt.target.result, mode);
+          reader.readAsText(e.target.files[0]);
+        }
+      });
+      document.getElementById('btn-parse-xml-paste').addEventListener('click', () => {
+        const raw = document.getElementById('xml-paste-input').value.trim();
+        if (!raw) {
+          showToast('Please paste your sitemap XML first.', false);
+          return;
+        }
+        const mode = document.querySelector('input[name="xml-import-mode"]:checked').value;
+        parseSitemapXmlContent(raw, mode);
+      });
+
+      // Crawler buttons
+      document.getElementById('btn-start-crawl').addEventListener('click', startCrawl);
+      document.getElementById('btn-stop-crawl').addEventListener('click', stopCrawl);
+
+      // Bulk toolbar
+      document.getElementById('btn-bulk-today').addEventListener('click', () => {
+        document.getElementById('bulk-lastmod-val').value = getTodayISO();
+      });
+      document.getElementById('btn-apply-bulk').addEventListener('click', applyBulkMetadata);
+
+      // Table filters & Search
+      document.getElementById('table-search-input').addEventListener('input', (e) => {
+        AppState.searchQuery = e.target.value;
+        AppState.currentPage = 1;
+        renderTable();
+      });
+      document.getElementById('table-status-filter').addEventListener('change', (e) => {
+        AppState.statusFilter = e.target.value;
+        AppState.currentPage = 1;
+        renderTable();
+      });
+      document.getElementById('table-sort-by').addEventListener('change', (e) => {
+        AppState.sortBy = e.target.value;
+        renderTable();
+      });
+      document.getElementById('pagination-page-size').addEventListener('change', (e) => {
+        AppState.pageSize = e.target.value;
+        AppState.currentPage = 1;
+        renderTable();
+      });
+
+      // Select all checkbox
+      document.getElementById('th-select-all').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        const filtered = getFilteredAndSortedItems();
+        filtered.forEach(it => {
+          if (checked) AppState.selectedIds.add(it.id);
+          else AppState.selectedIds.delete(it.id);
+        });
+        renderTable();
+      });
+
+      // Delete selected
+      document.getElementById('btn-delete-selected').addEventListener('click', () => {
+        if (AppState.selectedIds.size === 0) return;
+        const count = AppState.selectedIds.size;
+        AppState.items = AppState.items.filter(it => !AppState.selectedIds.has(it.id));
+        AppState.selectedIds.clear();
+        showToast(`Deleted ${count} URLs.`);
+        processAndRenderAll();
+      });
+
+      // Add single URL
+      document.getElementById('btn-add-row').addEventListener('click', () => {
+        AppState.items.unshift({
+          id: generateId(),
+          loc: 'https://example.com/new-page',
+          lastmod: getTodayISO(),
+          changefreq: 'weekly',
+          priority: 0.8,
+          images: [],
+          videos: []
+        });
+        processAndRenderAll();
+      });
+
+      // Table inline editing delegation
+      const tableBody = document.getElementById('url-table-body');
+      tableBody.addEventListener('change', (e) => {
+        const target = e.target;
+        const id = target.dataset.id;
+        const item = AppState.items.find(it => it.id === id);
+        if (!item) return;
+
+        if (target.classList.contains('row-checkbox')) {
+          if (target.checked) AppState.selectedIds.add(id);
+          else AppState.selectedIds.delete(id);
+          renderTable();
+        } else if (target.classList.contains('table-url-input')) {
+          item.loc = target.value.trim();
+          processAndRenderAll();
+        } else if (target.classList.contains('row-lastmod')) {
+          item.lastmod = target.value;
+          processAndRenderAll();
+        } else if (target.classList.contains('row-changefreq')) {
+          item.changefreq = target.value;
+          processAndRenderAll();
+        } else if (target.classList.contains('row-priority')) {
+          item.priority = parseFloat(target.value) || 0.8;
+          processAndRenderAll();
+        }
+      });
+
+      tableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+
+        if (action === 'delete-row') {
+          AppState.items = AppState.items.filter(it => it.id !== id);
+          AppState.selectedIds.delete(id);
+          processAndRenderAll();
+        } else if (action === 'dup-row') {
+          const orig = AppState.items.find(it => it.id === id);
+          if (orig) {
+            const copy = JSON.parse(JSON.stringify(orig));
+            copy.id = generateId();
+            const idx = AppState.items.findIndex(it => it.id === id);
+            AppState.items.splice(idx + 1, 0, copy);
+            processAndRenderAll();
+          }
+        } else if (action === 'test-url') {
+          const url = btn.dataset.url;
+          if (isValidUrl(url)) window.open(url, '_blank', 'noopener,noreferrer');
+        } else if (action === 'open-media') {
+          openMediaModal(id);
+        }
+      });
+
+      // Normalization modal
+      document.getElementById('btn-open-normalizer').addEventListener('click', () => {
+        document.getElementById('modal-normalizer').classList.add('active');
+        previewNormalization();
+      });
+      document.getElementById('btn-close-normalizer').addEventListener('click', () => {
+        document.getElementById('modal-normalizer').classList.remove('active');
+      });
+      document.getElementById('btn-cancel-normalizer').addEventListener('click', () => {
+        document.getElementById('modal-normalizer').classList.remove('active');
+      });
+      document.querySelectorAll('.norm-item input').forEach(input => {
+        input.addEventListener('change', previewNormalization);
+      });
+      document.getElementById('btn-apply-normalizer').addEventListener('click', applyNormalization);
+
+      // Duplicate modal
+      document.getElementById('stat-dups-badge').addEventListener('click', openDuplicateModal);
+      document.getElementById('btn-close-duplicates').addEventListener('click', () => {
+        document.getElementById('modal-duplicates').classList.remove('active');
+      });
+      document.getElementById('btn-cancel-duplicates').addEventListener('click', () => {
+        document.getElementById('modal-duplicates').classList.remove('active');
+      });
+      document.getElementById('btn-dedup-keep-first').addEventListener('click', () => resolveDuplicates('first'));
+      document.getElementById('btn-dedup-keep-last').addEventListener('click', () => resolveDuplicates('last'));
+      document.getElementById('btn-dedup-keep-https').addEventListener('click', () => resolveDuplicates('https'));
+
+      // Media modal
+      document.getElementById('btn-close-media').addEventListener('click', () => {
+        document.getElementById('modal-media').classList.remove('active');
+      });
+      document.getElementById('btn-cancel-media').addEventListener('click', () => {
+        document.getElementById('modal-media').classList.remove('active');
+      });
+      document.getElementById('btn-add-image-row').addEventListener('click', () => addImageFormRow());
+      document.getElementById('btn-add-video-row').addEventListener('click', () => addVideoFormRow());
+      document.getElementById('btn-save-media').addEventListener('click', saveMediaModal);
+
+      // Workspace modal
+      document.getElementById('btn-workspace-menu').addEventListener('click', () => {
+        document.getElementById('modal-workspace').classList.add('active');
+      });
+      document.getElementById('btn-close-workspace').addEventListener('click', () => {
+        document.getElementById('modal-workspace').classList.remove('active');
+      });
+      document.getElementById('btn-close-workspace-footer').addEventListener('click', () => {
+        document.getElementById('modal-workspace').classList.remove('active');
+      });
+      document.getElementById('btn-clear-workspace').addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear all URLs? This cannot be undone.')) {
+          AppState.items = [];
+          AppState.selectedIds.clear();
+          document.getElementById('modal-workspace').classList.remove('active');
+          showToast('Workspace cleared.');
+          processAndRenderAll();
+        }
+      });
+      document.getElementById('btn-backup-json').addEventListener('click', () => {
+        const backup = JSON.stringify({
+          app: 'XML Sitemap Studio',
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          items: AppState.items,
+          config: AppState.config
+        }, null, 2);
+        downloadTextFile('sitemap_workspace_backup.json', backup, 'application/json');
+        showToast('Exported workspace JSON backup.');
+      });
+      document.getElementById('restore-json-input').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const data = JSON.parse(evt.target.result);
+              if (Array.isArray(data.items)) {
+                AppState.items = data.items;
+                if (data.config) AppState.config = Object.assign(AppState.config, data.config);
+                syncConfigUI();
+                document.getElementById('modal-workspace').classList.remove('active');
+                showToast(`Restored ${data.items.length.toLocaleString()} URLs from backup.`);
+                processAndRenderAll();
+              }
+            } catch (err) {
+              showToast('Invalid JSON backup file.', false);
+            }
+          };
+          reader.readAsText(e.target.files[0]);
+        }
+      });
+
+      // Config settings inputs
+      document.getElementById('cfg-indent').addEventListener('change', (e) => {
+        AppState.config.indent = e.target.value;
+        renderLivePreview();
+        scheduleAutoSave();
+      });
+      document.getElementById('cfg-domain').addEventListener('input', (e) => {
+        AppState.config.domain = e.target.value;
+        renderLivePreview();
+        scheduleAutoSave();
+      });
+      document.getElementById('cfg-include-images').addEventListener('change', (e) => {
+        AppState.config.includeImages = e.target.checked;
+        renderLivePreview();
+        scheduleAutoSave();
+      });
+      document.getElementById('cfg-include-videos').addEventListener('change', (e) => {
+        AppState.config.includeVideos = e.target.checked;
+        renderLivePreview();
+        scheduleAutoSave();
+      });
+      document.getElementById('cfg-split-limit').addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        AppState.config.splitLimit = Math.min(50000, Math.max(100, val || 50000));
+        processAndRenderAll();
+      });
+
+      // Auto-split trigger from banner
+      document.getElementById('btn-auto-split').addEventListener('click', () => {
+        AppState.config.splitLimit = 50000;
+        document.getElementById('cfg-split-limit').value = 50000;
+        showToast('Enabled auto-split with sitemap_index.xml.');
+        processAndRenderAll();
+      });
+
+      // Export Buttons
+      document.getElementById('btn-download-xml').addEventListener('click', exportXml);
+      document.getElementById('btn-download-gzip').addEventListener('click', exportGzipXml);
+      document.getElementById('btn-download-csv').addEventListener('click', exportCsv);
+      document.getElementById('btn-download-txt').addEventListener('click', exportTxt);
+
+      // Copy preview
+      document.getElementById('btn-copy-preview').addEventListener('click', () => {
+        const activeTab = document.querySelector('#preview-tabs .preview-tab.active')?.dataset?.view;
+        const text = activeTab === 'robots' 
+          ? document.getElementById('robots-output-code').textContent
+          : document.getElementById('xml-output-code').textContent;
+
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Copied to clipboard!');
+        }).catch(() => {
+          showToast('Failed to copy to clipboard.', false);
+        });
+      });
+
+      // Accordion toggles
+      document.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const item = header.parentElement;
+          item.classList.toggle('open');
+        });
+      });
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', async () => {
+      initEventHandlers();
+      await loadSavedWorkspace();
+
+      // If no items loaded, preload with helpful sample
+      if (AppState.items.length === 0) {
+        const defaultLastMod = getTodayISO();
+        AppState.items = SAMPLE_URLS.map(url => ({
+          id: generateId(),
+          loc: url,
+          lastmod: defaultLastMod,
+          changefreq: 'weekly',
+          priority: url === 'https://example.com/' ? 1.0 : 0.8,
+          images: [],
+          videos: []
+        }));
+        processAndRenderAll();
+      }
+    });
+  </script>
+</body>
+</html>

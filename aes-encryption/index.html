@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AES Encryption &amp; Decryption Tool | sayandeep.dev</title>
+  <meta name="description" content="Encrypt and decrypt text and files with AES-GCM (authenticated) and AES-CBC using the native Web Crypto API. Support for 128/192/256-bit keys, PBKDF2 passphrase derivation, random IV generation, and self-contained package envelopes. 100% client-side." />
+  <meta name="keywords" content="aes encryption, aes decryption, aes-gcm, aes-cbc, web crypto api, pbkdf2 key derivation, file encryption, text encryption, 256-bit aes, client-side cryptography" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/aes-encryption/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-rgb: 255, 255, 255;
+      --surface-alt: #f5f5f4;
+      --surface-hover: #e7e5e4;
+      --text: #1c1917;
+      --muted: #78716c;
+      --line: #e7e5e4;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-glow: rgba(79, 70, 229, 0.18);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg: #0c0a09;
+      --surface: #1c1917;
+      --surface-rgb: 28, 25, 23;
+      --surface-alt: #292524;
+      --surface-hover: #3f3f46;
+      --text: #fafaf9;
+      --muted: #a8a29e;
+      --line: #292524;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: rgba(129, 140, 248, 0.14);
+      --accent-glow: rgba(129, 140, 248, 0.25);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.15);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color var(--transition), color var(--transition);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      width: 100%;
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      background: var(--accent-light);
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .icon-sun { display: none; }
+    .icon-moon { display: block; }
+    html.dark .icon-sun { display: block; }
+    html.dark .icon-moon { display: none; }
+
+    .nav-back-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .nav-back-link:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      padding: 1.5rem 0 3rem;
+    }
+
+    /* Top Security Banner */
+    .security-notice-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--success);
+      font-weight: 700;
+      background: var(--success-bg);
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+
+    /* Operation & Mode Tabs */
+    .operation-tabs-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .op-tabs-group {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-lg);
+      gap: 0.25rem;
+    }
+
+    .op-tab-btn {
+      padding: 0.55rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .op-tab-btn:hover {
+      color: var(--text);
+    }
+
+    .op-tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .type-toggle-group {
+      display: inline-flex;
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      padding: 0.25rem;
+      border-radius: var(--radius-lg);
+      gap: 0.25rem;
+    }
+
+    .type-btn {
+      padding: 0.45rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .type-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Configuration Card */
+    .config-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .config-item label {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .select-input, .text-input {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.55rem 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+      width: 100%;
+    }
+
+    .select-input:focus, .text-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Key Management Panel */
+    .key-panel {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .key-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .key-source-tabs {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      padding: 2px;
+      border-radius: var(--radius-md);
+      gap: 2px;
+    }
+
+    .key-src-btn {
+      padding: 0.35rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .key-src-btn.active {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .input-with-action {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-with-action input {
+      padding-right: 40px;
+    }
+
+    .btn-toggle-view {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+    }
+
+    /* Work Area Grid */
+    .work-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 860px) {
+      .work-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pane-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 220px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .code-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .pane-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .stats-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* Action Buttons */
+    .btn-action {
+      background: var(--surface-alt);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-action:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-action.btn-primary:hover {
+      background: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* File Drop Zone */
+    .file-dropzone {
+      border: 2px dashed var(--line);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      background: var(--surface-alt);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .file-dropzone:hover, .file-dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .dropzone-icon {
+      font-size: 2.5rem;
+    }
+
+    .file-info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-alt);
+      border-radius: 9999px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #10b981);
+      transition: width 0.15s ease-out;
+    }
+
+    /* Educational Section */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .info-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .info-card p {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <a href="./" class="brand" aria-label="Sayandeep.dev Homepage">
+        <span class="brand-badge">TOOLS</span>
+        <span class="brand-title">AES Encryption &amp; Decryption</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+          </svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+          </svg>
+        </button>
+        <a href="../tools/" class="nav-back-link">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Top Security Banner -->
+      <div class="security-notice-card">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="security-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            100% Client-Side Web Crypto
+          </span>
+          <span style="font-size:0.8125rem; color:var(--muted);">Zero-Persistence Guarantee: Keys and plaintext are processed in memory and never saved to storage.</span>
+        </div>
+      </div>
+
+      <!-- Operation Tabs -->
+      <div class="operation-tabs-row">
+        <div class="op-tabs-group">
+          <button class="op-tab-btn active" id="tab-encrypt" data-op="encrypt">
+            <span>🔒 Encrypt</span>
+          </button>
+          <button class="op-tab-btn" id="tab-decrypt" data-op="decrypt">
+            <span>🔓 Decrypt</span>
+          </button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <button class="btn-action" id="btn-swap-op" title="Swap input/output to test round-trip">
+            <span>⇄ Swap Round-Trip</span>
+          </button>
+          <div class="type-toggle-group">
+            <button class="type-btn active" id="type-text" data-type="text">📝 Text</button>
+            <button class="type-btn" id="type-file" data-type="file">📁 File</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration Card -->
+      <div class="config-card">
+        <div class="config-grid">
+          <!-- AES Mode -->
+          <div class="config-item">
+            <label for="select-mode">
+              <span>AES Mode:</span>
+            </label>
+            <select id="select-mode" class="select-input">
+              <option value="AES-GCM" selected>AES-GCM (Authenticated - Recommended)</option>
+              <option value="AES-CBC">AES-CBC (Compatibility Mode)</option>
+            </select>
+            <span id="mode-hint" style="font-size:0.72rem; color:var(--success); font-weight:600;">✓ GCM provides confidentiality &amp; tamper-proof authentication.</span>
+          </div>
+
+          <!-- Key Size -->
+          <div class="config-item">
+            <label for="select-key-size">
+              <span>Key Length:</span>
+            </label>
+            <select id="select-key-size" class="select-input">
+              <option value="256" selected>256-bit (Maximum Security)</option>
+              <option value="192">192-bit</option>
+              <option value="128">128-bit</option>
+            </select>
+          </div>
+
+          <!-- Key Source Selection -->
+          <div class="config-item">
+            <label>
+              <span>Key Source:</span>
+            </label>
+            <div class="key-source-tabs" style="width:100%;">
+              <button class="key-src-btn active" id="src-passphrase" data-src="passphrase" style="flex:1;">Passphrase (PBKDF2)</button>
+              <button class="key-src-btn" id="src-rawkey" data-src="rawkey" style="flex:1;">Raw Key (Hex / Base64)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key / Passphrase Input Panel -->
+        <div class="key-panel">
+          <!-- Passphrase Mode -->
+          <div id="panel-passphrase" style="display:flex; flex-direction:column; gap:0.75rem;">
+            <div class="key-panel-header">
+              <label for="input-passphrase" style="font-size:0.8125rem; font-weight:700;">
+                <span>Secret Passphrase:</span>
+              </label>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <label for="select-pbkdf2-iter" style="font-size:0.75rem; font-weight:600; color:var(--muted);">PBKDF2 Iterations:</label>
+                <select id="select-pbkdf2-iter" class="select-input" style="width:140px; padding:0.25rem 0.5rem; font-size:0.75rem;">
+                  <option value="600000" selected>600,000 (OWASP)</option>
+                  <option value="100000">100,000 (Fast)</option>
+                  <option value="1000000">1,000,000 (High)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-with-action">
+              <input type="password" id="input-passphrase" class="text-input" placeholder="Enter strong secret passphrase..." />
+              <button class="btn-toggle-view" id="btn-toggle-passphrase-visibility" title="Show / Hide Passphrase">👁️</button>
+            </div>
+
+            <div style="font-size:0.75rem; color:var(--muted); line-height:1.4;">
+              A cryptographically random 16-byte salt is generated for each encryption and bundled into the output package.
+            </div>
+          </div>
+
+          <!-- Raw Key Mode -->
+          <div id="panel-rawkey" style="display:none; flex-direction:column; gap:0.75rem;">
+            <div class="key-panel-header">
+              <label for="input-rawkey" style="font-size:0.8125rem; font-weight:700;">
+                <span>AES Raw Key (Hex or Base64):</span>
+              </label>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <button class="btn-action" id="btn-gen-random-key" style="padding:0.25rem 0.6rem; font-size:0.75rem;">🎲 Generate Key</button>
+                <button class="btn-action" id="btn-copy-rawkey" style="padding:0.25rem 0.6rem; font-size:0.75rem;">📋 Copy Key</button>
+              </div>
+            </div>
+
+            <input type="text" id="input-rawkey" class="text-input" style="font-family:'JetBrains Mono', monospace; font-size:0.8125rem;" placeholder="Paste or generate 256-bit key in Hex or Base64..." />
+
+            <div style="font-size:0.75rem; color:var(--warning); font-weight:600; background:var(--warning-bg); padding:0.4rem 0.65rem; border-radius:var(--radius-sm);">
+              ⚠️ <strong>Warning:</strong> This generated key is the only copy and is never stored. If you lose this key, encrypted data is permanently unrecoverable.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEXT MODE VIEW -->
+      <div id="view-text-mode" class="work-grid">
+        <!-- Input Pane -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <span id="label-input-pane">Plaintext to Encrypt:</span>
+            <label style="font-size:0.75rem; font-weight:600; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;">
+              <input type="checkbox" id="toggle-live-text" checked />
+              <span>Live Auto-Process</span>
+            </label>
+          </div>
+
+          <textarea id="text-input-content" class="code-textarea" placeholder="Type or paste plaintext here to encrypt..."></textarea>
+
+          <div class="pane-footer">
+            <span class="stats-badge" id="stats-input">0 chars (0 bytes)</span>
+            <button class="btn-action btn-primary" id="btn-process-text">
+              <span id="label-btn-process">🔒 Encrypt Now</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Pane -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <span id="label-output-pane">Encrypted Package (Base64 Envelope):</span>
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn-action" id="btn-copy-output" style="padding:0.25rem 0.6rem; font-size:0.75rem;">📋 Copy</button>
+              <button class="btn-action" id="btn-download-output" style="padding:0.25rem 0.6rem; font-size:0.75rem;">⬇️ Download</button>
+            </div>
+          </div>
+
+          <textarea id="text-output-content" class="code-textarea" readonly placeholder="Encrypted package will appear here..."></textarea>
+
+          <div class="pane-footer">
+            <span class="stats-badge" id="stats-output">0 chars (0 bytes)</span>
+            <span id="status-timing" style="font-size:0.75rem; font-weight:700; color:var(--success);">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE MODE VIEW -->
+      <div id="view-file-mode" class="pane-card" style="display:none; margin-bottom:1.5rem;">
+        <div class="pane-header">
+          <span id="label-file-header">File Encryption &amp; Decryption:</span>
+        </div>
+
+        <div class="file-dropzone" id="file-dropzone">
+          <span class="dropzone-icon">📁</span>
+          <span style="font-size:0.95rem; font-weight:700;">Drag &amp; drop any file here, or click to browse</span>
+          <span style="font-size:0.75rem; color:var(--muted);">All file types supported (PDF, images, archives, docs). Processed locally in memory.</span>
+          <input type="file" id="file-input" style="display:none;" />
+        </div>
+
+        <div id="selected-file-card" style="display:none; flex-direction:column; gap:0.75rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+            <div class="file-info-badge">
+              <span id="file-name-display">filename.ext</span>
+              <span style="color:var(--muted);" id="file-size-display">(0 KB)</span>
+            </div>
+            <button class="btn-action btn-primary" id="btn-process-file">
+              <span id="label-file-action-btn">🔒 Encrypt &amp; Download .enc</span>
+            </button>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="progress-bar-container" id="file-progress-container">
+            <div class="progress-bar-fill" id="file-progress-fill"></div>
+          </div>
+          <div id="file-status-msg" style="font-size:0.75rem; font-weight:700; color:var(--muted);"></div>
+        </div>
+      </div>
+
+      <!-- Educational FAQ & Security Information -->
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>🛡️ Authenticated AES-GCM</h3>
+          <p>AES-GCM is the modern gold standard. It simultaneously provides confidentiality and cryptographic integrity verification via an authentication tag, preventing tampering or bit-flipping attacks.</p>
+        </div>
+
+        <div class="info-card">
+          <h3>🎲 Random IVs on Every Encryption</h3>
+          <p>Every single encryption automatically uses a freshly generated random Initialization Vector (IV). Reusing an IV with the same key in AES-GCM is catastrophic and destroys cryptographic security.</p>
+        </div>
+
+        <div class="info-card">
+          <h3>🔑 Key Derivation with PBKDF2</h3>
+          <p>Passphrases are transformed into high-entropy cryptographic keys using PBKDF2 with SHA-256 and OWASP-recommended iteration counts (600,000+) along with a unique random salt.</p>
+        </div>
+
+        <div class="info-card">
+          <h3>⚠️ The "No Backdoor" Principle</h3>
+          <p>AES encryption is mathematically irreversible without the exact key or passphrase. There is no backdoor, recovery tool, or master password if the key is lost.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 sayandeep.dev • 100% Client-Side Developer Utilities</p>
+      <div style="display:flex; gap:1rem;">
+        <a href="../tools/">All Tools</a>
+        <a href="../rsa-generator/">RSA Key Generator</a>
+        <a href="../password-generator/">Password Generator</a>
+        <a href="../csp-generator/">CSP Generator</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // --- STATE MANAGEMENT ---
+    let currentOp = 'encrypt'; // 'encrypt' or 'decrypt'
+    let currentType = 'text'; // 'text' or 'file'
+    let keySource = 'passphrase'; // 'passphrase' or 'rawkey'
+    let selectedFile = null;
+    let liveProcessTimer = null;
+
+    // --- CRYPTO UTILITIES ---
+
+    // Generate random byte array
+    function getRandomBytes(len) {
+      const bytes = new Uint8Array(len);
+      window.crypto.getRandomValues(bytes);
+      return bytes;
+    }
+
+    // Uint8Array to Hex string
+    function bytesToHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Hex string to Uint8Array
+    function hexToBytes(hex) {
+      const clean = hex.replace(/[^0-9a-fA-F]/g, '');
+      if (clean.length % 2 !== 0) throw new Error('Invalid Hex string length');
+      const bytes = new Uint8Array(clean.length / 2);
+      for (let i = 0; i < clean.length; i += 2) {
+        bytes[i / 2] = parseInt(clean.substr(i, 2), 16);
+      }
+      return bytes;
+    }
+
+    // Uint8Array to Base64 string
+    function bytesToBase64(bytes) {
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    // Base64 string to Uint8Array
+    function base64ToBytes(b64) {
+      const clean = b64.trim();
+      const binary = atob(clean);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    // Derive CryptoKey from Passphrase via PBKDF2
+    async function deriveKeyFromPassphrase(passphrase, saltBytes, iterations, keyLengthBits, mode, hashAlgo = 'SHA-256') {
+      const enc = new TextEncoder();
+      const passBytes = enc.encode(passphrase);
+
+      const baseKey = await window.crypto.subtle.importKey(
+        'raw',
+        passBytes,
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+
+      const derivedKey = await window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: saltBytes,
+          iterations: iterations,
+          hash: hashAlgo
+        },
+        baseKey,
+        {
+          name: mode,
+          length: keyLengthBits
+        },
+        false,
+        ['encrypt', 'decrypt']
+      );
+
+      return derivedKey;
+    }
+
+    // Import Raw Key (Hex or Base64) into CryptoKey
+    async function importRawKey(rawKeyStr, mode, expectedBits) {
+      let rawBytes;
+      const clean = rawKeyStr.trim();
+
+      // Check if Hex or Base64
+      if (/^[0-9a-fA-F]+$/.test(clean) && (clean.length === 32 || clean.length === 48 || clean.length === 64)) {
+        rawBytes = hexToBytes(clean);
+      } else {
+        rawBytes = base64ToBytes(clean);
+      }
+
+      if (rawBytes.length * 8 !== expectedBits) {
+        throw new Error(`Key length mismatch: provided ${rawBytes.length * 8} bits, expected ${expectedBits} bits`);
+      }
+
+      return await window.crypto.subtle.importKey(
+        'raw',
+        rawBytes,
+        { name: mode, length: expectedBits },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    // --- ENCRYPTION LOGIC ---
+    async function encryptPayload(dataBytes, metadata = {}) {
+      const mode = document.getElementById('select-mode').value;
+      const keyLengthBits = parseInt(document.getElementById('select-key-size').value, 10);
+      const ivLen = mode === 'AES-GCM' ? 12 : 16;
+      const iv = getRandomBytes(ivLen);
+
+      let key;
+      let salt = null;
+      let iterations = null;
+
+      if (keySource === 'passphrase') {
+        const passphrase = document.getElementById('input-passphrase').value;
+        if (!passphrase) throw new Error('Please enter a secret passphrase');
+
+        iterations = parseInt(document.getElementById('select-pbkdf2-iter').value, 10);
+        salt = getRandomBytes(16);
+        key = await deriveKeyFromPassphrase(passphrase, salt, iterations, keyLengthBits, mode);
+      } else {
+        const rawKeyStr = document.getElementById('input-rawkey').value;
+        if (!rawKeyStr) throw new Error('Please enter or generate an AES raw key');
+        key = await importRawKey(rawKeyStr, mode, keyLengthBits);
+      }
+
+      const params = mode === 'AES-GCM' ? { name: 'AES-GCM', iv: iv } : { name: 'AES-CBC', iv: iv };
+      const cipherBuffer = await window.crypto.subtle.encrypt(params, key, dataBytes);
+      const cipherBytes = new Uint8Array(cipherBuffer);
+
+      // Package envelope
+      const envelope = {
+        v: 1,
+        mode: mode,
+        keySize: keyLengthBits,
+        kdf: keySource === 'passphrase' ? 'PBKDF2' : 'RAW',
+        salt: salt ? bytesToBase64(salt) : undefined,
+        iter: iterations || undefined,
+        hash: keySource === 'passphrase' ? 'SHA-256' : undefined,
+        iv: bytesToBase64(iv),
+        ct: bytesToBase64(cipherBytes),
+        filename: metadata.filename,
+        mime: metadata.mime
+      };
+
+      return envelope;
+    }
+
+    // --- DECRYPTION LOGIC ---
+    async function decryptPackage(envelopeJson) {
+      if (!envelopeJson || !envelopeJson.ct || !envelopeJson.iv) {
+        throw new Error('Malformed package envelope: missing ciphertext or IV');
+      }
+
+      const mode = envelopeJson.mode || document.getElementById('select-mode').value;
+      const keyLengthBits = envelopeJson.keySize || parseInt(document.getElementById('select-key-size').value, 10);
+      const iv = base64ToBytes(envelopeJson.iv);
+      const cipherBytes = base64ToBytes(envelopeJson.ct);
+
+      let key;
+      if (envelopeJson.kdf === 'PBKDF2' || keySource === 'passphrase') {
+        const passphrase = document.getElementById('input-passphrase').value;
+        if (!passphrase) throw new Error('Please enter the secret passphrase for decryption');
+
+        if (!envelopeJson.salt) throw new Error('Malformed package: missing PBKDF2 salt');
+        const salt = base64ToBytes(envelopeJson.salt);
+        const iterations = envelopeJson.iter || parseInt(document.getElementById('select-pbkdf2-iter').value, 10);
+        const hashAlgo = envelopeJson.hash || 'SHA-256';
+
+        key = await deriveKeyFromPassphrase(passphrase, salt, iterations, keyLengthBits, mode, hashAlgo);
+      } else {
+        const rawKeyStr = document.getElementById('input-rawkey').value;
+        if (!rawKeyStr) throw new Error('Please enter the matching AES raw key');
+        key = await importRawKey(rawKeyStr, mode, keyLengthBits);
+      }
+
+      const params = mode === 'AES-GCM' ? { name: 'AES-GCM', iv: iv } : { name: 'AES-CBC', iv: iv };
+
+      try {
+        const plainBuffer = await window.crypto.subtle.decrypt(params, key, cipherBytes);
+        return {
+          bytes: new Uint8Array(plainBuffer),
+          filename: envelopeJson.filename,
+          mime: envelopeJson.mime
+        };
+      } catch (err) {
+        if (mode === 'AES-GCM') {
+          throw new Error('Decryption Failed: Authentication Check Failed.\nIncorrect passphrase/key or ciphertext has been tampered with/corrupted.');
+        } else {
+          throw new Error('Decryption Failed: Bad Padding / Incorrect Key.\nCheck your key or passphrase and ensure data is intact.');
+        }
+      }
+    }
+
+    // --- TEXT PROCESSOR ---
+    async function processText() {
+      const inputArea = document.getElementById('text-input-content');
+      const outputArea = document.getElementById('text-output-content');
+      const timingLabel = document.getElementById('status-timing');
+      const inputText = inputArea.value.trim();
+
+      if (!inputText) {
+        outputArea.value = '';
+        timingLabel.textContent = 'Ready';
+        timingLabel.style.color = 'var(--muted)';
+        updateStats();
+        return;
+      }
+
+      const startTime = performance.now();
+      timingLabel.textContent = 'Processing...';
+      timingLabel.style.color = 'var(--accent)';
+
+      try {
+        if (currentOp === 'encrypt') {
+          const enc = new TextEncoder();
+          const dataBytes = enc.encode(inputArea.value);
+          const envelope = await encryptPayload(dataBytes, { mime: 'text/plain' });
+          outputArea.value = JSON.stringify(envelope, null, 2);
+        } else {
+          // Decrypt
+          let envelope;
+          try {
+            envelope = JSON.parse(inputText);
+          } catch (e) {
+            throw new Error('Invalid input format: Input must be a valid JSON encrypted package envelope.');
+          }
+
+          const result = await decryptPackage(envelope);
+          const dec = new TextDecoder();
+          outputArea.value = dec.decode(result.bytes);
+        }
+
+        const elapsed = (performance.now() - startTime).toFixed(1);
+        timingLabel.textContent = `✓ Success in ${elapsed} ms`;
+        timingLabel.style.color = 'var(--success)';
+      } catch (err) {
+        outputArea.value = `❌ Error: ${err.message}`;
+        timingLabel.textContent = 'Failed';
+        timingLabel.style.color = 'var(--error)';
+      }
+
+      updateStats();
+    }
+
+    // --- FILE PROCESSOR ---
+    async function processFile() {
+      if (!selectedFile) return;
+
+      const progressBar = document.getElementById('file-progress-fill');
+      const progressContainer = document.getElementById('file-progress-container');
+      const statusMsg = document.getElementById('file-status-msg');
+      const actionBtn = document.getElementById('btn-process-file');
+
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '20%';
+      statusMsg.textContent = 'Reading file into memory...';
+      actionBtn.disabled = true;
+
+      const startTime = performance.now();
+
+      try {
+        const fileBuffer = await selectedFile.arrayBuffer();
+        const fileBytes = new Uint8Array(fileBuffer);
+        progressBar.style.width = '60%';
+
+        if (currentOp === 'encrypt') {
+          statusMsg.textContent = 'Encrypting raw bytes with AES...';
+          const envelope = await encryptPayload(fileBytes, {
+            filename: selectedFile.name,
+            mime: selectedFile.type || 'application/octet-stream'
+          });
+
+          progressBar.style.width = '90%';
+          statusMsg.textContent = 'Packaging .enc file...';
+
+          const jsonStr = JSON.stringify(envelope);
+          const blob = new Blob([jsonStr], { type: 'application/json' });
+          const outName = `${selectedFile.name}.enc`;
+          triggerDownload(blob, outName);
+
+          const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+          statusMsg.textContent = `✓ Successfully encrypted ${selectedFile.name} (${formatBytes(selectedFile.size)}) in ${elapsed}s! Download started.`;
+          statusMsg.style.color = 'var(--success)';
+        } else {
+          // Decrypt
+          statusMsg.textContent = 'Parsing and decrypting .enc package...';
+          const dec = new TextDecoder();
+          const jsonStr = dec.decode(fileBytes);
+          let envelope;
+          try {
+            envelope = JSON.parse(jsonStr);
+          } catch (e) {
+            throw new Error('Invalid .enc file: File is not a valid encrypted JSON envelope.');
+          }
+
+          const result = await decryptPackage(envelope);
+          progressBar.style.width = '90%';
+
+          const blob = new Blob([result.bytes], { type: result.mime || 'application/octet-stream' });
+          const outName = result.filename || (selectedFile.name.endsWith('.enc') ? selectedFile.name.slice(0, -4) : `decrypted_${selectedFile.name}`);
+          triggerDownload(blob, outName);
+
+          const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+          statusMsg.textContent = `✓ Successfully decrypted to ${outName} in ${elapsed}s! Download started.`;
+          statusMsg.style.color = 'var(--success)';
+        }
+
+        progressBar.style.width = '100%';
+      } catch (err) {
+        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.style.color = 'var(--error)';
+        progressBar.style.width = '0%';
+      } finally {
+        actionBtn.disabled = false;
+      }
+    }
+
+    // --- HELPER UTILITIES ---
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function updateStats() {
+      const inVal = document.getElementById('text-input-content').value;
+      const outVal = document.getElementById('text-output-content').value;
+
+      const inBytes = new TextEncoder().encode(inVal).length;
+      const outBytes = new TextEncoder().encode(outVal).length;
+
+      document.getElementById('stats-input').textContent = `${inVal.length} chars (${formatBytes(inBytes)})`;
+      document.getElementById('stats-output').textContent = `${outVal.length} chars (${formatBytes(outBytes)})`;
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-icon').textContent = isSuccess ? '✓' : '⚠️';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function updateOpUI() {
+      const isEnc = currentOp === 'encrypt';
+      document.getElementById('tab-encrypt').classList.toggle('active', isEnc);
+      document.getElementById('tab-decrypt').classList.toggle('active', !isEnc);
+
+      document.getElementById('label-input-pane').textContent = isEnc ? 'Plaintext to Encrypt:' : 'Encrypted Package to Decrypt:';
+      document.getElementById('label-output-pane').textContent = isEnc ? 'Encrypted Package (Base64 Envelope):' : 'Decrypted Plaintext:';
+      document.getElementById('label-btn-process').textContent = isEnc ? '🔒 Encrypt Now' : '🔓 Decrypt Now';
+      document.getElementById('text-input-content').placeholder = isEnc ? 'Type or paste plaintext here to encrypt...' : 'Paste encrypted JSON package envelope here to decrypt...';
+      document.getElementById('label-file-action-btn').textContent = isEnc ? '🔒 Encrypt & Download .enc' : '🔓 Decrypt & Download Original';
+    }
+
+    // --- EVENT LISTENERS INITIALIZATION ---
+    function initEvents() {
+      // Operation Tabs (Encrypt / Decrypt)
+      document.getElementById('tab-encrypt').addEventListener('click', () => {
+        currentOp = 'encrypt';
+        updateOpUI();
+        processText();
+      });
+
+      document.getElementById('tab-decrypt').addEventListener('click', () => {
+        currentOp = 'decrypt';
+        updateOpUI();
+        processText();
+      });
+
+      // Swap Round-Trip button
+      document.getElementById('btn-swap-op').addEventListener('click', () => {
+        const outVal = document.getElementById('text-output-content').value;
+        if (outVal && !outVal.startsWith('❌ Error:')) {
+          currentOp = currentOp === 'encrypt' ? 'decrypt' : 'encrypt';
+          updateOpUI();
+          document.getElementById('text-input-content').value = outVal;
+          document.getElementById('text-output-content').value = '';
+          processText();
+          showToast(`Swapped to ${currentOp} mode!`);
+        } else {
+          showToast('Output is empty or contains an error', false);
+        }
+      });
+
+      // Type Toggle (Text / File)
+      document.getElementById('type-text').addEventListener('click', () => {
+        currentType = 'text';
+        document.getElementById('type-text').classList.add('active');
+        document.getElementById('type-file').classList.remove('active');
+        document.getElementById('view-text-mode').style.display = 'grid';
+        document.getElementById('view-file-mode').style.display = 'none';
+      });
+
+      document.getElementById('type-file').addEventListener('click', () => {
+        currentType = 'file';
+        document.getElementById('type-file').classList.add('active');
+        document.getElementById('type-text').classList.remove('active');
+        document.getElementById('view-file-mode').style.display = 'flex';
+        document.getElementById('view-text-mode').style.display = 'none';
+      });
+
+      // Mode Selector Hint
+      document.getElementById('select-mode').addEventListener('change', (e) => {
+        const hint = document.getElementById('mode-hint');
+        if (e.target.value === 'AES-GCM') {
+          hint.textContent = '✓ GCM provides confidentiality & tamper-proof authentication.';
+          hint.style.color = 'var(--success)';
+        } else {
+          hint.textContent = '⚠️ CBC lacks built-in authentication. Pair with a separate MAC for integrity.';
+          hint.style.color = 'var(--warning)';
+        }
+        processText();
+      });
+
+      // Key Size Selector
+      document.getElementById('select-key-size').addEventListener('change', () => {
+        if (keySource === 'rawkey') {
+          generateAndDisplayRandomKey();
+        }
+        processText();
+      });
+
+      // Key Source Tabs (Passphrase / Raw Key)
+      document.getElementById('src-passphrase').addEventListener('click', () => {
+        keySource = 'passphrase';
+        document.getElementById('src-passphrase').classList.add('active');
+        document.getElementById('src-rawkey').classList.remove('active');
+        document.getElementById('panel-passphrase').style.display = 'flex';
+        document.getElementById('panel-rawkey').style.display = 'none';
+        processText();
+      });
+
+      document.getElementById('src-rawkey').addEventListener('click', () => {
+        keySource = 'rawkey';
+        document.getElementById('src-rawkey').classList.add('active');
+        document.getElementById('src-passphrase').classList.remove('active');
+        document.getElementById('panel-rawkey').style.display = 'flex';
+        document.getElementById('panel-passphrase').style.display = 'none';
+        if (!document.getElementById('input-rawkey').value) {
+          generateAndDisplayRandomKey();
+        }
+        processText();
+      });
+
+      // Passphrase visibility toggle
+      const passInput = document.getElementById('input-passphrase');
+      const passBtn = document.getElementById('btn-toggle-passphrase-visibility');
+      passBtn.addEventListener('click', () => {
+        if (passInput.type === 'password') {
+          passInput.type = 'text';
+          passBtn.textContent = '🔒';
+        } else {
+          passInput.type = 'password';
+          passBtn.textContent = '👁️';
+        }
+      });
+
+      // Generate random raw key
+      function generateAndDisplayRandomKey() {
+        const bits = parseInt(document.getElementById('select-key-size').value, 10);
+        const bytes = getRandomBytes(bits / 8);
+        const hex = bytesToHex(bytes);
+        document.getElementById('input-rawkey').value = hex;
+        showToast(`Generated random ${bits}-bit AES key in Hex!`);
+      }
+
+      document.getElementById('btn-gen-random-key').addEventListener('click', () => {
+        generateAndDisplayRandomKey();
+        processText();
+      });
+
+      document.getElementById('btn-copy-rawkey').addEventListener('click', () => {
+        const key = document.getElementById('input-rawkey').value;
+        if (key) {
+          navigator.clipboard.writeText(key);
+          showToast('✓ Copied key to clipboard!');
+        }
+      });
+
+      // Text input live processing
+      document.getElementById('text-input-content').addEventListener('input', () => {
+        if (document.getElementById('toggle-live-text').checked) {
+          clearTimeout(liveProcessTimer);
+          liveProcessTimer = setTimeout(processText, 250);
+        }
+        updateStats();
+      });
+
+      document.getElementById('input-passphrase').addEventListener('input', () => {
+        if (document.getElementById('toggle-live-text').checked) {
+          clearTimeout(liveProcessTimer);
+          liveProcessTimer = setTimeout(processText, 250);
+        }
+      });
+
+      document.getElementById('input-rawkey').addEventListener('input', () => {
+        if (document.getElementById('toggle-live-text').checked) {
+          clearTimeout(liveProcessTimer);
+          liveProcessTimer = setTimeout(processText, 250);
+        }
+      });
+
+      document.getElementById('select-pbkdf2-iter').addEventListener('change', () => {
+        if (document.getElementById('toggle-live-text').checked) {
+          processText();
+        }
+      });
+
+      // Manual Process Button
+      document.getElementById('btn-process-text').addEventListener('click', processText);
+
+      // Copy output
+      document.getElementById('btn-copy-output').addEventListener('click', () => {
+        const out = document.getElementById('text-output-content').value;
+        if (out) {
+          navigator.clipboard.writeText(out);
+          showToast('✓ Copied output to clipboard!');
+        }
+      });
+
+      // Download output
+      document.getElementById('btn-download-output').addEventListener('click', () => {
+        const out = document.getElementById('text-output-content').value;
+        if (out) {
+          const blob = new Blob([out], { type: 'application/json' });
+          const fname = currentOp === 'encrypt' ? 'encrypted_package.json' : 'decrypted_text.txt';
+          triggerDownload(blob, fname);
+        }
+      });
+
+      // File drag-and-drop
+      const dropzone = document.getElementById('file-dropzone');
+      const fileInput = document.getElementById('file-input');
+
+      dropzone.addEventListener('click', () => fileInput.click());
+
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          handleFileSelected(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          handleFileSelected(e.target.files[0]);
+        }
+      });
+
+      function handleFileSelected(file) {
+        selectedFile = file;
+        document.getElementById('selected-file-card').style.display = 'flex';
+        document.getElementById('file-name-display').textContent = file.name;
+        document.getElementById('file-size-display').textContent = `(${formatBytes(file.size)})`;
+        document.getElementById('file-status-msg').textContent = 'File ready for processing.';
+        document.getElementById('file-status-msg').style.color = 'var(--muted)';
+        document.getElementById('file-progress-container').style.display = 'none';
+      }
+
+      document.getElementById('btn-process-file').addEventListener('click', processFile);
+
+      // Theme toggle
+      const themeBtn = document.getElementById('theme-toggle');
+      themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+
+    // --- INITIALIZE ON LOAD ---
+    function initApp() {
+      initEvents();
+      document.getElementById('input-passphrase').value = 'CorrectHorseBatteryStaple!2026';
+      document.getElementById('text-input-content').value = 'Hello! This is a confidential message encrypted with 256-bit AES-GCM and PBKDF2.';
+      processText();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>

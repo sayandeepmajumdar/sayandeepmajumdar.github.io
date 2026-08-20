@@ -3,16 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Architecture Diagram Studio — Visual Cloud &amp; System Architecture Designer | sayandeep.dev</title>
-  <meta name="description" content="Free online architecture diagram editor. Design AWS, GCP, Azure, and microservices cloud infrastructure diagrams with drag-and-drop nodes, VPC containers, protocol connectors, live JSON sync, and PNG/SVG export." />
-  <meta name="keywords" content="architecture diagram editor, cloud architecture designer, aws diagram maker, gcp diagram, azure architecture, microservices diagram, system design tool" />
+  <title>System Architecture Diagram Generator — Text &amp; AI to Diagram | sayandeep.dev</title>
+  <meta name="description" content="Generate clean system and cloud architecture diagrams from structured text DSL or plain-English descriptions. Powered by Mermaid.js with component icon mappings, grouping, export to SVG/PNG, and zero backend." />
+  <meta name="keywords" content="architecture diagram generator, text to diagram, mermaid architecture diagram, cloud architecture generator, system design diagram, ai architecture diagram, dsl to mermaid" />
   <link rel="canonical" href="https://sayandeepmajumdar.github.io/architecture-diagram/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Mermaid.js for lean, client-side graph layout and SVG rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- Open Graph & Schema.org -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="System Architecture Diagram Generator | sayandeep.dev" />
+  <meta property="og:description" content="Convert structured text DSL or natural language into clean, professional system architecture diagrams. 100% client-side with Mermaid.js." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/architecture-diagram/" />
+  <meta property="og:image" content="https://sayandeepmajumdar.github.io/assets/img/profile.jpg" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "System Architecture Diagram Generator",
+    "url": "https://sayandeepmajumdar.github.io/architecture-diagram/",
+    "description": "Convert structured architecture DSL or natural language prompts into live Mermaid.js system architecture diagrams with component icons, subgraphs, SVG/PNG export, and URL sharing.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "All",
+    "author": {
+      "@type": "Person",
+      "name": "Sayandeep Majumdar"
+    }
+  }
+  </script>
 
   <style>
     :root {
@@ -26,9 +52,11 @@
       --accent: #4f46e5;
       --accent-hover: #4338ca;
       --accent-light: #eef2ff;
-      --track-bg: #e2e8f0;
+      --accent-glow: rgba(79, 70, 229, 0.15);
       --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
       --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
       --error: #ef4444;
       --error-bg: rgba(239, 68, 68, 0.1);
       --radius-sm: 6px;
@@ -37,7 +65,7 @@
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      --transition: 0.2s ease;
+      --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     html.dark {
@@ -51,9 +79,11 @@
       --accent: #818cf8;
       --accent-hover: #6366f1;
       --accent-light: rgba(129, 140, 248, 0.12);
-      --track-bg: #44403c;
+      --accent-glow: rgba(129, 140, 248, 0.2);
       --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
       --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
       --error: #f87171;
       --error-bg: rgba(248, 113, 113, 0.15);
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -81,19 +111,22 @@
 
     /* Header */
     header {
-      background-color: rgba(var(--surface-rgb), 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--surface-rgb), 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--line);
       flex-shrink: 0;
-      z-index: 40;
     }
 
-    header .header-inner {
+    header .container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 48px;
-      height: auto;
-      padding: 0.35rem 1rem;
+      height: 56px;
+      padding: 0 1rem;
       gap: 0.75rem;
     }
 
@@ -103,40 +136,43 @@
       gap: 0.6rem;
       text-decoration: none;
       color: var(--text);
-      flex-shrink: 0;
+      min-width: 0;
+      flex-shrink: 1;
     }
 
     .brand-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      padding: 0.15rem 0.4rem;
+      padding: 0.2rem 0.5rem;
       border-radius: var(--radius-sm);
       background: var(--accent-light);
       color: var(--accent);
+      white-space: nowrap;
       flex-shrink: 0;
     }
 
     .brand-title {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 1.02rem;
       letter-spacing: -0.02em;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
-      flex-wrap: nowrap;
-      min-width: 0;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
 
     .btn {
       font-family: inherit;
-      font-size: 0.75rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      padding: 0.35rem 0.65rem;
+      padding: 0.4rem 0.8rem;
       border-radius: var(--radius-sm);
       border: 1px solid var(--line);
       background: var(--surface-alt);
@@ -148,8 +184,8 @@
       gap: 0.35rem;
       transition: all var(--transition);
       white-space: nowrap;
-      flex-shrink: 0;
       user-select: none;
+      text-decoration: none;
     }
 
     .btn:hover {
@@ -157,32 +193,43 @@
       color: var(--accent);
     }
 
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
     .btn--primary {
       background: var(--accent);
-      color: #ffffff;
       border-color: var(--accent);
+      color: #ffffff;
     }
 
     .btn--primary:hover {
       background: var(--accent-hover);
+      border-color: var(--accent-hover);
       color: #ffffff;
     }
 
-    .btn--danger { color: var(--error); }
-    .btn--danger:hover { background: var(--error-bg); border-color: var(--error); }
+    .btn--sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.75rem;
+      height: 32px;
+    }
 
     .btn-icon {
       background: var(--surface);
       border: 1px solid var(--line);
       color: var(--text);
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: var(--radius-sm);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all var(--transition);
+      flex-shrink: 0;
     }
 
     .btn-icon:hover {
@@ -196,14 +243,21 @@
     html.dark .icon-moon { display: none; }
 
     .nav-back-link {
-      font-size: 0.775rem;
-      font-weight: 500;
+      font-size: 0.8125rem;
+      font-weight: 600;
       color: var(--text);
       text-decoration: none;
-      padding: 0.3rem 0.65rem;
+      padding: 0.35rem 0.75rem;
       border-radius: var(--radius-sm);
       border: 1px solid var(--line);
       background: var(--surface);
+      transition: all var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      flex-shrink: 0;
     }
 
     .nav-back-link:hover {
@@ -213,299 +267,285 @@
 
     .form-select, .form-input {
       font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.3rem 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.35rem 0.65rem;
       border-radius: var(--radius-sm);
       border: 1px solid var(--line);
-      background: var(--surface-alt);
+      background: var(--surface);
       color: var(--text);
       outline: none;
+      height: 34px;
     }
 
     .form-select:focus, .form-input:focus {
       border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
     }
 
-    /* Workspace Layout */
+    /* Studio Top Toolbar */
+    .top-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-right: 0.2rem;
+    }
+
+    /* Mobile View Toggle Switcher */
+    .mobile-view-tabs {
+      display: none;
+      width: 100%;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      padding: 0.25rem 0.5rem;
+      gap: 0.35rem;
+    }
+
+    .mobile-tab-btn {
+      flex: 1;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.775rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .mobile-tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Main Split Workspace */
     .studio-workspace {
       flex: 1;
       display: grid;
-      grid-template-columns: 280px 1fr 280px;
-      height: calc(100vh - 48px);
+      grid-template-columns: 460px 1fr;
       min-height: 0;
       background: var(--bg);
       position: relative;
     }
 
-    /* Left Sidebar: Component Palette */
-    .sidebar-left {
+    @media (max-width: 1000px) {
+      .studio-workspace {
+        grid-template-columns: 380px 1fr;
+      }
+    }
+
+    /* Left Pane: DSL Editor & AI Prompt Drawer */
+    .editor-pane {
       background: var(--surface);
       border-right: 1px solid var(--line);
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      padding: 0.75rem;
-      gap: 0.75rem;
-    }
-
-    .palette-search {
-      width: 100%;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.775rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--line);
-      background: var(--surface-alt);
-      color: var(--text);
-      outline: none;
-    }
-
-    .palette-tabs {
-      display: flex;
-      gap: 0.25rem;
-      overflow-x: auto;
-      padding-bottom: 0.25rem;
-    }
-
-    .tab-btn {
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--line);
-      background: var(--surface-alt);
-      color: var(--muted);
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .tab-btn.active {
-      background: var(--accent);
-      color: #ffffff;
-      border-color: var(--accent);
-    }
-
-    .palette-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.4rem;
-      overflow-y: auto;
-    }
-
-    .palette-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.3rem;
-      padding: 0.6rem 0.4rem;
-      border-radius: var(--radius-sm);
-      background: var(--surface-alt);
-      border: 1px solid var(--line);
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-      user-select: none;
-    }
-
-    .palette-item:hover {
-      border-color: var(--accent);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .palette-item .icon { font-size: 1.35rem; }
-    .palette-item .name { font-size: 0.675rem; font-weight: 600; line-height: 1.2; }
-
-    /* Center Canvas Viewport */
-    .canvas-viewport {
-      flex: 1;
+      min-height: 0;
       position: relative;
-      overflow: hidden;
-      background-color: #f8fafc;
-      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-      background-size: 20px 20px;
-      cursor: grab;
     }
 
-    html.dark .canvas-viewport {
-      background-color: #09090b;
-      background-image: radial-gradient(#27272a 1px, transparent 1px);
-    }
-
-    .canvas-viewport.grabbing { cursor: grabbing; }
-
-    .canvas-stage {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4000px;
-      height: 4000px;
-      transform-origin: 0 0;
-      pointer-events: none;
-    }
-
-    .canvas-stage > * { pointer-events: auto; }
-
-    /* SVG Connectors Layer */
-    .connections-svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    /* Container Box (VPC/Subnet) */
-    .arch-container {
-      position: absolute;
-      border: 2px dashed #94a3b8;
-      border-radius: var(--radius-md);
-      background: rgba(241, 245, 249, 0.45);
-      z-index: 1;
-      cursor: move;
-      user-select: none;
-      transition: border-color 0.15s;
-    }
-
-    html.dark .arch-container {
-      border-color: #475569;
-      background: rgba(30, 41, 59, 0.35);
-    }
-
-    .arch-container.selected {
-      border-color: var(--accent);
-      border-style: solid;
-    }
-
-    .container-header {
-      position: absolute;
-      top: -12px;
-      left: 12px;
-      background: #475569;
-      color: #ffffff;
-      font-size: 0.675rem;
-      font-weight: 700;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    /* Node Card */
-    .arch-node {
-      position: absolute;
-      width: 140px;
-      min-height: 70px;
-      padding: 0.6rem 0.5rem;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
+    /* AI Assistant Drawer */
+    .ai-drawer {
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--line);
+      padding: 0.75rem 1rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 0.25rem;
-      cursor: grab;
-      user-select: none;
-      z-index: 10;
-      transition: box-shadow 0.15s, border-color 0.15s;
+      gap: 0.6rem;
+      transition: all var(--transition);
     }
 
-    .arch-node.selected {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-light), var(--shadow-md);
-    }
-
-    .arch-node .node-icon { font-size: 1.35rem; }
-    .arch-node .node-title { font-size: 0.75rem; font-weight: 700; color: var(--text); line-height: 1.2; word-break: break-word; }
-    .arch-node .node-sub { font-size: 0.65rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-
-    /* Right Sidebar: Inspector */
-    .sidebar-right {
-      background: var(--surface);
-      border-left: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      padding: 0.75rem;
-      gap: 1rem;
-    }
-
-    .sidebar-section {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .sidebar-title {
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
-
-    .prop-row {
-      display: grid;
-      grid-template-columns: 75px 1fr;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.775rem;
-    }
-
-    /* Bottom Code Drawer */
-    .bottom-code-drawer {
-      position: absolute;
-      bottom: 0;
-      left: 280px;
-      right: 280px;
-      background: var(--surface);
-      border-top: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      height: 180px;
-      z-index: 30;
-      box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
-      transition: transform 0.2s ease;
-    }
-
-    .bottom-code-drawer.collapsed {
-      transform: translateY(calc(100% - 32px));
-    }
-
-    .drawer-header {
-      height: 32px;
-      padding: 0 0.75rem;
+    .ai-drawer-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--line);
-      cursor: pointer;
-      background: var(--surface-alt);
-      font-size: 0.75rem;
+      font-size: 0.8125rem;
       font-weight: 700;
+      color: var(--text);
+    }
+
+    .ai-notice-pill {
+      font-size: 0.675rem;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+    }
+
+    .ai-prompt-input {
+      width: 100%;
+      min-height: 64px;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+    }
+
+    .ai-prompt-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .ai-config-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    /* Quick Component Insert Bar */
+    .quick-insert-bar {
+      padding: 0.4rem 0.75rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .quick-insert-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .insert-chip {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: var(--surface-alt);
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .insert-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--surface);
+    }
+
+    /* DSL Code Editor Area */
+    .editor-wrapper {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+      background: var(--surface);
     }
 
     .code-textarea {
       flex: 1;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8125rem;
-      line-height: 1.5;
-      padding: 0.75rem;
+      font-size: 0.825rem;
+      line-height: 1.6;
+      padding: 0.85rem 1rem;
       border: none;
-      background: var(--surface);
+      background: transparent;
       color: var(--text);
       outline: none;
       resize: none;
       overflow: auto;
       white-space: pre;
+      tab-size: 2;
     }
 
-    /* Floating Zoom Controls */
+    /* Right Pane: Rendered Mermaid Diagram */
+    .preview-pane {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      position: relative;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .diagram-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      position: relative;
+      padding: 1.5rem;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .diagram-viewport.grabbing {
+      cursor: grabbing;
+    }
+
+    .diagram-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      transition: transform 0.1s ease-out;
+    }
+
+    .diagram-container svg {
+      max-width: none !important;
+      height: auto !important;
+    }
+
+    /* Error Overlay Banner */
+    .error-banner {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+      background: var(--error-bg);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.85rem;
+      color: var(--error);
+      font-size: 0.775rem;
+      font-family: 'JetBrains Mono', monospace;
+      display: none;
+      align-items: flex-start;
+      gap: 0.5rem;
+      z-index: 20;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(8px);
+    }
+
+    .error-banner.show {
+      display: flex;
+    }
+
+    /* Floating Zoom Toolbar */
     .zoom-toolbar {
       position: absolute;
       bottom: 1rem;
@@ -519,6 +559,103 @@
       gap: 0.25rem;
       box-shadow: var(--shadow-md);
       z-index: 20;
+    }
+
+    .zoom-lbl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0 0.35rem;
+    }
+
+    /* Modal Component */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      flex: 1;
+      overflow-y: auto;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--line);
+      background: var(--surface-alt);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .syntax-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.775rem;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.5rem;
+    }
+
+    .syntax-table th, .syntax-table td {
+      padding: 0.45rem 0.6rem;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .syntax-table th {
+      background: var(--surface-alt);
+      font-weight: 700;
     }
 
     /* Toast */
@@ -549,61 +686,87 @@
       opacity: 1;
     }
 
-    /* Mobile Responsiveness */
-    @media (max-width: 900px) {
+    /* Mobile Media Queries */
+    @media (max-width: 768px) {
       body {
-        height: auto;
-        min-height: 100vh;
-        overflow-y: auto;
+        height: 100vh;
+        overflow: hidden;
       }
-      header .header-inner {
-        padding: 0.35rem 0.75rem;
-        gap: 0.5rem;
+
+      header .container {
+        height: 52px;
+        padding: 0 0.75rem;
+        gap: 0.4rem;
       }
+
       .brand {
-        flex-shrink: 0;
+        gap: 0.45rem;
+      }
+
+      .brand-badge {
+        font-size: 0.675rem;
+        padding: 0.15rem 0.35rem;
+      }
+
+      .brand-title {
+        font-size: 0.9rem;
+      }
+
+      .header-actions {
+        gap: 0.35rem;
+      }
+
+      .btn-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .nav-back-link {
+        height: 32px;
+        padding: 0.25rem 0.55rem;
+        font-size: 0.75rem;
+      }
+
+      .top-toolbar {
+        padding: 0.4rem 0.75rem;
+      }
+
+      .mobile-view-tabs {
+        display: flex;
+      }
+
+      .studio-workspace {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 56px - 44px - 36px);
+      }
+
+      .editor-pane {
+        display: flex;
+      }
+
+      .preview-pane {
+        display: none;
+      }
+
+      .studio-workspace.view-preview .editor-pane {
+        display: none;
+      }
+
+      .studio-workspace.view-preview .preview-pane {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .brand-badge {
+        display: none;
       }
       .brand-title {
-        display: none;
+        font-size: 0.875rem;
       }
-      .header-actions {
-        flex: 1;
-        justify-content: flex-end;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 2px;
-        flex-wrap: nowrap;
-      }
-      .header-actions::-webkit-scrollbar {
-        display: none;
-      }
-      .studio-workspace {
-        display: flex;
-        flex-direction: column;
-        height: auto;
-      }
-      .sidebar-left {
-        border-right: none;
-        border-bottom: 1px solid var(--line);
-        max-height: 260px;
-      }
-      .canvas-viewport {
-        height: 420px;
-        min-height: 420px;
-      }
-      .sidebar-right {
-        border-left: none;
-        border-top: 1px solid var(--line);
-        max-height: 320px;
-      }
-      .bottom-code-drawer {
-        left: 0;
-        right: 0;
-        position: relative;
-        transform: none !important;
-        height: auto;
-        min-height: 160px;
+      .nav-back-link {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.725rem;
       }
     }
   </style>
@@ -611,884 +774,1399 @@
 <body>
   <!-- Header -->
   <header>
-    <div class="header-inner">
-      <a href="./" class="brand" aria-label="Architecture Diagram Studio">
+    <div class="container">
+      <a href="./" class="brand" aria-label="Architecture Diagram Studio Homepage">
         <span class="brand-badge">ARCH</span>
-        <span class="brand-title">Architecture Diagram Studio</span>
+        <span class="brand-title">System Architecture Generator</span>
       </a>
 
       <div class="header-actions">
-        <select id="select-template" class="form-select">
-          <option value="" disabled selected>✨ Templates...</option>
-          <option value="three_tier">🌐 3-Tier Web App</option>
-          <option value="serverless">⚡ Serverless Event API</option>
-          <option value="k8s">☸️ Microservices on K8s</option>
-          <option value="data">📊 Real-Time Data Lakehouse</option>
-          <option value="hybrid">🏢 Hybrid Cloud &amp; VPN</option>
-        </select>
-        <button class="btn btn--sm" id="btn-new">📄 New</button>
-        <button class="btn btn--sm" id="btn-share-url">🔗 Share</button>
-        <button class="btn btn--sm" id="btn-copy-mermaid">📋 Mermaid</button>
-        <button class="btn btn--sm" id="btn-export-json">💾 JSON</button>
-        <button class="btn btn--sm btn--primary" id="btn-export-svg">💾 SVG</button>
-        <button class="btn btn--sm" id="btn-export-png">🖼️ PNG (2x)</button>
-
-        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme" style="margin-left:0.4rem;">
-          <svg class="icon-sun" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-          <svg class="icon-moon" width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        <button id="btn-open-syntax" class="btn btn--sm" title="Open DSL syntax reference">
+          📖 Cheat Sheet
         </button>
+
+        <button id="btn-share-url" class="btn btn--sm" title="Share diagram via compressed URL hash">
+          🔗 Share URL
+        </button>
+
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle Dark Mode" title="Toggle Theme">
+          <svg class="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+          <svg class="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+
         <a href="../tools/" class="nav-back-link">← Back</a>
       </div>
     </div>
   </header>
 
-  <!-- Studio Workspace -->
-  <div class="studio-workspace">
-    <!-- Left Sidebar: Component Palette -->
-    <aside class="sidebar-left">
-      <input type="text" id="palette-search" class="palette-search" placeholder="🔍 Search components..." />
+  <!-- Studio Top Toolbar -->
+  <div class="top-toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-label">Template:</span>
+      <select id="select-template" class="form-select" style="min-width: 170px;">
+        <option value="" disabled selected>Load Architecture Pattern...</option>
+        <option value="three_tier">🌐 3-Tier Web Application</option>
+        <option value="serverless">⚡ Serverless Event-Driven API</option>
+        <option value="microservices">☸️ Microservices with Gateway &amp; Mesh</option>
+        <option value="event_stream">📬 Event Streaming &amp; Kafka Pub/Sub</option>
+        <option value="cicd_pipeline">🚀 CI/CD &amp; GitOps Delivery Pipeline</option>
+        <option value="rag_ai">🤖 Generative AI / RAG Architecture</option>
+      </select>
 
-      <div class="palette-tabs">
-        <button class="tab-btn active" data-tab="all">All</button>
-        <button class="tab-btn" data-tab="generic">Generic</button>
-        <button class="tab-btn" data-tab="aws">AWS</button>
-        <button class="tab-btn" data-tab="gcp">GCP</button>
-        <button class="tab-btn" data-tab="azure">Azure</button>
-        <button class="tab-btn" data-tab="containers">VPC/Boxes</button>
+      <span class="toolbar-label" style="margin-left:0.5rem;">Theme:</span>
+      <select id="select-theme" class="form-select">
+        <option value="indigo" selected>Modern Indigo</option>
+        <option value="dark_cyber">Dark Cyber</option>
+        <option value="monochrome">Clean Monochrome / Print</option>
+        <option value="forest">Forest Green</option>
+        <option value="sunset">Sunset Amber</option>
+      </select>
+
+      <span class="toolbar-label" style="margin-left:0.5rem;">Layout:</span>
+      <select id="select-direction" class="form-select">
+        <option value="LR" selected>Left → Right (LR)</option>
+        <option value="TD">Top → Bottom (TD)</option>
+      </select>
+    </div>
+
+    <div class="toolbar-right">
+      <button id="btn-toggle-ai" class="btn btn--sm" title="Toggle Plain-English AI generator">
+        ✨ AI Plain-English Assist
+      </button>
+
+      <div style="display:flex; gap:0.25rem;">
+        <button id="btn-copy-mermaid" class="btn btn--sm" title="Copy Mermaid flowchart code">
+          📋 Mermaid
+        </button>
+        <button id="btn-copy-md" class="btn btn--sm" title="Copy Markdown-fenced block for README / Docs">
+          📑 Markdown
+        </button>
+        <button id="btn-export-svg" class="btn btn--primary btn--sm" title="Download standalone SVG">
+          💾 SVG
+        </button>
+        <button id="btn-export-png" class="btn btn--primary btn--sm" title="Download high-resolution PNG">
+          🖼️ PNG (2x)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile View Switcher (Visible on small screens) -->
+  <div class="mobile-view-tabs" id="mobile-view-tabs">
+    <button class="mobile-tab-btn active" data-view="editor">✏️ DSL Editor</button>
+    <button class="mobile-tab-btn" data-view="preview">🖼️ Rendered Diagram</button>
+  </div>
+
+  <!-- Main Workspace -->
+  <div class="studio-workspace" id="studio-workspace">
+    <!-- Left Pane: DSL Editor & AI Prompt Drawer -->
+    <div class="editor-pane">
+      <!-- Plain-English AI Drawer (Toggleable) -->
+      <div class="ai-drawer" id="ai-drawer" style="display: none;">
+        <div class="ai-drawer-header">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <span>✨ AI Plain-English Description to Diagram</span>
+            <span class="ai-notice-pill">Direct Browser API Call</span>
+          </div>
+          <button class="btn btn--sm btn-icon" id="btn-close-ai" style="width:24px; height:24px; font-size:0.75rem;">✕</button>
+        </div>
+
+        <textarea id="ai-prompt-input" class="ai-prompt-input" placeholder="Describe your architecture in plain English, e.g. 'A Next.js frontend connects to an API gateway. The gateway routes requests to an Auth service and an Orders service. Orders writes to PostgreSQL and emits events to a Kafka queue that an inventory worker consumes.'"></textarea>
+
+        <div class="ai-config-row">
+          <select id="ai-provider" class="form-select" style="font-size:0.75rem; height:30px;">
+            <option value="gemini" selected>Google Gemini (gemini-1.5-flash)</option>
+            <option value="openai">OpenAI (gpt-4o-mini)</option>
+            <option value="anthropic">Anthropic Claude (claude-3-5-haiku)</option>
+            <option value="custom">Custom OpenAI-compatible</option>
+          </select>
+
+          <input type="password" id="ai-api-key" class="form-input" style="flex:1; min-width:140px; font-size:0.75rem; height:30px;" placeholder="Enter your API Key (stored in memory only)..." />
+
+          <button id="btn-generate-ai" class="btn btn--primary btn--sm" style="height:30px;">
+            🚀 Convert to DSL
+          </button>
+        </div>
+
+        <div style="font-size:0.7rem; color:var(--muted);">
+          🔒 <strong>Privacy Note:</strong> Your API key and system prompt are sent directly from your browser to the chosen AI provider and are never saved or sent to any server.
+        </div>
       </div>
 
-      <div class="palette-grid" id="palette-grid">
-        <!-- Injected Components -->
+      <!-- Quick Component Insert Bar -->
+      <div class="quick-insert-bar">
+        <span style="font-size:0.685rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-right:0.2rem;">Insert:</span>
+        <button class="insert-chip" data-insert="client:Web Client [Web App]">👤 Client</button>
+        <button class="insert-chip" data-insert="gateway:API Gateway [Kong Gateway]">🚪 Gateway</button>
+        <button class="insert-chip" data-insert="lb:Load Balancer [AWS ALB]">⚖️ Load Balancer</button>
+        <button class="insert-chip" data-insert="server:App Service [Node.js / Go]">⚙️ Service</button>
+        <button class="insert-chip" data-insert="db:Database [(PostgreSQL)]">🗄️ Database</button>
+        <button class="insert-chip" data-insert="cache:Redis [(In-Memory Cache)]">⚡ Cache</button>
+        <button class="insert-chip" data-insert="queue:Kafka [[Event Stream]]">📬 Queue</button>
+        <button class="insert-chip" data-insert="storage:S3 Bucket [(Object Storage)]">🪣 Storage</button>
+        <button class="insert-chip" data-insert="sec:Cloudflare WAF [WAF / DDoS Shield]">🛡️ WAF</button>
+        <button class="insert-chip" data-insert="auth:Auth0 [Identity Provider]">🔐 Auth</button>
+        <button class="insert-chip" data-insert="ext:Stripe API [Payment SaaS]">🌐 External</button>
+        <button class="insert-chip" data-insert="group &quot;Private Subnet&quot; {\n  server:App Service\n  db:Database\n}">📦 Group</button>
       </div>
-    </aside>
 
-    <!-- Center Canvas Area -->
-    <div class="canvas-viewport" id="canvas-viewport">
-      <div class="canvas-stage" id="canvas-stage">
-        <!-- SVG Connections Layer -->
-        <svg class="connections-svg" id="connections-svg"></svg>
-        <!-- Containers Layer -->
-        <div id="containers-layer"></div>
-        <!-- Nodes Layer -->
-        <div id="nodes-layer"></div>
+      <!-- DSL Code Editor -->
+      <div class="editor-wrapper">
+        <textarea id="dsl-editor" class="code-textarea" spellcheck="false" placeholder="# Type your architecture DSL here..."></textarea>
+      </div>
+    </div>
+
+    <!-- Right Pane: Rendered Mermaid Diagram -->
+    <div class="preview-pane">
+      <!-- Error Message Banner -->
+      <div class="error-banner" id="error-banner">
+        <span>⚠️</span>
+        <div id="error-text">Parse Error</div>
       </div>
 
-      <!-- Floating Zoom Controls -->
+      <!-- Interactive Diagram Viewport -->
+      <div class="diagram-viewport" id="diagram-viewport">
+        <div class="diagram-container" id="diagram-container">
+          <!-- Rendered Mermaid SVG injected here -->
+        </div>
+      </div>
+
+      <!-- Floating Zoom & Fit Toolbar -->
       <div class="zoom-toolbar">
-        <button class="btn btn--sm" id="btn-zoom-out">−</button>
-        <span style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:700; padding:0 0.3rem;" id="zoom-lbl">100%</span>
-        <button class="btn btn--sm" id="btn-zoom-in">+</button>
-        <button class="btn btn--sm" id="btn-zoom-reset">Fit</button>
+        <button class="btn btn--sm" id="btn-zoom-out" title="Zoom Out">−</button>
+        <span class="zoom-lbl" id="zoom-lbl">100%</span>
+        <button class="btn btn--sm" id="btn-zoom-in" title="Zoom In">+</button>
+        <button class="btn btn--sm" id="btn-zoom-reset" title="Reset View">Fit</button>
       </div>
     </div>
-
-    <!-- Right Sidebar: Inspector & Connector -->
-    <aside class="sidebar-right">
-      <!-- Node / Container Inspector -->
-      <div class="sidebar-section" id="inspector-section">
-        <span class="sidebar-title">Selected Element</span>
-        <div style="display:flex; flex-direction:column; gap:0.5rem;" id="inspector-fields">
-          <div class="prop-row">
-            <label>Title</label>
-            <input type="text" id="prop-title" class="form-input" placeholder="Component Title..." />
-          </div>
-          <div class="prop-row">
-            <label>Sublabel</label>
-            <input type="text" id="prop-sublabel" class="form-input" placeholder="e.g. 10.0.1.0/24 or Port 443" />
-          </div>
-          <div class="prop-row">
-            <label>Icon</label>
-            <input type="text" id="prop-icon" class="form-input" style="width:50px; text-align:center;" />
-          </div>
-          <button class="btn btn--danger" id="btn-delete-element" style="margin-top:0.4rem;">🗑️ Delete Element</button>
-        </div>
-      </div>
-
-      <!-- Edge Connector Builder -->
-      <div class="sidebar-section" style="border-top:1px solid var(--line); padding-top:0.75rem;">
-        <span class="sidebar-title">Connect Nodes</span>
-        <div style="display:flex; flex-direction:column; gap:0.4rem;">
-          <select id="edge-from" class="form-select">
-            <option value="" disabled selected>Source Node...</option>
-          </select>
-          <select id="edge-to" class="form-select">
-            <option value="" disabled selected>Target Node...</option>
-          </select>
-          <select id="edge-style" class="form-select">
-            <option value="solid" selected>Solid Line (Sync)</option>
-            <option value="dashed">Dashed Line (Async / Event)</option>
-            <option value="dotted">Dotted Line (Telemetry / Log)</option>
-          </select>
-          <input type="text" id="edge-label" class="form-input" placeholder="Protocol (e.g. HTTPS, gRPC, SQL)..." />
-          <button class="btn btn--primary" id="btn-add-edge" style="margin-top:0.25rem;">+ Connect Nodes</button>
-        </div>
-      </div>
-
-      <!-- Active Edges List -->
-      <div class="sidebar-section" style="border-top:1px solid var(--line); padding-top:0.75rem;">
-        <span class="sidebar-title">Connections</span>
-        <div style="display:flex; flex-direction:column; gap:0.35rem; max-height:180px; overflow-y:auto;" id="edges-list">
-          <!-- Injected Active Connections -->
-        </div>
-      </div>
-    </aside>
   </div>
 
-  <!-- Bottom Code Drawer (Synced JSON) -->
-  <div class="bottom-code-drawer collapsed" id="code-drawer">
-    <div class="drawer-header" id="drawer-toggle-btn">
-      <span>💻 Synced Diagram JSON Schema</span>
-      <span id="drawer-toggle-icon">▲ Open</span>
+  <!-- Cheat Sheet Modal -->
+  <div class="modal-backdrop" id="modal-syntax">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">📖 Architecture DSL Cheat Sheet</h3>
+        <button class="btn-icon btn--sm" id="btn-close-syntax" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--muted); margin-bottom:0.75rem;">
+          Our Architecture DSL is designed to be lean, readable, and close to Mermaid flowchart syntax. It translates automatically into clean, styled diagrams.
+        </p>
+
+        <h4 style="font-weight:700; margin-top:0.75rem;">1. Component Type Prefixes &amp; Icons</h4>
+        <table class="syntax-table">
+          <thead>
+            <tr>
+              <th>Prefix</th>
+              <th>Category</th>
+              <th>Icon &amp; Shape</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>client:</code></td><td>Browser / Mobile</td><td>👤 📱 💻</td><td><code>client:Web App [React Frontend]</code></td></tr>
+            <tr><td><code>gateway:</code></td><td>API Gateway</td><td>🚪</td><td><code>gateway:Kong [API Gateway]</code></td></tr>
+            <tr><td><code>lb:</code></td><td>Load Balancer</td><td>⚖️</td><td><code>lb:ALB [Application Load Balancer]</code></td></tr>
+            <tr><td><code>server:</code></td><td>Compute / Microservice</td><td>⚙️</td><td><code>server:OrderSvc [Order Service]</code></td></tr>
+            <tr><td><code>db:</code></td><td>Database (SQL/NoSQL)</td><td>🗄️ (Cylinder)</td><td><code>db:Postgres [(Orders Database)]</code></td></tr>
+            <tr><td><code>cache:</code></td><td>In-Memory Cache</td><td>⚡</td><td><code>cache:Redis [(Session Cache)]</code></td></tr>
+            <tr><td><code>queue:</code></td><td>Queue / Event Broker</td><td>📬</td><td><code>queue:Kafka [[Events Stream]]</code></td></tr>
+            <tr><td><code>storage:</code></td><td>Object Storage</td><td>🪣</td><td><code>storage:S3 [(Media Bucket)]</code></td></tr>
+            <tr><td><code>sec:</code></td><td>WAF / Security</td><td>🛡️</td><td><code>sec:WAF [Cloudflare Shield]</code></td></tr>
+            <tr><td><code>auth:</code></td><td>Auth / IAM</td><td>🔐</td><td><code>auth:Auth0 [Identity Provider]</code></td></tr>
+            <tr><td><code>ext:</code></td><td>External / Third-party</td><td>🌐</td><td><code>ext:Stripe [Payment Gateway]</code></td></tr>
+            <tr><td><code>monitor:</code></td><td>Telemetry / Logs</td><td>📈</td><td><code>monitor:Datadog [Metrics]</code></td></tr>
+          </tbody>
+        </table>
+
+        <h4 style="font-weight:700; margin-top:1rem;">2. Connections &amp; Protocols</h4>
+        <table class="syntax-table">
+          <thead>
+            <tr>
+              <th>Syntax</th>
+              <th>Connection Style</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>-></code> or <code>--></code></td><td>Solid arrow</td><td><code>[Client] -> [API Gateway]</code></td></tr>
+            <tr><td><code>->|Protocol|</code></td><td>Solid arrow with label</td><td><code>[Client] ->|HTTPS / JSON| [Gateway]</code></td></tr>
+            <tr><td><code>-.-></code> or <code>..></code></td><td>Dashed / Async arrow</td><td><code>[Service] -.->|Async Event| [Queue]</code></td></tr>
+            <tr><td><code><-></code> or <code><--></code></td><td>Bidirectional arrow</td><td><code>[Service] <->|gRPC| [Auth]</code></td></tr>
+            <tr><td><code>--</code> or <code>---</code></td><td>Solid line without arrow</td><td><code>[Node A] -- [Node B]</code></td></tr>
+            <tr><td>Chained</td><td>Multi-hop connection</td><td><code>[A] -> [B] -> [C]</code></td></tr>
+          </tbody>
+        </table>
+
+        <h4 style="font-weight:700; margin-top:1rem;">3. Grouping &amp; Subgraphs</h4>
+        <pre style="background:var(--surface-alt); padding:0.6rem; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:0.75rem; margin-top:0.35rem;">
+group "VPC / Private Network" {
+  server:Order Service
+  server:Auth Service
+  db:Postgres
+}
+        </pre>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-syntax-footer" class="btn btn--primary">Got it</button>
+      </div>
     </div>
-    <textarea id="code-textarea" class="code-textarea" spellcheck="false"></textarea>
   </div>
 
-  <!-- Toast -->
+  <!-- Toast Notification -->
   <div id="toast" class="toast">
     <span id="toast-icon">✓</span>
     <span id="toast-msg">Copied to clipboard!</span>
   </div>
 
+  <!-- ARCHITECTURE GENERATOR ENGINE -->
   <script>
-    // Theme Switcher
-    let isDarkMode = false;
-    (function initTheme() {
-      const mode = localStorage.getItem('theme-mode');
-      isDarkMode = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (isDarkMode) document.documentElement.classList.add('dark');
+    /**
+     * System Architecture Diagram Generator
+     * 100% Client-Side implementation powered by Mermaid.js.
+     * 
+     * TECHNICAL ARCHITECTURE:
+     * - Translates human-friendly architecture DSL into standard Mermaid flowchart code.
+     * - Optional AI assist connects directly to user-selected LLM APIs via client-side fetch.
+     * - Zero backend dependencies; diagram rendering, SVG/PNG export, and URL sharing all run in-browser.
+     */
 
-      const btn = document.getElementById('theme-toggle');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          isDarkMode = document.documentElement.classList.toggle('dark');
-          localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
-          renderCanvas();
-        });
-      }
-    })();
-
-    const toast = document.getElementById('toast');
-    const toastMsg = document.getElementById('toast-msg');
-    function showToast(msg) {
-      toastMsg.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
-    }
-
-    // --- COMPONENT LIBRARY DEFINITIONS ---
-    const PALETTE_COMPONENTS = [
-      // Generic
-      { id: 'gen_client', name: 'User / Browser', icon: '👤', cat: 'generic', sub: 'Client App' },
-      { id: 'gen_mobile', name: 'Mobile App', icon: '📱', cat: 'generic', sub: 'iOS / Android' },
-      { id: 'gen_apigw', name: 'API Gateway', icon: '🚪', cat: 'generic', sub: 'REST / GraphQL' },
-      { id: 'gen_alb', name: 'Load Balancer', icon: '⚖️', cat: 'generic', sub: 'ALB / NGINX' },
-      { id: 'gen_server', name: 'Microservice', icon: '⚙️', cat: 'generic', sub: 'Docker / App' },
-      { id: 'gen_db', name: 'SQL Database', icon: '🗄️', cat: 'generic', sub: 'PostgreSQL / MySQL' },
-      { id: 'gen_nosql', name: 'NoSQL Database', icon: '📦', cat: 'generic', sub: 'MongoDB / Key-Value' },
-      { id: 'gen_cache', name: 'Redis Cache', icon: '⚡', cat: 'generic', sub: 'In-Memory Cache' },
-      { id: 'gen_queue', name: 'Kafka / Queue', icon: '📬', cat: 'generic', sub: 'Event Broker' },
-      { id: 'gen_storage', name: 'Object Storage', icon: '🪣', cat: 'generic', sub: 'S3 / GCS' },
-      { id: 'gen_cdn', name: 'CDN Edge', icon: '🌐', cat: 'generic', sub: 'Global CDN' },
-      { id: 'gen_waf', name: 'Firewall / WAF', icon: '🛡️', cat: 'generic', sub: 'Security Shield' },
-
-      // AWS
-      { id: 'aws_ec2', name: 'AWS EC2', icon: '🖥️', cat: 'aws', sub: 'Compute Instance' },
-      { id: 'aws_lambda', name: 'AWS Lambda', icon: 'λ', cat: 'aws', sub: 'Serverless Function' },
-      { id: 'aws_s3', name: 'AWS S3', icon: '🪣', cat: 'aws', sub: 'Object Storage' },
-      { id: 'aws_rds', name: 'AWS RDS Aurora', icon: '🐬', cat: 'aws', sub: 'Relational DB' },
-      { id: 'aws_dynamo', name: 'DynamoDB', icon: '⚡', cat: 'aws', sub: 'NoSQL Database' },
-      { id: 'aws_eks', name: 'AWS EKS', icon: '☸️', cat: 'aws', sub: 'Kubernetes' },
-      { id: 'aws_sqs', name: 'AWS SQS', icon: '📥', cat: 'aws', sub: 'Message Queue' },
-      { id: 'aws_sns', name: 'AWS SNS', icon: '📢', cat: 'aws', sub: 'Pub/Sub Topic' },
-      { id: 'aws_cloudfront', name: 'CloudFront', icon: '🌐', cat: 'aws', sub: 'Edge CDN' },
-
-      // GCP
-      { id: 'gcp_gce', name: 'Compute Engine', icon: '💻', cat: 'gcp', sub: 'GCP VM' },
-      { id: 'gcp_cloudrun', name: 'Cloud Run', icon: '🏃', cat: 'gcp', sub: 'Serverless Container' },
-      { id: 'gcp_gcs', name: 'Cloud Storage', icon: '🗃️', cat: 'gcp', sub: 'GCS Bucket' },
-      { id: 'gcp_cloudsql', name: 'Cloud SQL', icon: '🗄️', cat: 'gcp', sub: 'Postgres / MySQL' },
-      { id: 'gcp_bigquery', name: 'BigQuery', icon: '🔍', cat: 'gcp', sub: 'Data Warehouse' },
-      { id: 'gcp_gke', name: 'Google GKE', icon: '☸️', cat: 'gcp', sub: 'Managed Kubernetes' },
-      { id: 'gcp_pubsub', name: 'GCP Pub/Sub', icon: '📡', cat: 'gcp', sub: 'Event Stream' },
-
-      // Azure
-      { id: 'az_vm', name: 'Azure VM', icon: '🪟', cat: 'azure', sub: 'Virtual Machine' },
-      { id: 'az_func', name: 'Azure Function', icon: '⚡', cat: 'azure', sub: 'Serverless App' },
-      { id: 'az_blob', name: 'Blob Storage', icon: '📦', cat: 'azure', sub: 'Object Store' },
-      { id: 'az_sql', name: 'Azure SQL', icon: '🗄️', cat: 'azure', sub: 'Managed SQL DB' },
-      { id: 'az_cosmos', name: 'Cosmos DB', icon: '🌌', cat: 'azure', sub: 'Global NoSQL' },
-      { id: 'az_aks', name: 'Azure AKS', icon: '☸️', cat: 'azure', sub: 'Kubernetes Cluster' },
-
-      // Containers / Boundaries
-      { id: 'box_vpc', name: 'VPC Boundary', icon: '☁️', cat: 'containers', isContainer: true, sub: '10.0.0.0/16' },
-      { id: 'box_pubsubnet', name: 'Public Subnet', icon: '🔓', cat: 'containers', isContainer: true, sub: 'DMZ Tier' },
-      { id: 'box_privsubnet', name: 'Private Subnet', icon: '🔒', cat: 'containers', isContainer: true, sub: 'App & DB Tier' },
-      { id: 'box_k8s', name: 'K8s Cluster', icon: '☸️', cat: 'containers', isContainer: true, sub: 'Container Pods' },
-      { id: 'box_onprem', name: 'On-Prem DC', icon: '🏢', cat: 'containers', isContainer: true, sub: 'Corporate Data Center' }
-    ];
-
-    // --- TEMPLATES ---
+    // --- PRESET TEMPLATES ---
     const TEMPLATES = {
-      three_tier: {
-        containers: [
-          { id: 'c_vpc', title: 'AWS Cloud VPC (10.0.0.0/16)', x: 260, y: 60, w: 760, h: 420 },
-          { id: 'c_pub', title: 'Public Subnet (DMZ)', x: 280, y: 100, w: 220, h: 360 },
-          { id: 'c_priv', title: 'Private Subnet (App & DB)', x: 530, y: 100, w: 470, h: 360 }
-        ],
-        nodes: [
-          { id: 'n_user', title: 'Web / Mobile Clients', sub: 'HTTPS Traffic', icon: '👤', x: 60, y: 220 },
-          { id: 'n_cf', title: 'CloudFront CDN', sub: 'Edge Caching', icon: '🌐', x: 320, y: 140 },
-          { id: 'n_alb', title: 'Application LB', sub: 'ALB / SSL', icon: '⚖️', x: 320, y: 280 },
-          { id: 'n_app', title: 'ECS Web App', sub: 'Node.js Cluster', icon: '⚙️', x: 570, y: 280 },
-          { id: 'n_cache', title: 'ElastiCache Redis', sub: 'Session Store', icon: '⚡', x: 570, y: 140 },
-          { id: 'n_db', title: 'RDS PostgreSQL', sub: 'Multi-AZ DB', icon: '🗄️', x: 800, y: 280 },
-          { id: 'n_s3', title: 'S3 Static Assets', sub: 'Asset Bucket', icon: '🪣', x: 800, y: 140 }
-        ],
-        edges: [
-          { from: 'n_user', to: 'n_cf', label: 'HTTPS', style: 'solid' },
-          { from: 'n_user', to: 'n_alb', label: 'REST API', style: 'solid' },
-          { from: 'n_cf', to: 'n_s3', label: 'Fetch Assets', style: 'dashed' },
-          { from: 'n_alb', to: 'n_app', label: 'Forward Port 8080', style: 'solid' },
-          { from: 'n_app', to: 'n_cache', label: 'Cache Reads', style: 'dashed' },
-          { from: 'n_app', to: 'n_db', label: 'SQL Query', style: 'solid' }
-        ]
+      three_tier: `# 🌐 3-Tier Web Application Architecture
+direction: LR
+
+# Edge & Client
+client:Users [👤 Web & Mobile Users]
+sec:Cloudflare [🛡️ Cloudflare WAF & CDN]
+lb:ALB [⚖️ AWS Application Load Balancer]
+
+# Group: Public Subnet
+group "Public Subnet (DMZ)" {
+  sec:Cloudflare
+  lb:ALB
+}
+
+# Group: Private Application Subnet
+group "Private Application Tier" {
+  server:Web1 [⚙️ Web Server 01 (Next.js)]
+  server:Web2 [⚙️ Web Server 02 (Next.js)]
+  server:APISvc [⚙️ API Backend (Node/Go)]
+}
+
+# Group: Database Tier (Isolated)
+group "Isolated Data Tier" {
+  db:PrimaryDB [(🗄️ PostgreSQL Primary)]
+  db:ReplicaDB [(🗄️ PostgreSQL Read Replica)]
+  cache:Redis [(⚡ Redis Cache)]
+  storage:S3 [(🪣 S3 Asset Storage)]
+}
+
+# Connections
+client:Users -->|HTTPS / TLS| sec:Cloudflare
+sec:Cloudflare -->|Filtered Traffic| lb:ALB
+lb:ALB -->|Round Robin| server:Web1
+lb:ALB -->|Round Robin| server:Web2
+server:Web1 -->|Internal API| server:APISvc
+server:Web2 -->|Internal API| server:APISvc
+
+server:APISvc -->|Write Queries| db:PrimaryDB
+server:APISvc -->|Read Queries| db:ReplicaDB
+server:APISvc <-->|Session & Cache Hit| cache:Redis
+server:APISvc -->|File Uploads| storage:S3
+db:PrimaryDB -.->|Async Replication| db:ReplicaDB`,
+
+      serverless: `# ⚡ Serverless Event-Driven API
+direction: LR
+
+client:ClientApp [📱 Mobile & Web Clients]
+gateway:APIGw [🚪 Amazon API Gateway]
+auth:Cognito [🔐 AWS Cognito / JWT]
+
+group "Serverless Compute Tier" {
+  server:AuthFn [λ Auth Lambda]
+  server:OrdersFn [λ Orders Lambda]
+  server:PaymentFn [λ Payments Lambda]
+  server:WorkerFn [λ Worker Lambda]
+}
+
+group "Managed Storage & Event Bus" {
+  db:DynamoDB [(⚡ DynamoDB Table)]
+  queue:SQS [[📬 SQS Order Queue]]
+  queue:EventBridge [[📬 EventBridge Bus]]
+  storage:S3 [(🪣 S3 Media Bucket)]
+}
+
+ext:Stripe [🌐 Stripe Payment API]
+
+# Connections
+client:ClientApp -->|HTTPS Request| gateway:APIGw
+gateway:APIGw -->|Validate Token| auth:Cognito
+gateway:APIGw -->|Invoke| server:OrdersFn
+gateway:APIGw -->|Invoke| server:PaymentFn
+
+server:PaymentFn -->|Process Charge| ext:Stripe
+server:OrdersFn -->|PutItem| db:DynamoDB
+server:OrdersFn -.->|Publish Event| queue:EventBridge
+
+queue:EventBridge -->|Route Rules| queue:SQS
+queue:SQS -->|Batch Trigger| server:WorkerFn
+server:WorkerFn -->|Save Invoice PDF| storage:S3`,
+
+      microservices: `# ☸️ Microservices Architecture with Mesh
+direction: LR
+
+client:Browser [💻 Single Page App]
+gateway:Kong [🚪 Kong API Gateway]
+auth:Keycloak [🔐 Keycloak IAM / OAuth2]
+
+group "Kubernetes Production Cluster" {
+  group "Core Services" {
+    server:UserSvc [⚙️ User Service]
+    server:OrderSvc [⚙️ Order Service]
+    server:CatalogSvc [⚙️ Catalog Service]
+  }
+
+  group "Event Stream" {
+    queue:Kafka [[📬 Kafka Cluster]]
+  }
+
+  group "Data Storage" {
+    db:UserDB [(🗄️ User DB)]
+    db:OrderDB [(🗄️ Order DB)]
+    cache:CatalogCache [(⚡ Redis Catalog)]
+  }
+}
+
+ext:SendGrid [🌐 SendGrid Email SaaS]
+
+# Connections
+client:Browser -->|HTTPS| gateway:Kong
+gateway:Kong -->|Token Introspection| auth:Keycloak
+gateway:Kong -->|Route /users| server:UserSvc
+gateway:Kong -->|Route /orders| server:OrderSvc
+gateway:Kong -->|Route /catalog| server:CatalogSvc
+
+server:UserSvc --> db:UserDB
+server:OrderSvc --> db:OrderDB
+server:CatalogSvc <--> cache:CatalogCache
+
+server:OrderSvc -.->|OrderPlaced Event| queue:Kafka
+queue:Kafka -.->|Consume Event| server:UserSvc
+server:UserSvc -->|Trigger Notification| ext:SendGrid`,
+
+      event_stream: `# 📬 Event Streaming & Real-Time Analytics
+direction: LR
+
+client:Devices [📡 IoT Sensor Fleet]
+client:Webhooks [🌐 Webhook Producers]
+gateway:Ingress [🚪 Ingestion Gateway (Envoy)]
+
+group "Kafka Event Backbone" {
+  queue:TopicTelemetry [[📬 Topic: telemetry.raw]]
+  queue:TopicAlerts [[📬 Topic: alerts.priority]]
+}
+
+group "Stream Processing Tier" {
+  server:FlinkCluster [⚙️ Apache Flink Engine]
+  server:AlertWorker [⚙️ Alert Dispatcher]
+}
+
+group "Analytics & Storage" {
+  db:ClickHouse [(🗄️ ClickHouse OLAP)]
+  db:Elastic [(🗄️ Elasticsearch)]
+  client:Dashboard [📈 Grafana / Kibana]
+}
+
+# Connections
+client:Devices -->|gRPC / MQTT| gateway:Ingress
+client:Webhooks -->|HTTPS Post| gateway:Ingress
+gateway:Ingress -.->|High Throughput| queue:TopicTelemetry
+
+queue:TopicTelemetry -.->|Streaming Ingest| server:FlinkCluster
+server:FlinkCluster -->|Aggregated Metrics| db:ClickHouse
+server:FlinkCluster -->|Logs Index| db:Elastic
+server:FlinkCluster -.->|Threshold Breached| queue:TopicAlerts
+
+queue:TopicAlerts -.-> server:AlertWorker
+client:Dashboard <-->|Query Analytics| db:ClickHouse
+client:Dashboard <-->|Search Logs| db:Elastic`,
+
+      cicd_pipeline: `# 🚀 CI/CD & GitOps Delivery Pipeline
+direction: LR
+
+client:Dev [👨‍💻 Developers]
+ext:GitHub [🌐 GitHub Repository]
+
+group "Continuous Integration (CI)" {
+  server:GHActions [⚙️ GitHub Actions Runner]
+  server:SonarQube [🛡️ SonarQube Code Quality]
+  server:Trivy [🛡️ Trivy Security Scanner]
+}
+
+group "Artifacts & Registries" {
+  storage:ECR [(🪣 AWS ECR Docker Registry)]
+  storage:HelmRepo [(🪣 Helm Chart Repo)]
+}
+
+group "GitOps Continuous Delivery (CD)" {
+  server:ArgoCD [⚙️ ArgoCD Controller]
+  server:K8sProd [☸️ Kubernetes Production]
+}
+
+# Connections
+client:Dev -->|git push / PR| ext:GitHub
+ext:GitHub -.->|Webhook Trigger| server:GHActions
+
+server:GHActions -->|Run Tests & Lint| server:SonarQube
+server:GHActions -->|Container Scan| server:Trivy
+server:GHActions -->|Build & Push Image| storage:ECR
+server:GHActions -->|Release Chart| storage:HelmRepo
+
+server:ArgoCD -.->|Poll Git State| ext:GitHub
+server:ArgoCD -.->|Fetch Image| storage:ECR
+server:ArgoCD -->|Sync & Deploy Manifests| server:K8sProd`,
+
+      rag_ai: `# 🤖 Generative AI / RAG Architecture
+direction: LR
+
+client:User [👤 Web User]
+gateway:FastAPI [🚪 FastAPI Orchestrator]
+
+group "Retrieval Augmented Generation (RAG)" {
+  server:EmbedModel [λ Embedding Model (text-embedding-3)]
+  db:VectorDB [(🗄️ Pinecone / pgvector)]
+  cache:SemanticCache [(⚡ Redis Semantic Cache)]
+}
+
+group "Inference & Foundation Models" {
+  ext:LLM [🧠 Gemini 1.5 / OpenAI GPT-4o]
+  storage:DocStore [(🪣 S3 Source Documents)]
+}
+
+# Connections
+client:User -->|Chat Prompt| gateway:FastAPI
+gateway:FastAPI <-->|Check Cached Response| cache:SemanticCache
+
+gateway:FastAPI -->|1. Generate Embedding| server:EmbedModel
+server:EmbedModel -->|2. Query Top-K Vectors| db:VectorDB
+db:VectorDB -->|3. Return Relevant Context| gateway:FastAPI
+
+gateway:FastAPI -->|4. Prompt + Augmented Context| ext:LLM
+ext:LLM -->|5. Stream Answer| gateway:FastAPI
+gateway:FastAPI -->|6. Save to Cache| cache:SemanticCache
+gateway:FastAPI -->|7. Stream Response| client:User`
+    };
+
+    // --- ICON & CATEGORY MAPPING TABLE ---
+    const TYPE_MAPPINGS = {
+      client:   { icon: '👤', prefix: 'Client', shape: 'rect', class: 'class_client' },
+      user:     { icon: '👤', prefix: 'User', shape: 'rect', class: 'class_client' },
+      browser:  { icon: '💻', prefix: 'Browser', shape: 'rect', class: 'class_client' },
+      mobile:   { icon: '📱', prefix: 'Mobile', shape: 'rect', class: 'class_client' },
+      frontend: { icon: '💻', prefix: 'Frontend', shape: 'rect', class: 'class_client' },
+
+      gateway:  { icon: '🚪', prefix: 'Gateway', shape: 'rect', class: 'class_gateway' },
+      apigw:    { icon: '🚪', prefix: 'API Gateway', shape: 'rect', class: 'class_gateway' },
+      ingress:  { icon: '🚪', prefix: 'Ingress', shape: 'rect', class: 'class_gateway' },
+
+      lb:       { icon: '⚖️', prefix: 'Load Balancer', shape: 'rect', class: 'class_lb' },
+      loadbalancer: { icon: '⚖️', prefix: 'Load Balancer', shape: 'rect', class: 'class_lb' },
+      alb:      { icon: '⚖️', prefix: 'ALB', shape: 'rect', class: 'class_lb' },
+      nginx:    { icon: '⚖️', prefix: 'NGINX', shape: 'rect', class: 'class_lb' },
+
+      server:   { icon: '⚙️', prefix: 'Service', shape: 'rect', class: 'class_service' },
+      compute:  { icon: '⚙️', prefix: 'Compute', shape: 'rect', class: 'class_service' },
+      service:  { icon: '⚙️', prefix: 'Service', shape: 'rect', class: 'class_service' },
+      worker:   { icon: '⚙️', prefix: 'Worker', shape: 'rect', class: 'class_service' },
+      lambda:   { icon: 'λ', prefix: 'Lambda', shape: 'rect', class: 'class_service' },
+      func:     { icon: 'λ', prefix: 'Function', shape: 'rect', class: 'class_service' },
+
+      db:       { icon: '🗄️', prefix: 'Database', shape: 'cylinder', class: 'class_db' },
+      database: { icon: '🗄️', prefix: 'Database', shape: 'cylinder', class: 'class_db' },
+      sql:      { icon: '🗄️', prefix: 'SQL DB', shape: 'cylinder', class: 'class_db' },
+      nosql:    { icon: '🗄️', prefix: 'NoSQL DB', shape: 'cylinder', class: 'class_db' },
+      postgres: { icon: '🗄️', prefix: 'PostgreSQL', shape: 'cylinder', class: 'class_db' },
+      mysql:    { icon: '🗄️', prefix: 'MySQL', shape: 'cylinder', class: 'class_db' },
+      mongo:    { icon: '🗄️', prefix: 'MongoDB', shape: 'cylinder', class: 'class_db' },
+      dynamo:   { icon: '⚡', prefix: 'DynamoDB', shape: 'cylinder', class: 'class_db' },
+
+      cache:    { icon: '⚡', prefix: 'Cache', shape: 'cylinder', class: 'class_cache' },
+      redis:    { icon: '⚡', prefix: 'Redis', shape: 'cylinder', class: 'class_cache' },
+
+      queue:    { icon: '📬', prefix: 'Queue', shape: 'subroutine', class: 'class_queue' },
+      broker:   { icon: '📬', prefix: 'Broker', shape: 'subroutine', class: 'class_queue' },
+      kafka:    { icon: '📬', prefix: 'Kafka', shape: 'subroutine', class: 'class_queue' },
+      rabbitmq: { icon: '📬', prefix: 'RabbitMQ', shape: 'subroutine', class: 'class_queue' },
+      sqs:      { icon: '📬', prefix: 'SQS', shape: 'subroutine', class: 'class_queue' },
+      pubsub:   { icon: '📬', prefix: 'PubSub', shape: 'subroutine', class: 'class_queue' },
+
+      storage:  { icon: '🪣', prefix: 'Storage', shape: 'cylinder', class: 'class_storage' },
+      bucket:   { icon: '🪣', prefix: 'Bucket', shape: 'cylinder', class: 'class_storage' },
+      s3:       { icon: '🪣', prefix: 'S3', shape: 'cylinder', class: 'class_storage' },
+
+      sec:      { icon: '🛡️', prefix: 'Security', shape: 'rect', class: 'class_sec' },
+      waf:      { icon: '🛡️', prefix: 'WAF', shape: 'rect', class: 'class_sec' },
+      firewall: { icon: '🛡️', prefix: 'Firewall', shape: 'rect', class: 'class_sec' },
+
+      auth:     { icon: '🔐', prefix: 'Auth', shape: 'rect', class: 'class_auth' },
+      iam:      { icon: '🔐', prefix: 'IAM', shape: 'rect', class: 'class_auth' },
+
+      ext:      { icon: '🌐', prefix: 'External', shape: 'rect', class: 'class_ext' },
+      external: { icon: '🌐', prefix: 'External', shape: 'rect', class: 'class_ext' },
+      saas:     { icon: '🌐', prefix: 'SaaS', shape: 'rect', class: 'class_ext' },
+
+      monitor:  { icon: '📈', prefix: 'Monitoring', shape: 'rect', class: 'class_monitor' }
+    };
+
+    // --- THEME COLOR SCHEMES ---
+    const THEMES = {
+      indigo: {
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#eef2ff',
+          primaryTextColor: '#1e1b4b',
+          primaryBorderColor: '#4f46e5',
+          lineColor: '#6366f1',
+          secondaryColor: '#f5f5f4',
+          tertiaryColor: '#ffffff',
+          fontFamily: 'Inter, sans-serif'
+        },
+        classDefs: `
+          classDef class_client fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#1e1b4b,font-weight:bold;
+          classDef class_gateway fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f,font-weight:bold;
+          classDef class_lb fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12,font-weight:bold;
+          classDef class_service fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b,font-weight:bold;
+          classDef class_db fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a,font-weight:bold;
+          classDef class_cache fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d,font-weight:bold;
+          classDef class_queue fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#4c1d95,font-weight:bold;
+          classDef class_storage fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#075985,font-weight:bold;
+          classDef class_sec fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12,font-weight:bold;
+          classDef class_auth fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#831843,font-weight:bold;
+          classDef class_ext fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+          classDef class_monitor fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63,font-weight:bold;
+          classDef class_generic fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#1e293b;
+        `
       },
-      serverless: {
-        containers: [
-          { id: 'c_sls', title: 'Serverless Cloud Infrastructure', x: 260, y: 80, w: 700, h: 380 }
-        ],
-        nodes: [
-          { id: 'n_client', title: 'Mobile Device', sub: 'iOS Client', icon: '📱', x: 80, y: 220 },
-          { id: 'n_apigw', title: 'API Gateway', sub: 'HTTP API', icon: '🚪', x: 300, y: 220 },
-          { id: 'n_fn', title: 'Order Processor', sub: 'AWS Lambda', icon: 'λ', x: 500, y: 220 },
-          { id: 'n_sqs', title: 'Billing SQS Queue', sub: 'FIFO Buffer', icon: '📥', x: 740, y: 140 },
-          { id: 'n_db', title: 'DynamoDB Orders', sub: 'On-Demand Table', icon: '⚡', x: 740, y: 300 }
-        ],
-        edges: [
-          { from: 'n_client', to: 'n_apigw', label: 'POST /orders', style: 'solid' },
-          { from: 'n_apigw', to: 'n_fn', label: 'Trigger Event', style: 'solid' },
-          { from: 'n_fn', to: 'n_db', label: 'PutItem', style: 'solid' },
-          { from: 'n_fn', to: 'n_sqs', label: 'Enqueue Async', style: 'dashed' }
-        ]
+      dark_cyber: {
+        theme: 'dark',
+        themeVariables: {
+          darkMode: true,
+          background: '#09090b',
+          primaryColor: '#1e1b4b',
+          primaryTextColor: '#fafaf9',
+          primaryBorderColor: '#818cf8',
+          lineColor: '#a5b4fc',
+          fontFamily: 'Inter, sans-serif'
+        },
+        classDefs: `
+          classDef class_client fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_gateway fill:#451a03,stroke:#fbbf24,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_lb fill:#3f2c00,stroke:#facc15,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_service fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_db fill:#172554,stroke:#60a5fa,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_cache fill:#450a0a,stroke:#f87171,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_queue fill:#3b0764,stroke:#c084fc,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_storage fill:#082f49,stroke:#38bdf8,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_sec fill:#431407,stroke:#fb923c,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_auth fill:#500724,stroke:#f472b6,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_ext fill:#1e293b,stroke:#94a3b8,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_monitor fill:#083344,stroke:#22d3ee,stroke-width:2px,color:#fafaf9,font-weight:bold;
+          classDef class_generic fill:#18181b,stroke:#52525b,stroke-width:1.5px,color:#fafaf9;
+        `
       },
-      k8s: {
-        containers: [
-          { id: 'c_cluster', title: 'Kubernetes Production Cluster (EKS/GKE)', x: 260, y: 70, w: 720, h: 400 }
-        ],
-        nodes: [
-          { id: 'n_user', title: 'Browser Client', sub: 'Web App', icon: '👤', x: 70, y: 230 },
-          { id: 'n_ingress', title: 'Ingress NGINX', sub: 'SSL Termination', icon: '🚪', x: 300, y: 230 },
-          { id: 'n_svc1', title: 'Auth Service', sub: 'Go Microservice', icon: '⚙️', x: 520, y: 130 },
-          { id: 'n_svc2', title: 'Order Service', sub: 'Node Microservice', icon: '⚙️', x: 520, y: 230 },
-          { id: 'n_svc3', title: 'Payment Service', sub: 'Rust Microservice', icon: '⚙️', x: 520, y: 330 },
-          { id: 'n_kafka', title: 'Apache Kafka', sub: 'Event Bus', icon: '📬', x: 760, y: 230 }
-        ],
-        edges: [
-          { from: 'n_user', to: 'n_ingress', label: 'HTTPS / WSS', style: 'solid' },
-          { from: 'n_ingress', to: 'n_svc1', label: '/auth', style: 'solid' },
-          { from: 'n_ingress', to: 'n_svc2', label: '/orders', style: 'solid' },
-          { from: 'n_ingress', to: 'n_svc3', label: '/pay', style: 'solid' },
-          { from: 'n_svc2', to: 'n_kafka', label: 'OrderCreated', style: 'dashed' },
-          { from: 'n_kafka', to: 'n_svc3', label: 'Consume Event', style: 'dashed' }
-        ]
+      monochrome: {
+        theme: 'neutral',
+        themeVariables: {
+          primaryColor: '#ffffff',
+          primaryTextColor: '#000000',
+          primaryBorderColor: '#000000',
+          lineColor: '#000000',
+          fontFamily: 'Inter, sans-serif'
+        },
+        classDefs: `
+          classDef class_client fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_gateway fill:#f5f5f5,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_lb fill:#f5f5f5,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_service fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_db fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_cache fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_queue fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_storage fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_sec fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_auth fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_ext fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_monitor fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000;
+          classDef class_generic fill:#ffffff,stroke:#000000,stroke-width:1.5px,color:#000000;
+        `
       },
-      data: {
-        containers: [
-          { id: 'c_lake', title: 'Real-Time Lakehouse Analytics Pipeline', x: 240, y: 80, w: 760, h: 360 }
-        ],
-        nodes: [
-          { id: 'n_src', title: 'App Event Logs', sub: 'JSON Events', icon: '📱', x: 60, y: 220 },
-          { id: 'n_stream', title: 'Cloud Pub/Sub', sub: 'Message Bus', icon: '📡', x: 280, y: 220 },
-          { id: 'n_flow', title: 'Cloud Dataflow', sub: 'Apache Beam', icon: '⚙️', x: 480, y: 220 },
-          { id: 'n_gcs', title: 'Raw GCS Bucket', sub: 'Parquet Lake', icon: '🗃️', x: 700, y: 140 },
-          { id: 'n_bq', title: 'Google BigQuery', sub: 'SQL Analytics', icon: '🔍', x: 700, y: 300 }
-        ],
-        edges: [
-          { from: 'n_src', to: 'n_stream', label: 'Stream Publish', style: 'solid' },
-          { from: 'n_stream', to: 'n_flow', label: 'Ingest Beam', style: 'solid' },
-          { from: 'n_flow', to: 'n_gcs', label: 'Archive Bronze', style: 'dashed' },
-          { from: 'n_flow', to: 'n_bq', label: 'Load Gold Tables', style: 'solid' }
-        ]
+      forest: {
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#f0fdf4',
+          primaryTextColor: '#064e3b',
+          primaryBorderColor: '#059669',
+          lineColor: '#10b981',
+          fontFamily: 'Inter, sans-serif'
+        },
+        classDefs: `
+          classDef class_client fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b,font-weight:bold;
+          classDef class_gateway fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f,font-weight:bold;
+          classDef class_lb fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12,font-weight:bold;
+          classDef class_service fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#064e3b,font-weight:bold;
+          classDef class_db fill:#ccfbf1,stroke:#0d9488,stroke-width:2px,color:#134e4a,font-weight:bold;
+          classDef class_cache fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#075985,font-weight:bold;
+          classDef class_queue fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#4c1d95,font-weight:bold;
+          classDef class_storage fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63,font-weight:bold;
+          classDef class_sec fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12,font-weight:bold;
+          classDef class_auth fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#831843,font-weight:bold;
+          classDef class_ext fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+          classDef class_monitor fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#164e63,font-weight:bold;
+          classDef class_generic fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#1e293b;
+        `
       },
-      hybrid: {
-        containers: [
-          { id: 'c_onprem', title: 'On-Premises Enterprise DC', x: 60, y: 80, w: 320, h: 360 },
-          { id: 'c_cloud', title: 'AWS Secure VPC Network', x: 520, y: 80, w: 460, h: 360 }
-        ],
-        nodes: [
-          { id: 'n_corp_app', title: 'Legacy SAP ERP', sub: 'On-Prem Server', icon: '🏢', x: 120, y: 200 },
-          { id: 'n_vpn', title: 'Direct Connect GW', sub: '10 Gbps Link', icon: '🛡️', x: 380, y: 200 },
-          { id: 'n_cloud_api', title: 'Cloud API Gateway', sub: 'Private Endpoint', icon: '🚪', x: 570, y: 200 },
-          { id: 'n_cloud_db', title: 'Aurora Global DB', sub: 'Replicated DB', icon: '🐬', x: 780, y: 200 }
-        ],
-        edges: [
-          { from: 'n_corp_app', to: 'n_vpn', label: 'mTLS Tunnel', style: 'solid' },
-          { from: 'n_vpn', to: 'n_cloud_api', label: 'Private Subnet', style: 'solid' },
-          { from: 'n_cloud_api', to: 'n_cloud_db', label: 'SQL Query', style: 'solid' }
-        ]
+      sunset: {
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#fff7ed',
+          primaryTextColor: '#7c2d12',
+          primaryBorderColor: '#ea580c',
+          lineColor: '#f97316',
+          fontFamily: 'Inter, sans-serif'
+        },
+        classDefs: `
+          classDef class_client fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12,font-weight:bold;
+          classDef class_gateway fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f,font-weight:bold;
+          classDef class_lb fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#713f12,font-weight:bold;
+          classDef class_service fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#881337,font-weight:bold;
+          classDef class_db fill:#fae8ff,stroke:#c026d3,stroke-width:2px,color:#701a75,font-weight:bold;
+          classDef class_cache fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d,font-weight:bold;
+          classDef class_queue fill:#ede9fe,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95,font-weight:bold;
+          classDef class_storage fill:#fdf4ff,stroke:#a855f7,stroke-width:2px,color:#581c87,font-weight:bold;
+          classDef class_sec fill:#fed7aa,stroke:#f97316,stroke-width:2px,color:#7c2d12,font-weight:bold;
+          classDef class_auth fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#831843,font-weight:bold;
+          classDef class_ext fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#334155,font-weight:bold;
+          classDef class_monitor fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12,font-weight:bold;
+          classDef class_generic fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#1e293b;
+        `
       }
     };
 
-    // State
-    let diagramState = JSON.parse(JSON.stringify(TEMPLATES.three_tier));
-    let selectedElement = null; // { type: 'node' | 'container', id: string }
-    let currentZoom = 1;
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
-    let panOffset = { x: 40, y: 40 };
+    // --- APPLICATION STATE ---
+    const AppState = {
+      dsl: TEMPLATES.three_tier,
+      activeTheme: 'indigo',
+      direction: 'LR',
+      zoom: 1.0,
+      pan: { x: 0, y: 0 },
+      isPanning: false,
+      panStart: { x: 0, y: 0 },
+      lastGeneratedMermaid: '',
+      activeView: 'editor' // for mobile: 'editor' | 'preview'
+    };
 
-    // DOM Elements
-    const paletteGrid = document.getElementById('palette-grid');
-    const paletteSearch = document.getElementById('palette-search');
-    const canvasViewport = document.getElementById('canvas-viewport');
-    const canvasStage = document.getElementById('canvas-stage');
-    const connectionsSvg = document.getElementById('connections-svg');
-    const containersLayer = document.getElementById('containers-layer');
-    const nodesLayer = document.getElementById('nodes-layer');
-    const codeTextarea = document.getElementById('code-textarea');
-    const codeDrawer = document.getElementById('code-drawer');
-    const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
-    const drawerToggleIcon = document.getElementById('drawer-toggle-icon');
-
-    const propTitle = document.getElementById('prop-title');
-    const propSublabel = document.getElementById('prop-sublabel');
-    const propIcon = document.getElementById('prop-icon');
-    const edgeFrom = document.getElementById('edge-from');
-    const edgeTo = document.getElementById('edge-to');
-    const edgeStyle = document.getElementById('edge-style');
-    const edgeLabel = document.getElementById('edge-label');
-    const edgesList = document.getElementById('edges-list');
-    const selectTemplate = document.getElementById('select-template');
-
-    const btnZoomIn = document.getElementById('btn-zoom-in');
-    const btnZoomOut = document.getElementById('btn-zoom-out');
-    const btnZoomReset = document.getElementById('btn-zoom-reset');
-    const zoomLbl = document.getElementById('zoom-lbl');
-
-    // --- RENDER COMPONENT PALETTE ---
-    function renderPalette(filter = '', category = 'all') {
-      const q = filter.toLowerCase().trim();
-      const filtered = PALETTE_COMPONENTS.filter(c => {
-        const matchCat = category === 'all' || c.cat === category;
-        const matchQuery = !q || c.name.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q);
-        return matchCat && matchQuery;
-      });
-
-      paletteGrid.innerHTML = filtered.map(c => `
-        <div class="palette-item" onclick="addComponentToCanvas('${c.id}')">
-          <span class="icon">${c.icon}</span>
-          <span class="name">${c.name}</span>
-        </div>
-      `).join('');
+    // --- CORE DSL TO MERMAID TRANSLATOR ---
+    function sanitizeNodeId(raw) {
+      return 'node_' + raw.replace(/[^a-zA-Z0-9_]/g, '_');
     }
 
-    paletteSearch.addEventListener('input', (e) => {
-      const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'all';
-      renderPalette(e.target.value, activeTab);
-    });
+    function parseNodeToken(token) {
+      let raw = token.trim();
+      let customLabel = '';
+      let typeHint = '';
+      let name = '';
 
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderPalette(paletteSearch.value, btn.dataset.tab);
-      });
-    });
+      // Check if bracketed e.g. [db:Postgres (v15)] or [API Gateway]
+      if (raw.startsWith('[') && raw.endsWith(']')) {
+        raw = raw.slice(1, -1).trim();
+      }
 
-    // --- ADD COMPONENT TO CANVAS ---
-    window.addComponentToCanvas = function(compId) {
-      const comp = PALETTE_COMPONENTS.find(c => c.id === compId);
-      if (!comp) return;
+      // Check if has custom label after space or brackets e.g. "db:PostgreSQL [Orders DB]" or "db:Orders [(DB)]"
+      const bracketMatch = raw.match(/^([a-zA-Z0-9_:-]+)\s*(\[.*?\]|\(.*?\)|\[\[.*?\]\]|\{.*?\}|\/.*?\/)$/);
+      if (bracketMatch) {
+        raw = bracketMatch[1];
+        customLabel = bracketMatch[2].replace(/^[\(\[\{/]+|[\)\]\}]+$/g, '').trim();
+      }
 
-      const randomX = Math.round((-panOffset.x + 320 + Math.random() * 100) / currentZoom);
-      const randomY = Math.round((-panOffset.y + 180 + Math.random() * 100) / currentZoom);
+      // Check type prefix like "db:Orders" or "client:Web App"
+      if (raw.includes(':')) {
+        const parts = raw.split(':');
+        typeHint = parts[0].toLowerCase().trim();
+        name = parts.slice(1).join(':').trim();
+      } else {
+        name = raw;
+      }
 
-      if (comp.isContainer) {
-        const newId = `c_${Date.now()}`;
-        diagramState.containers.push({
-          id: newId,
-          title: comp.name,
-          x: randomX,
-          y: randomY,
-          w: 360,
-          h: 240
+      const id = sanitizeNodeId(raw);
+      const typeInfo = TYPE_MAPPINGS[typeHint] || { icon: '', prefix: '', shape: 'rect', class: 'class_generic' };
+      
+      let displayLabel = customLabel || name;
+      if (typeInfo.icon && !displayLabel.includes(typeInfo.icon)) {
+        displayLabel = `${typeInfo.icon} ${displayLabel}`;
+      }
+
+      return {
+        id,
+        raw,
+        name,
+        typeHint,
+        displayLabel,
+        shape: typeInfo.shape,
+        className: typeInfo.class
+      };
+    }
+
+    function formatMermaidNode(node) {
+      const label = node.displayLabel.replace(/"/g, "'");
+      switch (node.shape) {
+        case 'cylinder':
+          return `${node.id}[("${label}")]:::${node.className}`;
+        case 'subroutine':
+          return `${node.id}[["${label}"]]:::${node.className}`;
+        case 'circle':
+          return `${node.id}(("${label}")):::${node.className}`;
+        case 'rect':
+        default:
+          return `${node.id}["${label}"]:::${node.className}`;
+      }
+    }
+
+    function translateDslToMermaid(dslText, defaultDirection = 'LR') {
+      const lines = dslText.split(/\r?\n/);
+      let direction = defaultDirection;
+      const registeredNodes = new Map();
+      const outputLines = [];
+      let inGroup = false;
+      let groupLines = [];
+      let groupName = '';
+      let groupCount = 0;
+
+      // First pass: check for direction override
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^direction:\s*(LR|RL|TB|TD|BT)/i.test(trimmed)) {
+          direction = trimmed.split(':')[1].trim().toUpperCase();
+        } else if (/^flow:\s*(LR|RL|TB|TD|BT)/i.test(trimmed)) {
+          direction = trimmed.split(':')[1].trim().toUpperCase();
+        }
+      }
+
+      outputLines.push(`flowchart ${direction}`);
+
+      for (let i = 0; i < lines.length; i++) {
+        const rawLine = lines[i];
+        const trimmed = rawLine.trim();
+
+        // Comments and empty lines
+        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) {
+          continue;
+        }
+
+        // Direction directive
+        if (/^(direction|flow):/i.test(trimmed)) {
+          continue;
+        }
+
+        // Subgraph / Group Start
+        const groupMatch = trimmed.match(/^(group|boundary|subgraph)\s+["']?([^"'{]+)["']?\s*\{?$/i);
+        if (groupMatch) {
+          inGroup = true;
+          groupCount++;
+          groupName = groupMatch[2].trim();
+          groupLines = [];
+          continue;
+        }
+
+        // Group End
+        if (inGroup && trimmed === '}') {
+          inGroup = false;
+          outputLines.push(`  subgraph group_${groupCount} ["${groupName}"]`);
+          groupLines.forEach(gl => outputLines.push(`    ${gl}`));
+          outputLines.push(`  end`);
+          continue;
+        }
+
+        // Check for edge connection: e.g. A -> B or [A] -->|Label| [B]
+        const edgeRegex = /(-->|->|-\.->|\.\.>|<-->|<->|---|--)/g;
+        if (edgeRegex.test(trimmed)) {
+          // Split by arrows while preserving labels
+          const parsedEdgeLine = parseEdgeLine(trimmed, registeredNodes);
+          if (inGroup) {
+            groupLines.push(parsedEdgeLine);
+          } else {
+            outputLines.push(`  ${parsedEdgeLine}`);
+          }
+          continue;
+        }
+
+        // Standalone component definition: e.g. client:Web App [React]
+        const node = parseNodeToken(trimmed);
+        registeredNodes.set(node.id, node);
+        const nodeStr = formatMermaidNode(node);
+        if (inGroup) {
+          groupLines.push(nodeStr);
+        } else {
+          outputLines.push(`  ${nodeStr}`);
+        }
+      }
+
+      // Close open group if file ended without '}'
+      if (inGroup) {
+        outputLines.push(`  subgraph group_${groupCount} ["${groupName}"]`);
+        groupLines.forEach(gl => outputLines.push(`    ${gl}`));
+        outputLines.push(`  end`);
+      }
+
+      // Append Theme Class Definitions
+      const themeConfig = THEMES[AppState.activeTheme] || THEMES.indigo;
+      outputLines.push(themeConfig.classDefs);
+
+      return outputLines.join('\n');
+    }
+
+    function parseEdgeLine(line, registeredNodes) {
+      // Regex matching connections like: NodeA -->|Label| NodeB or [A] -> [B]
+      // Splits into parts: nodes and arrows
+      const pattern = /(-->\|[^|]+\||->\|[^|]+\||-\.->\|[^|]+\||\.\.>\|[^|]+\||<-->\|[^|]+\||<->\|[^|]+\||-->|->|-\.->|\.\.>|<-->|<->|---|--)/g;
+      
+      const tokens = line.split(pattern).filter(t => t.trim().length > 0);
+      let result = '';
+
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i].trim();
+        if (pattern.test(token)) {
+          // It's an arrow
+          let arrow = token;
+          if (arrow === '->') arrow = '-->';
+          else if (arrow === '..>') arrow = '-.->';
+          else if (arrow === '<->') arrow = '<-->';
+          else if (arrow === '--') arrow = '---';
+          else if (arrow.startsWith('->|')) arrow = '-->' + arrow.slice(2);
+          else if (arrow.startsWith('..>|')) arrow = '-.->' + arrow.slice(3);
+          else if (arrow.startsWith('<->|')) arrow = '<-->' + arrow.slice(3);
+
+          result += ` ${arrow} `;
+        } else {
+          // It's a node
+          const node = parseNodeToken(token);
+          if (!registeredNodes.has(node.id)) {
+            registeredNodes.set(node.id, node);
+            result += formatMermaidNode(node);
+          } else {
+            result += node.id;
+          }
+        }
+      }
+
+      return result.trim();
+    }
+
+    // --- MERMAID LIVE RENDERER ---
+    let renderDebounce = null;
+
+    async function renderDiagram(force = false) {
+      const dsl = AppState.dsl;
+      const errorBanner = document.getElementById('error-banner');
+      const errorText = document.getElementById('error-text');
+
+      try {
+        const mermaidCode = translateDslToMermaid(dsl, AppState.direction);
+        AppState.lastGeneratedMermaid = mermaidCode;
+
+        // Initialize Mermaid with active theme
+        const themeConfig = THEMES[AppState.activeTheme] || THEMES.indigo;
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: themeConfig.theme,
+          themeVariables: themeConfig.themeVariables,
+          flowchart: {
+            useMaxWidth: false,
+            htmlLabels: true,
+            curve: 'basis'
+          },
+          securityLevel: 'loose'
         });
-        selectElement('container', newId);
-      } else {
-        const newId = `n_${Date.now()}`;
-        diagramState.nodes.push({
-          id: newId,
-          title: comp.name,
-          sub: comp.sub,
-          icon: comp.icon,
-          x: randomX,
-          y: randomY
-        });
-        selectElement('node', newId);
+
+        const container = document.getElementById('diagram-container');
+        const renderId = 'mermaid_render_' + Date.now();
+
+        const { svg } = await mermaid.render(renderId, mermaidCode);
+        container.innerHTML = svg;
+        errorBanner.classList.remove('show');
+        applyZoomTransform();
+      } catch (err) {
+        console.warn('Mermaid render error:', err);
+        errorBanner.classList.add('show');
+        errorText.textContent = `Diagram syntax error: ${err.message || err.str || 'Check syntax'}`;
       }
-
-      renderCanvas();
-      showToast(`Added ${comp.name}`);
-    };
-
-    // --- RENDER CANVAS & CONNECTIONS ---
-    function renderCanvas() {
-      // 1. Render Containers
-      containersLayer.innerHTML = diagramState.containers.map(c => `
-        <div class="arch-container ${selectedElement?.id === c.id ? 'selected' : ''}" id="${c.id}"
-             style="left:${c.x}px; top:${c.y}px; width:${c.w}px; height:${c.h}px;"
-             onmousedown="startDragElement(event, 'container', '${c.id}')">
-          <div class="container-header">${c.title}</div>
-        </div>
-      `).join('');
-
-      // 2. Render Nodes
-      nodesLayer.innerHTML = diagramState.nodes.map(n => `
-        <div class="arch-node ${selectedElement?.id === n.id ? 'selected' : ''}" id="${n.id}"
-             style="left:${n.x}px; top:${n.y}px;"
-             onmousedown="startDragElement(event, 'node', '${n.id}')">
-          <span class="node-icon">${n.icon}</span>
-          <span class="node-title">${n.title}</span>
-          <span class="node-sub">${n.sub}</span>
-        </div>
-      `).join('');
-
-      // 3. Render SVG Connections
-      renderConnectionsSvg();
-
-      // 4. Update Dropdowns & JSON Drawer
-      populateDropdowns();
-      codeTextarea.value = JSON.stringify(diagramState, null, 2);
-      localStorage.setItem('arch_diagram_autosave', JSON.stringify(diagramState));
     }
 
-    function renderConnectionsSvg() {
-      const isDark = document.documentElement.classList.contains('dark');
-      const strokeColor = isDark ? '#94a3b8' : '#475569';
-      const labelBg = isDark ? '#1c1917' : '#ffffff';
-      const labelText = isDark ? '#fafaf9' : '#1c1917';
+    function triggerLiveRender() {
+      if (renderDebounce) clearTimeout(renderDebounce);
+      renderDebounce = setTimeout(() => {
+        renderDiagram();
+        saveToLocalStorage();
+      }, 250);
+    }
 
-      let svgHtml = `
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="${strokeColor}" />
-          </marker>
-        </defs>
-      `;
+    // --- PAN & ZOOM ENGINE ---
+    function applyZoomTransform() {
+      const container = document.getElementById('diagram-container');
+      container.style.transform = `translate(${AppState.pan.x}px, ${AppState.pan.y}px) scale(${AppState.zoom})`;
+      document.getElementById('zoom-lbl').textContent = `${Math.round(AppState.zoom * 100)}%`;
+    }
 
-      diagramState.edges.forEach((e, idx) => {
-        const fromNode = diagramState.nodes.find(n => n.id === e.from);
-        const toNode = diagramState.nodes.find(n => n.id === e.to);
-        if (!fromNode || !toNode) return;
+    function resetZoom() {
+      AppState.zoom = 1.0;
+      AppState.pan = { x: 0, y: 0 };
+      applyZoomTransform();
+    }
 
-        const x1 = fromNode.x + 70;
-        const y1 = fromNode.y + 35;
-        const x2 = toNode.x + 70;
-        const y2 = toNode.y + 35;
+    function initPanZoom() {
+      const viewport = document.getElementById('diagram-viewport');
 
-        // Orthogonal / Bezier Path
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        const pathData = `M ${x1} ${y1} Q ${midX} ${y1} ${midX} ${midY} T ${x2} ${y2}`;
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        AppState.zoom = Math.min(3.0, Math.max(0.3, AppState.zoom + delta));
+        applyZoomTransform();
+      }, { passive: false });
 
-        const strokeDash = e.style === 'dashed' ? '6,6' : (e.style === 'dotted' ? '2,4' : 'none');
-
-        svgHtml += `
-          <g>
-            <path d="${pathData}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="${strokeDash}" marker-end="url(#arrow)" />
-            ${e.label ? `
-              <rect x="${midX - 35}" y="${midY - 10}" width="70" height="20" rx="4" fill="${labelBg}" stroke="${strokeColor}" stroke-width="1" />
-              <text x="${midX}" y="${midY + 4}" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="${labelText}" text-anchor="middle">${e.label}</text>
-            ` : ''}
-          </g>
-        `;
+      viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        AppState.isPanning = true;
+        AppState.panStart = { x: e.clientX - AppState.pan.x, y: e.clientY - AppState.pan.y };
+        viewport.classList.add('grabbing');
       });
 
-      connectionsSvg.innerHTML = svgHtml;
+      window.addEventListener('mousemove', (e) => {
+        if (!AppState.isPanning) return;
+        AppState.pan = {
+          x: e.clientX - AppState.panStart.x,
+          y: e.clientY - AppState.panStart.y
+        };
+        applyZoomTransform();
+      });
 
-      // Render Edges Sidebar list
-      edgesList.innerHTML = diagramState.edges.map((e, idx) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-alt); padding:0.35rem 0.5rem; border-radius:var(--radius-sm); font-size:0.75rem; border:1px solid var(--line);">
-          <span><strong>${e.from}</strong> ➔ <strong>${e.to}</strong> ${e.label ? `<small>(${e.label})</small>` : ''}</span>
-          <button class="btn btn--sm btn--danger" onclick="deleteEdge(${idx})">✕</button>
-        </div>
-      `).join('');
+      window.addEventListener('mouseup', () => {
+        AppState.isPanning = false;
+        viewport.classList.remove('grabbing');
+      });
+
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        AppState.zoom = Math.min(3.0, AppState.zoom + 0.15);
+        applyZoomTransform();
+      });
+
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        AppState.zoom = Math.max(0.3, AppState.zoom - 0.15);
+        applyZoomTransform();
+      });
+
+      document.getElementById('btn-zoom-reset').addEventListener('click', resetZoom);
     }
 
-    function populateDropdowns() {
-      const opts = diagramState.nodes.map(n => `<option value="${n.id}">${n.title} (${n.id})</option>`).join('');
-      edgeFrom.innerHTML = '<option value="" disabled selected>Source Node...</option>' + opts;
-      edgeTo.innerHTML = '<option value="" disabled selected>Target Node...</option>' + opts;
+    // --- EXPORT SUITE ---
+    function getSvgString() {
+      const svgEl = document.querySelector('#diagram-container svg');
+      if (!svgEl) return null;
+      const clone = svgEl.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      return new XMLSerializer().serializeToString(clone);
     }
 
-    // --- ELEMENT SELECTION & DRAGGING ---
-    window.selectElement = function(type, id) {
-      selectedElement = { type, id };
-      if (type === 'node') {
-        const node = diagramState.nodes.find(n => n.id === id);
-        if (node) {
-          propTitle.value = node.title;
-          propSublabel.value = node.sub;
-          propIcon.value = node.icon;
-          propIcon.style.display = 'block';
-        }
-      } else if (type === 'container') {
-        const container = diagramState.containers.find(c => c.id === id);
-        if (container) {
-          propTitle.value = container.title;
-          propSublabel.value = `${container.w} × ${container.h} px`;
-          propIcon.style.display = 'none';
-        }
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportSvg() {
+      const svgStr = getSvgString();
+      if (!svgStr) {
+        showToast('No diagram rendered to export.', false);
+        return;
       }
-    };
+      downloadFile('system-architecture.svg', svgStr, 'image/svg+xml;charset=utf-8');
+      showToast('Downloaded system-architecture.svg');
+    }
 
-    let draggingObj = null;
-    let dragStartMouse = { x: 0, y: 0 };
-    let dragStartPos = { x: 0, y: 0 };
-
-    window.startDragElement = function(e, type, id) {
-      e.stopPropagation();
-      selectElement(type, id);
-      renderCanvas();
-
-      draggingObj = { type, id };
-      dragStartMouse = { x: e.clientX, y: e.clientY };
-
-      const item = type === 'node' ? diagramState.nodes.find(n => n.id === id) : diagramState.containers.find(c => c.id === id);
-      if (item) {
-        dragStartPos = { x: item.x, y: item.y };
-      }
-    };
-
-    window.addEventListener('mousemove', (e) => {
-      if (draggingObj) {
-        const dx = (e.clientX - dragStartMouse.x) / currentZoom;
-        const dy = (e.clientY - dragStartMouse.y) / currentZoom;
-
-        const item = draggingObj.type === 'node'
-          ? diagramState.nodes.find(n => n.id === draggingObj.id)
-          : diagramState.containers.find(c => c.id === draggingObj.id);
-
-        if (item) {
-          item.x = Math.round(dragStartPos.x + dx);
-          item.y = Math.round(dragStartPos.y + dy);
-          renderCanvas();
-        }
-      } else if (isPanning) {
-        panOffset.x = e.clientX - panStart.x;
-        panOffset.y = e.clientY - panStart.y;
-        applyTransform();
-      }
-    });
-
-    window.addEventListener('mouseup', () => {
-      draggingObj = null;
-      isPanning = false;
-      canvasViewport.classList.remove('grabbing');
-    });
-
-    // Inspector Updates
-    propTitle.addEventListener('input', (e) => {
-      if (!selectedElement) return;
-      if (selectedElement.type === 'node') {
-        const n = diagramState.nodes.find(node => node.id === selectedElement.id);
-        if (n) n.title = e.target.value;
-      } else {
-        const c = diagramState.containers.find(box => box.id === selectedElement.id);
-        if (c) c.title = e.target.value;
-      }
-      renderCanvas();
-    });
-
-    propSublabel.addEventListener('input', (e) => {
-      if (!selectedElement || selectedElement.type !== 'node') return;
-      const n = diagramState.nodes.find(node => node.id === selectedElement.id);
-      if (n) n.sub = e.target.value;
-      renderCanvas();
-    });
-
-    propIcon.addEventListener('input', (e) => {
-      if (!selectedElement || selectedElement.type !== 'node') return;
-      const n = diagramState.nodes.find(node => node.id === selectedElement.id);
-      if (n) n.icon = e.target.value;
-      renderCanvas();
-    });
-
-    document.getElementById('btn-delete-element').addEventListener('click', () => {
-      if (!selectedElement) return;
-      if (selectedElement.type === 'node') {
-        diagramState.nodes = diagramState.nodes.filter(n => n.id !== selectedElement.id);
-        diagramState.edges = diagramState.edges.filter(e => e.from !== selectedElement.id && e.to !== selectedElement.id);
-      } else {
-        diagramState.containers = diagramState.containers.filter(c => c.id !== selectedElement.id);
-      }
-      selectedElement = null;
-      renderCanvas();
-      showToast('Deleted element');
-    });
-
-    // Add Edge
-    document.getElementById('btn-add-edge').addEventListener('click', () => {
-      const from = edgeFrom.value;
-      const to = edgeTo.value;
-      const style = edgeStyle.value;
-      const label = edgeLabel.value.trim();
-
-      if (!from || !to) {
-        showToast('Select source and target nodes');
+    function exportPng(scale = 2) {
+      const svgStr = getSvgString();
+      if (!svgStr) {
+        showToast('No diagram rendered to export.', false);
         return;
       }
 
-      diagramState.edges.push({ from, to, style, label });
-      edgeLabel.value = '';
-      renderCanvas();
-      showToast(`Connected ${from} ➔ ${to}`);
-    });
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
 
-    window.deleteEdge = function(idx) {
-      diagramState.edges.splice(idx, 1);
-      renderCanvas();
-      showToast('Removed connection');
-    };
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
 
-    // Pan & Zoom
-    function applyTransform() {
-      canvasStage.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(${currentZoom})`;
-      zoomLbl.textContent = `${Math.round(currentZoom * 100)}%`;
+        // Fill background
+        ctx.fillStyle = AppState.activeTheme === 'dark_cyber' ? '#09090b' : '#ffffff';
+        ctx.fillRect(0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = `system-architecture-${scale}x.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(pngUrl);
+          URL.revokeObjectURL(url);
+          showToast(`Downloaded system-architecture-${scale}x.png`);
+        }, 'image/png');
+      };
+
+      img.src = url;
     }
 
-    btnZoomIn.addEventListener('click', () => {
-      currentZoom = Math.min(2.5, currentZoom + 0.2);
-      applyTransform();
-    });
+    function copyToClipboard(text, msg) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(msg);
+      }).catch(() => {
+        showToast('Failed to copy to clipboard', false);
+      });
+    }
 
-    btnZoomOut.addEventListener('click', () => {
-      currentZoom = Math.max(0.3, currentZoom - 0.2);
-      applyTransform();
-    });
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+      toastMsg.textContent = msg;
+      toastIcon.textContent = isSuccess ? '✓' : '⚠️';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
 
-    btnZoomReset.addEventListener('click', () => {
-      currentZoom = 1;
-      panOffset = { x: 40, y: 40 };
-      applyTransform();
-      showToast('Reset viewport');
-    });
+    // --- PLAIN-ENGLISH LLM ASSISTANT (CLIENT-SIDE FETCH) ---
+    /**
+     * NOTE: This optional feature makes a direct client-side fetch() to the user-selected LLM provider.
+     * The user's API key is stored strictly in memory / sessionStorage and is never sent to any backend server.
+     */
+    const AI_SYSTEM_PROMPT = `You are an expert software architect. Convert the user's plain-English system description into structured Architecture DSL.
+The Architecture DSL rules:
+- Optional first line: "direction: LR" or "direction: TD"
+- Component syntax: prefix:Name [Display Label] (e.g. client:Web App [React Frontend], gateway:API Gateway [Kong], lb:ALB [Load Balancer], server:OrderSvc [Order Service], db:OrdersDB [(PostgreSQL)], cache:Redis [(Redis Cache)], queue:Kafka [[Event Bus]], storage:S3 [(Asset Storage)], sec:WAF [Cloudflare], auth:Auth0 [Identity Provider], ext:Stripe [Payment API])
+- Group syntax:
+group "Group Name" {
+  component1
+  component2
+}
+- Connection syntax:
+[Component A] -> [Component B]
+[Component A] ->|HTTPS| [Component B]
+[Component A] -.->|Async Event| [Queue]
+[Component A] <->|gRPC| [Component B]
 
-    canvasViewport.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.1 : -0.1;
-      currentZoom = Math.max(0.3, Math.min(2.5, currentZoom + delta));
-      applyTransform();
-    });
+OUTPUT ONLY THE DSL TEXT. Do not add markdown backticks or explanations.`;
 
-    canvasViewport.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.arch-node') || e.target.closest('.arch-container') || e.target.closest('.zoom-toolbar')) return;
-      isPanning = true;
-      panStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
-      canvasViewport.classList.add('grabbing');
-    });
+    async function generateAiDsl() {
+      const prompt = document.getElementById('ai-prompt-input').value.trim();
+      const apiKey = document.getElementById('ai-api-key').value.trim();
+      const provider = document.getElementById('ai-provider').value;
+      const btn = document.getElementById('btn-generate-ai');
 
-    // Drawer Toggle
-    drawerToggleBtn.addEventListener('click', () => {
-      const isCollapsed = codeDrawer.classList.toggle('collapsed');
-      drawerToggleIcon.textContent = isCollapsed ? '▲ Open' : '▼ Close';
-    });
-
-    // JSON Input Syncer
-    codeTextarea.addEventListener('input', () => {
-      try {
-        diagramState = JSON.parse(codeTextarea.value);
-        renderCanvas();
-      } catch(e) {}
-    });
-
-    // Templates Switcher
-    selectTemplate.addEventListener('change', () => {
-      const t = TEMPLATES[selectTemplate.value];
-      if (t) {
-        diagramState = JSON.parse(JSON.stringify(t));
-        selectedElement = null;
-        renderCanvas();
-        showToast(`Loaded ${selectTemplate.value} template`);
+      if (!prompt) {
+        showToast('Please enter a system description first.', false);
+        return;
       }
-    });
+      if (!apiKey) {
+        showToast('Please enter your API Key.', false);
+        return;
+      }
 
-    // Actions & Exporters
-    document.getElementById('btn-new').addEventListener('click', () => {
-      diagramState = { containers: [], nodes: [], edges: [] };
-      selectedElement = null;
-      renderCanvas();
-      showToast('Created new diagram');
-    });
+      btn.disabled = true;
+      btn.textContent = '⏳ Generating DSL...';
 
-    document.getElementById('btn-export-json').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(diagramState, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'architecture-diagram.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Downloaded diagram JSON');
-    });
+      try {
+        let generatedDsl = '';
 
-    document.getElementById('btn-share-url').addEventListener('click', () => {
-      const encoded = encodeURIComponent(JSON.stringify(diagramState));
-      const url = `${window.location.origin}${window.location.pathname}#state=${encoded}`;
-      navigator.clipboard.writeText(url).then(() => showToast('Share link copied to clipboard!'));
-    });
+        if (provider === 'gemini') {
+          // Google Gemini API
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: `${AI_SYSTEM_PROMPT}\n\nUser Description:\n${prompt}` }]
+              }]
+            })
+          });
 
-    document.getElementById('btn-copy-mermaid').addEventListener('click', () => {
-      let mm = 'graph TD\n';
-      diagramState.nodes.forEach(n => {
-        mm += `  ${n.id}["${n.icon} ${n.title}"]\n`;
-      });
-      diagramState.edges.forEach(e => {
-        if (e.label) mm += `  ${e.from} -- "${e.label}" --> ${e.to}\n`;
-        else mm += `  ${e.from} --> ${e.to}\n`;
-      });
-      navigator.clipboard.writeText(mm).then(() => showToast('Copied Mermaid flowchart code!'));
-    });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `HTTP ${res.status}: ${res.statusText}`);
+          }
 
-    document.getElementById('btn-export-svg').addEventListener('click', () => {
-      // Build standalone SVG from nodes, containers, and edges
-      let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
-        <rect width="100%" height="100%" fill="#ffffff" />
-        <g id="containers">`;
+          const data = await res.json();
+          generatedDsl = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else if (provider === 'openai') {
+          // OpenAI API
+          const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: AI_SYSTEM_PROMPT },
+                { role: 'user', content: prompt }
+              ]
+            })
+          });
 
-      diagramState.containers.forEach(c => {
-        svg += `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,6" />
-                <text x="${c.x + 12}" y="${c.y + 20}" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#475569">${c.title}</text>`;
-      });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+          }
 
-      svg += `</g><g id="edges">`;
-      diagramState.edges.forEach(e => {
-        const fn = diagramState.nodes.find(n => n.id === e.from);
-        const tn = diagramState.nodes.find(n => n.id === e.to);
-        if (fn && tn) {
-          svg += `<line x1="${fn.x+70}" y1="${fn.y+35}" x2="${tn.x+70}" y2="${tn.y+35}" stroke="#475569" stroke-width="2" />
-                  ${e.label ? `<text x="${(fn.x+tn.x)/2 + 70}" y="${(fn.y+tn.y)/2 + 30}" font-family="Inter, sans-serif" font-size="10" font-weight="bold" fill="#0f172a" text-anchor="middle">${e.label}</text>` : ''}`;
+          const data = await res.json();
+          generatedDsl = data.choices?.[0]?.message?.content || '';
+        } else if (provider === 'anthropic') {
+          // Anthropic Claude API
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-3-5-haiku-20241022',
+              max_tokens: 1024,
+              system: AI_SYSTEM_PROMPT,
+              messages: [{ role: 'user', content: prompt }]
+            })
+          });
+
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          generatedDsl = data.content?.[0]?.text || '';
         }
-      });
 
-      svg += `</g><g id="nodes">`;
-      diagramState.nodes.forEach(n => {
-        svg += `<rect x="${n.x}" y="${n.y}" width="140" height="70" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
-                <text x="${n.x + 70}" y="${n.y + 26}" font-size="18" text-anchor="middle">${n.icon}</text>
-                <text x="${n.x + 70}" y="${n.y + 44}" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#0f172a" text-anchor="middle">${n.title}</text>
-                <text x="${n.x + 70}" y="${n.y + 58}" font-family="JetBrains Mono, monospace" font-size="9" fill="#64748b" text-anchor="middle">${n.sub}</text>`;
-      });
+        // Clean any accidental markdown backticks from LLM output
+        generatedDsl = generatedDsl.replace(/^```[a-z]*\r?\n/i, '').replace(/\r?\n```$/i, '').trim();
 
-      svg += `</g></svg>`;
+        if (generatedDsl) {
+          AppState.dsl = generatedDsl;
+          document.getElementById('dsl-editor').value = generatedDsl;
+          showToast('Generated architecture DSL!');
+          renderDiagram();
+          saveToLocalStorage();
+        } else {
+          showToast('Received empty response from AI.', false);
+        }
+      } catch (err) {
+        console.error('AI generation error:', err);
+        showToast(`AI Error: ${err.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Convert to DSL';
+      }
+    }
 
-      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'architecture-diagram.svg';
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Downloaded architecture-diagram.svg');
-    });
+    // --- URL SHARING & LOCALSTORAGE PERSISTENCE ---
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('arch_dsl_code', AppState.dsl);
+        localStorage.setItem('arch_theme', AppState.activeTheme);
+        localStorage.setItem('arch_direction', AppState.direction);
+      } catch (e) {}
+    }
 
-    document.getElementById('btn-export-png').addEventListener('click', () => {
-      // Rasterize to canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = 2400; // 2x
-      canvas.height = 1600;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(2, 2);
-
-      // Containers
-      diagramState.containers.forEach(c => {
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(c.x, c.y, c.w, c.h);
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 6]);
-        ctx.strokeRect(c.x, c.y, c.w, c.h);
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#475569';
-        ctx.font = 'bold 11px Inter, sans-serif';
-        ctx.fillText(c.title, c.x + 12, c.y + 20);
-      });
-
-      // Edges
-      diagramState.edges.forEach(e => {
-        const fn = diagramState.nodes.find(n => n.id === e.from);
-        const tn = diagramState.nodes.find(n => n.id === e.to);
-        if (fn && tn) {
-          ctx.strokeStyle = '#475569';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(fn.x + 70, fn.y + 35);
-          ctx.lineTo(tn.x + 70, tn.y + 35);
-          ctx.stroke();
-
-          if (e.label) {
-            ctx.fillStyle = '#ffffff';
-            const mx = (fn.x + tn.x) / 2 + 70;
-            const my = (fn.y + tn.y) / 2 + 35;
-            ctx.fillRect(mx - 30, my - 10, 60, 20);
-            ctx.fillStyle = '#0f172a';
-            ctx.font = 'bold 10px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(e.label, mx, my + 4);
-            ctx.textAlign = 'left';
+    function loadFromLocalStorage() {
+      try {
+        // Check URL hash first
+        if (window.location.hash && window.location.hash.length > 2) {
+          const rawHash = window.location.hash.substring(1);
+          try {
+            const decoded = decodeURIComponent(atob(rawHash));
+            if (decoded) {
+              AppState.dsl = decoded;
+              return;
+            }
+          } catch (e) {
+            // fallback if raw encoded
+            AppState.dsl = decodeURIComponent(rawHash);
+            return;
           }
         }
-      });
 
-      // Nodes
-      diagramState.nodes.forEach(n => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(n.x, n.y, 140, 70);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(n.x, n.y, 140, 70);
-        ctx.textAlign = 'center';
-        ctx.font = '18px sans-serif';
-        ctx.fillText(n.icon, n.x + 70, n.y + 26);
-        ctx.fillStyle = '#0f172a';
-        ctx.font = 'bold 11px Inter, sans-serif';
-        ctx.fillText(n.title, n.x + 70, n.y + 44);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '9px JetBrains Mono, monospace';
-        ctx.fillText(n.sub, n.x + 70, n.y + 58);
-        ctx.textAlign = 'left';
-      });
+        const savedDsl = localStorage.getItem('arch_dsl_code');
+        if (savedDsl) AppState.dsl = savedDsl;
 
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'architecture-diagram.png';
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('Downloaded architecture-diagram.png (2x)');
-      });
-    });
+        const savedTheme = localStorage.getItem('arch_theme');
+        if (savedTheme && THEMES[savedTheme]) AppState.activeTheme = savedTheme;
 
-    // Initial Load & URL Hash Restorer
-    const hash = window.location.hash;
-    if (hash.startsWith('#state=')) {
+        const savedDir = localStorage.getItem('arch_direction');
+        if (savedDir) AppState.direction = savedDir;
+      } catch (e) {}
+    }
+
+    function shareUrl() {
       try {
-        diagramState = JSON.parse(decodeURIComponent(hash.substring(7)));
-      } catch(e) {}
-    } else {
-      const saved = localStorage.getItem('arch_diagram_autosave');
-      if (saved) {
-        try {
-          diagramState = JSON.parse(saved);
-        } catch(e) {}
+        const encoded = btoa(encodeURIComponent(AppState.dsl));
+        const url = `${window.location.origin}${window.location.pathname}#${encoded}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('Shareable diagram link copied to clipboard!');
+        }).catch(() => {
+          prompt('Copy this shareable link:', url);
+        });
+      } catch (e) {
+        showToast('Error generating share URL', false);
       }
     }
 
-    renderPalette();
-    renderCanvas();
-    applyTransform();
+    // --- INITIALIZATION & EVENT BINDINGS ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme mode
+      (function initTheme() {
+        const mode = localStorage.getItem('theme-mode');
+        const isDark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
+
+        const btn = document.getElementById('theme-toggle');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const dark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme-mode', dark ? 'dark' : 'light');
+            renderDiagram();
+          });
+        }
+      })();
+
+      loadFromLocalStorage();
+
+      const editor = document.getElementById('dsl-editor');
+      editor.value = AppState.dsl;
+      document.getElementById('select-theme').value = AppState.activeTheme;
+      document.getElementById('select-direction').value = AppState.direction;
+
+      // Editor input
+      editor.addEventListener('input', () => {
+        AppState.dsl = editor.value;
+        triggerLiveRender();
+      });
+
+      // Template selector
+      document.getElementById('select-template').addEventListener('change', (e) => {
+        const key = e.target.value;
+        if (TEMPLATES[key]) {
+          AppState.dsl = TEMPLATES[key];
+          editor.value = AppState.dsl;
+          renderDiagram();
+          saveToLocalStorage();
+          showToast(`Loaded ${e.target.options[e.target.selectedIndex].text}`);
+        }
+      });
+
+      // Theme selector
+      document.getElementById('select-theme').addEventListener('change', (e) => {
+        AppState.activeTheme = e.target.value;
+        renderDiagram();
+        saveToLocalStorage();
+      });
+
+      // Direction selector
+      document.getElementById('select-direction').addEventListener('change', (e) => {
+        AppState.direction = e.target.value;
+        renderDiagram();
+        saveToLocalStorage();
+      });
+
+      // Quick insert chips
+      document.querySelectorAll('.insert-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const insertText = chip.dataset.insert;
+          const cursorPos = editor.selectionStart;
+          const textBefore = editor.value.substring(0, cursorPos);
+          const textAfter = editor.value.substring(cursorPos);
+          editor.value = textBefore + (textBefore.endsWith('\n') || textBefore.length === 0 ? '' : '\n') + insertText + '\n' + textAfter;
+          AppState.dsl = editor.value;
+          triggerLiveRender();
+        });
+      });
+
+      // AI Drawer toggle
+      const aiDrawer = document.getElementById('ai-drawer');
+      document.getElementById('btn-toggle-ai').addEventListener('click', () => {
+        const isHidden = aiDrawer.style.display === 'none';
+        aiDrawer.style.display = isHidden ? 'flex' : 'none';
+      });
+      document.getElementById('btn-close-ai').addEventListener('click', () => {
+        aiDrawer.style.display = 'none';
+      });
+      document.getElementById('btn-generate-ai').addEventListener('click', generateAiDsl);
+
+      // Export Buttons
+      document.getElementById('btn-export-svg').addEventListener('click', exportSvg);
+      document.getElementById('btn-export-png').addEventListener('click', () => exportPng(2));
+      document.getElementById('btn-copy-mermaid').addEventListener('click', () => {
+        copyToClipboard(AppState.lastGeneratedMermaid, 'Mermaid source code copied!');
+      });
+      document.getElementById('btn-copy-md').addEventListener('click', () => {
+        const md = `\`\`\`mermaid\n${AppState.lastGeneratedMermaid}\n\`\`\``;
+        copyToClipboard(md, 'Markdown Mermaid block copied!');
+      });
+
+      // Share URL
+      document.getElementById('btn-share-url').addEventListener('click', shareUrl);
+
+      // Syntax reference modal
+      const syntaxModal = document.getElementById('modal-syntax');
+      document.getElementById('btn-open-syntax').addEventListener('click', () => {
+        syntaxModal.classList.add('active');
+      });
+      document.getElementById('btn-close-syntax').addEventListener('click', () => {
+        syntaxModal.classList.remove('active');
+      });
+      document.getElementById('btn-close-syntax-footer').addEventListener('click', () => {
+        syntaxModal.classList.remove('active');
+      });
+
+      // Mobile View Tabs
+      document.querySelectorAll('#mobile-view-tabs .mobile-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#mobile-view-tabs .mobile-tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const view = btn.dataset.view;
+          const workspace = document.getElementById('studio-workspace');
+          if (view === 'preview') {
+            workspace.classList.add('view-preview');
+          } else {
+            workspace.classList.remove('view-preview');
+          }
+        });
+      });
+
+      initPanZoom();
+      renderDiagram();
+    });
   </script>
 </body>
 </html>
