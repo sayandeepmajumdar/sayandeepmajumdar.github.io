@@ -910,6 +910,19 @@ export const TOOLS: Tool[] = [
     localProcessing: true,
     badge: 'Real-Time WS',
   },
+  {
+    id: 'api-tester',
+    name: 'API Request Builder & HTTP Client Studio',
+    slug: 'api-tester',
+    description: 'In-browser REST API request builder and HTTP client. Test GET, POST, PUT, DELETE endpoints, inspect JSON responses, manage headers, query params, auth, environments, collections, and cURL commands 100% client-side.',
+    category: 'developer',
+    secondaryCategories: ['data', 'productivity'],
+    icon: 'Send',
+    tags: ['api tester', 'api request builder', 'postman alternative', 'rest client', 'http client', 'insomnia alternative', 'hoppscotch alternative', 'curl generator', 'api client', 'json api tester'],
+    popular: true,
+    localProcessing: true,
+    badge: 'REST Client',
+  },
 ];
 
 export const TOOLS_BY_ID = new Map<string, Tool>(

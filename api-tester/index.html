@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Request Builder & HTTP Client Studio — Toolzy</title>
+  <meta name="description" content="Free client-side API request builder and HTTP REST client. Construct GET, POST, PUT, DELETE requests, inspect JSON responses, manage headers, query params, auth, environments, collections, and cURL commands 100% in-browser." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #4f46e5;
+      --color-accent-hover: #4338ca;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #818cf8;
+      --color-accent-hover: #6366f1;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* JSON Syntax Highlighting */
+    .json-key { color: #818cf8; font-weight: 600; }
+    .json-string { color: #34d399; }
+    .json-number { color: #fbbf24; }
+    .json-boolean { color: #f472b6; font-weight: bold; }
+    .json-null { color: #9ca3af; font-style: italic; }
+
+    html:not(.dark) .json-key { color: #4338ca; }
+    html:not(.dark) .json-string { color: #059669; }
+    html:not(.dark) .json-number { color: #d97706; }
+    html:not(.dark) .json-boolean { color: #db2777; }
+
+    /* Method colors */
+    .method-get { color: #10b981; }
+    .method-post { color: #f59e0b; }
+    .method-put { color: #3b82f6; }
+    .method-patch { color: #8b5cf6; }
+    .method-delete { color: #ef4444; }
+    .method-head, .method-options { color: #6b7280; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/20 selection:text-indigo-500">
+
+  <!-- Top App Bar -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-black text-sm">
+          ⚡
+        </span>
+        <span class="font-bold text-sm tracking-tight hidden sm:inline">API Studio</span>
+      </a>
+
+      <!-- Environment Selector -->
+      <div class="flex items-center gap-1.5 pl-2 sm:pl-3 border-l border-theme-line">
+        <span class="text-[10px] font-mono text-theme-muted uppercase hidden md:inline">Env:</span>
+        <select id="env-select" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs rounded-xl px-2.5 py-1 focus:outline-none focus:border-indigo-500 cursor-pointer">
+          <option value="none">No Environment</option>
+          <option value="dev">Development (dev)</option>
+          <option value="staging">Staging</option>
+          <option value="prod">Production (prod)</option>
+        </select>
+        <button id="btn-env-manager" type="button" class="p-1.5 rounded-lg text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line text-xs" title="Manage Environment Variables">
+          ⚙️
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Actions & Theme Toggle -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Import cURL / Postman -->
+      <button id="btn-open-import" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-semibold text-theme-ink hover:border-indigo-500/50 transition-colors flex items-center gap-1">
+        <span>📥</span>
+        <span class="hidden sm:inline">Import cURL</span>
+      </button>
+
+      <!-- Generate cURL -->
+      <button id="btn-open-curl" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-semibold text-theme-ink hover:border-indigo-500/50 transition-colors flex items-center gap-1">
+        <span>📋</span>
+        <span class="hidden sm:inline">cURL</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex items-center gap-1">
+        <span>Tools</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Split Pane Layout -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Sidebar: Collections & History -->
+    <aside id="sidebar" class="w-full lg:w-64 xl:w-72 border-b lg:border-b-0 lg:border-r border-theme-line bg-theme-surface flex flex-col shrink-0">
+      <div class="flex items-center border-b border-theme-line bg-theme-surface-alt/40 p-1.5 text-xs font-semibold">
+        <button id="tab-btn-collections" class="flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink border border-theme-line shadow-2xs text-center transition-all">
+          Collections
+        </button>
+        <button id="tab-btn-history" class="flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink text-center transition-all">
+          History (<span id="history-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Sidebar Content Container -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+        <!-- Collections Pane -->
+        <div id="pane-collections" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold uppercase text-theme-muted">Saved Collections</span>
+            <div class="flex items-center gap-1">
+              <button id="btn-new-collection" class="p-1 text-xs text-indigo-500 hover:text-indigo-600 font-bold" title="Create Collection">+ New</button>
+              <button id="btn-export-collections" class="p-1 text-xs text-theme-muted hover:text-theme-ink" title="Export Collections JSON">💾</button>
+            </div>
+          </div>
+
+          <div id="collections-list" class="space-y-2">
+            <!-- Rendered Collections -->
+          </div>
+        </div>
+
+        <!-- History Pane -->
+        <div id="pane-history" class="hidden space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold uppercase text-theme-muted">Recent Requests</span>
+            <button id="btn-clear-history" class="text-[11px] text-rose-500 hover:underline">Clear All</button>
+          </div>
+
+          <div id="history-list" class="space-y-1.5">
+            <!-- Rendered History -->
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center & Right: Request Builder & Response Inspector -->
+    <div class="flex-1 flex flex-col xl:flex-row overflow-hidden bg-theme-bg">
+      
+      <!-- Request Builder Section -->
+      <section class="flex-1 flex flex-col border-b xl:border-b-0 xl:border-r border-theme-line bg-theme-surface overflow-y-auto">
+        
+        <!-- URL & Send Bar -->
+        <div class="p-4 border-b border-theme-line space-y-3">
+          <!-- Request Name / Save Bar -->
+          <div class="flex items-center justify-between gap-2">
+            <input
+              id="req-name-input"
+              type="text"
+              placeholder="Untitled Request"
+              value="Get Posts Demo"
+              class="text-sm font-bold text-theme-ink bg-transparent focus:outline-none focus:border-b border-indigo-500 truncate"
+            />
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <select id="quick-demos" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs rounded-xl px-2 py-1 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                <option value="">⚡ Demo Requests</option>
+                <option value="demo-get-posts">GET JSONPlaceholder Posts</option>
+                <option value="demo-post-post">POST Create Post</option>
+                <option value="demo-httpbin-get">GET HttpBin Inspection</option>
+                <option value="demo-dummyjson">GET DummyJSON Products</option>
+                <option value="demo-github-zen">GET GitHub Zen Quote</option>
+              </select>
+
+              <button id="btn-save-request" type="button" class="px-3 py-1 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-semibold text-theme-ink transition-colors flex items-center gap-1">
+                <span>💾</span>
+                <span>Save</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- HTTP Method + URL Input + Send CTA -->
+          <div class="flex flex-col sm:flex-row items-stretch gap-2">
+            <div class="flex items-center flex-1 rounded-xl bg-theme-surface-alt border border-theme-line overflow-hidden focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+              <select id="req-method" class="h-full px-3 py-2 bg-transparent text-xs font-bold font-mono focus:outline-none cursor-pointer border-r border-theme-line method-get">
+                <option value="GET" class="method-get">GET</option>
+                <option value="POST" class="method-post">POST</option>
+                <option value="PUT" class="method-put">PUT</option>
+                <option value="PATCH" class="method-patch">PATCH</option>
+                <option value="DELETE" class="method-delete">DELETE</option>
+                <option value="HEAD" class="method-head">HEAD</option>
+                <option value="OPTIONS" class="method-options">OPTIONS</option>
+              </select>
+
+              <input
+                id="req-url"
+                type="text"
+                value="https://jsonplaceholder.typicode.com/posts"
+                placeholder="https://api.example.com/v1/resource or {{baseUrl}}/users"
+                class="flex-1 px-3 py-2 bg-transparent text-xs font-mono text-theme-ink placeholder:text-theme-muted focus:outline-none min-w-0"
+                spellcheck="false"
+              />
+
+              <button id="btn-clear-url" type="button" class="px-2 text-theme-muted hover:text-theme-ink text-xs">
+                ×
+              </button>
+            </div>
+
+            <button
+              id="btn-send"
+              type="button"
+              class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5"
+            >
+              <span id="send-spinner" class="hidden animate-spin">⟳</span>
+              <span id="send-btn-text">Send</span>
+              <kbd class="hidden md:inline-block px-1 py-0.2 rounded bg-white/20 text-[9px] font-mono font-normal">Ctrl+↵</kbd>
+            </button>
+          </div>
+        </div>
+
+        <!-- Request Tabs (Params, Headers, Body, Auth, Settings) -->
+        <div class="flex items-center border-b border-theme-line bg-theme-surface-alt/30 px-4 text-xs font-semibold gap-1 overflow-x-auto no-scrollbar">
+          <button id="btn-tab-params" class="px-3 py-2.5 border-b-2 border-indigo-500 text-indigo-500 font-bold transition-colors">
+            Params <span id="badge-params-count" class="text-[10px] font-mono text-theme-muted">(0)</span>
+          </button>
+          <button id="btn-tab-headers" class="px-3 py-2.5 border-b-2 border-transparent text-theme-muted hover:text-theme-ink transition-colors">
+            Headers <span id="badge-headers-count" class="text-[10px] font-mono text-theme-muted">(1)</span>
+          </button>
+          <button id="btn-tab-body" class="px-3 py-2.5 border-b-2 border-transparent text-theme-muted hover:text-theme-ink transition-colors">
+            Body <span id="badge-body-dot" class="hidden w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span>
+          </button>
+          <button id="btn-tab-auth" class="px-3 py-2.5 border-b-2 border-transparent text-theme-muted hover:text-theme-ink transition-colors">
+            Auth
+          </button>
+          <button id="btn-tab-settings" class="px-3 py-2.5 border-b-2 border-transparent text-theme-muted hover:text-theme-ink transition-colors">
+            Settings
+          </button>
+        </div>
+
+        <!-- Request Tabs Content -->
+        <div class="p-4 flex-1 overflow-y-auto space-y-4">
+          
+          <!-- Tab 1: Query Params -->
+          <div id="section-params" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-theme-ink">Query Parameters</span>
+              <button id="btn-add-param" type="button" class="text-indigo-500 hover:underline text-xs font-semibold">+ Add Param</button>
+            </div>
+
+            <div class="border border-theme-line rounded-xl overflow-hidden bg-theme-surface">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase border-b border-theme-line">
+                  <tr>
+                    <th class="w-8 p-2 text-center"></th>
+                    <th class="p-2">Key</th>
+                    <th class="p-2">Value</th>
+                    <th class="p-2">Description</th>
+                    <th class="w-8 p-2 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="params-table-body" class="divide-y divide-theme-line font-mono text-xs">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 2: Headers -->
+          <div id="section-headers" class="hidden space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-theme-ink">HTTP Headers</span>
+              <div class="flex items-center gap-2">
+                <button id="btn-preset-json-header" type="button" class="text-theme-muted hover:text-theme-ink text-[11px]">Set JSON Header</button>
+                <button id="btn-add-header" type="button" class="text-indigo-500 hover:underline text-xs font-semibold">+ Add Header</button>
+              </div>
+            </div>
+
+            <div class="border border-theme-line rounded-xl overflow-hidden bg-theme-surface">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase border-b border-theme-line">
+                  <tr>
+                    <th class="w-8 p-2 text-center"></th>
+                    <th class="p-2">Key</th>
+                    <th class="p-2">Value</th>
+                    <th class="p-2">Description</th>
+                    <th class="w-8 p-2 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="headers-table-body" class="divide-y divide-theme-line font-mono text-xs">
+                  <!-- Dynamic header rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 3: Request Body -->
+          <div id="section-body" class="hidden space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="body-type" value="none" checked class="text-indigo-600 focus:ring-0" />
+                  <span>none</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="body-type" value="json" class="text-indigo-600 focus:ring-0" />
+                  <span>raw (JSON)</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="body-type" value="text" class="text-indigo-600 focus:ring-0" />
+                  <span>raw (Text)</span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="body-type" value="urlencoded" class="text-indigo-600 focus:ring-0" />
+                  <span>x-www-form-urlencoded</span>
+                </label>
+              </div>
+
+              <div id="body-json-tools" class="hidden flex items-center gap-1">
+                <button id="btn-format-body-json" type="button" class="px-2 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink">Format</button>
+                <button id="btn-minify-body-json" type="button" class="px-2 py-0.5 rounded bg-theme-surface-alt border border-theme-line text-[11px] text-theme-muted hover:text-theme-ink">Minify</button>
+              </div>
+            </div>
+
+            <!-- Body Raw Textarea -->
+            <div id="body-raw-container" class="hidden relative min-h-[160px]">
+              <textarea
+                id="body-raw-input"
+                rows="8"
+                class="w-full p-3 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-indigo-500 leading-relaxed resize-y"
+                placeholder='{\n  "title": "foo",\n  "body": "bar",\n  "userId": 1\n}'
+                spellcheck="false"
+              ></textarea>
+            </div>
+
+            <!-- Body URL Encoded Table -->
+            <div id="body-urlencoded-container" class="hidden space-y-2">
+              <div class="flex justify-end">
+                <button id="btn-add-form-field" type="button" class="text-indigo-500 hover:underline text-xs font-semibold">+ Add Field</button>
+              </div>
+              <div class="border border-theme-line rounded-xl overflow-hidden bg-theme-surface">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase border-b border-theme-line">
+                    <tr>
+                      <th class="w-8 p-2 text-center"></th>
+                      <th class="p-2">Key</th>
+                      <th class="p-2">Value</th>
+                      <th class="w-8 p-2 text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="form-table-body" class="divide-y divide-theme-line font-mono text-xs">
+                    <!-- Form rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="body-none-msg" class="p-8 text-center text-xs text-theme-muted">
+              This request does not include a body payload.
+            </div>
+          </div>
+
+          <!-- Tab 4: Auth -->
+          <div id="section-auth" class="hidden space-y-4 text-xs">
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-theme-ink">Auth Type:</span>
+              <select id="auth-type-select" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                <option value="none">No Auth</option>
+                <option value="bearer">Bearer Token</option>
+                <option value="basic">Basic Auth</option>
+                <option value="apikey">API Key</option>
+              </select>
+            </div>
+
+            <!-- Bearer Form -->
+            <div id="auth-bearer-form" class="hidden p-4 rounded-xl bg-theme-surface-alt border border-theme-line space-y-2">
+              <label class="block text-[11px] font-mono text-theme-muted uppercase">Token</label>
+              <input id="auth-bearer-token" type="text" placeholder="e.g. eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink focus:outline-none focus:border-indigo-500" />
+              <p class="text-[10px] text-theme-muted">Will be added as an <code>Authorization: Bearer &lt;token&gt;</code> header.</p>
+            </div>
+
+            <!-- Basic Auth Form -->
+            <div id="auth-basic-form" class="hidden p-4 rounded-xl bg-theme-surface-alt border border-theme-line space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-mono text-theme-muted uppercase mb-1">Username</label>
+                  <input id="auth-basic-user" type="text" placeholder="admin" class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-mono text-theme-muted uppercase mb-1">Password</label>
+                  <input id="auth-basic-pass" type="password" placeholder="••••••••" class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+              <p class="text-[10px] text-theme-muted">Will be automatically Base64-encoded into <code>Authorization: Basic &lt;credentials&gt;</code>.</p>
+            </div>
+
+            <!-- API Key Form -->
+            <div id="auth-apikey-form" class="hidden p-4 rounded-xl bg-theme-surface-alt border border-theme-line space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[11px] font-mono text-theme-muted uppercase mb-1">Key Name</label>
+                  <input id="auth-apikey-name" type="text" value="X-API-Key" class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-mono text-theme-muted uppercase mb-1">Value</label>
+                  <input id="auth-apikey-val" type="text" placeholder="secret_api_key_123" class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-mono text-theme-muted uppercase mb-1">Add To</label>
+                  <select id="auth-apikey-where" class="w-full px-3 py-2 rounded-lg bg-theme-surface border border-theme-line text-xs text-theme-ink focus:outline-none focus:border-indigo-500">
+                    <option value="header">Header</option>
+                    <option value="query">Query Params</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 5: Settings -->
+          <div id="section-settings" class="hidden space-y-3 text-xs">
+            <div class="p-4 rounded-xl bg-theme-surface-alt border border-theme-line space-y-3">
+              <label class="flex items-center justify-between cursor-pointer">
+                <span>Follow HTTP Redirects</span>
+                <input id="setting-redirect" type="checkbox" checked class="rounded border-theme-line text-indigo-600 focus:ring-0" />
+              </label>
+
+              <label class="flex items-center justify-between cursor-pointer">
+                <span>Credentials Mode</span>
+                <select id="setting-credentials" class="bg-theme-surface border border-theme-line text-xs rounded-lg px-2 py-1">
+                  <option value="same-origin">same-origin</option>
+                  <option value="include">include (send cookies)</option>
+                  <option value="omit">omit</option>
+                </select>
+              </label>
+
+              <label class="flex items-center justify-between cursor-pointer">
+                <span>Request Timeout</span>
+                <div class="flex items-center gap-1">
+                  <input id="setting-timeout" type="number" value="15" min="1" max="120" class="w-16 px-2 py-1 rounded bg-theme-surface border border-theme-line text-xs font-mono text-center" />
+                  <span class="text-theme-muted">seconds</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- CORS Notice Card -->
+            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs leading-relaxed space-y-1.5">
+              <div class="font-bold flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>Browser CORS Security Notice</span>
+              </div>
+              <p class="text-[11px]">
+                Like all client-side browser tools, API requests are subject to browser Cross-Origin Resource Sharing (CORS) rules. If the target server does not send <code>Access-Control-Allow-Origin</code>, the browser will block the response. You can copy the generated <strong>cURL command</strong> to test non-CORS servers directly in your terminal.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Response Inspector Section -->
+      <section class="flex-1 flex flex-col bg-theme-bg overflow-hidden">
+        
+        <!-- Response Header / Status Bar -->
+        <div class="h-14 border-b border-theme-line bg-theme-surface px-4 flex items-center justify-between gap-3 shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-theme-ink">Response</span>
+            
+            <div id="resp-status-container" class="hidden flex items-center gap-2 font-mono text-xs">
+              <span id="resp-status-badge" class="px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                200 OK
+              </span>
+              <span class="text-theme-muted text-[11px]">Time: <strong id="resp-time" class="text-theme-ink font-bold">120 ms</strong></span>
+              <span class="text-theme-muted text-[11px]">Size: <strong id="resp-size" class="text-theme-ink font-bold">1.2 KB</strong></span>
+            </div>
+          </div>
+
+          <!-- Response Actions -->
+          <div class="flex items-center gap-1.5">
+            <button id="btn-copy-resp" type="button" class="px-2.5 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-xs font-semibold text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1" title="Copy Response Body">
+              <span>📋</span>
+              <span class="hidden sm:inline">Copy</span>
+            </button>
+            <button id="btn-download-resp" type="button" class="px-2.5 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-xs font-semibold text-theme-muted hover:text-theme-ink transition-colors flex items-center gap-1" title="Download Response File">
+              <span>💾</span>
+              <span class="hidden sm:inline">Download</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Response Tabs (Body, Headers, Cookies) -->
+        <div class="flex items-center justify-between border-b border-theme-line bg-theme-surface-alt/40 px-4 text-xs font-semibold">
+          <div class="flex items-center gap-2">
+            <button id="btn-resp-tab-body" class="py-2 px-2 border-b-2 border-indigo-500 text-indigo-500 font-bold">
+              Body
+            </button>
+            <button id="btn-resp-tab-headers" class="py-2 px-2 border-b-2 border-transparent text-theme-muted hover:text-theme-ink">
+              Headers <span id="resp-headers-count" class="text-[10px] font-mono text-theme-muted">(0)</span>
+            </button>
+          </div>
+
+          <!-- Body View Mode -->
+          <div id="resp-view-controls" class="flex items-center gap-1 py-1">
+            <button id="btn-view-pretty" class="px-2 py-0.5 rounded bg-indigo-600 text-white text-[11px] font-semibold">Pretty</button>
+            <button id="btn-view-raw" class="px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink text-[11px]">Raw</button>
+            <button id="btn-view-preview" class="px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink text-[11px] hidden">Preview</button>
+          </div>
+        </div>
+
+        <!-- Response Body / Headers Viewer -->
+        <div class="flex-1 overflow-y-auto p-4 relative">
+          
+          <!-- Empty State -->
+          <div id="resp-empty-state" class="h-full flex flex-col items-center justify-center text-center p-8 text-theme-muted space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-center text-2xl mb-1">
+              🚀
+            </div>
+            <h3 class="text-sm font-bold text-theme-ink">No Response Yet</h3>
+            <p class="text-xs text-theme-muted max-w-xs leading-relaxed">
+              Enter an API endpoint and click <strong>Send</strong> or press <kbd class="px-1 py-0.2 rounded bg-theme-surface-alt border border-theme-line font-mono text-[10px]">Ctrl+Enter</kbd> to inspect the live response.
+            </p>
+          </div>
+
+          <!-- Error / CORS Diagnostics Card -->
+          <div id="resp-error-card" class="hidden p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 space-y-3">
+            <div class="flex items-center gap-2 font-bold text-sm">
+              <span>⚠️</span>
+              <span id="resp-error-title">Request Failed</span>
+            </div>
+            <p id="resp-error-msg" class="text-xs leading-relaxed font-mono">
+              TypeError: Failed to fetch
+            </p>
+            <div class="p-3 rounded-xl bg-theme-surface border border-theme-line text-theme-ink text-xs space-y-2">
+              <span class="font-bold text-theme-ink block">Possible Causes:</span>
+              <ul class="list-disc list-inside space-y-1 text-theme-muted text-[11px]">
+                <li><strong>CORS Blocked:</strong> Target server did not send <code>Access-Control-Allow-Origin</code> header.</li>
+                <li><strong>Invalid URL or Offline:</strong> Target host is unreachable or down.</li>
+                <li><strong>Mixed Content:</strong> Cannot fetch HTTP resource from an HTTPS origin.</li>
+              </ul>
+              <div class="pt-2">
+                <button id="btn-error-copy-curl" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-700 transition-colors">
+                  Copy cURL Command to Run in Terminal
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formatted Response Viewer -->
+          <div id="resp-body-container" class="hidden">
+            <pre id="resp-body-pretty" class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all p-3 rounded-xl bg-theme-surface border border-theme-line text-theme-ink overflow-x-auto"></pre>
+            <textarea id="resp-body-raw" class="hidden w-full h-[400px] font-mono text-xs leading-relaxed p-3 rounded-xl bg-theme-surface border border-theme-line text-theme-ink resize-y" readonly></textarea>
+            <iframe id="resp-body-preview" class="hidden w-full h-[450px] rounded-xl bg-white border border-theme-line" sandbox=""></iframe>
+          </div>
+
+          <!-- Response Headers Table -->
+          <div id="resp-headers-container" class="hidden">
+            <div class="border border-theme-line rounded-xl overflow-hidden bg-theme-surface">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase border-b border-theme-line">
+                  <tr>
+                    <th class="p-2.5">Header Name</th>
+                    <th class="p-2.5">Value</th>
+                  </tr>
+                </thead>
+                <tbody id="resp-headers-table-body" class="divide-y divide-theme-line font-mono text-xs">
+                  <!-- Headers rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal: cURL Generator & Import Modal -->
+  <div id="modal-curl" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-xl rounded-2xl bg-theme-surface border border-theme-line p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 id="modal-curl-title" class="text-sm font-bold text-theme-ink">cURL Command</h3>
+        <button id="btn-close-curl-modal" class="p-1 text-theme-muted hover:text-theme-ink text-xs">✕</button>
+      </div>
+
+      <div class="space-y-2">
+        <textarea
+          id="modal-curl-textarea"
+          rows="6"
+          class="w-full p-3 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-ink focus:outline-none focus:border-indigo-500 leading-relaxed resize-y"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <span class="text-[11px] text-theme-muted" id="modal-curl-hint">Copy to execute in terminal</span>
+        <div class="flex items-center gap-2">
+          <button id="btn-modal-curl-action" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors">
+            Copy cURL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Environment Variables Manager -->
+  <div id="modal-env" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-lg rounded-2xl bg-theme-surface border border-theme-line p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="text-sm font-bold text-theme-ink">Environment Variables ({{var}})</h3>
+        <button id="btn-close-env-modal" class="p-1 text-theme-muted hover:text-theme-ink text-xs">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-xs text-theme-muted">
+          Define variables to reuse across requests using <code>{{variable_name}}</code> syntax in URLs, headers, or body.
+        </p>
+
+        <div class="border border-theme-line rounded-xl overflow-hidden bg-theme-surface">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase border-b border-theme-line">
+              <tr>
+                <th class="p-2">Variable</th>
+                <th class="p-2">Value</th>
+                <th class="w-8 p-2"></th>
+              </tr>
+            </thead>
+            <tbody id="env-vars-table-body" class="divide-y divide-theme-line font-mono text-xs">
+              <!-- Dynamic env vars -->
+            </tbody>
+          </table>
+        </div>
+
+        <button id="btn-add-env-var" type="button" class="text-indigo-500 hover:underline text-xs font-semibold">+ Add Variable</button>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button id="btn-save-env-modal" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // State Model
+    const state = {
+      method: 'GET',
+      url: 'https://jsonplaceholder.typicode.com/posts',
+      name: 'Get Posts Demo',
+      params: [],
+      headers: [
+        { enabled: true, key: 'Accept', value: 'application/json', desc: '' }
+      ],
+      bodyType: 'none',
+      bodyRaw: '',
+      bodyForm: [],
+      auth: {
+        type: 'none',
+        bearerToken: '',
+        basicUser: '',
+        basicPass: '',
+        apiKeyName: 'X-API-Key',
+        apiKeyValue: '',
+        apiKeyWhere: 'header'
+      },
+      settings: {
+        redirect: true,
+        credentials: 'same-origin',
+        timeout: 15
+      },
+      environments: {
+        dev: { baseUrl: 'https://jsonplaceholder.typicode.com', token: 'dev-token-123' },
+        staging: { baseUrl: 'https://staging-api.example.com', token: 'staging-token-456' },
+        prod: { baseUrl: 'https://api.example.com', token: 'prod-token-789' }
+      },
+      currentEnv: 'none',
+      collections: [
+        {
+          id: 'col-1',
+          name: 'JSONPlaceholder Demo',
+          requests: [
+            {
+              id: 'req-1',
+              name: 'Get All Posts',
+              method: 'GET',
+              url: 'https://jsonplaceholder.typicode.com/posts',
+              params: [],
+              headers: [{ enabled: true, key: 'Accept', value: 'application/json' }],
+              bodyType: 'none',
+              bodyRaw: ''
+            },
+            {
+              id: 'req-2',
+              name: 'Create New Post',
+              method: 'POST',
+              url: 'https://jsonplaceholder.typicode.com/posts',
+              params: [],
+              headers: [{ enabled: true, key: 'Content-Type', value: 'application/json' }],
+              bodyType: 'json',
+              bodyRaw: '{\\n  "title": "foo",\\n  "body": "bar",\\n  "userId": 1\\n}'
+            }
+          ]
+        }
+      ],
+      history: [],
+      response: null
+    };
+
+    // Load from LocalStorage
+    try {
+      const storedCols = localStorage.getItem('toolzy:api_collections');
+      if (storedCols) state.collections = JSON.parse(storedCols);
+
+      const storedHist = localStorage.getItem('toolzy:api_history');
+      if (storedHist) state.history = JSON.parse(storedHist);
+
+      const storedEnvs = localStorage.getItem('toolzy:api_envs');
+      if (storedEnvs) state.environments = JSON.parse(storedEnvs);
+    } catch (e) {}
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem('toolzy:api_collections', JSON.stringify(state.collections));
+        localStorage.setItem('toolzy:api_history', JSON.stringify(state.history));
+        localStorage.setItem('toolzy:api_envs', JSON.stringify(state.environments));
+      } catch (e) {}
+    }
+
+    // Helper: Interpolate Environment Variables
+    function interpolate(text) {
+      if (!text || state.currentEnv === 'none') return text;
+      const envVars = state.environments[state.currentEnv] || {};
+      return text.replace(/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g, (match, key) => {
+        return envVars[key] !== undefined ? envVars[key] : match;
+      });
+    }
+
+    // Helper: Syntax Highlight JSON
+    function syntaxHighlightJSON(jsonStr) {
+      try {
+        const obj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        const formatted = JSON.stringify(obj, null, 2);
+        return formatted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'json-number';
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) {
+                cls = 'json-key';
+              } else {
+                cls = 'json-string';
+              }
+            } else if (/true|false/.test(match)) {
+              cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+              cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+          });
+      } catch (e) {
+        return jsonStr;
+      }
+    }
+
+    // Format bytes
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Parse URL into query params table
+    function parseUrlToParams() {
+      const rawUrl = document.getElementById('req-url').value;
+      try {
+        const urlObj = new URL(rawUrl.includes('://') ? rawUrl : 'http://' + rawUrl);
+        const searchParams = urlObj.searchParams;
+        const newParams = [];
+        searchParams.forEach((value, key) => {
+          newParams.push({ enabled: true, key, value, desc: '' });
+        });
+        state.params = newParams;
+        renderParamsTable();
+      } catch (e) {}
+    }
+
+    // Sync params table into URL string
+    function syncParamsToUrl() {
+      const rawUrl = document.getElementById('req-url').value;
+      try {
+        const hasProtocol = rawUrl.includes('://');
+        const urlObj = new URL(hasProtocol ? rawUrl : 'http://' + rawUrl);
+        urlObj.search = '';
+        state.params.forEach(p => {
+          if (p.enabled && p.key) {
+            urlObj.searchParams.append(p.key, p.value);
+          }
+        });
+        const finalUrl = hasProtocol ? urlObj.toString() : urlObj.toString().replace('http://', '');
+        document.getElementById('req-url').value = finalUrl;
+        state.url = finalUrl;
+      } catch (e) {}
+    }
+
+    // UI RENDERERS
+    function renderParamsTable() {
+      const tbody = document.getElementById('params-table-body');
+      tbody.innerHTML = '';
+      document.getElementById('badge-params-count').innerText = `(${state.params.filter(p => p.enabled && p.key).length})`;
+
+      state.params.forEach((param, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-theme-surface-alt/50 transition-colors';
+        tr.innerHTML = `
+          <td class="p-2 text-center">
+            <input type="checkbox" ${param.enabled ? 'checked' : ''} class="param-enable rounded border-theme-line text-indigo-600 focus:ring-0" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(param.key)}" placeholder="Key" class="param-key w-full bg-transparent focus:outline-none" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(param.value)}" placeholder="Value" class="param-val w-full bg-transparent focus:outline-none" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(param.desc || '')}" placeholder="Description" class="param-desc w-full bg-transparent text-theme-muted focus:outline-none" />
+          </td>
+          <td class="p-2 text-center">
+            <button class="param-del text-theme-muted hover:text-rose-500 text-xs">×</button>
+          </td>
+        `;
+
+        tr.querySelector('.param-enable').addEventListener('change', (e) => {
+          param.enabled = e.target.checked;
+          syncParamsToUrl();
+        });
+        tr.querySelector('.param-key').addEventListener('input', (e) => {
+          param.key = e.target.value;
+          syncParamsToUrl();
+        });
+        tr.querySelector('.param-val').addEventListener('input', (e) => {
+          param.value = e.target.value;
+          syncParamsToUrl();
+        });
+        tr.querySelector('.param-desc').addEventListener('input', (e) => {
+          param.desc = e.target.value;
+        });
+        tr.querySelector('.param-del').addEventListener('click', () => {
+          state.params.splice(idx, 1);
+          renderParamsTable();
+          syncParamsToUrl();
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderHeadersTable() {
+      const tbody = document.getElementById('headers-table-body');
+      tbody.innerHTML = '';
+      document.getElementById('badge-headers-count').innerText = `(${state.headers.filter(h => h.enabled && h.key).length})`;
+
+      state.headers.forEach((header, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-theme-surface-alt/50 transition-colors';
+        tr.innerHTML = `
+          <td class="p-2 text-center">
+            <input type="checkbox" ${header.enabled ? 'checked' : ''} class="header-enable rounded border-theme-line text-indigo-600 focus:ring-0" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(header.key)}" placeholder="Header (e.g. Content-Type)" class="header-key w-full bg-transparent focus:outline-none" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(header.value)}" placeholder="Value (e.g. application/json)" class="header-val w-full bg-transparent focus:outline-none" />
+          </td>
+          <td class="p-2">
+            <input type="text" value="${escapeHTML(header.desc || '')}" placeholder="Description" class="header-desc w-full bg-transparent text-theme-muted focus:outline-none" />
+          </td>
+          <td class="p-2 text-center">
+            <button class="header-del text-theme-muted hover:text-rose-500 text-xs">×</button>
+          </td>
+        `;
+
+        tr.querySelector('.header-enable').addEventListener('change', (e) => { header.enabled = e.target.checked; });
+        tr.querySelector('.header-key').addEventListener('input', (e) => { header.key = e.target.value; });
+        tr.querySelector('.header-val').addEventListener('input', (e) => { header.value = e.target.value; });
+        tr.querySelector('.header-desc').addEventListener('input', (e) => { header.desc = e.target.value; });
+        tr.querySelector('.header-del').addEventListener('click', () => {
+          state.headers.splice(idx, 1);
+          renderHeadersTable();
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCollections() {
+      const container = document.getElementById('collections-list');
+      container.innerHTML = '';
+
+      state.collections.forEach((col, colIdx) => {
+        const colDiv = document.createElement('div');
+        colDiv.className = 'border border-theme-line rounded-xl overflow-hidden bg-theme-surface';
+        colDiv.innerHTML = `
+          <div class="p-2.5 bg-theme-surface-alt flex items-center justify-between text-xs font-bold text-theme-ink cursor-pointer select-none">
+            <span class="flex items-center gap-1.5 truncate">
+              <span>📁</span>
+              <span>${col.name}</span>
+              <span class="text-[10px] font-normal text-theme-muted">(${col.requests.length})</span>
+            </span>
+            <button class="col-del text-theme-muted hover:text-rose-500 text-xs px-1" title="Delete Collection">×</button>
+          </div>
+          <div class="requests-container p-1 space-y-0.5">
+            ${col.requests.map((req, reqIdx) => `
+              <div class="req-item flex items-center justify-between p-2 rounded-lg hover:bg-theme-surface-alt cursor-pointer text-xs font-mono transition-colors" data-col="${colIdx}" data-req="${reqIdx}">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                  <span class="text-[10px] font-bold method-${req.method.toLowerCase()} shrink-0">${req.method}</span>
+                  <span class="truncate text-theme-ink">${req.name || req.url}</span>
+                </div>
+                <button class="req-del opacity-0 hover:opacity-100 text-theme-muted hover:text-rose-500 text-xs px-1">×</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        colDiv.querySelector('.col-del').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete collection "${col.name}"?`)) {
+            state.collections.splice(colIdx, 1);
+            saveStateToStorage();
+            renderCollections();
+          }
+        });
+
+        colDiv.querySelectorAll('.req-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            if (e.target.classList.contains('req-del')) {
+              e.stopPropagation();
+              const cIdx = Number(item.dataset.col);
+              const rIdx = Number(item.dataset.req);
+              state.collections[cIdx].requests.splice(rIdx, 1);
+              saveStateToStorage();
+              renderCollections();
+              return;
+            }
+            const cIdx = Number(item.dataset.col);
+            const rIdx = Number(item.dataset.req);
+            loadRequestIntoBuilder(state.collections[cIdx].requests[rIdx]);
+          });
+        });
+
+        container.appendChild(colDiv);
+      });
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-list');
+      const count = document.getElementById('history-count');
+      count.innerText = state.history.length;
+      container.innerHTML = '';
+
+      if (state.history.length === 0) {
+        container.innerHTML = '<p class="text-xs text-theme-muted text-center py-4">No past requests recorded.</p>';
+        return;
+      }
+
+      state.history.slice(0, 30).forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'p-2 rounded-xl border border-theme-line hover:border-indigo-500/50 bg-theme-surface text-xs font-mono cursor-pointer transition-all';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="font-bold method-${item.method.toLowerCase()} text-[10px]">${item.method}</span>
+            <span class="text-[10px] text-theme-muted">${item.status ? `${item.status}` : ''} • ${new Date(item.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <p class="truncate text-theme-ink text-[11px]">${item.url}</p>
+        `;
+
+        div.addEventListener('click', () => {
+          loadRequestIntoBuilder(item);
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function loadRequestIntoBuilder(req) {
+      state.method = req.method || 'GET';
+      state.url = req.url || '';
+      state.name = req.name || 'Untitled Request';
+      state.params = req.params || [];
+      state.headers = req.headers || [];
+      state.bodyType = req.bodyType || 'none';
+      state.bodyRaw = req.bodyRaw || '';
+
+      document.getElementById('req-name-input').value = state.name;
+      document.getElementById('req-method').value = state.method;
+      document.getElementById('req-method').className = `h-full px-3 py-2 bg-transparent text-xs font-bold font-mono focus:outline-none cursor-pointer border-r border-theme-line method-${state.method.toLowerCase()}`;
+      document.getElementById('req-url').value = state.url;
+      document.getElementById('body-raw-input').value = state.bodyRaw;
+
+      // Update Body radio
+      const radio = document.querySelector(`input[name="body-type"][value="${state.bodyType}"]`);
+      if (radio) radio.checked = true;
+      updateBodyTypeVisibility();
+
+      renderParamsTable();
+      renderHeadersTable();
+    }
+
+    function escapeHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Generate cURL command from current state
+    function generateCurl() {
+      const method = state.method;
+      const url = interpolate(document.getElementById('req-url').value.trim());
+      let curl = `curl -X ${method} "${url}"`;
+
+      // Auth headers
+      const authHeaders = getAuthHeaders();
+      const allHeaders = [...state.headers.filter(h => h.enabled && h.key), ...authHeaders];
+
+      allHeaders.forEach(h => {
+        curl += ` \\\n  -H "${h.key}: ${interpolate(h.value)}"`;
+      });
+
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        if (state.bodyType === 'json' || state.bodyType === 'text') {
+          const raw = interpolate(document.getElementById('body-raw-input').value.trim());
+          if (raw) {
+            curl += ` \\\n  -d '${raw.replace(/'/g, "'\\''")}'`;
+          }
+        }
+      }
+
+      return curl;
+    }
+
+    function getAuthHeaders() {
+      const headers = [];
+      const authType = document.getElementById('auth-type-select').value;
+      if (authType === 'bearer') {
+        const token = document.getElementById('auth-bearer-token').value.trim();
+        if (token) headers.push({ key: 'Authorization', value: `Bearer ${token}` });
+      } else if (authType === 'basic') {
+        const u = document.getElementById('auth-basic-user').value.trim();
+        const p = document.getElementById('auth-basic-pass').value.trim();
+        if (u || p) {
+          const creds = btoa(`${u}:${p}`);
+          headers.push({ key: 'Authorization', value: `Basic ${creds}` });
+        }
+      } else if (authType === 'apikey') {
+        const name = document.getElementById('auth-apikey-name').value.trim();
+        const val = document.getElementById('auth-apikey-val').value.trim();
+        const where = document.getElementById('auth-apikey-where').value;
+        if (where === 'header' && name && val) {
+          headers.push({ key: name, value: val });
+        }
+      }
+      return headers;
+    }
+
+    // Execute Request via Fetch API
+    async function sendRequest() {
+      const rawUrl = document.getElementById('req-url').value.trim();
+      if (!rawUrl) {
+        alert('Please enter a valid request URL.');
+        return;
+      }
+
+      const method = state.method;
+      let finalUrl = interpolate(rawUrl);
+
+      // Append API Key query if set
+      const authType = document.getElementById('auth-type-select').value;
+      if (authType === 'apikey') {
+        const name = document.getElementById('auth-apikey-name').value.trim();
+        const val = document.getElementById('auth-apikey-val').value.trim();
+        const where = document.getElementById('auth-apikey-where').value;
+        if (where === 'query' && name && val) {
+          const separator = finalUrl.includes('?') ? '&' : '?';
+          finalUrl += `${separator}${encodeURIComponent(name)}=${encodeURIComponent(val)}`;
+        }
+      }
+
+      // Prepare Headers
+      const requestHeaders = new Headers();
+      const authHeaders = getAuthHeaders();
+      const allHeaders = [...state.headers.filter(h => h.enabled && h.key), ...authHeaders];
+
+      allHeaders.forEach(h => {
+        requestHeaders.append(h.key, interpolate(h.value));
+      });
+
+      // Prepare Body
+      let bodyPayload = null;
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        if (state.bodyType === 'json' || state.bodyType === 'text') {
+          bodyPayload = interpolate(document.getElementById('body-raw-input').value.trim());
+          if (state.bodyType === 'json' && !requestHeaders.has('Content-Type')) {
+            requestHeaders.append('Content-Type', 'application/json');
+          }
+        }
+      }
+
+      // UI Loading state
+      const btnSend = document.getElementById('btn-send');
+      const sendText = document.getElementById('send-btn-text');
+      const spinner = document.getElementById('send-spinner');
+      btnSend.disabled = true;
+      sendText.innerText = 'Sending...';
+      spinner.classList.remove('hidden');
+
+      const startTime = performance.now();
+
+      // Reset response viewer
+      document.getElementById('resp-empty-state').classList.add('hidden');
+      document.getElementById('resp-error-card').classList.add('hidden');
+      document.getElementById('resp-body-container').classList.add('hidden');
+      document.getElementById('resp-headers-container').classList.add('hidden');
+      document.getElementById('resp-status-container').classList.add('hidden');
+
+      try {
+        const controller = new AbortController();
+        const timeoutSec = Number(document.getElementById('setting-timeout').value || 15);
+        const timeoutId = setTimeout(() => controller.abort(), timeoutSec * 1000);
+
+        const response = await fetch(finalUrl, {
+          method,
+          headers: requestHeaders,
+          body: bodyPayload,
+          redirect: document.getElementById('setting-redirect').checked ? 'follow' : 'manual',
+          credentials: document.getElementById('setting-credentials').value,
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const duration = Math.round(performance.now() - startTime);
+
+        const contentType = response.headers.get('content-type') || '';
+        const respText = await response.text();
+        const respSize = new Blob([respText]).size;
+
+        // Render response stats
+        renderResponseSuccess({
+          status: response.status,
+          statusText: response.statusText,
+          duration,
+          size: respSize,
+          contentType,
+          headers: Array.from(response.headers.entries()),
+          body: respText
+        });
+
+        // Add to history
+        state.history.unshift({
+          id: 'hist-' + Date.now(),
+          timestamp: Date.now(),
+          name: state.name,
+          method,
+          url: rawUrl,
+          status: `${response.status} ${response.statusText}`,
+          params: [...state.params],
+          headers: [...state.headers],
+          bodyType: state.bodyType,
+          bodyRaw: state.bodyRaw
+        });
+        saveStateToStorage();
+        renderHistory();
+
+      } catch (err) {
+        renderResponseError(err, generateCurl());
+      } finally {
+        btnSend.disabled = false;
+        sendText.innerText = 'Send';
+        spinner.classList.add('hidden');
+      }
+    }
+
+    function renderResponseSuccess(data) {
+      document.getElementById('resp-status-container').classList.remove('hidden');
+      const badge = document.getElementById('resp-status-badge');
+      badge.innerText = `${data.status} ${data.statusText || ''}`;
+
+      if (data.status >= 200 && data.status < 300) {
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+      } else if (data.status >= 300 && data.status < 400) {
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20';
+      } else if (data.status >= 400 && data.status < 500) {
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+      } else {
+        badge.className = 'px-2.5 py-0.5 rounded-full font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
+      }
+
+      document.getElementById('resp-time').innerText = `${data.duration} ms`;
+      document.getElementById('resp-size').innerText = formatBytes(data.size);
+
+      // Render Body
+      document.getElementById('resp-body-container').classList.remove('hidden');
+      const prettyViewer = document.getElementById('resp-body-pretty');
+      const rawViewer = document.getElementById('resp-body-raw');
+
+      rawViewer.value = data.body;
+
+      if (data.contentType.includes('json') || isJson(data.body)) {
+        prettyViewer.innerHTML = syntaxHighlightJSON(data.body);
+      } else {
+        prettyViewer.innerText = data.body;
+      }
+
+      // Render Headers Table
+      const headersTbody = document.getElementById('resp-headers-table-body');
+      headersTbody.innerHTML = '';
+      document.getElementById('resp-headers-count').innerText = `(${data.headers.length})`;
+
+      data.headers.forEach(([k, v]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2.5 font-bold text-indigo-500">${escapeHTML(k)}</td>
+          <td class="p-2.5 text-theme-ink break-all">${escapeHTML(v)}</td>
+        `;
+        headersTbody.appendChild(tr);
+      });
+
+      state.response = data;
+    }
+
+    function renderResponseError(err, curlCmd) {
+      document.getElementById('resp-error-card').classList.remove('hidden');
+      document.getElementById('resp-error-msg').innerText = `${err.name}: ${err.message}`;
+      document.getElementById('btn-error-copy-curl').onclick = () => {
+        navigator.clipboard.writeText(curlCmd);
+        alert('cURL command copied to clipboard!');
+      };
+    }
+
+    function isJson(str) {
+      try {
+        const o = JSON.parse(str);
+        return o && typeof o === 'object';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateBodyTypeVisibility() {
+      const val = document.querySelector('input[name="body-type"]:checked')?.value || 'none';
+      state.bodyType = val;
+
+      const rawBox = document.getElementById('body-raw-container');
+      const formBox = document.getElementById('body-urlencoded-container');
+      const noneBox = document.getElementById('body-none-msg');
+      const jsonTools = document.getElementById('body-json-tools');
+      const dot = document.getElementById('badge-body-dot');
+
+      if (val === 'json' || val === 'text') {
+        rawBox.classList.remove('hidden');
+        formBox.classList.add('hidden');
+        noneBox.classList.add('hidden');
+        jsonTools.classList.toggle('hidden', val !== 'json');
+        dot.classList.remove('hidden');
+      } else if (val === 'urlencoded') {
+        rawBox.classList.add('hidden');
+        formBox.classList.remove('hidden');
+        noneBox.classList.add('hidden');
+        jsonTools.classList.add('hidden');
+        dot.classList.remove('hidden');
+      } else {
+        rawBox.classList.add('hidden');
+        formBox.classList.add('hidden');
+        noneBox.classList.remove('hidden');
+        jsonTools.classList.add('hidden');
+        dot.classList.add('hidden');
+      }
+    }
+
+    // EVENT ATTACHMENTS
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme initial setup
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').innerText = '☀️';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').innerText = '🌙';
+      }
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+      });
+
+      // Method selector styling
+      document.getElementById('req-method').addEventListener('change', (e) => {
+        state.method = e.target.value;
+        e.target.className = `h-full px-3 py-2 bg-transparent text-xs font-bold font-mono focus:outline-none cursor-pointer border-r border-theme-line method-${state.method.toLowerCase()}`;
+      });
+
+      // URL input changes
+      document.getElementById('req-url').addEventListener('input', parseUrlToParams);
+      document.getElementById('btn-clear-url').addEventListener('click', () => {
+        document.getElementById('req-url').value = '';
+        state.params = [];
+        renderParamsTable();
+      });
+
+      // Add Param & Header
+      document.getElementById('btn-add-param').addEventListener('click', () => {
+        state.params.push({ enabled: true, key: '', value: '', desc: '' });
+        renderParamsTable();
+      });
+
+      document.getElementById('btn-add-header').addEventListener('click', () => {
+        state.headers.push({ enabled: true, key: '', value: '', desc: '' });
+        renderHeadersTable();
+      });
+
+      document.getElementById('btn-preset-json-header').addEventListener('click', () => {
+        const hasCT = state.headers.some(h => h.key.toLowerCase() === 'content-type');
+        if (!hasCT) {
+          state.headers.push({ enabled: true, key: 'Content-Type', value: 'application/json', desc: '' });
+          renderHeadersTable();
+        }
+      });
+
+      // Request Tabs Switching
+      const tabs = ['params', 'headers', 'body', 'auth', 'settings'];
+      tabs.forEach(t => {
+        document.getElementById(`btn-tab-${t}`).addEventListener('click', () => {
+          tabs.forEach(other => {
+            const btn = document.getElementById(`btn-tab-${other}`);
+            const sec = document.getElementById(`section-${other}`);
+            if (other === t) {
+              btn.className = 'px-3 py-2.5 border-b-2 border-indigo-500 text-indigo-500 font-bold transition-colors';
+              sec.classList.remove('hidden');
+            } else {
+              btn.className = 'px-3 py-2.5 border-b-2 border-transparent text-theme-muted hover:text-theme-ink transition-colors';
+              sec.classList.add('hidden');
+            }
+          });
+        });
+      });
+
+      // Body Radio switcher
+      document.querySelectorAll('input[name="body-type"]').forEach(r => {
+        r.addEventListener('change', updateBodyTypeVisibility);
+      });
+
+      // Format & Minify JSON Body
+      document.getElementById('btn-format-body-json').addEventListener('click', () => {
+        const txt = document.getElementById('body-raw-input');
+        try {
+          txt.value = JSON.stringify(JSON.parse(txt.value), null, 2);
+        } catch (e) {
+          alert('Invalid JSON body: ' + e.message);
+        }
+      });
+
+      document.getElementById('btn-minify-body-json').addEventListener('click', () => {
+        const txt = document.getElementById('body-raw-input');
+        try {
+          txt.value = JSON.stringify(JSON.parse(txt.value));
+        } catch (e) {
+          alert('Invalid JSON body: ' + e.message);
+        }
+      });
+
+      // Auth Type Change
+      document.getElementById('auth-type-select').addEventListener('change', (e) => {
+        const val = e.target.value;
+        document.getElementById('auth-bearer-form').classList.toggle('hidden', val !== 'bearer');
+        document.getElementById('auth-basic-form').classList.toggle('hidden', val !== 'basic');
+        document.getElementById('auth-apikey-form').classList.toggle('hidden', val !== 'apikey');
+      });
+
+      // Sidebar Tabs
+      document.getElementById('tab-btn-collections').addEventListener('click', () => {
+        document.getElementById('tab-btn-collections').className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink border border-theme-line shadow-2xs text-center transition-all';
+        document.getElementById('tab-btn-history').className = 'flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink text-center transition-all';
+        document.getElementById('pane-collections').classList.remove('hidden');
+        document.getElementById('pane-history').classList.add('hidden');
+      });
+
+      document.getElementById('tab-btn-history').addEventListener('click', () => {
+        document.getElementById('tab-btn-history').className = 'flex-1 py-1.5 rounded-lg bg-theme-surface text-theme-ink border border-theme-line shadow-2xs text-center transition-all';
+        document.getElementById('tab-btn-collections').className = 'flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink text-center transition-all';
+        document.getElementById('pane-history').classList.remove('hidden');
+        document.getElementById('pane-collections').classList.add('hidden');
+      });
+
+      // Send Button & Shortcut
+      document.getElementById('btn-send').addEventListener('click', sendRequest);
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          sendRequest();
+        }
+      });
+
+      // Demo Requests Dropdown
+      document.getElementById('quick-demos').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'demo-get-posts') {
+          loadRequestIntoBuilder({
+            name: 'Get Posts Demo',
+            method: 'GET',
+            url: 'https://jsonplaceholder.typicode.com/posts',
+            headers: [{ enabled: true, key: 'Accept', value: 'application/json' }],
+            bodyType: 'none'
+          });
+        } else if (val === 'demo-post-post') {
+          loadRequestIntoBuilder({
+            name: 'Create Post Demo',
+            method: 'POST',
+            url: 'https://jsonplaceholder.typicode.com/posts',
+            headers: [{ enabled: true, key: 'Content-Type', value: 'application/json' }],
+            bodyType: 'json',
+            bodyRaw: '{\n  "title": "foo",\n  "body": "bar",\n  "userId": 1\n}'
+          });
+        } else if (val === 'demo-httpbin-get') {
+          loadRequestIntoBuilder({
+            name: 'HttpBin Inspection',
+            method: 'GET',
+            url: 'https://httpbin.org/get',
+            headers: [{ enabled: true, key: 'Accept', value: 'application/json' }],
+            bodyType: 'none'
+          });
+        } else if (val === 'demo-dummyjson') {
+          loadRequestIntoBuilder({
+            name: 'DummyJSON Products',
+            method: 'GET',
+            url: 'https://dummyjson.com/products?limit=10',
+            headers: [{ enabled: true, key: 'Accept', value: 'application/json' }],
+            bodyType: 'none'
+          });
+        } else if (val === 'demo-github-zen') {
+          loadRequestIntoBuilder({
+            name: 'GitHub Zen Quote',
+            method: 'GET',
+            url: 'https://api.github.com/zen',
+            headers: [{ enabled: true, key: 'Accept', value: 'application/vnd.github.v3+json' }],
+            bodyType: 'none'
+          });
+        }
+        e.target.value = '';
+      });
+
+      // Save Request to Collection
+      document.getElementById('btn-save-request').addEventListener('click', () => {
+        if (state.collections.length === 0) {
+          state.collections.push({ id: 'col-default', name: 'General', requests: [] });
+        }
+        const col = state.collections[0];
+        col.requests.push({
+          id: 'req-' + Date.now(),
+          name: document.getElementById('req-name-input').value.trim() || 'Saved Request',
+          method: state.method,
+          url: document.getElementById('req-url').value.trim(),
+          params: [...state.params],
+          headers: [...state.headers],
+          bodyType: state.bodyType,
+          bodyRaw: document.getElementById('body-raw-input').value
+        });
+        saveStateToStorage();
+        renderCollections();
+        alert(`Saved into "${col.name}" collection!`);
+      });
+
+      // New Collection
+      document.getElementById('btn-new-collection').addEventListener('click', () => {
+        const name = prompt('Enter new collection name:', 'Microservices API');
+        if (name) {
+          state.collections.push({ id: 'col-' + Date.now(), name, requests: [] });
+          saveStateToStorage();
+          renderCollections();
+        }
+      });
+
+      // Export Collections
+      document.getElementById('btn-export-collections').addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.collections, null, 2));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `api-collections-${Date.now()}.json`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      // Clear History
+      document.getElementById('btn-clear-history').addEventListener('click', () => {
+        state.history = [];
+        saveStateToStorage();
+        renderHistory();
+      });
+
+      // cURL Modal Actions
+      document.getElementById('btn-open-curl').addEventListener('click', () => {
+        document.getElementById('modal-curl-title').innerText = 'Generate cURL Command';
+        document.getElementById('modal-curl-textarea').value = generateCurl();
+        document.getElementById('modal-curl-hint').innerText = 'Copy and paste into your terminal';
+        document.getElementById('btn-modal-curl-action').innerText = 'Copy cURL';
+        document.getElementById('btn-modal-curl-action').onclick = () => {
+          navigator.clipboard.writeText(document.getElementById('modal-curl-textarea').value);
+          document.getElementById('btn-modal-curl-action').innerText = '✓ Copied!';
+          setTimeout(() => { document.getElementById('modal-curl').classList.add('hidden'); }, 1000);
+        };
+        document.getElementById('modal-curl').classList.remove('hidden');
+      });
+
+      // Import cURL Modal Actions
+      document.getElementById('btn-open-import').addEventListener('click', () => {
+        document.getElementById('modal-curl-title').innerText = 'Import cURL Command';
+        document.getElementById('modal-curl-textarea').value = 'curl -X POST https://jsonplaceholder.typicode.com/posts \\\n  -H "Content-Type: application/json" \\\n  -d \'{"title":"Imported Post"}\'';
+        document.getElementById('modal-curl-hint').innerText = 'Paste your raw cURL command above';
+        document.getElementById('btn-modal-curl-action').innerText = 'Import Request';
+        document.getElementById('btn-modal-curl-action').onclick = () => {
+          parseCurlIntoBuilder(document.getElementById('modal-curl-textarea').value);
+          document.getElementById('modal-curl').classList.add('hidden');
+        };
+        document.getElementById('modal-curl').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-curl-modal').addEventListener('click', () => {
+        document.getElementById('modal-curl').classList.add('hidden');
+      });
+
+      // Environment Modal
+      document.getElementById('btn-env-manager').addEventListener('click', () => {
+        renderEnvVarsTable();
+        document.getElementById('modal-env').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-env-modal').addEventListener('click', () => {
+        document.getElementById('modal-env').classList.add('hidden');
+      });
+      document.getElementById('btn-save-env-modal').addEventListener('click', () => {
+        document.getElementById('modal-env').classList.add('hidden');
+      });
+
+      document.getElementById('env-select').addEventListener('change', (e) => {
+        state.currentEnv = e.target.value;
+      });
+
+      // Response View Mode Toggles
+      document.getElementById('btn-view-pretty').addEventListener('click', () => {
+        document.getElementById('btn-view-pretty').className = 'px-2 py-0.5 rounded bg-indigo-600 text-white text-[11px] font-semibold';
+        document.getElementById('btn-view-raw').className = 'px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink text-[11px]';
+        document.getElementById('resp-body-pretty').classList.remove('hidden');
+        document.getElementById('resp-body-raw').classList.add('hidden');
+      });
+
+      document.getElementById('btn-view-raw').addEventListener('click', () => {
+        document.getElementById('btn-view-raw').className = 'px-2 py-0.5 rounded bg-indigo-600 text-white text-[11px] font-semibold';
+        document.getElementById('btn-view-pretty').className = 'px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink text-[11px]';
+        document.getElementById('resp-body-raw').classList.remove('hidden');
+        document.getElementById('resp-body-pretty').classList.add('hidden');
+      });
+
+      // Response Tabs (Body vs Headers)
+      document.getElementById('btn-resp-tab-body').addEventListener('click', () => {
+        document.getElementById('btn-resp-tab-body').className = 'py-2 px-2 border-b-2 border-indigo-500 text-indigo-500 font-bold';
+        document.getElementById('btn-resp-tab-headers').className = 'py-2 px-2 border-b-2 border-transparent text-theme-muted hover:text-theme-ink';
+        document.getElementById('resp-body-container').classList.remove('hidden');
+        document.getElementById('resp-headers-container').classList.add('hidden');
+        document.getElementById('resp-view-controls').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-resp-tab-headers').addEventListener('click', () => {
+        document.getElementById('btn-resp-tab-headers').className = 'py-2 px-2 border-b-2 border-indigo-500 text-indigo-500 font-bold';
+        document.getElementById('btn-resp-tab-body').className = 'py-2 px-2 border-b-2 border-transparent text-theme-muted hover:text-theme-ink';
+        document.getElementById('resp-headers-container').classList.remove('hidden');
+        document.getElementById('resp-body-container').classList.add('hidden');
+        document.getElementById('resp-view-controls').classList.add('hidden');
+      });
+
+      // Copy & Download Response
+      document.getElementById('btn-copy-resp').addEventListener('click', () => {
+        if (state.response?.body) {
+          navigator.clipboard.writeText(state.response.body);
+          alert('Response body copied to clipboard!');
+        }
+      });
+
+      document.getElementById('btn-download-resp').addEventListener('click', () => {
+        if (!state.response?.body) return;
+        const isJsonResp = state.response.contentType.includes('json');
+        const ext = isJsonResp ? 'json' : 'txt';
+        const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(state.response.body);
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", `api-response-${Date.now()}.${ext}`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      // Initial Render
+      renderParamsTable();
+      renderHeadersTable();
+      renderCollections();
+      renderHistory();
+      parseUrlToParams();
+    });
+
+    function parseCurlIntoBuilder(curl) {
+      if (!curl) return;
+      let method = 'GET';
+      let url = '';
+      const headers = [];
+      let body = '';
+
+      // Method match
+      const methodMatch = curl.match(/-X\s+([A-Z]+)/i);
+      if (methodMatch) method = methodMatch[1].toUpperCase();
+
+      // URL match
+      const urlMatch = curl.match(/(https?:\/\/[^\s"']+)/);
+      if (urlMatch) url = urlMatch[1];
+
+      // Header matches
+      const headerMatches = [...curl.matchAll(/-H\s+["']([^"']+)["']/g)];
+      headerMatches.forEach(m => {
+        const parts = m[1].split(':');
+        if (parts.length >= 2) {
+          headers.push({ enabled: true, key: parts[0].trim(), value: parts.slice(1).join(':').trim() });
+        }
+      });
+
+      // Data matches
+      const dataMatch = curl.match(/(-d|--data|--data-raw)\s+['"]([\s\S]*?)['"](\s+-|\s*$)/);
+      if (dataMatch) {
+        body = dataMatch[2];
+        if (method === 'GET') method = 'POST';
+      }
+
+      loadRequestIntoBuilder({
+        name: 'Imported from cURL',
+        method,
+        url,
+        headers,
+        bodyType: body ? 'json' : 'none',
+        bodyRaw: body
+      });
+    }
+
+    function renderEnvVarsTable() {
+      const tbody = document.getElementById('env-vars-table-body');
+      tbody.innerHTML = '';
+      const currentEnvKey = state.currentEnv === 'none' ? 'dev' : state.currentEnv;
+      const envVars = state.environments[currentEnvKey] || {};
+
+      Object.entries(envVars).forEach(([k, v]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2"><input type="text" value="${k}" class="w-full bg-transparent font-bold" readonly /></td>
+          <td class="p-2"><input type="text" value="${v}" class="env-val w-full bg-transparent" /></td>
+          <td class="p-2"><button class="env-del text-theme-muted hover:text-rose-500">×</button></td>
+        `;
+        tr.querySelector('.env-val').addEventListener('input', (e) => {
+          state.environments[currentEnvKey][k] = e.target.value;
+          saveStateToStorage();
+        });
+        tr.querySelector('.env-del').addEventListener('click', () => {
+          delete state.environments[currentEnvKey][k];
+          saveStateToStorage();
+          renderEnvVarsTable();
+        });
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
