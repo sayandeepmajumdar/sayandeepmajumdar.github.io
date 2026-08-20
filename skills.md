@@ -1,12 +1,12 @@
-# ForgeKit Developer Guide: Creating & Registering New Tools
+# Toolzy Developer Guide: Creating & Registering New Tools
 
-> A step-by-step technical standard for creating and integrating new 100% client-side tools into the **ForgeKit** platform and search engine.
+> A step-by-step technical standard for creating and integrating new 100% client-side tools into the **Toolzy** platform and search engine.
 
 ---
 
 ## 1. Core Architecture Principles
 
-Every tool added to ForgeKit must adhere to these non-negotiable architectural rules:
+Every tool added to Toolzy must adhere to these non-negotiable architectural rules:
 
 1. **100% Client-Side Execution**:
    - All computation, parsing, cryptography, file processing, and conversions must execute entirely inside the user's browser.
@@ -14,7 +14,7 @@ Every tool added to ForgeKit must adhere to these non-negotiable architectural r
    - Leverage standard Web APIs: `Web Crypto API`, `Web Workers`, `HTML5 Canvas`, `IndexedDB`, `Blob`, `File API`, and `WebAssembly`.
 
 2. **Dual Execution Model**:
-   - **Embedded Mode (`/tools/:category/:slug`)**: Rendered seamlessly inside the ForgeKit platform with unified header, theme synchronization, fullscreen sandbox, quick switchers, and star favorites.
+   - **Embedded Mode (`/tools/:category/:slug`)**: Rendered seamlessly inside the Toolzy platform with unified header, theme synchronization, fullscreen sandbox, quick switchers, and star favorites.
    - **Standalone Mode (`/:slug/index.html`)**: Direct, lightweight static HTML page accessible independently (e.g. `/json-formatter/index.html`).
 
 ---
@@ -45,7 +45,7 @@ touch my-new-tool/index.html
 
 ## 4. Step 2: Implement `my-new-tool/index.html`
 
-Use the standard ForgeKit standalone template below. It includes:
+Use the standard Toolzy standalone template below. It includes:
 - Tailwind CSS styling
 - Instant 1-click Light/Dark theme listener
 - Responsive container
@@ -57,7 +57,7 @@ Use the standard ForgeKit standalone template below. It includes:
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tool Name — ForgeKit</title>
+  <title>Tool Name — Toolzy</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -112,7 +112,7 @@ Use the standard ForgeKit standalone template below. It includes:
       var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
 
-      // Listen for parent postMessage when embedded in ForgeKit iframe
+      // Listen for parent postMessage when embedded in Toolzy iframe
       window.addEventListener('message', function (event) {
         if (event.data && event.data.type === 'THEME_CHANGE') {
           applyTheme(event.data.theme);
@@ -195,7 +195,7 @@ Use the standard ForgeKit standalone template below. It includes:
 
 ---
 
-## 5. Step 3: Register Tool in ForgeKit Search Engine
+## 5. Step 3: Register Tool in Toolzy Search Engine
 
 Open [`src/data/tools.ts`](file:///home/sayandeep/workspace/sayandeepmajumdar.github.io/src/data/tools.ts) and add your tool definition to the `TOOLS` array:
 
@@ -300,7 +300,7 @@ npm run dev
 ```
 
 1. Open `http://localhost:3000/tools/`.
-2. Type your tool name, slug, or tags into the **ForgeKit Search Bar**.
+2. Type your tool name, slug, or tags into the **Toolzy Search Bar**.
 3. Verify that your tool appears in the search results, category pills, and tag filters.
 4. Click on the tool card to test:
    - Embedded preview inside `/tools/developer/my-new-tool`.
@@ -327,6 +327,6 @@ Commit and push to GitHub:
 
 ```bash
 git add .
-git commit -m "feat(tools): add My New Tool to ForgeKit"
+git commit -m "feat(tools): add My New Tool to Toolzy"
 git push origin main
 ```

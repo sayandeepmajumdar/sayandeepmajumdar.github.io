@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Search, X, ShieldCheck } from 'lucide-react';
-import { ForgeKitLogo } from '../common/ForgeKitLogo';
+import { ToolzyLogo } from '../common/ToolzyLogo';
 
 interface HeroSearchProps {
   query: string;
@@ -38,7 +38,7 @@ export const HeroSearch: React.FC<HeroSearchProps> = ({
       </div>
 
       <div className="flex justify-center mb-3">
-        <ForgeKitLogo size="hero" showIcon={false} />
+        <ToolzyLogo size="hero" showIcon={false} />
       </div>
 
       <p className="text-sm sm:text-base text-muted max-w-2xl mx-auto mb-8 leading-relaxed">

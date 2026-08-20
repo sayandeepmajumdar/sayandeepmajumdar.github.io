@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, ExternalLink } from 'lucide-react';
 import { CATEGORIES } from '../../data/categories';
-import { ForgeKitLogo } from '../common/ForgeKitLogo';
+import { ToolzyLogo } from '../common/ToolzyLogo';
 
 export const Footer: React.FC = () => {
   return (
@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
           {/* Brand & Privacy Statement */}
           <div className="md:col-span-2 flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <ForgeKitLogo size="sm" showIcon={true} />
+              <ToolzyLogo size="sm" showIcon={true} />
               <span className="text-xs text-muted font-medium">by sayandeep.dev</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 100% Client-Side

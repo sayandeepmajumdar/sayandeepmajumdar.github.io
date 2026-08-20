@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sun, Moon, Search, ArrowLeft, Star } from 'lucide-react';
 import { getStoredTheme, setStoredTheme, getFavorites, getRecentTools } from '../../lib/storage';
-import { ForgeKitLogo } from '../common/ForgeKitLogo';
+import { ToolzyLogo } from '../common/ToolzyLogo';
 
 export const Header: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(getStoredTheme());
@@ -49,9 +49,9 @@ export const Header: React.FC = () => {
           <Link
             to="/"
             className="flex items-center gap-2.5 text-ink hover:opacity-95 transition-opacity focus:outline-none"
-            aria-label="ForgeKit Platform"
+            aria-label="Toolzy Platform"
           >
-            <ForgeKitLogo size="md" showIcon={true} />
+            <ToolzyLogo size="md" showIcon={true} />
             <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-full bg-surface-alt border border-line text-muted hidden sm:inline-block">
               v2.0
             </span>
