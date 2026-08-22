@@ -54,3 +54,37 @@ export function formatBytes(bytes: number, decimals = 2): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+export function isExtensionEnvironment(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.protocol.startsWith('chrome-extension') ||
+    window.location.protocol.startsWith('moz-extension') ||
+    window.location.protocol === 'file:'
+  );
+}
+
+export function getToolUrl(slug: string): string {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+    try {
+      return chrome.runtime.getURL(`${slug}/index.html`);
+    } catch (e) {}
+  }
+  if (typeof (window as any).browser !== 'undefined' && (window as any).browser?.runtime?.getURL) {
+    try {
+      return (window as any).browser.runtime.getURL(`${slug}/index.html`);
+    } catch (e) {}
+  }
+  return `/${slug}/index.html`;
+}
+
+export function getShareableToolUrl(category: string, slug: string): string {
+  if (isExtensionEnvironment()) {
+    return `https://sayandeepmajumdar.github.io/tools/#/tools/${category}/${slug}`;
+  }
+  if (typeof window !== 'undefined' && window.location.origin.startsWith('http')) {
+    return window.location.href;
+  }
+  return `https://sayandeepmajumdar.github.io/tools/#/tools/${category}/${slug}`;
+}
+

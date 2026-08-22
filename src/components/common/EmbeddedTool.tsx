@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Loader2, Maximize2, Minimize2, ExternalLink, RefreshCw } from 'lucide-react';
 import { getStoredTheme } from '../../lib/storage';
+import { getToolUrl, isExtensionEnvironment } from '../../lib/utils';
 
 interface EmbeddedToolProps {
   slug: string;
@@ -18,7 +19,8 @@ export const EmbeddedTool: React.FC<EmbeddedToolProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const toolSrc = `/${slug}/index.html`;
+  const isExt = isExtensionEnvironment();
+  const toolSrc = getToolUrl(slug);
 
   // Sync theme with iframe
   useEffect(() => {
@@ -38,6 +40,24 @@ export const EmbeddedTool: React.FC<EmbeddedToolProps> = ({
     const handleLoad = () => {
       setLoading(false);
       syncTheme();
+
+      // Clean up internal back links inside the embedded iframe
+      if (iframeRef.current?.contentDocument) {
+        try {
+          const doc = iframeRef.current.contentDocument;
+          const styleEl = doc.createElement('style');
+          styleEl.textContent = `
+            .nav-back-link,
+            a[href="../tools/"],
+            a[href="./../tools/"],
+            a[href="/tools/"],
+            a[href*="tools/index.html"] {
+              display: none !important;
+            }
+          `;
+          doc.head?.appendChild(styleEl);
+        } catch (e) {}
+      }
     };
 
     const iframe = iframeRef.current;
@@ -105,15 +125,18 @@ export const EmbeddedTool: React.FC<EmbeddedToolProps> = ({
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
-          <a
-            href={toolSrc}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-surface transition-colors"
-            title="Open in new window"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          {/* Open in new window (only on web) */}
+          {!isExt && (
+            <a
+              href={toolSrc}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-surface transition-colors"
+              title="Open in new window"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
       </div>
 
@@ -135,7 +158,6 @@ export const EmbeddedTool: React.FC<EmbeddedToolProps> = ({
           height: isFullscreen ? 'calc(100vh - 40px)' : `${initialHeight}px`,
           minHeight: '600px',
         }}
-        sandbox="allow-scripts allow-same-origin allow-downloads allow-forms allow-modals allow-popups"
       />
     </div>
   );

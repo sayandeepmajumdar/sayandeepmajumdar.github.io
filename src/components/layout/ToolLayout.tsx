@@ -8,7 +8,7 @@ import { PrivacyBadge } from '../common/PrivacyBadge';
 import { ToolCard } from '../common/ToolCard';
 import { isFavorite, toggleFavorite, recordToolVisit } from '../../lib/storage';
 import { getToolsByCategory } from '../../data/tools';
-import { copyToClipboard } from '../../lib/utils';
+import { copyToClipboard, getToolUrl, isExtensionEnvironment, getShareableToolUrl } from '../../lib/utils';
 
 interface ToolLayoutProps {
   tool: Tool;
@@ -16,6 +16,7 @@ interface ToolLayoutProps {
 }
 
 export const ToolLayout: React.FC<ToolLayoutProps> = ({ tool, children }) => {
+  const isExt = isExtensionEnvironment();
   const [favorite, setFavorite] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -38,7 +39,7 @@ export const ToolLayout: React.FC<ToolLayoutProps> = ({ tool, children }) => {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = getShareableToolUrl(tool.category, tool.slug);
     const ok = await copyToClipboard(url);
     if (ok) {
       setShared(true);
@@ -102,23 +103,25 @@ export const ToolLayout: React.FC<ToolLayoutProps> = ({ tool, children }) => {
               type="button"
               onClick={handleShare}
               className="p-2 rounded-xl border border-line bg-surface-alt text-muted hover:text-ink transition-all text-xs font-semibold flex items-center gap-1.5"
-              title="Copy shareable link"
+              title="Copy shareable public link"
             >
               {shared ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
-              <span className="hidden sm:inline">{shared ? 'Copied!' : 'Share'}</span>
+              <span className="hidden sm:inline">{shared ? 'Copied Link!' : 'Share'}</span>
             </button>
 
-            {/* Standalone HTML extract link */}
-            <a
-              href={`/${tool.slug}/index.html`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-xl border border-line bg-surface-alt text-muted hover:text-accent transition-all text-xs font-semibold flex items-center gap-1.5"
-              title="Open standalone zero-dependency HTML version"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">Standalone</span>
-            </a>
+            {/* Standalone HTML extract link (only shown on web app) */}
+            {!isExt && (
+              <a
+                href={getToolUrl(tool.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl border border-line bg-surface-alt text-muted hover:text-accent transition-all text-xs font-semibold flex items-center gap-1.5"
+                title="Open standalone zero-dependency HTML version"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="hidden sm:inline">Standalone</span>
+              </a>
+            )}
           </div>
         </div>
       </div>
