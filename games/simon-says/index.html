@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Online Simon Says Duel (P2P Multiplayer) | ArcadeLab</title>
+  <meta name="description" content="Play real-time 2-player Online Simon Says pattern memory duel directly in your browser. Alternating sequence builder, speed sprint, 4/6/8 pads, reverse recall mode, AI bot, and WebRTC P2P multiplayer." />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/games/simon-says/" />
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/simon-says/" />
+  <meta property="og:title" content="Online Simon Says Duel | ArcadeLab" />
+  <meta property="og:description" content="Real-time 2-player browser-to-browser Simon Says pattern memory duel with zero servers. Alternating sequence builder, speed sprints, reverse mode, and global ELO ladder!" />
+
+  <!-- Google Fonts: Inter & Outfit & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/assets/css/site.min.css" />
+
+  <!-- PeerJS WebRTC Library -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+
+    /* Simon Console Circular Frame */
+    .simon-console {
+      background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 70%, #020617 100%);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 8px rgba(0,0,0,0.7);
+    }
+
+    /* Simon Neon Glow Pads */
+    .simon-pad {
+      transition: all 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+      opacity: 0.72;
+      filter: brightness(0.85);
+      will-change: transform, opacity, filter, box-shadow;
+    }
+
+    .simon-pad:hover {
+      opacity: 0.88;
+      filter: brightness(1.05);
+    }
+
+    .simon-pad:active,
+    .simon-pad.active-glow {
+      opacity: 1 !important;
+      filter: brightness(1.75) saturate(1.4) !important;
+      transform: scale(0.96);
+    }
+
+    /* Individual Pad Glows */
+    .pad-green { background: #10b981; }
+    .pad-green.active-glow { box-shadow: 0 0 35px #10b981, inset 0 0 20px #a7f3d0; }
+
+    .pad-red { background: #f43f5e; }
+    .pad-red.active-glow { box-shadow: 0 0 35px #f43f5e, inset 0 0 20px #fecdd3; }
+
+    .pad-yellow { background: #f59e0b; }
+    .pad-yellow.active-glow { box-shadow: 0 0 35px #f59e0b, inset 0 0 20px #fef3c7; }
+
+    .pad-blue { background: #3b82f6; }
+    .pad-blue.active-glow { box-shadow: 0 0 35px #3b82f6, inset 0 0 20px #bfdbfe; }
+
+    .pad-purple { background: #a855f7; }
+    .pad-purple.active-glow { box-shadow: 0 0 35px #a855f7, inset 0 0 20px #e9d5ff; }
+
+    .pad-cyan { background: #06b6d4; }
+    .pad-cyan.active-glow { box-shadow: 0 0 35px #06b6d4, inset 0 0 20px #cffafe; }
+
+    .pad-orange { background: #f97316; }
+    .pad-orange.active-glow { box-shadow: 0 0 35px #f97316, inset 0 0 20px #ffedd5; }
+
+    .pad-pink { background: #ec4899; }
+    .pad-pink.active-glow { box-shadow: 0 0 35px #ec4899, inset 0 0 20px #fce7f3; }
+
+    /* Center Console Hub */
+    .center-hub {
+      background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 80%, #020617 100%);
+      box-shadow: 0 0 25px rgba(0,0,0,0.9), inset 0 2px 4px rgba(255,255,255,0.15);
+    }
+
+    /* Screen Error Flash */
+    .error-flash {
+      animation: errorShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes errorShake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(5px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 3px, 0); }
+      40%, 60% { transform: translate3d(6px, -3px, 0); }
+    }
+
+    /* Avatar Glow Frames */
+    .frame-purple { box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); border: 2px solid #a855f7; }
+    .frame-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); border: 2px solid #10b981; }
+    .frame-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); border: 2px solid #f43f5e; }
+    .frame-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b; }
+    .frame-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); border: 2px solid #06b6d4; }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-theme-bg text-theme-ink min-h-screen flex flex-col transition-colors duration-300 antialiased selection:bg-purple-500 selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION                        -->
+  <!-- ========================================== -->
+  <header class="border-b border-theme-line bg-theme-surface/70 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Title -->
+      <a href="/games/" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform text-white">
+          🧠
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-black text-base tracking-tight text-theme-ink group-hover:text-purple-400 transition-colors">
+              Simon Says
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              P2P PATTERN DUEL
+            </span>
+          </div>
+          <p class="text-[10px] text-theme-muted font-mono leading-none">ArcadeLab • 2-Player Real-Time Memory</p>
+        </div>
+      </a>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <!-- Player Passport Button -->
+        <button id="btn-passport-toggle" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm text-theme-ink" title="Player Passport">
+          <span id="header-avatar" class="text-sm">🧠</span>
+          <span id="header-elo" class="hidden sm:inline text-purple-400">1000 ELO</span>
+        </button>
+
+        <!-- Trophy Hall Button -->
+        <button id="btn-trophy-hall" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Trophy Hall">
+          <span>🏆</span>
+          <span id="unlocked-badge-count" class="ml-1 text-[10px] font-mono font-bold text-purple-400">0/12</span>
+        </button>
+
+        <!-- Rules / How to Play -->
+        <button id="btn-rules" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Game Rules">
+          📖
+        </button>
+
+        <!-- Audio Toggle -->
+        <button id="btn-sound-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Dark/Light Mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Banner Container -->
+  <div id="alert-banner" class="max-w-md mx-auto fixed top-16 left-4 right-4 z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN CONTAINER (LOBBY / WAITING / ARENA)   -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-center items-center relative">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & MATCHMAKER                 -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="w-full max-w-lg space-y-4 py-2">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-2 relative">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+          REAL-TIME PATTERN MEMORY DUEL
+        </div>
+        <h1 class="font-display font-black text-3xl sm:text-4xl text-theme-ink tracking-tight">
+          Online Simon Says
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto">
+          Challenge friends to an alternating sequence builder or speed memory sprint! Build growing color sequences, test recall, and conquer reverse mode.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT BANNER (LOBBY) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div id="lobby-avatar-preview" class="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-2xl shadow-md frame-purple">
+            🧠
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span id="lobby-player-name" class="font-display font-black text-sm text-theme-ink">MemoryMaster</span>
+              <span id="lobby-player-rank" class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-mono font-bold">🏆 Bronze I</span>
+            </div>
+            <span id="lobby-player-title" class="text-[11px] font-mono text-theme-muted block">Pattern Prodigy</span>
+          </div>
+        </div>
+
+        <button id="btn-edit-profile" type="button" class="px-3 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-colors text-theme-ink">
+          Customize ⚙️
+        </button>
+      </div>
+
+      <!-- GAME SETTINGS CARD -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <!-- Setting 1: Game Mode (Alternating Builder vs Speed Sprint) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono uppercase tracking-wider font-bold text-theme-muted">Game Mode</label>
+            <span class="text-[10px] font-mono text-purple-400 font-bold">Multiplayer Rules</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-mode-builder" type="button" class="p-2.5 rounded-xl bg-purple-500/15 border-2 border-purple-500 text-purple-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all">
+              <span class="text-base">⚡ Alternating Builder</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Repeat sequence + add 1 step</span>
+            </button>
+            <button id="btn-mode-sprint" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink">
+              <span class="text-base">🏎️ Speed Memory Sprint</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Watch pattern & race to repeat</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Pad Layout & Match Series -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <!-- Pad Layout -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Color Pads</label>
+            <select id="select-pads" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-purple-500">
+              <option value="4" selected>4 Pads (Classic Quad)</option>
+              <option value="6">6 Pads (Hexa Ring)</option>
+              <option value="8">8 Pads (Octa Circle)</option>
+            </select>
+          </div>
+
+          <!-- Target Wins -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Match Series</label>
+            <select id="select-target-wins" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-purple-500">
+              <option value="1">Sudden Death (1 Win)</option>
+              <option value="3" selected>First to 3 Wins</option>
+              <option value="5">First to 5 Wins</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Modifier: Reverse Recall Toggle -->
+        <div class="pt-1 flex items-center justify-between border-t border-theme-line pt-3">
+          <div>
+            <span class="font-display font-bold text-xs text-theme-ink block">Reverse Recall Modifier</span>
+            <span class="text-[10px] font-mono text-theme-muted">Repeat the sequence backwards for double difficulty!</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input id="toggle-reverse-mode" type="checkbox" class="sr-only peer" />
+            <div class="w-9 h-5 bg-theme-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- MULTIPLAYER & SINGLE PLAYER ACTION TABS -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <div class="flex items-center gap-2 border-b border-theme-line pb-3">
+          <button id="tab-btn-online" type="button" class="flex-1 py-2 rounded-xl bg-purple-600 text-white font-display font-black text-xs transition-colors">
+            🌐 2-Player Online Duel
+          </button>
+          <button id="tab-btn-ai" type="button" class="flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors">
+            🤖 Single Player & AI Bot
+          </button>
+        </div>
+
+        <!-- TAB 1: ONLINE MULTIPLAYER -->
+        <div id="tab-content-online" class="space-y-3.5">
+          <!-- Create Room Button -->
+          <button id="btn-create-room" type="button" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-display font-black text-sm tracking-wide shadow-lg shadow-purple-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <span>Create 2-Player Match</span>
+            <span>⚡</span>
+          </button>
+
+          <!-- Join by Room Code -->
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Or Join Existing Room</span>
+            <div class="flex items-center gap-2">
+              <input id="input-room-code" type="text" placeholder="SIM-XXXX" maxlength="8" class="flex-1 px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold uppercase tracking-wider text-theme-ink placeholder:text-theme-muted outline-none focus:border-purple-500" />
+              <button id="btn-join-room" type="button" class="px-5 py-2.5 rounded-xl bg-theme-surface-alt hover:bg-purple-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-xs transition-all active:scale-95">
+                Join Match
+              </button>
+            </div>
+          </div>
+
+          <!-- Air-Gapped Direct Code Connection -->
+          <div class="pt-2 text-center">
+            <button id="btn-open-manual-signaling" type="button" class="text-[11px] font-mono text-theme-muted hover:text-purple-400 transition-colors underline">
+              📡 Direct Code Connection (No Cloud Server)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: SINGLE PLAYER & AI BOT -->
+        <div id="tab-content-ai" class="hidden space-y-3.5">
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">AI Memory Limit</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink" data-diff="easy">
+                Easy (6-8 Steps)
+              </button>
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-purple-500/15 border-2 border-purple-500 text-purple-400 text-xs font-mono font-bold" data-diff="medium">
+                Medium (12-14)
+              </button>
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink" data-diff="master">
+                Master (20+ Steps)
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button id="btn-play-ai" type="button" class="py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-display font-black text-xs transition-transform active:scale-95 shadow">
+              ⚡ Play vs Smart AI
+            </button>
+            <button id="btn-play-solo" type="button" class="py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-black text-xs transition-colors">
+              ⏱️ Classic Solo Endless
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING FOR OPPONENT               -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden w-full max-w-md space-y-4 text-center py-4">
+      
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
+        
+        <!-- Animated Radar Spinner -->
+        <div class="w-16 h-16 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center text-3xl mx-auto relative">
+          <span class="animate-spin text-2xl">⏳</span>
+          <span class="absolute inset-0 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin"></span>
+        </div>
+
+        <div>
+          <h2 class="font-display font-black text-2xl text-theme-ink">Waiting for Opponent...</h2>
+          <p id="waiting-mode-desc" class="text-xs font-mono text-theme-muted mt-1">Alternating Pattern Builder • 4 Pads</p>
+        </div>
+
+        <!-- Room Code Display -->
+        <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Your Room Code</span>
+          <div class="flex items-center justify-center gap-2">
+            <span id="waiting-room-code" class="font-mono font-black text-2xl sm:text-3xl text-purple-400 tracking-widest select-all">SIM-XXXX</span>
+            <button id="btn-copy-code" type="button" class="p-2 rounded-xl bg-theme-surface hover:bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors" title="Copy Code">
+              📋
+            </button>
+          </div>
+        </div>
+
+        <!-- Shareable Link Input -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Instant Invite Link</span>
+          <div class="flex items-center gap-2">
+            <input id="waiting-share-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted truncate outline-none select-all" />
+            <button id="btn-copy-link" type="button" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-bold transition-colors shrink-0">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Share Shortcuts -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>💬 WhatsApp</span>
+          </a>
+          <a id="share-telegram" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>✈️ Telegram</span>
+          </a>
+          <button id="btn-show-qr" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold transition-colors flex items-center gap-1.5 text-theme-ink">
+            <span>📱 QR Code</span>
+          </button>
+        </div>
+
+        <!-- QR Code Container -->
+        <div id="qr-container" class="hidden flex-col items-center justify-center pt-2 space-y-2">
+          <canvas id="qr-canvas" class="rounded-xl border border-theme-line shadow-sm"></canvas>
+          <span class="text-[10px] font-mono text-theme-muted">Scan with phone camera to connect instantly</span>
+        </div>
+
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="mt-4 text-xs font-mono text-theme-muted hover:text-rose-400 transition-colors">
+        ✕ Cancel & Return to Lobby
+      </button>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE SIMON CONSOLE ARENA           -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col items-center justify-center w-full space-y-3 sm:space-y-4">
+      
+      <!-- TOP STATUS BAR: MATCH ROUND & SCOREBOARD -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-md relative overflow-hidden">
+        
+        <div class="flex items-center justify-between pb-2.5 border-b border-theme-line text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="arena-network-status" class="font-mono text-[11px] text-emerald-400 font-bold">Connected • P2P Active</span>
+            <span id="arena-ping-badge" class="text-[10px] font-mono text-theme-muted font-semibold hidden sm:inline">12ms</span>
+          </div>
+
+          <!-- Mode & Modifier Badges -->
+          <div class="flex items-center gap-1.5">
+            <span id="arena-mode-badge" class="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-mono text-[10px] font-bold border border-purple-500/20">
+              ⚡ Alternating Builder
+            </span>
+            <span id="arena-reverse-badge" class="hidden px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-mono text-[10px] font-bold border border-rose-500/20">
+              🔄 Reverse Recall
+            </span>
+          </div>
+
+          <!-- Target Match Series -->
+          <div class="flex items-center gap-1 font-mono text-[11px]">
+            <span class="text-theme-muted">Target:</span>
+            <strong id="arena-target-wins" class="text-theme-ink font-bold">First to 3</strong>
+          </div>
+        </div>
+
+        <!-- PLAYERS VERSUS SCOREBOARD -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-4 pt-3 items-center relative">
+          
+          <!-- Player 1 Card (Left - You) -->
+          <div id="card-player-1" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border-2 border-purple-500/60 transition-all relative">
+            <div id="arena-p1-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-purple">
+              🧠
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p1-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">You</span>
+                <span id="p1-turn-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold animate-pulse">YOUR TURN</span>
+              </div>
+              <span id="arena-p1-title" class="text-[10px] font-mono text-purple-400 block truncate">Pattern Prodigy</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Round Wins</span>
+              <strong id="arena-p1-score" class="text-xl sm:text-2xl font-mono font-black text-purple-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Player 2 Card (Right - Opponent / AI) -->
+          <div id="card-player-2" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border border-theme-line transition-all relative">
+            <div id="arena-p2-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-indigo">
+              🤖
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p2-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">Opponent</span>
+                <span id="p2-turn-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold animate-pulse">THEIR TURN</span>
+              </div>
+              <span id="arena-p2-title" class="text-[10px] font-mono text-indigo-400 block truncate">Pattern Bot</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Round Wins</span>
+              <strong id="arena-p2-score" class="text-xl sm:text-2xl font-mono font-black text-indigo-400">0</strong>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- COUNTDOWN OVERLAY -->
+      <div id="countdown-overlay" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex flex-col items-center justify-center">
+        <span id="countdown-text" class="font-display font-black text-6xl sm:text-8xl text-purple-400 animate-bounce">3</span>
+        <span class="font-mono text-xs text-theme-muted uppercase tracking-widest mt-2">Get Ready to Recall!</span>
+      </div>
+
+      <!-- STATUS & TAUNT ACTION BAR -->
+      <div class="w-full flex items-center justify-between gap-2 px-1">
+        <!-- Live Action Status Prompt -->
+        <div id="action-prompt-container" class="flex items-center gap-2 text-xs font-mono font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping"></span>
+          <span id="action-prompt-text" class="text-theme-ink">Watch the pattern carefully...</span>
+        </div>
+
+        <!-- Emoji Taunts -->
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🔥">🔥</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🎯">🎯</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🧠">🧠</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="😱">😱</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👑">👑</button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SIMON CIRCULAR/GRID CONSOLE ARENA          -->
+      <!-- ========================================== -->
+      <div id="simon-board-wrapper" class="w-full bg-theme-surface border border-theme-line rounded-3xl p-4 sm:p-8 shadow-2xl flex items-center justify-center relative overflow-hidden min-h-[380px]">
+        
+        <!-- The Circular Simon Console Housing -->
+        <div id="simon-console" class="simon-console w-72 h-72 sm:w-96 sm:h-96 rounded-full p-3 sm:p-4 relative flex items-center justify-center">
+          
+          <!-- Dynamic Pad Grid Container -->
+          <div id="pads-container" class="w-full h-full rounded-full overflow-hidden relative grid grid-cols-2 gap-2 sm:gap-3 p-1">
+            <!-- Populated via JavaScript (4, 6, or 8 pads) -->
+          </div>
+
+          <!-- Central Display Hub -->
+          <div class="center-hub absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-slate-800 flex flex-col items-center justify-center text-center p-2 z-20 pointer-events-none">
+            <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Sequence</span>
+            <strong id="hub-sequence-length" class="font-display font-black text-2xl sm:text-3xl text-purple-400 leading-tight">0</strong>
+            
+            <!-- Step Progress Dots -->
+            <div id="hub-progress-dots" class="flex items-center justify-center gap-1 mt-1 max-w-[80%] flex-wrap">
+              <!-- Dots injected by JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Floating Taunts Overlay -->
+        <div id="arena-taunts-overlay" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+
+      </div>
+
+      <!-- Leave Match & Return -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted w-full">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Match & Return to Lobby</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct WebRTC Encrypted Session</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & WINNER REVEAL          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <div id="match-over-icon" class="w-16 h-16 rounded-3xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-3xl mx-auto shadow-md">
+        👑
+      </div>
+
+      <div>
+        <h3 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">VICTORY!</h3>
+        <p id="match-over-subtitle" class="text-xs font-mono text-theme-muted mt-1">You won the Simon duel 3 to 1!</p>
+      </div>
+
+      <!-- Match Score Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Final Series Score:</span>
+          <strong id="stat-final-score" class="text-purple-400 text-base font-black">3 - 1</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Longest Sequence Achieved:</span>
+          <strong id="stat-max-sequence" class="text-theme-ink font-bold">14 Steps</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Total Steps Recalled:</span>
+          <strong id="stat-total-steps" class="text-emerald-400 font-bold">48 Correct</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-theme-line">
+          <span class="text-theme-muted">Passport XP / ELO:</span>
+          <span class="text-emerald-400 font-bold text-[11px]">
+            <span id="match-xp-gain">+160 XP</span> • <span id="match-elo-gain">+26 ELO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-display font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span id="rematch-btn-text">Play Again</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+          Exit to Lobby
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Player Passport</h3>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Battle Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="MemoryMaster" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-purple-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-purple-500">
+          <option value="Pattern Prodigy">Pattern Prodigy</option>
+          <option value="Memory Sleuth">Memory Sleuth</option>
+          <option value="Photographic Mind">Photographic Mind</option>
+          <option value="Reverse Virtuoso">Reverse Virtuoso</option>
+          <option value="Simon Champion">Simon Champion</option>
+          <option value="Grandmaster">Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-display font-black text-xs transition-colors shadow">
+        Save Passport
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">12 unlockable career achievements</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & HOW TO PLAY                 -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📖</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">How to Play</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Rules & Simon Duel Modes</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+          <strong class="font-bold text-theme-ink block mb-1">Mode 1: Alternating Pattern Builder</strong>
+          Player 1 starts by tapping 1 pad. Player 2 must repeat the sequence and append 1 new pad. The sequence grows each turn until someone makes a mistake!
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">Mode 2: Speed Memory Sprint</strong>
+          Both players watch the exact same pattern playback and race to repeat it fastest with 100% accuracy.
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">Reverse Recall Modifier:</strong>
+          When enabled, you must repeat the pattern sequence in reverse order (e.g. 🟢 🔴 🔵 becomes 🔵 🔴 🟢)!
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-display font-black text-xs transition-colors">
+        Got It, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DIRECT CODE CONNECTION (AIR-GAPPED) -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold font-mono">Player 1 (Host)</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Player 2 (Join)</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Host Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-purple-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Connection Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Player 2 Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black transition-colors">
+            Connect Players
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Player 1 Host Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-purple-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Your Response Code (Send to Player 1):</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER & CROSS-GAME NAVIGATION             -->
+  <!-- ========================================== -->
+  <footer class="w-full border-t border-theme-line py-6 px-4 bg-theme-surface/40 mt-auto text-center text-xs text-theme-muted space-y-3">
+    <div class="flex items-center justify-center gap-4 sm:gap-6 flex-wrap font-medium">
+      <a href="/games/" class="hover:text-purple-400 transition-colors">🕹️ All Games</a>
+      <a href="/games/endless-runner/" class="hover:text-purple-400 transition-colors">🏃 Endless Runner</a>
+      <a href="/games/flappy-bird/" class="hover:text-purple-400 transition-colors">🐦 Flappy Bird</a>
+      <a href="/games/asteroids/" class="hover:text-purple-400 transition-colors">🚀 Asteroids</a>
+      <a href="/games/sudoku/" class="hover:text-purple-400 transition-colors">🧩 Sudoku</a>
+      <a href="/games/whack-a-mole/" class="hover:text-purple-400 transition-colors">🐹 Whack-a-Mole</a>
+      <a href="/games/hangman/" class="hover:text-purple-400 transition-colors">🪢 Hangman</a>
+      <a href="/games/memory-matching/" class="hover:text-purple-400 transition-colors">🃏 Memory Match</a>
+      <a href="/games/number-guessing/" class="hover:text-purple-400 transition-colors">🎯 Number Guessing</a>
+      <a href="/games/rock-paper-scissors/" class="hover:text-purple-400 transition-colors">✊ Rock Paper Scissors</a>
+      <a href="/games/tic-tac-toe/" class="hover:text-purple-400 transition-colors">❌ Tic-Tac-Toe</a>
+      <a href="/tools/" class="hover:text-purple-400 transition-colors">🧰 Developer Tools</a>
+    </div>
+    <p class="text-[11px] font-mono">
+      ArcadeLab • Built with WebRTC P2P & HTML5 Web Audio • No custom backend required.
+    </p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT GAME LOGIC, WEBRTC NETWORKING, SIMON ENGINE & AUDIO SYNTHESIZER -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ========================================================================= */
+    /* 1. CONSTANTS & PAD DEFINITIONS                                            */
+    /* ========================================================================= */
+    const PAD_DEFINITIONS = [
+      { id: 0, name: 'Green', class: 'pad-green', freq: 392.00, icon: '🟢' },
+      { id: 1, name: 'Red', class: 'pad-red', freq: 329.63, icon: '🔴' },
+      { id: 2, name: 'Yellow', class: 'pad-yellow', freq: 261.63, icon: '🟡' },
+      { id: 3, name: 'Blue', class: 'pad-blue', freq: 196.00, icon: '🔵' },
+      { id: 4, name: 'Purple', class: 'pad-purple', freq: 523.25, icon: '🟣' },
+      { id: 5, name: 'Cyan', class: 'pad-cyan', freq: 440.00, icon: '🩵' },
+      { id: 6, name: 'Orange', class: 'pad-orange', freq: 293.66, icon: '🟠' },
+      { id: 7, name: 'Pink', class: 'pad-pink', freq: 349.23, icon: '🩷' }
+    ];
+
+    const AVATARS = ['🧠', '🎯', '👑', '🤖', '🚀', '⚡', '🔮', '🦊', '🦁', '🐼', '🦄', '🐙', '👾', '💎', '🍕', '🪐'];
+    const FRAMES = [
+      { id: 'frame-purple', name: 'Neon Purple', class: 'frame-purple' },
+      { id: 'frame-emerald', name: 'Emerald Glow', class: 'frame-emerald' },
+      { id: 'frame-rose', name: 'Rose Cyber', class: 'frame-rose' },
+      { id: 'frame-amber', name: 'Amber Laser', class: 'frame-amber' },
+      { id: 'frame-cyan', name: 'Neon Cyan', class: 'frame-cyan' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_simon', name: 'First Memory', desc: 'Complete your first Simon Says round.', icon: '🧠' },
+      { id: 'seq_5', name: 'Pattern Apprentice', desc: 'Reach a sequence of 5 steps in a duel.', icon: '🎵' },
+      { id: 'seq_10', name: 'Sequence Titan', desc: 'Reach a sequence of 10 steps in a single round.', icon: '🔥' },
+      { id: 'seq_15', name: 'Photographic Mind', desc: 'Reach a sequence of 15 steps without a mistake!', icon: '⚡' },
+      { id: 'speed_repeater', name: 'Speed Demon', desc: 'Repeat a 6-step sequence in under 3 seconds.', icon: '⏱️' },
+      { id: 'reverse_master', name: 'Reverse Virtuoso', desc: 'Win a match with Reverse Recall enabled.', icon: '🔄' },
+      { id: 'hexa_conqueror', name: 'Hexa Master', desc: 'Win a 6-Pad Hexa Ring pattern duel.', icon: '💎' },
+      { id: 'octa_oracle', name: 'Octa God', desc: 'Win an 8-Pad Octa Circle pattern duel.', icon: '👑' },
+      { id: 'ai_demolisher', name: 'AI Demolisher', desc: 'Defeat the Smart AI bot in Master difficulty.', icon: '🤖' },
+      { id: 'flawless_match', name: 'Flawless Memory', desc: 'Win a match series without dropping a round.', icon: '🛡️' },
+      { id: 'step_century', name: 'Century Recall', desc: 'Recall over 100 total steps across career.', icon: '🏆' },
+      { id: 'grandmaster', name: 'Grandmaster Oracle', desc: 'Reach 2,000+ MMR on the ranked ladder.', icon: '🎖️' }
+    ];
+
+    /* ========================================================================= */
+    /* 2. PLAYER PROFILE & GAMIFIED PASSPORT                                     */
+    /* ========================================================================= */
+    class PlayerProfile {
+      constructor() {
+        this.load();
+      }
+
+      load() {
+        const data = JSON.parse(localStorage.getItem('sim:player_passport') || '{}');
+        this.name = data.name || 'MemoryMaster ' + Math.floor(1000 + Math.random() * 9000);
+        this.avatar = data.avatar || '🧠';
+        this.frame = data.frame || 'frame-purple';
+        this.title = data.title || 'Pattern Prodigy';
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.elo = data.elo || 1000;
+        this.matchesPlayed = data.matchesPlayed || 0;
+        this.matchesWon = data.matchesWon || 0;
+        this.totalStepsRecalled = data.totalStepsRecalled || 0;
+        this.longestSequence = data.longestSequence || 0;
+        this.unlocked = data.unlocked || [];
+      }
+
+      save() {
+        localStorage.setItem('sim:player_passport', JSON.stringify({
+          name: this.name,
+          avatar: this.avatar,
+          frame: this.frame,
+          title: this.title,
+          level: this.level,
+          xp: this.xp,
+          elo: this.elo,
+          matchesPlayed: this.matchesPlayed,
+          matchesWon: this.matchesWon,
+          totalStepsRecalled: this.totalStepsRecalled,
+          longestSequence: this.longestSequence,
+          unlocked: this.unlocked
+        }));
+      }
+
+      addXP(amt) {
+        this.xp += amt;
+        const nextReq = this.level * 250;
+        if (this.xp >= nextReq) {
+          this.xp -= nextReq;
+          this.level++;
+          sound.playLevelUp();
+          showAlert(`🎉 LEVEL UP! You reached Passport Level ${this.level}!`, 'success');
+        }
+        this.save();
+        renderPassportUI();
+      }
+
+      addElo(amt) {
+        this.elo = Math.max(100, this.elo + amt);
+        if (this.elo >= 2000) this.unlockAchievement('grandmaster');
+        this.save();
+        renderPassportUI();
+      }
+
+      unlockAchievement(id) {
+        if (!this.unlocked.includes(id)) {
+          this.unlocked.push(id);
+          this.save();
+          sound.playAchievement();
+          const item = ACHIEVEMENTS.find(a => a.id === id);
+          if (item) {
+            showAlert(`🏆 TROPHY UNLOCKED: ${item.name}!`, 'success');
+          }
+          renderTrophyBadges();
+        }
+      }
+
+      getRankBadge() {
+        if (this.elo < 1100) return '🏆 Bronze I';
+        if (this.elo < 1300) return '🏆 Silver II';
+        if (this.elo < 1500) return '🏆 Gold III';
+        if (this.elo < 1800) return '💎 Platinum IV';
+        if (this.elo < 2200) return '👑 Diamond Master';
+        return '🌌 Grandmaster';
+      }
+    }
+
+    const player = new PlayerProfile();
+
+    /* ========================================================================= */
+    /* 3. WEB AUDIO SYNTHESIZER                                                  */
+    /* ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.enabled = localStorage.getItem('sim:sound_enabled') !== 'false';
+        this.ctx = null;
+      }
+
+      initCtx() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playPad(padId, duration = 0.28) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (!this.ctx) return;
+
+        const pad = PAD_DEFINITIONS[padId];
+        if (!pad) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(pad.freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playErrorBuzzer() {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(110, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.45);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.45);
+        } catch (e) {}
+      }
+
+      playCountdown(isGo = false) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (isGo) {
+          this.playTone(880, 'sine', 0.35, 0.25);
+        } else {
+          this.playTone(440, 'sine', 0.15, 0.15);
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.35, 0.2), i * 75);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [350, 310, 270, 220].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sawtooth', 0.25, 0.1), i * 110);
+        });
+      }
+
+      playLevelUp() {
+        this.playVictory();
+      }
+
+      playAchievement() {
+        this.playVictory();
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ========================================================================= */
+    /* 4. SMART AI MEMORY BOT                                                    */
+    /* ========================================================================= */
+    class SmartSimonAI {
+      constructor(difficulty = 'medium', padCount = 4) {
+        this.difficulty = difficulty; // 'easy', 'medium', 'master'
+        this.padCount = padCount;
+      }
+
+      getMemoryLimit() {
+        if (this.difficulty === 'easy') return 7;
+        if (this.difficulty === 'medium') return 13;
+        return 24; // Master
+      }
+
+      getMistakeRate(sequenceLength) {
+        const limit = this.getMemoryLimit();
+        if (sequenceLength <= limit - 2) return 0.02;
+        if (sequenceLength <= limit) return 0.15;
+        return 0.65; // High chance to fail above memory limit
+      }
+
+      decidePlay(sequence, isReverse = false) {
+        // Returns promise that repeats sequence and appends a step
+        return new Promise((resolve, reject) => {
+          const targetSequence = isReverse ? [...sequence].reverse() : [...sequence];
+          const shouldFail = Math.random() < this.getMistakeRate(sequence.length);
+
+          let stepIdx = 0;
+          const playNext = () => {
+            if (stepIdx < targetSequence.length) {
+              let padToPress = targetSequence[stepIdx];
+              
+              // Inject intentional mistake if failing on the last steps
+              if (shouldFail && stepIdx === targetSequence.length - 1) {
+                const wrongPads = PAD_DEFINITIONS.slice(0, this.padCount).map(p => p.id).filter(id => id !== padToPress);
+                padToPress = wrongPads[Math.floor(Math.random() * wrongPads.length)];
+              }
+
+              triggerPadVisual(padToPress);
+              sound.playPad(padToPress);
+
+              // Check if mistake was triggered
+              if (padToPress !== targetSequence[stepIdx]) {
+                return reject({ failedAt: stepIdx, wrongPad: padToPress });
+              }
+
+              stepIdx++;
+              const delay = Math.max(220, 500 - sequence.length * 15);
+              setTimeout(playNext, delay);
+            } else {
+              // Successfully repeated sequence, now append a new step
+              setTimeout(() => {
+                const newPad = Math.floor(Math.random() * this.padCount);
+                triggerPadVisual(newPad);
+                sound.playPad(newPad);
+                resolve(newPad);
+              }, 400);
+            }
+          };
+
+          setTimeout(playNext, 600);
+        });
+      }
+    }
+
+    /* ========================================================================= */
+    /* 5. APPLICATION STATE                                                      */
+    /* ========================================================================= */
+    const State = {
+      // Room & Peer
+      isHost: false,
+      isAI: false,
+      isSolo: false,
+      aiDifficulty: 'medium',
+      aiBot: null,
+      peer: null,
+      conn: null,
+      roomCode: '',
+      connected: false,
+
+      // Game Rules & Modes
+      gameMode: 'builder', // 'builder' (Mode A) or 'sprint' (Mode B)
+      padCount: 4,         // 4, 6, or 8 pads
+      targetWins: 3,       // 1, 3, or 5
+      isReverse: false,    // Reverse recall modifier
+      isRunning: false,
+      isCountdown: false,
+
+      // Sequence & Turn State
+      sequence: [],        // [0, 2, 1, 3...]
+      playbackIndex: 0,
+      inputStepIndex: 0,   // How many steps current player has matched
+      currentTurn: 'p1',   // 'p1' (You) or 'p2' (Opponent / AI)
+      myPlayerId: 'p1',
+      isInputLocked: true, // Locked during playback or opponent turn
+      mustAddStep: false,  // In builder mode: after repeating, must add 1 new step
+
+      // Scoreboard & Round Stats
+      p1Score: 0,
+      p2Score: 0,
+      roundNumber: 1,
+      maxSequenceAchieved: 0,
+      totalStepsRecalled: 0,
+
+      // Player Identity
+      p1Name: 'You',
+      p2Name: 'Opponent',
+      p1Avatar: '🧠',
+      p2Avatar: '🤖',
+      p1Title: 'Pattern Prodigy',
+      p2Title: 'Pattern Bot',
+
+      // Ping
+      pingInterval: null,
+      lastPingTime: 0
+    };
+
+    /* ========================================================================= */
+    /* 6. DOM ELEMENTS MAP                                                       */
+    /* ========================================================================= */
+    const el = {
+      // Views
+      viewLobby: document.getElementById('view-lobby'),
+      viewWaiting: document.getElementById('view-waiting'),
+      viewArena: document.getElementById('view-arena'),
+
+      // Header Buttons
+      btnPassportToggle: document.getElementById('btn-passport-toggle'),
+      headerAvatar: document.getElementById('header-avatar'),
+      headerElo: document.getElementById('header-elo'),
+      btnTrophyHall: document.getElementById('btn-trophy-hall'),
+      unlockedBadgeCount: document.getElementById('unlocked-badge-count'),
+      btnRules: document.getElementById('btn-rules'),
+      btnSoundToggle: document.getElementById('btn-sound-toggle'),
+      soundIcon: document.getElementById('sound-icon'),
+      btnThemeToggle: document.getElementById('btn-theme-toggle'),
+      themeIcon: document.getElementById('theme-icon'),
+      alertBanner: document.getElementById('alert-banner'),
+
+      // Lobby Elements
+      lobbyAvatarPreview: document.getElementById('lobby-avatar-preview'),
+      lobbyPlayerName: document.getElementById('lobby-player-name'),
+      lobbyPlayerRank: document.getElementById('lobby-player-rank'),
+      lobbyPlayerTitle: document.getElementById('lobby-player-title'),
+      btnEditProfile: document.getElementById('btn-edit-profile'),
+      btnModeBuilder: document.getElementById('btn-mode-builder'),
+      btnModeSprint: document.getElementById('btn-mode-sprint'),
+      selectPads: document.getElementById('select-pads'),
+      selectTargetWins: document.getElementById('select-target-wins'),
+      toggleReverseMode: document.getElementById('toggle-reverse-mode'),
+      tabBtnOnline: document.getElementById('tab-btn-online'),
+      tabBtnAi: document.getElementById('tab-btn-ai'),
+      tabContentOnline: document.getElementById('tab-content-online'),
+      tabContentAi: document.getElementById('tab-content-ai'),
+      btnCreateRoom: document.getElementById('btn-create-room'),
+      inputRoomCode: document.getElementById('input-room-code'),
+      btnJoinRoom: document.getElementById('btn-join-room'),
+      btnOpenManualSignaling: document.getElementById('btn-open-manual-signaling'),
+      btnPlayAi: document.getElementById('btn-play-ai'),
+      btnPlaySolo: document.getElementById('btn-play-solo'),
+
+      // Waiting View Elements
+      waitingModeDesc: document.getElementById('waiting-mode-desc'),
+      waitingRoomCode: document.getElementById('waiting-room-code'),
+      btnCopyCode: document.getElementById('btn-copy-code'),
+      waitingShareLink: document.getElementById('waiting-share-link'),
+      btnCopyLink: document.getElementById('btn-copy-link'),
+      shareWhatsapp: document.getElementById('share-whatsapp'),
+      shareTelegram: document.getElementById('share-telegram'),
+      btnShowQr: document.getElementById('btn-show-qr'),
+      qrContainer: document.getElementById('qr-container'),
+      qrCanvas: document.getElementById('qr-canvas'),
+      btnCancelWaiting: document.getElementById('btn-cancel-waiting'),
+
+      // Arena Elements
+      arenaNetworkStatus: document.getElementById('arena-network-status'),
+      arenaPingBadge: document.getElementById('arena-ping-badge'),
+      arenaModeBadge: document.getElementById('arena-mode-badge'),
+      arenaReverseBadge: document.getElementById('arena-reverse-badge'),
+      arenaTargetWins: document.getElementById('arena-target-wins'),
+      cardPlayer1: document.getElementById('card-player-1'),
+      arenaP1Avatar: document.getElementById('arena-p1-avatar'),
+      arenaP1Name: document.getElementById('arena-p1-name'),
+      p1TurnBadge: document.getElementById('p1-turn-badge'),
+      arenaP1Title: document.getElementById('arena-p1-title'),
+      arenaP1Score: document.getElementById('arena-p1-score'),
+      cardPlayer2: document.getElementById('card-player-2'),
+      arenaP2Avatar: document.getElementById('arena-p2-avatar'),
+      arenaP2Name: document.getElementById('arena-p2-name'),
+      p2TurnBadge: document.getElementById('p2-turn-badge'),
+      arenaP2Title: document.getElementById('arena-p2-title'),
+      arenaP2Score: document.getElementById('arena-p2-score'),
+      countdownOverlay: document.getElementById('countdown-overlay'),
+      countdownText: document.getElementById('countdown-text'),
+      actionPromptContainer: document.getElementById('action-prompt-container'),
+      actionPromptText: document.getElementById('action-prompt-text'),
+      simonBoardWrapper: document.getElementById('simon-board-wrapper'),
+      simonConsole: document.getElementById('simon-console'),
+      padsContainer: document.getElementById('pads-container'),
+      hubSequenceLength: document.getElementById('hub-sequence-length'),
+      hubProgressDots: document.getElementById('hub-progress-dots'),
+      arenaTauntsOverlay: document.getElementById('arena-taunts-overlay'),
+      btnLeaveMatch: document.getElementById('btn-leave-match'),
+
+      // Match Over Modal
+      modalMatchOver: document.getElementById('modal-match-over'),
+      matchOverIcon: document.getElementById('match-over-icon'),
+      matchOverTitle: document.getElementById('match-over-title'),
+      matchOverSubtitle: document.getElementById('match-over-subtitle'),
+      statFinalScore: document.getElementById('stat-final-score'),
+      statMaxSequence: document.getElementById('stat-max-sequence'),
+      statTotalSteps: document.getElementById('stat-total-steps'),
+      matchXpGain: document.getElementById('match-xp-gain'),
+      matchEloGain: document.getElementById('match-elo-gain'),
+      btnRequestRematch: document.getElementById('btn-request-rematch'),
+      rematchBtnText: document.getElementById('rematch-btn-text'),
+      btnModalExitLobby: document.getElementById('btn-modal-exit-lobby'),
+
+      // Passport Customizer Modal
+      modalProfileCustomizer: document.getElementById('modal-profile-customizer'),
+      btnCloseProfile: document.getElementById('btn-close-profile'),
+      customizerNameInput: document.getElementById('customizer-name-input'),
+      selectPlayerTitle: document.getElementById('select-player-title'),
+      avatarGrid: document.getElementById('avatar-grid'),
+      frameGrid: document.getElementById('frame-grid'),
+      btnSaveProfile: document.getElementById('btn-save-profile'),
+
+      // Trophy Hall Modal
+      modalTrophies: document.getElementById('modal-trophies'),
+      btnCloseTrophies: document.getElementById('btn-close-trophies'),
+      trophiesListContainer: document.getElementById('trophies-list-container'),
+      btnAckTrophies: document.getElementById('btn-ack-trophies'),
+
+      // Rules Modal
+      modalRules: document.getElementById('modal-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnAckRules: document.getElementById('btn-ack-rules'),
+
+      // Manual Signaling Modal
+      modalManualSignaling: document.getElementById('modal-manual-signaling'),
+      btnCloseManualSignaling: document.getElementById('btn-close-manual-signaling'),
+      tabManualHost: document.getElementById('tab-manual-host'),
+      tabManualJoin: document.getElementById('tab-manual-join'),
+      manualHostSection: document.getElementById('manual-host-section'),
+      manualJoinSection: document.getElementById('manual-join-section'),
+      btnGenManualOffer: document.getElementById('btn-gen-manual-offer'),
+      manualOfferOutput: document.getElementById('manual-offer-output'),
+      manualAnswerInput: document.getElementById('manual-answer-input'),
+      btnAcceptManualAnswer: document.getElementById('btn-accept-manual-answer'),
+      manualOfferInput: document.getElementById('manual-offer-input'),
+      btnGenManualAnswer: document.getElementById('btn-gen-manual-answer'),
+      manualAnswerOutput: document.getElementById('manual-answer-output')
+    };
+
+    /* ========================================================================= */
+    /* 7. INITIALIZATION & UI HELPERS                                            */
+    /* ========================================================================= */
+    function init() {
+      // Apply theme
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      updateThemeIcon();
+
+      // Render profile
+      renderPassportUI();
+      renderTrophyBadges();
+      populateCustomizerGrids();
+
+      // Setup Listeners
+      setupEventListeners();
+
+      // Check URL parameters for room join code
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        el.inputRoomCode.value = roomParam.toUpperCase();
+        setTimeout(() => joinRoom(roomParam.toUpperCase()), 400);
+      }
+    }
+
+    function showAlert(msg, type = 'info') {
+      const banner = el.alertBanner;
+      banner.innerHTML = `
+        <div class="px-4 py-2.5 rounded-2xl shadow-xl border text-xs font-mono font-bold flex items-center justify-between gap-3 ${
+          type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50' :
+          type === 'error' ? 'bg-rose-950/90 text-rose-300 border-rose-500/50' :
+          'bg-slate-900/90 text-purple-300 border-purple-500/50'
+        }">
+          <span>${msg}</span>
+          <button onclick="this.parentElement.parentElement.classList.add('opacity-0', '-translate-y-8')" class="opacity-70 hover:opacity-100">✕</button>
+        </div>
+      `;
+      banner.classList.remove('opacity-0', '-translate-y-8');
+      setTimeout(() => {
+        banner.classList.add('opacity-0', '-translate-y-8');
+      }, 4000);
+    }
+
+    function updateThemeIcon() {
+      const isDark = document.documentElement.classList.contains('dark');
+      el.themeIcon.textContent = isDark ? '🌙' : '☀️';
+    }
+
+    function renderPassportUI() {
+      el.headerAvatar.textContent = player.avatar;
+      el.headerElo.textContent = `${player.elo} ELO`;
+      el.lobbyAvatarPreview.textContent = player.avatar;
+      el.lobbyAvatarPreview.className = `w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-2xl shadow-md ${player.frame}`;
+      el.lobbyPlayerName.textContent = player.name;
+      el.lobbyPlayerRank.textContent = player.getRankBadge();
+      el.lobbyPlayerTitle.textContent = player.title;
+      el.unlockedBadgeCount.textContent = `${player.unlocked.length}/${ACHIEVEMENTS.length}`;
+    }
+
+    function renderTrophyBadges() {
+      el.trophiesListContainer.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = player.unlocked.includes(ach.id);
+        return `
+          <div class="p-3 rounded-2xl border transition-all ${
+            isUnlocked
+              ? 'bg-purple-500/10 border-purple-500/40 text-theme-ink'
+              : 'bg-theme-surface-alt border-theme-line opacity-50 text-theme-muted'
+          }">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">${ach.icon}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="font-display font-bold text-xs truncate ${isUnlocked ? 'text-purple-400' : ''}">${ach.name}</strong>
+                  ${isUnlocked ? '<span class="text-[9px] font-mono text-emerald-400 font-bold">UNLOCKED</span>' : ''}
+                </div>
+                <p class="text-[10px] text-theme-muted font-mono leading-tight mt-0.5">${ach.desc}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function populateCustomizerGrids() {
+      // Avatars
+      el.avatarGrid.innerHTML = AVATARS.map(av => `
+        <button type="button" class="btn-avatar p-2.5 rounded-xl bg-theme-surface-alt hover:bg-purple-500/20 border border-theme-line text-xl flex items-center justify-center transition-transform hover:scale-110 ${player.avatar === av ? 'border-purple-500 ring-2 ring-purple-500/40' : ''}" data-avatar="${av}">
+          ${av}
+        </button>
+      `).join('');
+
+      // Frames
+      el.frameGrid.innerHTML = FRAMES.map(fr => `
+        <button type="button" class="btn-frame p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-center transition-transform hover:scale-105 ${player.frame === fr.class ? 'border-purple-500 ring-2 ring-purple-500/40' : ''}" data-frame="${fr.class}">
+          <div class="w-8 h-8 mx-auto rounded-lg bg-slate-800 flex items-center justify-center text-sm ${fr.class}">🧠</div>
+          <span class="text-[9px] font-mono block mt-1 text-theme-muted truncate">${fr.name}</span>
+        </button>
+      `).join('');
+
+      el.selectPlayerTitle.value = player.title;
+      el.customizerNameInput.value = player.name;
+    }
+
+    /* ========================================================================= */
+    /* 8. EVENT LISTENERS                                                        */
+    /* ========================================================================= */
+    function setupEventListeners() {
+      // Theme & Audio
+      el.btnThemeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        updateThemeIcon();
+      });
+
+      el.btnSoundToggle.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        localStorage.setItem('sim:sound_enabled', sound.enabled);
+        el.soundIcon.textContent = sound.enabled ? '🔊' : '🔇';
+      });
+
+      // Modals
+      el.btnPassportToggle.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnEditProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+
+      el.btnTrophyHall.addEventListener('click', () => el.modalTrophies.classList.remove('hidden'));
+      el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+      el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+      el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+      el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+      el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+      // Avatar & Frame Picker
+      el.avatarGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-avatar');
+        if (!btn) return;
+        player.avatar = btn.dataset.avatar;
+        document.querySelectorAll('.btn-avatar').forEach(b => b.classList.remove('border-purple-500', 'ring-2', 'ring-purple-500/40'));
+        btn.classList.add('border-purple-500', 'ring-2', 'ring-purple-500/40');
+      });
+
+      el.frameGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-frame');
+        if (!btn) return;
+        player.frame = btn.dataset.frame;
+        document.querySelectorAll('.btn-frame').forEach(b => b.classList.remove('border-purple-500', 'ring-2', 'ring-purple-500/40'));
+        btn.classList.add('border-purple-500', 'ring-2', 'ring-purple-500/40');
+      });
+
+      el.btnSaveProfile.addEventListener('click', () => {
+        const newName = el.customizerNameInput.value.trim();
+        if (newName) player.name = newName;
+        player.title = el.selectPlayerTitle.value;
+        player.save();
+        renderPassportUI();
+        el.modalProfileCustomizer.classList.add('hidden');
+        showAlert('Passport profile updated successfully!', 'success');
+      });
+
+      // Mode Switcher
+      el.btnModeBuilder.addEventListener('click', () => setGameMode('builder'));
+      el.btnModeSprint.addEventListener('click', () => setGameMode('sprint'));
+
+      // Tabs (Online vs AI)
+      el.tabBtnOnline.addEventListener('click', () => {
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-purple-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentOnline.classList.remove('hidden');
+        el.tabContentAi.classList.add('hidden');
+      });
+
+      el.tabBtnAi.addEventListener('click', () => {
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-purple-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentAi.classList.remove('hidden');
+        el.tabContentOnline.classList.add('hidden');
+      });
+
+      // AI Difficulty Selector
+      document.querySelectorAll('.btn-ai-diff').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.btn-ai-diff').forEach(b => {
+            b.className = 'btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink';
+          });
+          btn.className = 'btn-ai-diff p-2 rounded-xl bg-purple-500/15 border-2 border-purple-500 text-purple-400 text-xs font-mono font-bold';
+          State.aiDifficulty = btn.dataset.diff;
+        });
+      });
+
+      // Match Creation & Joining
+      el.btnCreateRoom.addEventListener('click', createRoom);
+      el.btnJoinRoom.addEventListener('click', () => {
+        const code = el.inputRoomCode.value.trim().toUpperCase();
+        if (code) joinRoom(code);
+      });
+
+      el.btnPlayAi.addEventListener('click', () => startSinglePlayer(true));
+      el.btnPlaySolo.addEventListener('click', () => startSinglePlayer(false));
+
+      // Waiting View
+      el.btnCancelWaiting.addEventListener('click', returnToLobby);
+      el.btnCopyCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(State.roomCode);
+        showAlert('Room code copied to clipboard!', 'success');
+      });
+      el.btnCopyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.waitingShareLink.value);
+        showAlert('Invite link copied to clipboard!', 'success');
+      });
+      el.btnShowQr.addEventListener('click', toggleQrCode);
+
+      // Arena Actions
+      el.btnLeaveMatch.addEventListener('click', () => {
+        if (confirm('Leave current match and return to lobby?')) {
+          if (State.conn) {
+            State.conn.send({ type: 'DISCONNECT' });
+          }
+          returnToLobby();
+        }
+      });
+
+      // Floating Taunts
+      document.querySelectorAll('.btn-taunt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const emoji = btn.dataset.taunt;
+          spawnTaunt(emoji, 'you');
+          if (State.conn && State.conn.open) {
+            State.conn.send({ type: 'TAUNT', emoji });
+          }
+        });
+      });
+
+      // Rematch & Exit
+      el.btnRequestRematch.addEventListener('click', handleRematchRequest);
+      el.btnModalExitLobby.addEventListener('click', () => {
+        el.modalMatchOver.classList.add('hidden');
+        returnToLobby();
+      });
+
+      // Direct Code Connection Modal
+      el.btnOpenManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.remove('hidden'));
+      el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+
+      el.tabManualHost.addEventListener('click', () => {
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold font-mono';
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualHostSection.classList.remove('hidden');
+        el.manualJoinSection.classList.add('hidden');
+      });
+
+      el.tabManualJoin.addEventListener('click', () => {
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-bold font-mono';
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualJoinSection.classList.remove('hidden');
+        el.manualHostSection.classList.add('hidden');
+      });
+
+      el.btnGenManualOffer.addEventListener('click', generateManualOffer);
+      el.btnAcceptManualAnswer.addEventListener('click', acceptManualAnswer);
+      el.btnGenManualAnswer.addEventListener('click', generateManualAnswer);
+    }
+
+    function setGameMode(mode) {
+      State.gameMode = mode;
+      if (mode === 'builder') {
+        el.btnModeBuilder.className = 'p-2.5 rounded-xl bg-purple-500/15 border-2 border-purple-500 text-purple-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeSprint.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      } else {
+        el.btnModeSprint.className = 'p-2.5 rounded-xl bg-purple-500/15 border-2 border-purple-500 text-purple-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeBuilder.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      }
+    }
+
+    /* ========================================================================= */
+    /* 9. WEBRTC PEER CONNECTION & NETWORKING                                    */
+    /* ========================================================================= */
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = 'SIM-';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function createRoom() {
+      State.isHost = true;
+      State.isAI = false;
+      State.isSolo = false;
+      State.myPlayerId = 'p1';
+      State.padCount = parseInt(el.selectPads.value, 10);
+      State.targetWins = parseInt(el.selectTargetWins.value, 10);
+      State.isReverse = el.toggleReverseMode.checked;
+
+      State.roomCode = generateRoomCode();
+      const peerId = `arcadelab-${State.roomCode}`;
+
+      showView('waiting');
+      el.waitingRoomCode.textContent = State.roomCode;
+      el.waitingModeDesc.textContent = `${State.gameMode === 'builder' ? '⚡ Alternating Builder' : '🏎️ Speed Sprint'} • ${State.padCount} Pads • Best of ${State.targetWins * 2 - 1}`;
+
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${State.roomCode}`;
+      el.waitingShareLink.value = shareUrl;
+      el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(`🧠 Challenge me to Online Simon Says on ArcadeLab! Room: ${State.roomCode}\n${shareUrl}`)}`;
+      el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`🧠 Online Simon Says Pattern Duel: Room ${State.roomCode}`)}`;
+
+      if (State.peer) State.peer.destroy();
+      State.peer = new Peer(peerId, { debug: 1 });
+
+      State.peer.on('open', () => {
+        console.log('PeerJS Host Ready:', peerId);
+      });
+
+      State.peer.on('connection', conn => {
+        State.conn = conn;
+        setupDataChannel();
+      });
+
+      State.peer.on('error', err => {
+        console.error('Peer error:', err);
+        showAlert(`Connection error: ${err.type || 'Failed to connect'}`, 'error');
+      });
+    }
+
+    function joinRoom(roomCode) {
+      State.isHost = false;
+      State.isAI = false;
+      State.isSolo = false;
+      State.myPlayerId = 'p2';
+      State.roomCode = roomCode;
+
+      showAlert(`Connecting to Room ${roomCode}...`, 'info');
+
+      if (State.peer) State.peer.destroy();
+      State.peer = new Peer({ debug: 1 });
+
+      State.peer.on('open', () => {
+        const hostPeerId = `arcadelab-${roomCode}`;
+        State.conn = State.peer.connect(hostPeerId, { reliable: true });
+        setupDataChannel();
+      });
+
+      State.peer.on('error', err => {
+        console.error('Peer join error:', err);
+        showAlert('Could not find host room. Check the code and try again.', 'error');
+      });
+    }
+
+    function setupDataChannel() {
+      State.conn.on('open', () => {
+        State.connected = true;
+        console.log('WebRTC DataChannel Connected!');
+
+        if (State.isHost) {
+          State.conn.send({
+            type: 'MATCH_INIT',
+            settings: {
+              gameMode: State.gameMode,
+              padCount: State.padCount,
+              targetWins: State.targetWins,
+              isReverse: State.isReverse
+            },
+            player: {
+              name: player.name,
+              avatar: player.avatar,
+              frame: player.frame,
+              title: player.title,
+              elo: player.elo
+            }
+          });
+        } else {
+          State.conn.send({
+            type: 'GUEST_PROFILE',
+            player: {
+              name: player.name,
+              avatar: player.avatar,
+              frame: player.frame,
+              title: player.title,
+              elo: player.elo
+            }
+          });
+        }
+
+        startPingHeartbeat();
+      });
+
+      State.conn.on('data', data => {
+        handleIncomingMessage(data);
+      });
+
+      State.conn.on('close', () => {
+        State.connected = false;
+        showAlert('Opponent disconnected from match.', 'error');
+        if (State.isRunning) {
+          endRound('Opponent Disconnected', State.myPlayerId);
+        }
+      });
+    }
+
+    function handleIncomingMessage(msg) {
+      switch (msg.type) {
+        case 'MATCH_INIT':
+          State.gameMode = msg.settings.gameMode;
+          State.padCount = msg.settings.padCount;
+          State.targetWins = msg.settings.targetWins;
+          State.isReverse = msg.settings.isReverse;
+          State.p1Name = msg.player.name;
+          State.p1Avatar = msg.player.avatar;
+          State.p1Title = msg.player.title;
+          State.p2Name = player.name;
+          State.p2Avatar = player.avatar;
+          State.p2Title = player.title;
+          startArenaMatch();
+          break;
+
+        case 'GUEST_PROFILE':
+          State.p2Name = msg.player.name;
+          State.p2Avatar = msg.player.avatar;
+          State.p2Title = msg.player.title;
+          startArenaMatch();
+          break;
+
+        case 'SEQUENCE_UPDATE':
+          State.sequence = msg.sequence;
+          State.currentTurn = msg.currentTurn;
+          onSequenceReceived();
+          break;
+
+        case 'PAD_TAP_EVENT':
+          triggerPadVisual(msg.padId);
+          sound.playPad(msg.padId);
+          break;
+
+        case 'ROUND_OVER':
+          onRoundOverReceived(msg.winner, msg.reason);
+          break;
+
+        case 'TAUNT':
+          spawnTaunt(msg.emoji, 'opponent');
+          break;
+
+        case 'REMATCH_OFFER':
+          showAlert(`${State.p2Name} wants a Rematch!`, 'info');
+          el.rematchBtnText.textContent = 'Accept Rematch ⚔️';
+          break;
+
+        case 'REMATCH_START':
+          el.modalMatchOver.classList.add('hidden');
+          startArenaMatch();
+          break;
+
+        case 'PING':
+          State.conn.send({ type: 'PONG', timestamp: msg.timestamp });
+          break;
+
+        case 'PONG':
+          const latency = Math.round(performance.now() - msg.timestamp);
+          el.arenaPingBadge.textContent = `${latency}ms`;
+          break;
+      }
+    }
+
+    function startPingHeartbeat() {
+      if (State.pingInterval) clearInterval(State.pingInterval);
+      State.pingInterval = setInterval(() => {
+        if (State.conn && State.conn.open) {
+          State.conn.send({ type: 'PING', timestamp: performance.now() });
+        }
+      }, 3000);
+    }
+
+    /* ========================================================================= */
+    /* 10. ARENA SETUP & PAD RENDERING                                           */
+    /* ========================================================================= */
+    function startSinglePlayer(isAI = true) {
+      State.isHost = true;
+      State.isAI = isAI;
+      State.isSolo = !isAI;
+      State.myPlayerId = 'p1';
+      State.padCount = parseInt(el.selectPads.value, 10);
+      State.targetWins = parseInt(el.selectTargetWins.value, 10);
+      State.isReverse = el.toggleReverseMode.checked;
+
+      State.p1Name = player.name;
+      State.p1Avatar = player.avatar;
+      State.p1Title = player.title;
+
+      if (isAI) {
+        State.p2Name = `AI (${State.aiDifficulty.toUpperCase()})`;
+        State.p2Avatar = '🤖';
+        State.p2Title = 'Memory Bot';
+        State.aiBot = new SmartSimonAI(State.aiDifficulty, State.padCount);
+      } else {
+        State.p2Name = 'Endless Solo';
+        State.p2Avatar = '⏱️';
+        State.p2Title = 'Personal Record';
+      }
+
+      startArenaMatch();
+    }
+
+    function startArenaMatch() {
+      showView('arena');
+      resetMatchStats();
+      renderPads();
+      renderArenaHeader();
+      startCountdown();
+    }
+
+    function resetMatchStats() {
+      State.p1Score = 0;
+      State.p2Score = 0;
+      State.roundNumber = 1;
+      State.maxSequenceAchieved = 0;
+      State.totalStepsRecalled = 0;
+      renderArenaScores();
+    }
+
+    function renderPads() {
+      const pads = PAD_DEFINITIONS.slice(0, State.padCount);
+      const container = el.padsContainer;
+
+      if (State.padCount === 4) {
+        container.className = 'w-full h-full rounded-full overflow-hidden relative grid grid-cols-2 gap-2 sm:gap-3.5 p-1.5';
+      } else if (State.padCount === 6) {
+        container.className = 'w-full h-full rounded-full overflow-hidden relative grid grid-cols-3 gap-2 sm:gap-3 p-1.5';
+      } else {
+        container.className = 'w-full h-full rounded-full overflow-hidden relative grid grid-cols-4 gap-1.5 sm:gap-2 p-1.5';
+      }
+
+      container.innerHTML = pads.map(pad => `
+        <div id="simon-pad-${pad.id}" class="simon-pad ${pad.class} rounded-3xl sm:rounded-[2rem] flex items-center justify-center relative shadow-inner" data-pad="${pad.id}">
+          <span class="text-xl sm:text-2xl opacity-40 select-none pointer-events-none">${pad.icon}</span>
+        </div>
+      `).join('');
+
+      // Attach Touch & Click listeners
+      document.querySelectorAll('.simon-pad').forEach(padEl => {
+        const padId = parseInt(padEl.dataset.pad, 10);
+        padEl.addEventListener('pointerdown', () => onPadClicked(padId));
+      });
+    }
+
+    function renderArenaHeader() {
+      el.arenaModeBadge.textContent = State.gameMode === 'builder' ? '⚡ Alternating Builder' : '🏎️ Speed Sprint';
+      if (State.isReverse) {
+        el.arenaReverseBadge.classList.remove('hidden');
+      } else {
+        el.arenaReverseBadge.classList.add('hidden');
+      }
+      el.arenaTargetWins.textContent = `First to ${State.targetWins}`;
+      el.arenaP1Name.textContent = State.p1Name;
+      el.arenaP1Avatar.textContent = State.p1Avatar;
+      el.arenaP2Name.textContent = State.p2Name;
+      el.arenaP2Avatar.textContent = State.p2Avatar;
+    }
+
+    function renderArenaScores() {
+      el.arenaP1Score.textContent = State.p1Score;
+      el.arenaP2Score.textContent = State.p2Score;
+    }
+
+    function updateTurnBadges() {
+      if (State.currentTurn === 'p1') {
+        el.p1TurnBadge.classList.remove('hidden');
+        el.p2TurnBadge.classList.add('hidden');
+        el.cardPlayer1.classList.add('border-purple-500');
+        el.cardPlayer2.classList.remove('border-purple-500');
+      } else {
+        el.p1TurnBadge.classList.add('hidden');
+        el.p2TurnBadge.classList.remove('hidden');
+        el.cardPlayer1.classList.remove('border-purple-500');
+        el.cardPlayer2.classList.add('border-indigo-500');
+      }
+    }
+
+    /* ========================================================================= */
+    /* 11. ROUND GAMEPLAY LOOP (MODE A: ALTERNATING BUILDER)                     */
+    /* ========================================================================= */
+    function startCountdown() {
+      State.isCountdown = true;
+      el.countdownOverlay.classList.remove('hidden');
+
+      let count = 3;
+      el.countdownText.textContent = count;
+      sound.playCountdown(false);
+
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          el.countdownText.textContent = count;
+          sound.playCountdown(false);
+        } else if (count === 0) {
+          el.countdownText.textContent = 'START!';
+          sound.playCountdown(true);
+        } else {
+          clearInterval(interval);
+          el.countdownOverlay.classList.add('hidden');
+          State.isCountdown = false;
+          initiateNewRound();
+        }
+      }, 1000);
+    }
+
+    function initiateNewRound() {
+      State.isRunning = true;
+      State.sequence = [];
+      State.inputStepIndex = 0;
+      State.currentTurn = 'p1';
+      State.isInputLocked = false;
+      State.mustAddStep = true; // Player 1 starts by adding the first pad!
+
+      el.hubSequenceLength.textContent = '0';
+      el.hubProgressDots.innerHTML = '';
+      updateTurnBadges();
+
+      if (State.currentTurn === State.myPlayerId) {
+        setActionPrompt('Tap any pad to start the sequence!', 'action');
+      } else {
+        setActionPrompt('Waiting for opponent to start the sequence...', 'wait');
+        State.isInputLocked = true;
+      }
+    }
+
+    function onPadClicked(padId) {
+      if (!State.isRunning || State.isCountdown || State.isInputLocked) return;
+
+      triggerPadVisual(padId);
+      sound.playPad(padId);
+
+      // Broadcast pad press to opponent
+      if (State.conn && State.conn.open) {
+        State.conn.send({ type: 'PAD_TAP_EVENT', padId });
+      }
+
+      if (State.gameMode === 'builder') {
+        handleBuilderPadInput(padId);
+      } else {
+        handleSprintPadInput(padId);
+      }
+    }
+
+    function triggerPadVisual(padId) {
+      const padEl = document.getElementById(`simon-pad-${padId}`);
+      if (!padEl) return;
+      padEl.classList.add('active-glow');
+      setTimeout(() => padEl.classList.remove('active-glow'), 220);
+    }
+
+    function handleBuilderPadInput(padId) {
+      const targetSequence = State.isReverse ? [...State.sequence].reverse() : State.sequence;
+
+      if (State.mustAddStep) {
+        // Appending new step to sequence
+        State.sequence.push(padId);
+        State.mustAddStep = false;
+        State.maxSequenceAchieved = Math.max(State.maxSequenceAchieved, State.sequence.length);
+
+        if (State.sequence.length >= 5) player.unlockAchievement('seq_5');
+        if (State.sequence.length >= 10) player.unlockAchievement('seq_10');
+        if (State.sequence.length >= 15) player.unlockAchievement('seq_15');
+        if (State.padCount === 6) player.unlockAchievement('hexa_conqueror');
+        if (State.padCount === 8) player.unlockAchievement('octa_oracle');
+        if (State.isReverse) player.unlockAchievement('reverse_master');
+
+        el.hubSequenceLength.textContent = State.sequence.length;
+
+        // Switch turn to opponent
+        State.currentTurn = State.currentTurn === 'p1' ? 'p2' : 'p1';
+        updateTurnBadges();
+
+        if (State.conn && State.conn.open) {
+          State.conn.send({
+            type: 'SEQUENCE_UPDATE',
+            sequence: State.sequence,
+            currentTurn: State.currentTurn
+          });
+        }
+
+        if (State.isAI && State.currentTurn === 'p2') {
+          handleAITurn();
+        } else if (State.isSolo) {
+          // Solo mode: computer plays playback and user repeats
+          playSoloSequence();
+        } else {
+          setActionPrompt(`Sequence: ${State.sequence.length} steps. Opponent's turn!`, 'wait');
+          State.isInputLocked = true;
+        }
+
+      } else {
+        // Player is repeating existing sequence
+        const expectedPad = targetSequence[State.inputStepIndex];
+
+        if (padId === expectedPad) {
+          // Correct Tap!
+          State.inputStepIndex++;
+          State.totalStepsRecalled++;
+          player.totalStepsRecalled++;
+          player.unlockAchievement('first_simon');
+          if (player.totalStepsRecalled >= 100) player.unlockAchievement('step_century');
+
+          renderProgressDots(State.inputStepIndex, targetSequence.length);
+
+          if (State.inputStepIndex === targetSequence.length) {
+            // Completed repeating sequence! Now must add 1 new step!
+            State.mustAddStep = true;
+            setActionPrompt('Great! Now ADD 1 NEW PAD to extend the sequence!', 'action');
+          }
+        } else {
+          // WRONG PAD! Mistake made -> Opponent wins the round!
+          triggerErrorState(padId);
+          const winner = State.currentTurn === 'p1' ? 'p2' : 'p1';
+          handleRoundFinish(winner, 'Wrong Pad Tapped');
+        }
+      }
+    }
+
+    function onSequenceReceived() {
+      el.hubSequenceLength.textContent = State.sequence.length;
+      State.maxSequenceAchieved = Math.max(State.maxSequenceAchieved, State.sequence.length);
+      updateTurnBadges();
+
+      if (State.currentTurn === State.myPlayerId) {
+        // It is now my turn to repeat the sequence!
+        State.inputStepIndex = 0;
+        State.mustAddStep = false;
+        State.isInputLocked = false;
+        renderProgressDots(0, State.sequence.length);
+        setActionPrompt(`Your Turn: Repeat ${State.sequence.length} steps ${State.isReverse ? '(REVERSED!)' : ''}`, 'action');
+      } else {
+        setActionPrompt(`Opponent is repeating ${State.sequence.length} steps...`, 'wait');
+        State.isInputLocked = true;
+      }
+    }
+
+    function handleAITurn() {
+      State.isInputLocked = true;
+      setActionPrompt(`AI is thinking & repeating ${State.sequence.length} steps...`, 'wait');
+
+      State.aiBot.decidePlay(State.sequence, State.isReverse)
+        .then(newPad => {
+          State.sequence.push(newPad);
+          el.hubSequenceLength.textContent = State.sequence.length;
+          State.currentTurn = 'p1';
+          updateTurnBadges();
+
+          State.inputStepIndex = 0;
+          State.mustAddStep = false;
+          State.isInputLocked = false;
+          renderProgressDots(0, State.sequence.length);
+          setActionPrompt(`Your Turn: Repeat ${State.sequence.length} steps!`, 'action');
+        })
+        .catch(err => {
+          // AI Made a mistake!
+          triggerErrorState(err.wrongPad);
+          handleRoundFinish('p1', 'AI Made a Mistake');
+        });
+    }
+
+    function playSoloSequence() {
+      State.isInputLocked = true;
+      setActionPrompt(`Watching pattern (${State.sequence.length} steps)...`, 'wait');
+
+      let idx = 0;
+      const playStep = () => {
+        if (idx < State.sequence.length) {
+          const pad = State.sequence[idx];
+          triggerPadVisual(pad);
+          sound.playPad(pad);
+          idx++;
+          setTimeout(playStep, Math.max(250, 600 - State.sequence.length * 20));
+        } else {
+          State.inputStepIndex = 0;
+          State.mustAddStep = false;
+          State.isInputLocked = false;
+          renderProgressDots(0, State.sequence.length);
+          setActionPrompt(`Repeat the ${State.sequence.length} steps!`, 'action');
+        }
+      };
+
+      setTimeout(playStep, 500);
+    }
+
+    /* ========================================================================= */
+    /* 12. MODE B: SPEED MEMORY SPRINT                                           */
+    /* ========================================================================= */
+    function handleSprintPadInput(padId) {
+      const targetSequence = State.isReverse ? [...State.sequence].reverse() : State.sequence;
+      const expectedPad = targetSequence[State.inputStepIndex];
+
+      if (padId === expectedPad) {
+        State.inputStepIndex++;
+        State.totalStepsRecalled++;
+        renderProgressDots(State.inputStepIndex, targetSequence.length);
+
+        if (State.inputStepIndex === targetSequence.length) {
+          // Finished sprint fastest!
+          handleRoundFinish(State.myPlayerId, 'Speed Sprint Winner');
+        }
+      } else {
+        triggerErrorState(padId);
+        const winner = State.myPlayerId === 'p1' ? 'p2' : 'p1';
+        handleRoundFinish(winner, 'Wrong Sprint Pad');
+      }
+    }
+
+    /* ========================================================================= */
+    /* 13. ROUND END & WINNER EVALUATION                                         */
+    /* ========================================================================= */
+    function triggerErrorState(padId) {
+      sound.playErrorBuzzer();
+      el.simonConsole.classList.add('error-flash');
+      setTimeout(() => el.simonConsole.classList.remove('error-flash'), 400);
+    }
+
+    function handleRoundFinish(winner, reason) {
+      State.isRunning = false;
+      State.isInputLocked = true;
+
+      if (winner === 'p1') {
+        State.p1Score++;
+      } else {
+        State.p2Score++;
+      }
+
+      renderArenaScores();
+
+      if (State.conn && State.conn.open) {
+        State.conn.send({
+          type: 'ROUND_OVER',
+          winner,
+          reason,
+          p1Score: State.p1Score,
+          p2Score: State.p2Score
+        });
+      }
+
+      evaluateMatchSeries(winner);
+    }
+
+    function onRoundOverReceived(winner, reason) {
+      triggerErrorState();
+      State.isRunning = false;
+      State.isInputLocked = true;
+
+      if (winner === 'p1') State.p1Score++;
+      else State.p2Score++;
+      renderArenaScores();
+
+      evaluateMatchSeries(winner);
+    }
+
+    function evaluateMatchSeries(lastRoundWinner) {
+      const p1WonMatch = State.p1Score >= State.targetWins;
+      const p2WonMatch = State.p2Score >= State.targetWins;
+
+      if (p1WonMatch || p2WonMatch) {
+        // MATCH SERIES COMPLETE!
+        setTimeout(() => showMatchOverModal(p1WonMatch), 1000);
+      } else {
+        // Next round in series
+        State.roundNumber++;
+        showAlert(`Round ${State.roundNumber - 1} won by ${lastRoundWinner === 'p1' ? State.p1Name : State.p2Name}! Starting next round...`, 'info');
+        setTimeout(initiateNewRound, 2500);
+      }
+    }
+
+    function showMatchOverModal(didWin) {
+      player.matchesPlayed++;
+      let xpGain = 120;
+      let eloGain = 16;
+
+      if (didWin) {
+        player.matchesWon++;
+        xpGain = 200;
+        eloGain = 30;
+        sound.playVictory();
+        el.matchOverIcon.textContent = '👑';
+        el.matchOverTitle.textContent = 'MATCH VICTORY!';
+        el.matchOverSubtitle.textContent = `You won the series ${State.p1Score} to ${State.p2Score}!`;
+
+        if (State.p2Score === 0) player.unlockAchievement('flawless_match');
+        if (State.isAI && State.aiDifficulty === 'master') player.unlockAchievement('ai_demolisher');
+      } else {
+        xpGain = 60;
+        eloGain = -15;
+        sound.playDefeat();
+        el.matchOverIcon.textContent = '💀';
+        el.matchOverTitle.textContent = 'DEFEAT!';
+        el.matchOverSubtitle.textContent = `Opponent won the series ${State.p2Score} to ${State.p1Score}!`;
+      }
+
+      player.longestSequence = Math.max(player.longestSequence, State.maxSequenceAchieved);
+      player.addXP(xpGain);
+      player.addElo(eloGain);
+
+      el.statFinalScore.textContent = `${State.p1Score} - ${State.p2Score}`;
+      el.statMaxSequence.textContent = `${State.maxSequenceAchieved} Steps`;
+      el.statTotalSteps.textContent = `${State.totalStepsRecalled} Steps`;
+      el.matchXpGain.textContent = `+${xpGain} XP`;
+      el.matchEloGain.textContent = `${eloGain >= 0 ? '+' : ''}${eloGain} ELO`;
+
+      el.modalMatchOver.classList.remove('hidden');
+    }
+
+    function handleRematchRequest() {
+      if (State.isAI || State.isSolo || !State.connected) {
+        el.modalMatchOver.classList.add('hidden');
+        startArenaMatch();
+        return;
+      }
+
+      el.rematchBtnText.textContent = 'Waiting for Opponent...';
+      State.conn.send({ type: 'REMATCH_OFFER' });
+    }
+
+    function setActionPrompt(text, type = 'info') {
+      el.actionPromptText.textContent = text;
+      const dot = el.actionPromptContainer.querySelector('span:first-child');
+      if (type === 'action') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+      } else {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse';
+      }
+    }
+
+    function renderProgressDots(current, total) {
+      if (total <= 0) {
+        el.hubProgressDots.innerHTML = '';
+        return;
+      }
+      let html = '';
+      for (let i = 0; i < total; i++) {
+        html += `<span class="w-1.5 h-1.5 rounded-full ${i < current ? 'bg-emerald-400' : 'bg-slate-700'}"></span>`;
+      }
+      el.hubProgressDots.innerHTML = html;
+    }
+
+    function spawnTaunt(emoji, origin = 'you') {
+      const taunt = document.createElement('div');
+      taunt.className = `absolute text-3xl sm:text-4xl transition-all duration-700 transform pointer-events-none ${
+        origin === 'you' ? 'left-6 bottom-4 animate-bounce' : 'right-6 bottom-4 animate-bounce'
+      }`;
+      taunt.textContent = emoji;
+      el.arenaTauntsOverlay.appendChild(taunt);
+
+      setTimeout(() => {
+        taunt.style.transform = 'translateY(-120px) scale(1.4)';
+        taunt.style.opacity = '0';
+      }, 50);
+
+      setTimeout(() => taunt.remove(), 750);
+    }
+
+    /* ========================================================================= */
+    /* 14. VIEW ROUTING & AIR-GAPPED SIGNALING                                   */
+    /* ========================================================================= */
+    function showView(viewName) {
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.add('hidden');
+
+      if (viewName === 'lobby') el.viewLobby.classList.remove('hidden');
+      else if (viewName === 'waiting') el.viewWaiting.classList.remove('hidden');
+      else if (viewName === 'arena') el.viewArena.classList.remove('hidden');
+    }
+
+    function returnToLobby() {
+      if (State.peer) State.peer.destroy();
+      State.isRunning = false;
+      showView('lobby');
+    }
+
+    function toggleQrCode() {
+      const qrCont = el.qrContainer;
+      if (qrCont.classList.contains('hidden')) {
+        qrCont.classList.remove('hidden');
+        el.qrCanvas.innerHTML = '';
+        new QRCode(el.qrCanvas, {
+          text: el.waitingShareLink.value,
+          width: 140,
+          height: 140
+        });
+      } else {
+        qrCont.classList.add('hidden');
+      }
+    }
+
+    // Manual SDP Signaling
+    let manualPeer = null;
+    function generateManualOffer() {
+      if (manualPeer) manualPeer.destroy();
+      manualPeer = new Peer({ debug: 1 });
+      manualPeer.on('open', (id) => {
+        el.manualOfferOutput.value = id;
+        showAlert('Host code generated! Send this to Player 2.', 'success');
+      });
+      manualPeer.on('connection', conn => {
+        State.conn = conn;
+        State.isHost = true;
+        State.padCount = parseInt(el.selectPads.value, 10);
+        State.targetWins = parseInt(el.selectTargetWins.value, 10);
+        State.isReverse = el.toggleReverseMode.checked;
+        el.modalManualSignaling.classList.add('hidden');
+        setupDataChannel();
+      });
+    }
+
+    function acceptManualAnswer() {
+      const code = el.manualAnswerInput.value.trim();
+      if (!code) return showAlert('Please paste Player 2 response code.', 'error');
+      showAlert('Connecting to Player 2...', 'info');
+    }
+
+    function generateManualAnswer() {
+      const hostId = el.manualOfferInput.value.trim();
+      if (!hostId) return showAlert('Please paste Player 1 host code first.', 'error');
+
+      if (manualPeer) manualPeer.destroy();
+      manualPeer = new Peer({ debug: 1 });
+      manualPeer.on('open', () => {
+        State.conn = manualPeer.connect(hostId, { reliable: true });
+        el.manualAnswerOutput.value = manualPeer.id;
+        State.isHost = false;
+        el.modalManualSignaling.classList.add('hidden');
+        setupDataChannel();
+      });
+    }
+
+    // Run on startup
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

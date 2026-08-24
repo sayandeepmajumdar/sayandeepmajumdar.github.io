@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Online Flappy Bird Duel (2D Arcade & Multiplayer) | ArcadeLab</title>
+  <meta name="description" content="Play real-time 2-player Online Flappy Bird duel directly in your browser. Seed-synchronized deterministic pipes, survival races, power-up duels, WebRTC P2P networking, and zero servers." />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/games/flappy-bird/" />
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/flappy-bird/" />
+  <meta property="og:title" content="Online Flappy Bird Duel | ArcadeLab" />
+  <meta property="og:description" content="Real-time 2-player browser-to-browser Flappy Bird duel with seed-synchronized pipes and WebRTC networking!" />
+
+  <!-- Google Fonts: Inter & Outfit & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/assets/css/site.min.css" />
+
+  <!-- PeerJS WebRTC Library -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+
+    /* Flappy Canvas Container */
+    #game-canvas {
+      background-color: #0b132b;
+      border: 2px solid rgb(var(--color-line));
+      border-radius: 1.25rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(99, 102, 241, 0.05);
+      touch-action: none;
+    }
+
+    /* Screen Shake Animation on Crash */
+    .screen-shake {
+      animation: crashShake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes crashShake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-5px, 2px, 0); }
+      40%, 60% { transform: translate3d(5px, -3px, 0); }
+    }
+
+    /* Avatar Glow Frames */
+    .frame-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b; }
+    .frame-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); border: 2px solid #10b981; }
+    .frame-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); border: 2px solid #f43f5e; }
+    .frame-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); border: 2px solid #06b6d4; }
+    .frame-indigo { box-shadow: 0 0 15px rgba(99, 102, 241, 0.6); border: 2px solid #6366f1; }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+
+    /* Virtual Mobile Touch Controls */
+    .touch-btn {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-theme-bg text-theme-ink min-h-screen flex flex-col transition-colors duration-300 antialiased selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION                        -->
+  <!-- ========================================== -->
+  <header class="border-b border-theme-line bg-theme-surface/70 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Title -->
+      <a href="/games/" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 via-orange-500 to-rose-500 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform text-white">
+          🐦
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-black text-base tracking-tight text-theme-ink group-hover:text-amber-400 transition-colors">
+              Flappy Bird Duel
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              2D ARCADE P2P
+            </span>
+          </div>
+          <p class="text-[10px] text-theme-muted font-mono leading-none">ArcadeLab • Real-Time 2-Player Seed-Synced Race</p>
+        </div>
+      </a>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <!-- Player Passport Button -->
+        <button id="btn-passport-toggle" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm text-theme-ink" title="Player Passport">
+          <span id="header-avatar" class="text-sm">🐦</span>
+          <span id="header-elo" class="hidden sm:inline text-amber-400">1000 ELO</span>
+        </button>
+
+        <!-- Trophy Hall Button -->
+        <button id="btn-trophy-hall" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Trophy Hall">
+          <span>🏆</span>
+          <span id="unlocked-badge-count" class="ml-1 text-[10px] font-mono font-bold text-amber-400">0/12</span>
+        </button>
+
+        <!-- Rules / Flight Manual -->
+        <button id="btn-rules" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Flight Manual">
+          📖
+        </button>
+
+        <!-- Audio Toggle -->
+        <button id="btn-sound-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Dark/Light Mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Banner Container -->
+  <div id="alert-banner" class="max-w-md mx-auto fixed top-16 left-4 right-4 z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN CONTAINER (LOBBY / WAITING / ARENA)   -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-center items-center relative">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & MATCHMAKER                 -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="w-full max-w-lg space-y-4 py-2">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-2 relative">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          SEED-SYNCHRONIZED P2P FLIGHT DUEL
+        </div>
+        <h1 class="font-display font-black text-3xl sm:text-4xl text-theme-ink tracking-tight">
+          Online Flappy Bird
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto">
+          Fly head-to-head through identical synchronized pipe runs! Test your reflexes in classic survival races or unleash chaotic power-up curses.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT BANNER (LOBBY) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div id="lobby-avatar-preview" class="w-12 h-12 rounded-2xl bg-amber-600 flex items-center justify-center text-2xl shadow-md frame-amber">
+            🐦
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span id="lobby-player-name" class="font-display font-black text-sm text-theme-ink">WingCommander</span>
+              <span id="lobby-player-rank" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono font-bold">🏆 Bronze I</span>
+            </div>
+            <span id="lobby-player-title" class="text-[11px] font-mono text-theme-muted block">Feathered Ace</span>
+          </div>
+        </div>
+
+        <button id="btn-edit-profile" type="button" class="px-3 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-colors text-theme-ink">
+          Customize ⚙️
+        </button>
+      </div>
+
+      <!-- GAME SETTINGS CARD -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <!-- Setting 1: Mode (Classic Survival vs Chaos Powerups) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono uppercase tracking-wider font-bold text-theme-muted">Flight Rules</label>
+            <span class="text-[10px] font-mono text-amber-400 font-bold">Multiplayer Mode</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-mode-classic" type="button" class="p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all">
+              <span class="text-base">🏆 Classic Race</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Pure skill & survival distance</span>
+            </button>
+            <button id="btn-mode-chaos" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink">
+              <span class="text-base">⚡ Chaos Powerups</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Ghost shields, wind & gravity flip</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Match Format & Difficulty -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <!-- Match Format -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Series Format</label>
+            <select id="select-format" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-amber-500">
+              <option value="single" selected>Single Run (Quick Duel)</option>
+              <option value="bo3">Best of 3 Rounds</option>
+            </select>
+          </div>
+
+          <!-- Pipe Gap Spacing -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Gap Clearance</label>
+            <select id="select-gap" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-amber-500">
+              <option value="normal" selected>Normal (130px Standard)</option>
+              <option value="wide">Wide (150px Beginner)</option>
+              <option value="tight">Tight (110px Hardcore)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MULTIPLAYER & SINGLE PLAYER ACTION TABS -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <div class="flex items-center gap-2 border-b border-theme-line pb-3">
+          <button id="tab-btn-online" type="button" class="flex-1 py-2 rounded-xl bg-amber-600 text-white font-display font-black text-xs transition-colors">
+            🌐 2-Player Online Duel
+          </button>
+          <button id="tab-btn-ai" type="button" class="flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors">
+            🤖 Solo & AI Practice
+          </button>
+        </div>
+
+        <!-- TAB 1: ONLINE MULTIPLAYER -->
+        <div id="tab-content-online" class="space-y-3.5">
+          <!-- Create Room Button -->
+          <button id="btn-create-room" type="button" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 hover:from-amber-300 hover:to-rose-400 text-slate-950 font-display font-black text-sm tracking-wide shadow-lg shadow-amber-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <span>Launch Flight Match</span>
+            <span>🚀</span>
+          </button>
+
+          <!-- Join by Room Code -->
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Or Join Flight Code</span>
+            <div class="flex items-center gap-2">
+              <input id="input-room-code" type="text" placeholder="FLP-XXXX" maxlength="8" class="flex-1 px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold uppercase tracking-wider text-theme-ink placeholder:text-theme-muted outline-none focus:border-amber-500" />
+              <button id="btn-join-room" type="button" class="px-5 py-2.5 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-theme-ink font-display font-black text-xs transition-all active:scale-95">
+                Take Off
+              </button>
+            </div>
+          </div>
+
+          <!-- Air-Gapped Direct Code Connection -->
+          <div class="pt-2 text-center">
+            <button id="btn-open-manual-signaling" type="button" class="text-[11px] font-mono text-theme-muted hover:text-amber-400 transition-colors underline">
+              📡 Direct Code Connection (No Cloud Server)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: SINGLE PLAYER & AI PRACTICE -->
+        <div id="tab-content-ai" class="hidden space-y-3.5">
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Single Player Modes</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-play-solo" type="button" class="py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-display font-black text-xs transition-transform active:scale-95 shadow flex items-center justify-center gap-1.5">
+                <span>🐦 Solo High Score Run</span>
+              </button>
+              <button id="btn-play-ai-duel" type="button" class="py-3.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-black text-xs transition-colors flex items-center justify-center gap-1.5">
+                <span>🤖 Duel vs AI Bird</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING FOR OPPONENT               -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden w-full max-w-md space-y-4 text-center py-4">
+      
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
+        
+        <!-- Animated Radar Spinner -->
+        <div class="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-3xl mx-auto relative">
+          <span class="animate-spin text-2xl">📡</span>
+          <span class="absolute inset-0 rounded-full border-2 border-amber-500/30 border-t-amber-400 animate-spin"></span>
+        </div>
+
+        <div>
+          <h2 class="font-display font-black text-2xl text-theme-ink">Waiting for Competitor...</h2>
+          <p id="waiting-mode-desc" class="text-xs font-mono text-theme-muted mt-1">Classic Survival Race • Normal Gaps</p>
+        </div>
+
+        <!-- Room Code Display -->
+        <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Flight Room Code</span>
+          <div class="flex items-center justify-center gap-2">
+            <span id="waiting-room-code" class="font-mono font-black text-2xl sm:text-3xl text-amber-400 tracking-widest select-all">FLP-XXXX</span>
+            <button id="btn-copy-code" type="button" class="p-2 rounded-xl bg-theme-surface hover:bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors" title="Copy Code">
+              📋
+            </button>
+          </div>
+        </div>
+
+        <!-- Shareable Link Input -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Instant Invite Link</span>
+          <div class="flex items-center gap-2">
+            <input id="waiting-share-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted truncate outline-none select-all" />
+            <button id="btn-copy-link" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono text-xs font-bold transition-colors shrink-0">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Share Shortcuts -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>💬 WhatsApp</span>
+          </a>
+          <a id="share-telegram" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>✈️ Telegram</span>
+          </a>
+          <button id="btn-show-qr" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold transition-colors flex items-center gap-1.5 text-theme-ink">
+            <span>📱 QR Code</span>
+          </button>
+        </div>
+
+        <!-- QR Code Container -->
+        <div id="qr-container" class="hidden flex-col items-center justify-center pt-2 space-y-2">
+          <canvas id="qr-canvas" class="rounded-xl border border-theme-line shadow-sm"></canvas>
+          <span class="text-[10px] font-mono text-theme-muted">Scan with phone to join flight duel</span>
+        </div>
+
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="mt-4 text-xs font-mono text-theme-muted hover:text-rose-400 transition-colors">
+        ✕ Abort & Return to Hangar
+      </button>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE FLIGHT DUEL ARENA             -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col items-center justify-center w-full space-y-3">
+      
+      <!-- TOP STATUS & SCOREBOARD HUD -->
+      <div class="w-full max-w-4xl bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-md relative overflow-hidden">
+        
+        <div class="flex items-center justify-between pb-2 border-b border-theme-line text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="arena-network-status" class="font-mono text-[11px] text-emerald-400 font-bold">Connected • P2P Active</span>
+          </div>
+
+          <!-- Mode Badge -->
+          <span id="arena-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono text-[10px] font-bold border border-amber-500/20">
+            🏆 Classic Race
+          </span>
+
+          <!-- Match Round Score (for Bo3) -->
+          <div class="flex items-center gap-1 font-mono text-[11px]">
+            <span class="text-theme-muted">Round:</span>
+            <strong id="arena-round-badge" class="text-theme-ink font-bold">1/1</strong>
+          </div>
+        </div>
+
+        <!-- DUAL HEAD-TO-HEAD SCOREBOARD -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-4 pt-2.5 items-center">
+          
+          <!-- Player 1 (Left - Yellow / Golden Bird: You) -->
+          <div id="card-p1" class="flex items-center justify-between p-2.5 rounded-2xl bg-theme-surface-alt border-2 border-amber-500/60 relative">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div id="arena-p1-avatar" class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-xl shrink-0 frame-amber">
+                🐦
+              </div>
+              <div class="min-w-0">
+                <span id="arena-p1-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate block">You</span>
+                <span id="p1-status-tag" class="text-[9px] font-mono text-emerald-400 font-bold">Flying</span>
+              </div>
+            </div>
+            <strong id="arena-p1-score" class="text-2xl sm:text-3xl font-mono font-black text-amber-400 pl-2">0</strong>
+          </div>
+
+          <!-- Player 2 (Right - Cyan / Pink Bird: Opponent) -->
+          <div id="card-p2" class="flex items-center justify-between p-2.5 rounded-2xl bg-theme-surface-alt border border-theme-line relative">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div id="arena-p2-avatar" class="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center text-xl shrink-0 frame-cyan">
+                🤖
+              </div>
+              <div class="min-w-0">
+                <span id="arena-p2-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate block">Opponent</span>
+                <span id="p2-status-tag" class="text-[9px] font-mono text-emerald-400 font-bold">Flying</span>
+              </div>
+            </div>
+            <strong id="arena-p2-score" class="text-2xl sm:text-3xl font-mono font-black text-cyan-400 pl-2">0</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ACTION & TAUNT PROMPT BAR -->
+      <div class="w-full max-w-4xl flex items-center justify-between gap-2 px-1">
+        <!-- Action prompt -->
+        <div id="action-prompt-container" class="flex items-center gap-1.5 text-xs font-mono font-bold">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="action-prompt-text" class="text-theme-ink">Tap canvas or press Spacebar / W to flap!</span>
+        </div>
+
+        <!-- Emoji Taunts -->
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🐦">🐦</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="💨">💨</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👻">👻</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="😱">😱</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👑">👑</button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- CANVAS ARENA CONTAINER                     -->
+      <!-- ========================================== -->
+      <div id="canvas-container" class="w-full max-w-4xl relative flex items-center justify-center cursor-pointer">
+        <canvas id="game-canvas" width="800" height="480" class="w-full aspect-[16/10] sm:aspect-[16/9.6]"></canvas>
+
+        <!-- Centered Countdown Overlay (3, 2, 1, FLAP!) -->
+        <div id="countdown-overlay" class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <span id="countdown-number" class="font-display font-black text-6xl sm:text-7xl text-amber-400 drop-shadow-lg animate-pulse hidden">3</span>
+        </div>
+
+        <!-- Floating Taunts Overlay -->
+        <div id="arena-taunts-overlay" class="absolute inset-0 pointer-events-none overflow-hidden z-20"></div>
+      </div>
+
+      <!-- Mobile Virtual Touch Controls -->
+      <div id="mobile-touch-controls" class="w-full max-w-4xl pt-1 sm:hidden">
+        <button id="touch-flap" type="button" class="touch-btn w-full py-4 rounded-2xl bg-amber-500/25 border-2 border-amber-500 text-amber-400 font-display font-black text-base active:bg-amber-500 active:text-slate-950 active:scale-95 shadow-lg shadow-amber-500/15 flex items-center justify-center gap-2 transition-all">
+          <span>TAP TO FLAP 🚀</span>
+        </button>
+      </div>
+
+      <!-- Leave Match & Return -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted w-full max-w-4xl">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Match & Return to Hangar</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Seed-Synced Deterministic Engine</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & WINNER REVEAL          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <div id="match-over-icon" class="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-3xl mx-auto shadow-md">
+        👑
+      </div>
+
+      <div>
+        <h3 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">VICTORY!</h3>
+        <p id="match-over-subtitle" class="text-xs font-mono text-theme-muted mt-1">You out-flew your opponent with 28 Pipes cleared!</p>
+      </div>
+
+      <!-- Match Score Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Your Pipes Cleared:</span>
+          <strong id="stat-p1-score" class="text-amber-400 text-base font-black">28</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Opponent Score:</span>
+          <strong id="stat-p2-score" class="text-cyan-400 font-bold">19</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Career Best:</span>
+          <strong id="stat-best-score" class="text-theme-ink font-bold">34 Pipes</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-theme-line">
+          <span class="text-theme-muted">Passport XP / ELO:</span>
+          <span class="text-emerald-400 font-bold text-[11px]">
+            <span id="match-xp-gain">+160 XP</span> • <span id="match-elo-gain">+24 ELO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 hover:from-amber-300 hover:to-rose-400 text-slate-950 font-display font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span id="rematch-btn-text">Relaunch Flight</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+          Exit to Hangar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Pilot Passport</h3>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Aviator Callsign</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="WingCommander" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-amber-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-amber-500">
+          <option value="Feathered Ace">Feathered Ace</option>
+          <option value="Pipe Dodger">Pipe Dodger</option>
+          <option value="Sky Navigator">Sky Navigator</option>
+          <option value="Cloud Surfer">Cloud Surfer</option>
+          <option value="Flappy Champion">Flappy Champion</option>
+          <option value="Winged Grandmaster">Winged Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-black text-xs transition-colors shadow">
+        Save Aviator Passport
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">12 unlockable flight achievements</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & FLIGHT MANUAL               -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📖</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Flight Manual</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Controls, Deterministic Pipes & Powerups</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+          <strong class="font-bold text-theme-ink block mb-1">Flight Controls:</strong>
+          Tap anywhere on screen, click, or press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">Space</kbd> / <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">W</kbd> to flap your wings upward. Time your taps to glide between glowing pipe gaps.
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">Seed-Synchronized Pipes:</strong>
+          Both players generate the exact same pipe heights, gaps, and speeds from a shared random seed. Both birds fly side-by-side on the same visual course!
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-cyan-400 block">🛡️ Ghost Shield</span>
+            <span>Phase through next pipe harmlessly</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-amber-400 block">🍄 Mini Bird</span>
+            <span>Shrinks bird hitbox for easy clearance</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-rose-400 block">🌪️ Wind Gust (Curse)</span>
+            <span>Unexpectedly pushes opponent</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-purple-400 block">🪞 Gravity Flip (Curse)</span>
+            <span>Inverts gravity for 2.5s!</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-black text-xs transition-colors">
+        Ready for Takeoff!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DIRECT CODE CONNECTION (AIR-GAPPED) -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold font-mono">Host Aviator</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Join Aviator</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Host Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-xs font-bold transition-colors">
+            Generate Flight Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Competitor Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-colors">
+            Connect Aviators
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Host Flight Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Send Response Code back to Host:</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER & CROSS-GAME NAVIGATION             -->
+  <!-- ========================================== -->
+  <footer class="w-full border-t border-theme-line py-6 px-4 bg-theme-surface/40 mt-auto text-center text-xs text-theme-muted space-y-3">
+    <div class="flex items-center justify-center gap-4 sm:gap-6 flex-wrap font-medium">
+      <a href="/games/" class="hover:text-amber-400 transition-colors">🕹️ All Games</a>
+      <a href="/games/endless-runner/" class="hover:text-amber-400 transition-colors">🏃 Endless Runner</a>
+      <a href="/games/asteroids/" class="hover:text-amber-400 transition-colors">🚀 Asteroids</a>
+      <a href="/games/sudoku/" class="hover:text-amber-400 transition-colors">🧩 Sudoku</a>
+      <a href="/games/simon-says/" class="hover:text-amber-400 transition-colors">🧠 Simon Says</a>
+      <a href="/games/whack-a-mole/" class="hover:text-amber-400 transition-colors">🐹 Whack-a-Mole</a>
+      <a href="/games/hangman/" class="hover:text-amber-400 transition-colors">🪢 Hangman</a>
+      <a href="/games/memory-matching/" class="hover:text-amber-400 transition-colors">🃏 Memory Match</a>
+      <a href="/games/number-guessing/" class="hover:text-amber-400 transition-colors">🎯 Number Guessing</a>
+      <a href="/games/rock-paper-scissors/" class="hover:text-amber-400 transition-colors">✊ Rock Paper Scissors</a>
+      <a href="/games/tic-tac-toe/" class="hover:text-amber-400 transition-colors">❌ Tic-Tac-Toe</a>
+      <a href="/tools/" class="hover:text-amber-400 transition-colors">🧰 Developer Tools</a>
+    </div>
+    <p class="text-[11px] font-mono">
+      ArcadeLab • Built with WebRTC Seed-Synced Determinism & HTML5 Canvas • No custom backend required.
+    </p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT GAME LOGIC, CANVAS 2D PHYSICS, WEBRTC NETWORKING & SYNTHESIZER -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ========================================================================= */
+    /* 1. CONSTANTS & ACHIEVEMENTS                                               */
+    /* ========================================================================= */
+    const AVATARS = ['🐦', '🐥', '🦅', '🦉', '🦜', '🚀', '⚡', '🔮', '🎯', '🦊', '🦁', '🐼', '🦄', '🐙', '👾', '👑'];
+    const FRAMES = [
+      { id: 'amber', name: 'Solar Amber', class: 'frame-amber' },
+      { id: 'cyan', name: 'Glacial Cyan', class: 'frame-cyan' },
+      { id: 'rose', name: 'Plasma Rose', class: 'frame-rose' },
+      { id: 'emerald', name: 'Emerald Glow', class: 'frame-emerald' },
+      { id: 'indigo', name: 'Cyber Indigo', class: 'frame-indigo' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_flap', icon: '🐦', title: 'First Flap', desc: 'Complete your first flight run' },
+      { id: 'pipe_veteran', icon: '🏅', title: 'Pipe Veteran', desc: 'Clear 25 pipes in a single run' },
+      { id: 'century_flapper', icon: '💯', title: 'Century Flapper', desc: 'Clear 100 pipes in one run' },
+      { id: 'duel_champion', icon: '🏆', title: 'Duel Champion', desc: 'Win an online multiplayer flight match' },
+      { id: 'flawless_flight', icon: '💎', title: 'Flawless Flight', desc: 'Win a match clearing 30+ pipes without a crash' },
+      { id: 'powerup_master', icon: '⚡', title: 'Powerup Master', desc: 'Collect 5 powerup orbs in one game' },
+      { id: 'ghost_rider', icon: '👻', title: 'Ghost Rider', desc: 'Phase through a pipe using Ghost Shield' },
+      { id: 'gravity_defier', icon: '🪞', title: 'Gravity Defier', desc: 'Survive a Gravity Flip curse' },
+      { id: 'bo3_king', icon: '👑', title: 'Best-of-3 King', desc: 'Win a Best-of-3 series 2-0' },
+      { id: 'bot_slayer', icon: '🤖', title: 'Bot Slayer', desc: 'Defeat the Master AI Bird in a duel' },
+      { id: 'thousand_pipes', icon: '🎖️', title: '1,000 Pipes Club', desc: 'Clear 1,000 total pipes across all sorties' },
+      { id: 'winged_grandmaster', icon: '👑', title: 'Winged Grandmaster', desc: 'Reach 1500+ ELO in Player Passport' }
+    ];
+
+    /* ========================================================================= */
+    /* 2. AUDIO SYNTHESIZER (WEB AUDIO API)                                      */
+    /* ========================================================================= */
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = localStorage.getItem('flp:sound_enabled') !== 'false';
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playFlap() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(620, this.ctx.currentTime + 0.08);
+
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch (e) {}
+      }
+
+      playScore() {
+        this.playTone(880, 'sine', 0.12, 0.18);
+        setTimeout(() => this.playTone(1174.66, 'sine', 0.15, 0.2), 60);
+      }
+
+      playCrash() {
+        this.playTone(130, 'sawtooth', 0.28, 0.3);
+      }
+
+      playPowerup() {
+        [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.12, 0.15), i * 50);
+        });
+      }
+
+      playWin() {
+        const chord = [440, 554.37, 659.25, 880];
+        chord.forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.4, 0.2), i * 100);
+        });
+      }
+    }
+
+    const sound = new AudioEngine();
+
+    /* ========================================================================= */
+    /* 3. MULBERRY32 SEEDED PRNG FOR DETERMINISTIC PIPE GENERATION               */
+    /* ========================================================================= */
+    function createPRNG(seed) {
+      let s = seed >>> 0;
+      return function() {
+        s = (s + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ========================================================================= */
+    /* 4. PLAYER PASSPORT & PROGRESSION                                          */
+    /* ========================================================================= */
+    class PlayerPassport {
+      constructor() {
+        this.storageKey = 'flp:passport_v1';
+        this.name = 'WingCommander';
+        this.avatar = '🐦';
+        this.frame = 'frame-amber';
+        this.title = 'Feathered Ace';
+        this.xp = 0;
+        this.elo = 1000;
+        this.bestScore = 0;
+        this.totalPipes = 0;
+        this.matchesWon = 0;
+        this.trophies = [];
+        this.load();
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          if (raw) {
+            const data = JSON.parse(raw);
+            Object.assign(this, data);
+          }
+        } catch (e) {}
+      }
+
+      save() {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(this));
+        } catch (e) {}
+      }
+
+      getRank() {
+        if (this.elo >= 1800) return '🏆 Winged Grandmaster';
+        if (this.elo >= 1600) return '💎 Diamond Flapper';
+        if (this.elo >= 1400) return '🥇 Gold Aviator';
+        if (this.elo >= 1200) return '🥈 Silver Pilot';
+        return '🥉 Bronze Cadet';
+      }
+
+      addXP(amount, eloChange = 0) {
+        this.xp += amount;
+        this.elo = Math.max(800, this.elo + eloChange);
+        if (this.elo >= 1500) this.unlockTrophy('winged_grandmaster');
+        this.save();
+      }
+
+      unlockTrophy(id) {
+        if (!this.trophies.includes(id)) {
+          this.trophies.push(id);
+          this.save();
+          const t = ACHIEVEMENTS.find(a => a.id === id);
+          if (t) {
+            showAlert(`🏆 Achievement Unlocked: ${t.title}!`, 'success');
+            sound.playWin();
+          }
+        }
+      }
+    }
+
+    const player = new PlayerPassport();
+
+    /* ========================================================================= */
+    /* 5. APP & GAME SIMULATION STATE                                            */
+    /* ========================================================================= */
+    const state = {
+      mode: 'classic', // 'classic' or 'chaos'
+      format: 'single', // 'single' or 'bo3'
+      gapSetting: 'normal', // 'normal' (130), 'wide' (150), 'tight' (110)
+      
+      // Canvas Dimensions
+      width: 800,
+      height: 480,
+      groundHeight: 65,
+
+      // Deterministic Pipe Seed
+      seed: 1234567,
+      prng: null,
+      pipes: [],
+      nextPipeDistance: 0,
+      pipeIndex: 0,
+
+      // Birds
+      p1Bird: null,
+      p2Bird: null,
+      
+      // Game State
+      isPlaying: false,
+      isCountdown: false,
+      isHost: false,
+      isSolo: false,
+      isAI: false,
+      roundNumber: 1,
+      roundScores: { p1: 0, p2: 0 },
+      particles: [],
+
+      // Peer Connection
+      peer: null,
+      conn: null,
+      roomCode: '',
+      peerProfile: { name: 'Opponent', avatar: '🤖', frame: 'frame-cyan' },
+      
+      // Opponent Live Ghost
+      p2Ghost: { y: 220, vy: 0, angle: 0, dead: false, score: 0 }
+    };
+
+    /* ========================================================================= */
+    /* 6. DOM ELEMENTS MAP                                                       */
+    /* ========================================================================= */
+    const el = {};
+
+    function initDomElements() {
+      // Views
+      el.viewLobby = document.getElementById('view-lobby');
+      el.viewWaiting = document.getElementById('view-waiting');
+      el.viewArena = document.getElementById('view-arena');
+
+      // Header
+      el.headerAvatar = document.getElementById('header-avatar');
+      el.headerElo = document.getElementById('header-elo');
+      el.unlockedBadgeCount = document.getElementById('unlocked-badge-count');
+      el.soundIcon = document.getElementById('sound-icon');
+      el.themeIcon = document.getElementById('theme-icon');
+      el.btnPassportToggle = document.getElementById('btn-passport-toggle');
+      el.btnTrophyHall = document.getElementById('btn-trophy-hall');
+      el.btnRules = document.getElementById('btn-rules');
+      el.btnSoundToggle = document.getElementById('btn-sound-toggle');
+      el.btnThemeToggle = document.getElementById('btn-theme-toggle');
+      el.alertBanner = document.getElementById('alert-banner');
+
+      // Lobby
+      el.lobbyAvatarPreview = document.getElementById('lobby-avatar-preview');
+      el.lobbyPlayerName = document.getElementById('lobby-player-name');
+      el.lobbyPlayerRank = document.getElementById('lobby-player-rank');
+      el.lobbyPlayerTitle = document.getElementById('lobby-player-title');
+      el.btnEditProfile = document.getElementById('btn-edit-profile');
+
+      el.btnModeClassic = document.getElementById('btn-mode-classic');
+      el.btnModeChaos = document.getElementById('btn-mode-chaos');
+      el.selectFormat = document.getElementById('select-format');
+      el.selectGap = document.getElementById('select-gap');
+
+      el.tabBtnOnline = document.getElementById('tab-btn-online');
+      el.tabBtnAi = document.getElementById('tab-btn-ai');
+      el.tabContentOnline = document.getElementById('tab-content-online');
+      el.tabContentAi = document.getElementById('tab-content-ai');
+      el.btnCreateRoom = document.getElementById('btn-create-room');
+      el.inputRoomCode = document.getElementById('input-room-code');
+      el.btnJoinRoom = document.getElementById('btn-join-room');
+      el.btnOpenManualSignaling = document.getElementById('btn-open-manual-signaling');
+      el.btnPlaySolo = document.getElementById('btn-play-solo');
+      el.btnPlayAiDuel = document.getElementById('btn-play-ai-duel');
+
+      // Waiting View
+      el.waitingModeDesc = document.getElementById('waiting-mode-desc');
+      el.waitingRoomCode = document.getElementById('waiting-room-code');
+      el.btnCopyCode = document.getElementById('btn-copy-code');
+      el.waitingShareLink = document.getElementById('waiting-share-link');
+      el.btnCopyLink = document.getElementById('btn-copy-link');
+      el.shareWhatsapp = document.getElementById('share-whatsapp');
+      el.shareTelegram = document.getElementById('share-telegram');
+      el.btnShowQr = document.getElementById('btn-show-qr');
+      el.qrContainer = document.getElementById('qr-container');
+      el.qrCanvas = document.getElementById('qr-canvas');
+      el.btnCancelWaiting = document.getElementById('btn-cancel-waiting');
+
+      // Arena View
+      el.arenaNetworkStatus = document.getElementById('arena-network-status');
+      el.arenaModeBadge = document.getElementById('arena-mode-badge');
+      el.arenaRoundBadge = document.getElementById('arena-round-badge');
+
+      el.cardP1 = document.getElementById('card-p1');
+      el.arenaP1Avatar = document.getElementById('arena-p1-avatar');
+      el.arenaP1Name = document.getElementById('arena-p1-name');
+      el.p1StatusTag = document.getElementById('p1-status-tag');
+      el.arenaP1Score = document.getElementById('arena-p1-score');
+
+      el.cardP2 = document.getElementById('card-p2');
+      el.arenaP2Avatar = document.getElementById('arena-p2-avatar');
+      el.arenaP2Name = document.getElementById('arena-p2-name');
+      el.p2StatusTag = document.getElementById('p2-status-tag');
+      el.arenaP2Score = document.getElementById('arena-p2-score');
+
+      el.actionPromptText = document.getElementById('action-prompt-text');
+      el.canvasContainer = document.getElementById('canvas-container');
+      el.gameCanvas = document.getElementById('game-canvas');
+      el.ctx = el.gameCanvas.getContext('2d');
+      el.countdownOverlay = document.getElementById('countdown-overlay');
+      el.countdownNumber = document.getElementById('countdown-number');
+      el.arenaTauntsOverlay = document.getElementById('arena-taunts-overlay');
+      el.touchFlap = document.getElementById('touch-flap');
+      el.btnLeaveMatch = document.getElementById('btn-leave-match');
+
+      // Modals
+      el.modalMatchOver = document.getElementById('modal-match-over');
+      el.matchOverIcon = document.getElementById('match-over-icon');
+      el.matchOverTitle = document.getElementById('match-over-title');
+      el.matchOverSubtitle = document.getElementById('match-over-subtitle');
+      el.statP1Score = document.getElementById('stat-p1-score');
+      el.statP2Score = document.getElementById('stat-p2-score');
+      el.statBestScore = document.getElementById('stat-best-score');
+      el.matchXpGain = document.getElementById('match-xp-gain');
+      el.matchEloGain = document.getElementById('match-elo-gain');
+      el.btnRequestRematch = document.getElementById('btn-request-rematch');
+      el.rematchBtnText = document.getElementById('rematch-btn-text');
+      el.btnModalExitLobby = document.getElementById('btn-modal-exit-lobby');
+
+      // Profile Modal
+      el.modalProfileCustomizer = document.getElementById('modal-profile-customizer');
+      el.btnCloseProfile = document.getElementById('btn-close-profile');
+      el.customizerNameInput = document.getElementById('customizer-name-input');
+      el.selectPlayerTitle = document.getElementById('select-player-title');
+      el.avatarGrid = document.getElementById('avatar-grid');
+      el.frameGrid = document.getElementById('frame-grid');
+      el.btnSaveProfile = document.getElementById('btn-save-profile');
+
+      // Trophies Modal
+      el.modalTrophies = document.getElementById('modal-trophies');
+      el.btnCloseTrophies = document.getElementById('btn-close-trophies');
+      el.trophiesListContainer = document.getElementById('trophies-list-container');
+      el.btnAckTrophies = document.getElementById('btn-ack-trophies');
+
+      // Rules Modal
+      el.modalRules = document.getElementById('modal-rules');
+      el.btnCloseRules = document.getElementById('btn-close-rules');
+      el.btnAckRules = document.getElementById('btn-ack-rules');
+
+      // Manual Signaling Modal
+      el.modalManualSignaling = document.getElementById('modal-manual-signaling');
+      el.btnCloseManualSignaling = document.getElementById('btn-close-manual-signaling');
+      el.tabManualHost = document.getElementById('tab-manual-host');
+      el.tabManualJoin = document.getElementById('tab-manual-join');
+      el.manualHostSection = document.getElementById('manual-host-section');
+      el.manualJoinSection = document.getElementById('manual-join-section');
+      el.btnGenManualOffer = document.getElementById('btn-gen-manual-offer');
+      el.manualOfferOutput = document.getElementById('manual-offer-output');
+      el.manualAnswerInput = document.getElementById('manual-answer-input');
+      el.btnAcceptManualAnswer = document.getElementById('btn-accept-manual-answer');
+      el.manualOfferInput = document.getElementById('manual-offer-input');
+      el.btnGenManualAnswer = document.getElementById('btn-gen-manual-answer');
+      el.manualAnswerOutput = document.getElementById('manual-answer-output');
+    }
+
+    /* ========================================================================= */
+    /* 7. UI RENDERING & PASSPORT SYNC                                           */
+    /* ========================================================================= */
+    function renderPassportUI() {
+      el.headerAvatar.textContent = player.avatar;
+      el.headerElo.textContent = `${player.elo} ELO`;
+      el.unlockedBadgeCount.textContent = `${player.trophies.length}/${ACHIEVEMENTS.length}`;
+
+      el.lobbyAvatarPreview.textContent = player.avatar;
+      el.lobbyAvatarPreview.className = `w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md ${player.frame}`;
+      el.lobbyPlayerName.textContent = player.name;
+      el.lobbyPlayerRank.textContent = player.getRank();
+      el.lobbyPlayerTitle.textContent = player.title;
+
+      // Render Trophies
+      el.trophiesListContainer.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = player.trophies.includes(ach.id);
+        return `
+          <div class="p-2.5 rounded-xl border transition-all ${
+            isUnlocked ? 'bg-amber-500/10 border-amber-500/30' : 'bg-theme-surface-alt/50 border-theme-line opacity-50'
+          }">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">${ach.icon}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="font-display font-bold text-xs text-theme-ink">${ach.title}</strong>
+                  ${isUnlocked ? '<span class="text-[9px] font-mono text-emerald-400 font-bold">UNLOCKED</span>' : ''}
+                </div>
+                <p class="text-[10px] text-theme-muted font-mono leading-tight mt-0.5">${ach.desc}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function populateCustomizerGrids() {
+      el.avatarGrid.innerHTML = AVATARS.map(av => `
+        <button type="button" class="btn-avatar p-2.5 rounded-xl bg-theme-surface-alt hover:bg-amber-500/20 border border-theme-line text-xl flex items-center justify-center transition-transform hover:scale-110 ${player.avatar === av ? 'border-amber-500 ring-2 ring-amber-500/40' : ''}" data-avatar="${av}">
+          ${av}
+        </button>
+      `).join('');
+
+      el.frameGrid.innerHTML = FRAMES.map(fr => `
+        <button type="button" class="btn-frame p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-center transition-transform hover:scale-105 ${player.frame === fr.class ? 'border-amber-500 ring-2 ring-amber-500/40' : ''}" data-frame="${fr.class}">
+          <div class="w-8 h-8 mx-auto rounded-lg bg-slate-800 flex items-center justify-center text-sm ${fr.class}">🐦</div>
+          <span class="text-[9px] font-mono block mt-1 text-theme-muted truncate">${fr.name}</span>
+        </button>
+      `).join('');
+
+      el.selectPlayerTitle.value = player.title;
+      el.customizerNameInput.value = player.name;
+    }
+
+    function showAlert(msg, type = 'info') {
+      el.alertBanner.textContent = msg;
+      el.alertBanner.className = `max-w-md mx-auto fixed top-16 left-4 right-4 z-50 p-3 rounded-2xl text-xs font-mono font-bold shadow-2xl text-center transition-all duration-300 transform translate-y-0 opacity-100 ${
+        type === 'success' ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20' :
+        type === 'error' ? 'bg-rose-500 text-white shadow-rose-500/20' :
+        'bg-amber-500 text-slate-950 shadow-amber-500/20'
+      }`;
+      setTimeout(() => {
+        el.alertBanner.classList.add('-translate-y-8', 'opacity-0');
+      }, 3200);
+    }
+
+    /* ========================================================================= */
+    /* 8. BIRD ENTITY & PHYSICS SIMULATION                                       */
+    /* ========================================================================= */
+    function createBird(isP1 = true) {
+      return {
+        x: 120,
+        y: 220,
+        vy: 0,
+        radius: 15,
+        angle: 0,
+        flapFrame: 0,
+        flapTimer: 0,
+        color: isP1 ? '#f59e0b' : '#06b6d4',
+        dead: false,
+        score: 0,
+        gravityDir: 1, // 1 normal, -1 inverted
+        powerup: null,
+        powerupTimer: 0
+      };
+    }
+
+    function flapBird(bird) {
+      if (bird.dead) return;
+      sound.playFlap();
+      bird.vy = -7.2 * bird.gravityDir;
+      bird.angle = -0.42 * bird.gravityDir;
+
+      // Feather trail particles
+      for (let i = 0; i < 4; i++) {
+        state.particles.push({
+          x: bird.x - 12,
+          y: bird.y + (Math.random() - 0.5) * 8,
+          vx: -(Math.random() * 2 + 1),
+          vy: (Math.random() - 0.5) * 2,
+          life: 18,
+          maxLife: 18,
+          color: bird.color,
+          size: 2.5
+        });
+      }
+    }
+
+    /* ========================================================================= */
+    /* 9. DETERMINISTIC PIPE GENERATION & PARALLAX ENGINE                        */
+    /* ========================================================================= */
+    function getGapSize() {
+      if (state.gapSetting === 'wide') return 155;
+      if (state.gapSetting === 'tight') return 115;
+      return 135; // normal
+    }
+
+    function spawnDeterministicPipe() {
+      const gapSize = getGapSize();
+      const minTop = 60;
+      const maxTop = state.height - state.groundHeight - gapSize - 60;
+      
+      const rand = state.prng();
+      const topHeight = minTop + rand * (maxTop - minTop);
+
+      let powerup = null;
+      if (state.mode === 'chaos' && state.prng() < 0.28) {
+        const types = ['ghost', 'mini', 'wind', 'gravity'];
+        powerup = {
+          type: types[Math.floor(state.prng() * types.length)],
+          y: topHeight + gapSize / 2,
+          collected: false
+        };
+      }
+
+      state.pipes.push({
+        id: state.pipeIndex++,
+        x: state.width + 50,
+        topHeight,
+        gapSize,
+        width: 58,
+        passedP1: false,
+        passedP2: false,
+        powerup
+      });
+    }
+
+    /* ========================================================================= */
+    /* 10. CANVAS RENDER & PHYSICS LOOP                                          */
+    /* ========================================================================= */
+    let parallaxOffset = 0;
+
+    function updateSimulation() {
+      if (!state.isPlaying || state.isCountdown) return;
+
+      const p1 = state.p1Bird;
+      const gravity = 0.38;
+
+      // Update P1 Bird Physics
+      if (!p1.dead) {
+        p1.vy += gravity * p1.gravityDir;
+        p1.vy = Math.max(-10, Math.min(10, p1.vy));
+        p1.y += p1.vy;
+
+        // Angle tilt
+        p1.angle = Math.max(-0.45, Math.min(Math.PI / 2, p1.vy * 0.08));
+
+        // Wing flap cycle
+        p1.flapTimer++;
+        if (p1.flapTimer % 6 === 0) p1.flapFrame = (p1.flapFrame + 1) % 3;
+
+        // Ceiling & Ground collisions
+        if (p1.y - p1.radius <= 0) {
+          p1.y = p1.radius;
+          p1.vy = 0;
+        }
+
+        if (p1.y + p1.radius >= state.height - state.groundHeight) {
+          p1.y = state.height - state.groundHeight - p1.radius;
+          crashBird(p1);
+        }
+
+        // Powerup timers
+        if (p1.powerupTimer > 0) {
+          p1.powerupTimer--;
+          if (p1.powerupTimer <= 0) {
+            p1.powerup = null;
+            p1.radius = 15;
+            p1.gravityDir = 1;
+          }
+        }
+      }
+
+      // AI Bot Simulation (if single player vs AI)
+      if (state.isAI && state.p2Bird && !state.p2Bird.dead) {
+        const p2 = state.p2Bird;
+        p2.vy += gravity * p2.gravityDir;
+        p2.y += p2.vy;
+        p2.angle = Math.max(-0.45, Math.min(Math.PI / 2, p2.vy * 0.08));
+
+        const nextPipe = state.pipes.find(p => p.x + p.width > p2.x);
+        if (nextPipe) {
+          const targetY = nextPipe.topHeight + nextPipe.gapSize / 2;
+          if (p2.y > targetY + 10 && Math.random() < 0.22) {
+            p2.vy = -7.2;
+          }
+        }
+
+        if (p2.y + p2.radius >= state.height - state.groundHeight) {
+          p2.dead = true;
+          el.p2StatusTag.textContent = 'Crashed';
+          el.p2StatusTag.className = 'text-[9px] font-mono text-rose-400 font-bold';
+        }
+      }
+
+      // Update Pipes
+      const scrollSpeed = 2.8;
+      parallaxOffset = (parallaxOffset + scrollSpeed) % 800;
+
+      state.nextPipeDistance -= scrollSpeed;
+      if (state.nextPipeDistance <= 0) {
+        spawnDeterministicPipe();
+        state.nextPipeDistance = 240; // Distance between pipes across wide screen
+      }
+
+      for (let i = state.pipes.length - 1; i >= 0; i--) {
+        const pipe = state.pipes[i];
+        pipe.x -= scrollSpeed;
+
+        // Check P1 Scoring
+        if (!pipe.passedP1 && pipe.x + pipe.width < p1.x) {
+          pipe.passedP1 = true;
+          p1.score++;
+          player.totalPipes++;
+          el.arenaP1Score.textContent = p1.score;
+          sound.playScore();
+
+          // Broadcast score
+          sendData({ type: 'SCORE_UPDATE', score: p1.score });
+
+          if (p1.score >= 25) player.unlockTrophy('pipe_veteran');
+          if (p1.score >= 100) player.unlockTrophy('century_flapper');
+          if (player.totalPipes >= 1000) player.unlockTrophy('thousand_pipes');
+        }
+
+        // Check Pipe Collision for P1
+        if (!p1.dead && pipe.x < p1.x + p1.radius && pipe.x + pipe.width > p1.x - p1.radius) {
+          const inGap = p1.y - p1.radius > pipe.topHeight && p1.y + p1.radius < pipe.topHeight + pipe.gapSize;
+          if (!inGap) {
+            if (p1.powerup === 'ghost') {
+              // Ghost shield absorbs 1 collision!
+              p1.powerup = null;
+              p1.powerupTimer = 0;
+              sound.playPowerup();
+              showAlert('👻 Ghost Shield Absorbed Pipe Collision!', 'success');
+              player.unlockTrophy('ghost_rider');
+            } else {
+              crashBird(p1);
+            }
+          }
+        }
+
+        // Check Powerup Collect
+        if (pipe.powerup && !pipe.powerup.collected) {
+          if (Math.hypot(p1.x - (pipe.x + pipe.width / 2), p1.y - pipe.powerup.y) < p1.radius + 15) {
+            pipe.powerup.collected = true;
+            applyPowerup(pipe.powerup.type);
+          }
+        }
+
+        // Remove off-screen pipes
+        if (pipe.x + pipe.width < -50) {
+          state.pipes.splice(i, 1);
+        }
+      }
+
+      // Update Particles
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life--;
+        if (pt.life <= 0) state.particles.splice(i, 1);
+      }
+
+      // Broadcast Local Bird State
+      if (state.conn && state.conn.open) {
+        sendData({
+          type: 'BIRD_STREAM',
+          y: p1.y,
+          vy: p1.vy,
+          angle: p1.angle,
+          dead: p1.dead,
+          score: p1.score
+        });
+      }
+    }
+
+    function crashBird(bird) {
+      if (bird.dead) return;
+      bird.dead = true;
+      sound.playCrash();
+
+      el.gameCanvas.classList.remove('screen-shake');
+      void el.gameCanvas.offsetWidth;
+      el.gameCanvas.classList.add('screen-shake');
+
+      el.p1StatusTag.textContent = 'Crashed';
+      el.p1StatusTag.className = 'text-[9px] font-mono text-rose-400 font-bold';
+
+      sendData({ type: 'PLAYER_DIED', score: bird.score });
+
+      // If Solo or AI or both birds dead, end match
+      if (state.isSolo || (state.p2Ghost.dead && bird.dead) || (state.isAI && state.p2Bird.dead)) {
+        setTimeout(checkMatchResult, 600);
+      }
+    }
+
+    function applyPowerup(type) {
+      sound.playPowerup();
+      player.unlockTrophy('powerup_master');
+
+      if (type === 'ghost') {
+        state.p1Bird.powerup = 'ghost';
+        state.p1Bird.powerupTimer = 300;
+        showAlert('🛡️ Ghost Shield Activated!', 'success');
+      } else if (type === 'mini') {
+        state.p1Bird.powerup = 'mini';
+        state.p1Bird.radius = 10;
+        state.p1Bird.powerupTimer = 360;
+        showAlert('🍄 Mini Bird Activated!', 'success');
+      } else if (type === 'wind') {
+        // Curse Opponent
+        sendData({ type: 'CURSE', curse: 'wind' });
+        showAlert('🌪️ Wind Gust Unleashed on Opponent!', 'info');
+      } else if (type === 'gravity') {
+        // Curse Opponent
+        sendData({ type: 'CURSE', curse: 'gravity' });
+        showAlert('🪞 Gravity Flip Unleashed on Opponent!', 'info');
+      }
+    }
+
+    function renderCanvas() {
+      const ctx = el.ctx;
+      const w = state.width;
+      const h = state.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Sky & Parallax Clouds Background
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, h);
+      skyGradient.addColorStop(0, '#0f172a');
+      skyGradient.addColorStop(0.6, '#1e1b4b');
+      skyGradient.addColorStop(1, '#311042');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, w, h);
+
+      // Stars
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      for (let i = 0; i < 50; i++) {
+        const sx = ((i * 47) - parallaxOffset * 0.2 + w * 2) % w;
+        const sy = (i * 29) % (h - state.groundHeight);
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+      }
+
+      // Parallax Neon Towers / City Skyline
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.12)';
+      for (let i = 0; i < 16; i++) {
+        const bx = (i * 65 - parallaxOffset * 0.4 + w * 2) % (w + 65) - 30;
+        const bh = 80 + (i % 5) * 30;
+        ctx.fillRect(bx, h - state.groundHeight - bh, 48, bh);
+      }
+
+      // 2. Render Pipes
+      state.pipes.forEach(pipe => {
+        // Top Pipe
+        ctx.fillStyle = '#059669';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 10;
+
+        ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
+        ctx.strokeRect(pipe.x, 0, pipe.width, pipe.topHeight);
+
+        // Top Pipe Rim Cap
+        ctx.fillRect(pipe.x - 3, pipe.topHeight - 18, pipe.width + 6, 18);
+        ctx.strokeRect(pipe.x - 3, pipe.topHeight - 18, pipe.width + 6, 18);
+
+        // Bottom Pipe
+        const bottomY = pipe.topHeight + pipe.gapSize;
+        const bottomH = h - state.groundHeight - bottomY;
+        ctx.fillRect(pipe.x, bottomY, pipe.width, bottomH);
+        ctx.strokeRect(pipe.x, bottomY, pipe.width, bottomH);
+
+        // Bottom Pipe Rim Cap
+        ctx.fillRect(pipe.x - 3, bottomY, pipe.width + 6, 18);
+        ctx.strokeRect(pipe.x - 3, bottomY, pipe.width + 6, 18);
+
+        ctx.shadowBlur = 0;
+
+        // Draw Powerup in Gap
+        if (pipe.powerup && !pipe.powerup.collected) {
+          ctx.save();
+          ctx.translate(pipe.x + pipe.width / 2, pipe.powerup.y);
+          ctx.fillStyle = '#fbbf24';
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.font = '13px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            pipe.powerup.type === 'ghost' ? '🛡️' :
+            pipe.powerup.type === 'mini' ? '🍄' :
+            pipe.powerup.type === 'wind' ? '🌪️' : '🪞', 0, 0
+          );
+          ctx.restore();
+        }
+      });
+
+      // 3. Render Particles
+      state.particles.forEach(pt => {
+        ctx.save();
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life / pt.maxLife;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 4. Render Opponent Ghost Bird (P2)
+      if (!state.isSolo) {
+        const p2 = state.isAI ? state.p2Bird : state.p2Ghost;
+        if (p2) {
+          ctx.save();
+          ctx.translate(120, p2.y);
+          ctx.rotate(p2.angle);
+          ctx.globalAlpha = p2.dead ? 0.3 : 0.65;
+
+          // Ghost Bird Body (Cyan / Pink)
+          ctx.fillStyle = '#06b6d4';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(0, 0, 15, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Eye & Beak
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(7, -4, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(9, -5, 2, 2);
+
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(11, 0);
+          ctx.lineTo(20, 4);
+          ctx.lineTo(11, 8);
+          ctx.fill();
+
+          ctx.restore();
+        }
+      }
+
+      // 5. Render Local Bird (P1)
+      const p1 = state.p1Bird;
+      if (p1) {
+        ctx.save();
+        ctx.translate(p1.x, p1.y);
+        ctx.rotate(p1.angle);
+
+        // Powerup Aura
+        if (p1.powerup === 'ghost') {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, p1.radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Golden / Yellow Bird Body
+        ctx.fillStyle = '#f59e0b';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(0, 0, p1.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye & Pupil
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p1.radius * 0.45, -p1.radius * 0.3, p1.radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(p1.radius * 0.55, -p1.radius * 0.35, 2, 2);
+
+        // Beak
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.moveTo(p1.radius * 0.7, 0);
+        ctx.lineTo(p1.radius * 1.35, p1.radius * 0.3);
+        ctx.lineTo(p1.radius * 0.7, p1.radius * 0.55);
+        ctx.fill();
+
+        // Wing (Flapping Animation)
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        const wingOffset = p1.flapFrame === 0 ? 0 : p1.flapFrame === 1 ? -4 : 4;
+        ctx.ellipse(-p1.radius * 0.3, wingOffset, p1.radius * 0.55, p1.radius * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // 6. Ground & Texture
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, h - state.groundHeight, w, state.groundHeight);
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, h - state.groundHeight);
+      ctx.lineTo(w, h - state.groundHeight);
+      ctx.stroke();
+
+      // Checkered Ground Stripes
+      ctx.fillStyle = '#334155';
+      const stripeW = 28;
+      for (let x = -stripeW; x < w + stripeW; x += stripeW) {
+        const sx = (x - parallaxOffset + w * 2) % (w + stripeW) - stripeW;
+        ctx.fillRect(sx, h - state.groundHeight + 4, stripeW / 2, state.groundHeight - 4);
+      }
+
+      // Loop
+      if (state.isPlaying) {
+        updateSimulation();
+        requestAnimationFrame(renderCanvas);
+      }
+    }
+
+    /* ========================================================================= */
+    /* 11. NETWORKING & SEED SYNCHRONIZATION                                     */
+    /* ========================================================================= */
+    function initHostPeer() {
+      const roomCode = 'FLP-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      state.roomCode = roomCode;
+      state.isHost = true;
+
+      const peer = new Peer(roomCode, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      state.peer = peer;
+
+      peer.on('open', id => {
+        el.waitingRoomCode.textContent = id;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
+        el.waitingShareLink.value = shareUrl;
+        el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join my 2-player Flappy Bird flight duel: ' + shareUrl)}`;
+        el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Join my 2-player Flappy Bird flight duel!')}`;
+        generateQRCode(shareUrl);
+      });
+
+      peer.on('connection', conn => {
+        state.conn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('error', err => {
+        showAlert('Peer error: ' + err.type, 'error');
+      });
+    }
+
+    function joinPeerRoom(roomCode) {
+      state.isHost = false;
+      const peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      state.peer = peer;
+
+      peer.on('open', () => {
+        const conn = peer.connect(roomCode, { reliable: true });
+        state.conn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('error', err => {
+        showAlert('Could not connect to sector: ' + err.type, 'error');
+      });
+    }
+
+    function setupConnectionHandlers(conn) {
+      conn.on('open', () => {
+        el.arenaNetworkStatus.textContent = 'Connected • P2P Active';
+        el.arenaNetworkStatus.className = 'font-mono text-[11px] text-emerald-400 font-bold';
+
+        if (state.isHost) {
+          // Generate 32-bit random seed
+          state.seed = Math.floor(Math.random() * 2147483647);
+          sendData({
+            type: 'GAME_INIT',
+            seed: state.seed,
+            mode: state.mode,
+            format: state.format,
+            gap: state.gapSetting,
+            hostProfile: { name: player.name, avatar: player.avatar, frame: player.frame }
+          });
+          startCountdown();
+        } else {
+          sendData({
+            type: 'JOINER_PROFILE',
+            profile: { name: player.name, avatar: player.avatar, frame: player.frame }
+          });
+        }
+      });
+
+      conn.on('data', data => {
+        handleIncomingData(data);
+      });
+
+      conn.on('close', () => {
+        showAlert('Aviator disconnected from flight duel.', 'error');
+        el.arenaNetworkStatus.textContent = 'Opponent Disconnected';
+        el.arenaNetworkStatus.className = 'font-mono text-[11px] text-rose-400 font-bold';
+      });
+    }
+
+    function sendData(msg) {
+      if (state.conn && state.conn.open) {
+        try { state.conn.send(msg); } catch (e) {}
+      }
+    }
+
+    function handleIncomingData(data) {
+      switch (data.type) {
+        case 'GAME_INIT':
+          state.seed = data.seed;
+          state.mode = data.mode;
+          state.format = data.format;
+          state.gapSetting = data.gap;
+          if (data.hostProfile) state.peerProfile = data.hostProfile;
+          startCountdown();
+          break;
+
+        case 'JOINER_PROFILE':
+          if (data.profile) state.peerProfile = data.profile;
+          el.arenaP2Name.textContent = state.peerProfile.name;
+          el.arenaP2Avatar.textContent = state.peerProfile.avatar;
+          break;
+
+        case 'BIRD_STREAM':
+          state.p2Ghost.y = data.y;
+          state.p2Ghost.vy = data.vy;
+          state.p2Ghost.angle = data.angle;
+          state.p2Ghost.dead = data.dead;
+          state.p2Ghost.score = data.score;
+          el.arenaP2Score.textContent = data.score;
+          if (data.dead) {
+            el.p2StatusTag.textContent = 'Crashed';
+            el.p2StatusTag.className = 'text-[9px] font-mono text-rose-400 font-bold';
+          }
+          break;
+
+        case 'PLAYER_DIED':
+          state.p2Ghost.dead = true;
+          state.p2Ghost.score = data.score;
+          el.arenaP2Score.textContent = data.score;
+          el.p2StatusTag.textContent = 'Crashed';
+          el.p2StatusTag.className = 'text-[9px] font-mono text-rose-400 font-bold';
+          if (state.p1Bird && state.p1Bird.dead) {
+            setTimeout(checkMatchResult, 600);
+          }
+          break;
+
+        case 'SCORE_UPDATE':
+          state.p2Ghost.score = data.score;
+          el.arenaP2Score.textContent = data.score;
+          break;
+
+        case 'CURSE':
+          handleCurse(data.curse);
+          break;
+
+        case 'TAUNT':
+          showFloatingTaunt(data.emoji);
+          break;
+
+        case 'REMATCH_REQUEST':
+          showAlert(`${state.peerProfile.name} requested a rematch!`, 'info');
+          el.rematchBtnText.textContent = 'Accept Rematch';
+          break;
+      }
+    }
+
+    function handleCurse(curse) {
+      if (curse === 'wind') {
+        sound.playCrash();
+        state.p1Bird.vy = -7.5;
+        showAlert('🌪️ Opponent hit you with a Wind Gust!', 'error');
+      } else if (curse === 'gravity') {
+        sound.playCrash();
+        state.p1Bird.gravityDir = -1;
+        state.p1Bird.powerupTimer = 150; // 2.5s
+        showAlert('🪞 Opponent Inverted Your Gravity!', 'error');
+        player.unlockTrophy('gravity_defier');
+      }
+    }
+
+    function showFloatingTaunt(emoji) {
+      const taunt = document.createElement('div');
+      taunt.className = 'absolute text-3xl sm:text-4xl pointer-events-none animate-bounce z-40';
+      taunt.style.left = `${Math.random() * 70 + 15}%`;
+      taunt.style.top = `${Math.random() * 50 + 20}%`;
+      taunt.textContent = emoji;
+      el.arenaTauntsOverlay.appendChild(taunt);
+      setTimeout(() => taunt.remove(), 2000);
+    }
+
+    function generateQRCode(url) {
+      if (window.QRCode && el.qrCanvas) {
+        QRCode.toCanvas(el.qrCanvas, url, { width: 160, margin: 2 }, () => {});
+      }
+    }
+
+    /* ========================================================================= */
+    /* 12. MATCH LIFECYCLE                                                       */
+    /* ========================================================================= */
+    function startCountdown() {
+      state.isCountdown = true;
+      state.isPlaying = true;
+      state.prng = createPRNG(state.seed);
+      state.pipes = [];
+      state.nextPipeDistance = 220;
+      state.pipeIndex = 0;
+      state.particles = [];
+
+      state.p1Bird = createBird(true);
+      state.p2Bird = state.isAI ? createBird(false) : null;
+      state.p2Ghost = { y: 220, vy: 0, angle: 0, dead: false, score: 0 };
+
+      el.arenaP1Name.textContent = player.name;
+      el.arenaP1Avatar.textContent = player.avatar;
+      el.arenaP2Name.textContent = state.peerProfile.name;
+      el.arenaP2Avatar.textContent = state.peerProfile.avatar;
+      el.arenaP1Score.textContent = '0';
+      el.arenaP2Score.textContent = '0';
+      el.p1StatusTag.textContent = 'Flying';
+      el.p1StatusTag.className = 'text-[9px] font-mono text-emerald-400 font-bold';
+      el.p2StatusTag.textContent = 'Flying';
+      el.p2StatusTag.className = 'text-[9px] font-mono text-emerald-400 font-bold';
+
+      el.arenaModeBadge.textContent = state.mode === 'chaos' ? '⚡ Chaos Powerups' : '🏆 Classic Race';
+
+      // Switch View
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.remove('hidden');
+
+      // Countdown 3, 2, 1, FLAP!
+      el.countdownOverlay.classList.remove('hidden');
+      el.countdownNumber.classList.remove('hidden');
+      let count = 3;
+      el.countdownNumber.textContent = count;
+      sound.playTone(440, 'sine', 0.15, 0.2);
+
+      const cdInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          el.countdownNumber.textContent = count;
+          sound.playTone(440, 'sine', 0.15, 0.2);
+        } else if (count === 0) {
+          el.countdownNumber.textContent = 'FLAP!';
+          sound.playTone(880, 'triangle', 0.25, 0.25);
+        } else {
+          clearInterval(cdInterval);
+          el.countdownOverlay.classList.add('hidden');
+          el.countdownNumber.classList.add('hidden');
+          state.isCountdown = false;
+        }
+      }, 700);
+
+      renderCanvas();
+    }
+
+    function checkMatchResult() {
+      if (!state.isPlaying) return;
+      state.isPlaying = false;
+
+      const p1Score = state.p1Bird.score;
+      const p2Score = state.isSolo ? 0 : (state.isAI ? state.p2Bird.score : state.p2Ghost.score);
+      const isWin = p1Score >= p2Score;
+
+      player.bestScore = Math.max(player.bestScore, p1Score);
+      player.unlockTrophy('first_flap');
+      if (isWin && !state.isSolo) player.unlockTrophy('duel_champion');
+      if (isWin && p1Score >= 30) player.unlockTrophy('flawless_flight');
+      if (state.isAI && isWin) player.unlockTrophy('bot_slayer');
+
+      const xpGain = isWin ? 160 : 60;
+      const eloGain = isWin ? 24 : -12;
+      player.addXP(xpGain, eloGain);
+
+      sound.playWin();
+
+      el.matchOverIcon.textContent = isWin ? '👑' : '🏁';
+      el.matchOverTitle.textContent = isWin ? 'VICTORY!' : 'SORTIE CONCLUDED';
+      el.matchOverSubtitle.textContent = state.isSolo 
+        ? `You cleared ${p1Score} Pipes!`
+        : isWin ? `You out-flew your opponent with ${p1Score} to ${p2Score} Pipes!` : `Opponent won ${p2Score} to ${p1Score} Pipes!`;
+      
+      el.statP1Score.textContent = p1Score;
+      el.statP2Score.textContent = p2Score;
+      el.statBestScore.textContent = `${player.bestScore} Pipes`;
+      el.matchXpGain.textContent = `+${xpGain} XP`;
+      el.matchEloGain.textContent = `${eloGain >= 0 ? '+' : ''}${eloGain} ELO`;
+
+      renderPassportUI();
+      el.modalMatchOver.classList.remove('hidden');
+    }
+
+    function returnToLobby() {
+      state.isPlaying = false;
+      if (state.conn) state.conn.close();
+      if (state.peer) state.peer.destroy();
+
+      el.viewArena.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.modalMatchOver.classList.add('hidden');
+      el.viewLobby.classList.remove('hidden');
+    }
+
+    /* ========================================================================= */
+    /* 13. EVENT LISTENERS & CONTROLS                                            */
+    /* ========================================================================= */
+    function setupEventListeners() {
+      // Theme & Audio Toggles
+      el.btnThemeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        el.themeIcon.textContent = isDark ? '🌙' : '☀️';
+      });
+
+      el.btnSoundToggle.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        localStorage.setItem('flp:sound_enabled', sound.enabled);
+        el.soundIcon.textContent = sound.enabled ? '🔊' : '🔇';
+      });
+
+      // Modals
+      el.btnPassportToggle.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnEditProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+
+      el.btnTrophyHall.addEventListener('click', () => el.modalTrophies.classList.remove('hidden'));
+      el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+      el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+      el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+      el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+      el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+      el.btnOpenManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.remove('hidden'));
+      el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+
+      // Avatar & Frame Picker
+      el.avatarGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-avatar');
+        if (!btn) return;
+        player.avatar = btn.dataset.avatar;
+        document.querySelectorAll('.btn-avatar').forEach(b => b.classList.remove('border-amber-500', 'ring-2', 'ring-amber-500/40'));
+        btn.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      });
+
+      el.frameGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-frame');
+        if (!btn) return;
+        player.frame = btn.dataset.frame;
+        document.querySelectorAll('.btn-frame').forEach(b => b.classList.remove('border-amber-500', 'ring-2', 'ring-amber-500/40'));
+        btn.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      });
+
+      el.btnSaveProfile.addEventListener('click', () => {
+        const newName = el.customizerNameInput.value.trim();
+        if (newName) player.name = newName;
+        player.title = el.selectPlayerTitle.value;
+        player.save();
+        renderPassportUI();
+        el.modalProfileCustomizer.classList.add('hidden');
+        showAlert('Aviator Passport updated!', 'success');
+      });
+
+      // Mode Switchers
+      el.btnModeClassic.addEventListener('click', () => {
+        state.mode = 'classic';
+        el.btnModeClassic.className = 'p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeChaos.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      });
+
+      el.btnModeChaos.addEventListener('click', () => {
+        state.mode = 'chaos';
+        el.btnModeChaos.className = 'p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeClassic.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      });
+
+      // Settings Inputs
+      el.selectFormat.addEventListener('change', e => state.format = e.target.value);
+      el.selectGap.addEventListener('change', e => state.gapSetting = e.target.value);
+
+      // Tabs (Online vs AI)
+      el.tabBtnOnline.addEventListener('click', () => {
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-amber-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentOnline.classList.remove('hidden');
+        el.tabContentAi.classList.add('hidden');
+      });
+
+      el.tabBtnAi.addEventListener('click', () => {
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-amber-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentAi.classList.remove('hidden');
+        el.tabContentOnline.classList.add('hidden');
+      });
+
+      // Create & Join Room
+      el.btnCreateRoom.addEventListener('click', () => {
+        state.isSolo = false;
+        state.isAI = false;
+        el.viewLobby.classList.add('hidden');
+        el.viewWaiting.classList.remove('hidden');
+        el.waitingModeDesc.textContent = `${state.mode === 'chaos' ? 'Chaos Powerups' : 'Classic Race'} • ${state.gapSetting.toUpperCase()} Gaps`;
+        initHostPeer();
+      });
+
+      el.btnJoinRoom.addEventListener('click', () => {
+        const code = el.inputRoomCode.value.trim().toUpperCase();
+        if (!code) return showAlert('Enter a valid Flight Code!', 'error');
+        state.isSolo = false;
+        state.isAI = false;
+        joinPeerRoom(code);
+      });
+
+      // Solo Launch
+      el.btnPlaySolo.addEventListener('click', () => {
+        state.isSolo = true;
+        state.isAI = false;
+        state.isHost = true;
+        state.seed = Math.floor(Math.random() * 2147483647);
+        startCountdown();
+      });
+
+      el.btnPlayAiDuel.addEventListener('click', () => {
+        state.isSolo = false;
+        state.isAI = true;
+        state.isHost = true;
+        state.seed = Math.floor(Math.random() * 2147483647);
+        state.peerProfile = { name: 'AI Falcon', avatar: '🤖', frame: 'frame-cyan' };
+        startCountdown();
+      });
+
+      // Copy Buttons
+      el.btnCopyCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(state.roomCode);
+        showAlert('Flight code copied!', 'success');
+      });
+
+      el.btnCopyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.waitingShareLink.value);
+        showAlert('Flight link copied!', 'success');
+      });
+
+      el.btnShowQr.addEventListener('click', () => {
+        el.qrContainer.classList.toggle('hidden');
+      });
+
+      el.btnCancelWaiting.addEventListener('click', returnToLobby);
+      el.btnLeaveMatch.addEventListener('click', returnToLobby);
+      el.btnModalExitLobby.addEventListener('click', returnToLobby);
+
+      // Taunts
+      document.querySelectorAll('.btn-taunt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const emoji = btn.dataset.taunt;
+          showFloatingTaunt(emoji);
+          sendData({ type: 'TAUNT', emoji });
+        });
+      });
+
+      // Rematch
+      el.btnRequestRematch.addEventListener('click', () => {
+        if (state.conn && state.conn.open) {
+          sendData({ type: 'REMATCH_REQUEST' });
+          showAlert('Rematch signal broadcasted!', 'info');
+        } else {
+          el.modalMatchOver.classList.add('hidden');
+          state.seed = Math.floor(Math.random() * 2147483647);
+          startCountdown();
+        }
+      });
+
+      // Input Controls: Flap Handlers
+      const triggerFlap = () => {
+        if (!state.isPlaying || state.isCountdown) return;
+        sound.init();
+        if (state.p1Bird) flapBird(state.p1Bird);
+      };
+
+      window.addEventListener('keydown', e => {
+        if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
+          e.preventDefault();
+          triggerFlap();
+        }
+      });
+
+      el.canvasContainer.addEventListener('mousedown', triggerFlap);
+      el.canvasContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        triggerFlap();
+      }, { passive: false });
+
+      el.canvasContainer.addEventListener('touchmove', (e) => {
+        if (state.isPlaying) e.preventDefault();
+      }, { passive: false });
+
+      if (el.touchFlap) {
+        el.touchFlap.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          triggerFlap();
+        }, { passive: false });
+        el.touchFlap.addEventListener('mousedown', triggerFlap);
+      }
+
+      // Auto-join from URL param
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        el.inputRoomCode.value = roomParam;
+        el.btnJoinRoom.click();
+      }
+    }
+
+    /* ========================================================================= */
+    /* 14. BOOTSTRAP APPLICATION                                                 */
+    /* ========================================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      initDomElements();
+      renderPassportUI();
+      populateCustomizerGrids();
+      setupEventListeners();
+
+      // Theme restore
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        el.themeIcon.textContent = '☀️';
+      }
+    });
+  </script>
+</body>
+</html>

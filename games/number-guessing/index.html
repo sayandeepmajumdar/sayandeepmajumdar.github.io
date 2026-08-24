@@ -1,0 +1,3000 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Online Number Guessing — ArcadeLab</title>
+  <meta name="description" content="ArcadeLab: Real-time two-player online Number Guessing game with WebRTC peer-to-peer multiplayer, SHA-256 cryptographic commit-reveal anti-cheat, Hot/Cold proximity radar, AI bot engine, and ELO ranked ladder." />
+  <meta name="keywords" content="Online Number Guessing, WebRTC Game, P2P Number Guessing, Commit Reveal Game, Hot and Cold Game, ArcadeLab, Browser Multiplayer Game" />
+
+  <!-- OpenGraph Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Online Number Guessing — ArcadeLab" />
+  <meta property="og:description" content="Play browser-to-browser Number Guessing with cryptographic anti-cheat, Hot/Cold radar, and ranked ladder." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/number-guessing/" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              'surface-card': 'var(--color-surface-card)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+            }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 30px -5px rgba(16, 185, 129, 0.6)',
+            'glow-amber': '0 0 30px -5px rgba(245, 158, 11, 0.6)',
+            'glow-rose': '0 0 30px -5px rgba(244, 63, 94, 0.6)',
+            'glow-cyan': '0 0 30px -5px rgba(6, 182, 212, 0.55)',
+            'neon-card': '0 10px 30px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+          },
+          animation: {
+            'pop-in': 'popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'float-up': 'floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            'radar-sweep': 'radarSweep 2s linear infinite',
+            'pulse-glow': 'pulseGlow 1.5s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            popIn: {
+              '0%': { transform: 'scale(0.85) translateY(10px)', opacity: '0' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7) rotate(-5deg)', opacity: '1' },
+              '80%': { opacity: '0.9' },
+              '100%': { transform: 'translateY(-140px) scale(1.2) rotate(10deg)', opacity: '0' },
+            },
+            radarSweep: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+            pulseGlow: {
+              '0%': { filter: 'drop-shadow(0 0 4px currentColor)' },
+              '100%': { filter: 'drop-shadow(0 0 18px currentColor)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <!-- PeerJS for WebRTC Signaling & P2P DataChannels -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Match Victory -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #f4f7f6;
+      --color-surface: #ffffff;
+      --color-surface-alt: #edf3f0;
+      --color-surface-card: #ffffff;
+      --color-ink: #0b1411;
+      --color-muted: #576b63;
+      --color-line: #d8e5df;
+      --color-accent: #10b981;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #070c09;
+      --color-surface: #0e1713;
+      --color-surface-alt: #14221c;
+      --color-surface-card: #192a23;
+      --color-ink: #f0fdf4;
+      --color-muted: #819b8f;
+      --color-line: #22372d;
+      --color-accent: #34d399;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient Matrix / Cyber Grid */
+    .bg-cyber-grid {
+      background-size: 28px 28px;
+      background-image: 
+        linear-gradient(to right, rgba(16, 185, 129, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+    }
+    html.dark .bg-cyber-grid {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.15), transparent 70%),
+        linear-gradient(to right, rgba(16, 185, 129, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.06) 1px, transparent 1px);
+    }
+
+    /* 3D Holographic Card */
+    .holo-card {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .holo-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 70%
+      );
+      transform: rotate(35deg) translateY(-100%);
+      transition: transform 0.6s ease;
+      pointer-events: none;
+    }
+    .holo-card:hover::after {
+      transform: rotate(35deg) translateY(100%);
+    }
+    .holo-card:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* Custom Avatar Frames */
+    .frame-emerald {
+      border: 3px solid #10b981;
+      box-shadow: 0 0 16px #10b981, inset 0 0 8px #059669;
+    }
+    .frame-amber {
+      border: 3px solid #f59e0b;
+      box-shadow: 0 0 16px #f59e0b, inset 0 0 8px #d97706;
+    }
+    .frame-rose {
+      border: 3px solid #f43f5e;
+      box-shadow: 0 0 16px #f43f5e, inset 0 0 8px #e11d48;
+    }
+    .frame-cyan {
+      border: 3px solid #06b6d4;
+      box-shadow: 0 0 16px #06b6d4, inset 0 0 8px #0891b2;
+    }
+    .frame-purple {
+      border: 3px solid #a855f7;
+      box-shadow: 0 0 18px #a855f7, inset 0 0 10px #7e22ce;
+    }
+
+    /* Win / Health Node Indicator */
+    .win-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      border: 2px solid var(--color-line);
+      background-color: var(--color-surface-alt);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @media (min-width: 640px) {
+      .win-pip { width: 14px; height: 14px; }
+    }
+    .win-pip.filled-p1 {
+      background-color: #10b981;
+      border-color: #34d399;
+      box-shadow: 0 0 10px #10b981;
+      transform: scale(1.15);
+    }
+    .win-pip.filled-p2 {
+      background-color: #f59e0b;
+      border-color: #fbbf24;
+      box-shadow: 0 0 10px #f59e0b;
+      transform: scale(1.15);
+    }
+
+    /* Range Slider Styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--color-line);
+      outline: none;
+      transition: background 0.2s;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      transition: transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+      cursor: pointer;
+      border: 2px solid #ffffff;
+    }
+
+    /* Floating Taunts */
+    .floating-emoji {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      animation: floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      z-index: 60;
+      font-size: 2.25rem;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+    }
+    @media (min-width: 640px) {
+      .floating-emoji { font-size: 2.75rem; }
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-400 bg-cyber-grid relative">
+
+  <!-- Floating Reaction Emojis Canvas / Overlay Layer -->
+  <div id="taunts-overlay" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 sm:h-16 border-b border-theme-line bg-theme-surface/90 backdrop-blur-lg px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <a href="/games/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity" title="Back to ArcadeLab">
+        <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-600 to-cyan-500 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-glow-emerald">
+          🕹️
+        </span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1">
+            <span class="font-display font-black text-sm sm:text-lg tracking-tight leading-none bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
+              ArcadeLab
+            </span>
+            <span class="px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] sm:text-[9px] font-mono font-black uppercase">NUMBER DUEL</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted tracking-wider uppercase font-semibold hidden xs:inline">A playground for browser games</span>
+        </div>
+      </a>
+
+      <!-- Direct P2P Status Pill -->
+      <div id="header-status-pill" class="hidden lg:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-xs font-mono">
+        <span id="header-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="header-status-text" class="text-theme-muted font-medium">Lobby Idle</span>
+        <span id="header-ping-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">--ms</span>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Active Room Code Badge -->
+      <div id="room-code-badge" class="hidden items-center gap-1 px-2 sm:px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors" title="Click to copy Room Code">
+        <span class="hidden sm:inline">Room:</span>
+        <span id="room-code-badge-text">------</span>
+        <span class="text-[10px] opacity-70">📋</span>
+      </div>
+
+      <!-- Trophy Hall Button -->
+      <button id="btn-open-trophies" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display font-bold text-xs flex items-center gap-1 transition-all" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Rules & Fair Play Modal Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="How to Play & Fair Play Rules">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Game Container -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & GAMIFIED PASSPORT          -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-2xl mx-auto w-full space-y-4 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>⚡ Real-Time Online Duel • 100% Fair Play Anti-Cheat</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black font-display tracking-tight text-theme-ink">
+          Online <span class="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">Number Guessing</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto leading-relaxed">
+          Challenge friends in a real-time number duel with built-in fair play protection, or play solo against the smart AI bot.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-neon-card relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-5">
+          
+          <!-- Avatar + Name + Title -->
+          <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div class="relative cursor-pointer group shrink-0" id="btn-open-profile-customizer" title="Customize Avatar, Frame & Title">
+              <div id="passport-avatar" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-emerald select-none transition-transform active:scale-95 frame-emerald">
+                🎯
+              </div>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-theme-surface border border-theme-line text-[10px] sm:text-xs flex items-center justify-center shadow" title="Edit Profile">
+                ✏️
+              </span>
+            </div>
+            
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h3 id="passport-name" class="font-display font-black text-lg sm:text-xl text-theme-ink truncate">Player</h3>
+                <span id="passport-rank-badge" class="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] font-black uppercase">
+                  🏆 Bronze I
+                </span>
+              </div>
+              <p id="passport-title" class="text-[11px] sm:text-xs font-mono text-emerald-400 font-semibold mt-0.5 truncate">Number Sleuth</p>
+              
+              <!-- XP Level Bar -->
+              <div class="flex items-center gap-2 mt-1.5">
+                <span id="passport-level-badge" class="text-[9px] sm:text-[10px] px-1 py-0.2 rounded bg-theme-surface-alt border border-theme-line font-mono font-bold text-theme-muted shrink-0">
+                  LVL 1
+                </span>
+                <div class="flex-1 max-w-[140px] sm:max-w-[180px] h-2 rounded-full bg-theme-surface-alt overflow-hidden border border-theme-line">
+                  <div id="passport-xp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <span id="passport-xp-text" class="text-[9px] sm:text-[10px] font-mono text-theme-muted font-bold shrink-0">25/100 XP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats Pills -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto text-center border-t sm:border-t-0 sm:border-l border-theme-line pt-3 sm:pt-0 sm:pl-5">
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Rating</span>
+              <strong id="stat-elo-display" class="font-display font-black text-sm sm:text-base text-emerald-400">1,000</strong>
+            </div>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Accuracy</span>
+              <strong id="stat-accuracy-display" class="font-display font-black text-sm sm:text-base text-teal-400">0%</strong>
+            </div>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Streak</span>
+              <strong id="stat-streak-display" class="font-display font-black text-sm sm:text-base text-amber-400">🔥 0</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MATCH CONFIGURATION BAR -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+        
+        <!-- Range Preset Selector -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <span class="text-[11px] sm:text-xs font-mono font-bold text-theme-muted uppercase">Number Range:</span>
+          <select id="select-number-range" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-bold rounded-xl px-2.5 py-1.5 focus:border-emerald-500 outline-none cursor-pointer">
+            <option value="50">Novice: 1 to 50 (Max 7 Tries)</option>
+            <option value="100" selected>Classic: 1 to 100 (Max 10 Tries)</option>
+            <option value="500">Expert: 1 to 500 (Max 12 Tries)</option>
+            <option value="1000">Master: 1 to 1,000 (Max 15 Tries)</option>
+          </select>
+        </div>
+
+        <!-- Format Selector -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <span class="text-[11px] sm:text-xs font-mono font-bold text-theme-muted uppercase">Match Target:</span>
+          <select id="select-match-format" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-bold rounded-xl px-2.5 py-1.5 focus:border-emerald-500 outline-none cursor-pointer">
+            <option value="3">Best of 3 (First to 2)</option>
+            <option value="5" selected>Best of 5 (First to 3)</option>
+            <option value="1">Sudden Death (1 Match)</option>
+            <option value="0">Endless Free Play</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- HERO ACTION BUTTONS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        
+        <!-- CARD 1: Host Online Room -->
+        <div class="bg-theme-surface hover:border-emerald-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group holo-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-emerald">
+              ⚡
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Host Online Duel</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Create an encrypted room. Share room code or invite link with a friend. Roles swap every round!
+            </p>
+          </div>
+
+          <button id="btn-create-room" type="button" class="mt-4 sm:mt-6 w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Create Arena & Invite</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- CARD 2: Join Existing Room -->
+        <div class="bg-theme-surface hover:border-cyan-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group holo-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-cyan">
+              🔗
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Join Existing Arena</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Enter the room code or paste the direct link from your friend to connect instantly via WebRTC.
+            </p>
+          </div>
+
+          <div class="mt-3 sm:mt-4 space-y-2">
+            <input id="input-join-code" type="text" placeholder="e.g. NUM-4892" class="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line text-sm font-mono uppercase tracking-widest text-theme-ink placeholder:text-theme-muted placeholder:normal-case placeholder:tracking-normal focus:border-cyan-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="w-full py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+              <span>Join Match</span>
+              <span>⚔️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY ACTIONS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        <button id="btn-start-ai" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-amber-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Play vs Smart AI Bot</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 font-mono font-bold">Offline</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Guess AI's number or challenge AI to guess yours</p>
+          </div>
+        </button>
+
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-teal-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Direct Code Connection</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-teal-500/10 text-teal-400 font-mono font-bold">Offline / Local</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Connect directly by copying & pasting a room code</p>
+          </div>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-emerald-500/30 animate-pulse"></div>
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-emerald">
+          📡
+        </div>
+      </div>
+
+      <h2 class="text-xl sm:text-3xl font-display font-black text-theme-ink">Waiting for Opponent...</h2>
+      <p class="text-xs text-theme-muted mt-1 max-w-sm px-2">
+        Share the code or scan the QR code. The duel begins automatically once Player 2 connects!
+      </p>
+
+      <!-- Room Code Box -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 my-4 sm:my-5 space-y-3 sm:space-y-4 shadow-neon-card text-left">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Room Code</label>
+          <div class="flex items-center gap-2">
+            <div id="display-room-code" class="flex-1 px-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl sm:text-2xl tracking-widest text-emerald-400 text-center select-all">
+              ------
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1 active:scale-95" title="Copy Code">
+              <span>Copy</span>
+              <span id="copy-code-icon">📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Direct Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input id="display-room-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted select-all outline-none truncate" />
+            <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors active:scale-95">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Share Links -->
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+          <span class="text-theme-muted font-medium text-[11px]">Share:</span>
+          <div class="flex items-center gap-1.5">
+            <a id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px]">WhatsApp</a>
+            <a id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-semibold text-[11px]">Telegram</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-semibold text-[11px]">X</a>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="pt-2 border-t border-theme-line flex flex-col items-center">
+          <button id="btn-toggle-qr" type="button" class="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1">
+            <span>📱 Show QR Code for Mobile</span>
+            <span id="qr-arrow">▼</span>
+          </button>
+          <div id="qr-container" class="hidden mt-2.5 p-2.5 bg-white rounded-xl shadow-lg border border-theme-line flex flex-col items-center">
+            <div id="qr-code-canvas-wrapper" class="w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center"></div>
+            <span class="text-[9px] text-stone-700 font-mono mt-1 font-semibold">Scan with camera to connect</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="text-xs text-theme-muted hover:text-rose-400 font-semibold transition-colors">
+        ✕ Cancel Match & Return to Lobby
+      </button>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: ARENA BATTLE SCREEN (LIVE MATCH)   -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col gap-3 sm:gap-4 w-full">
+      
+      <!-- Top Scoreboard Bar -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-neon-card">
+        <div class="grid grid-cols-3 items-center">
+          
+          <!-- Player 1 (You) -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <div class="relative shrink-0">
+              <div id="p1-avatar" class="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner frame-emerald select-none">
+                🎯
+              </div>
+              <span id="p1-role-badge" class="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase">
+                SETTER
+              </span>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1">
+                <h4 id="p1-name-display" class="font-display font-black text-xs sm:text-base text-theme-ink truncate">You</h4>
+                <span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-mono font-black">P1</span>
+              </div>
+              <div id="p1-win-nodes" class="flex items-center gap-1 mt-1"></div>
+            </div>
+          </div>
+
+          <!-- Center Match Status & Range Target -->
+          <div class="text-center flex flex-col items-center">
+            <div class="inline-flex items-center gap-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-theme-surface-alt border border-theme-line text-[10px] sm:text-[11px] font-mono font-black text-theme-muted mb-1">
+              <span id="arena-round-number">ROUND 1</span>
+              <span>•</span>
+              <span id="arena-match-target">Best of 5</span>
+            </div>
+            
+            <!-- Range Badge -->
+            <div class="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-[11px] font-mono font-black">
+              Range: <span id="arena-range-text">1 — 100</span>
+            </div>
+          </div>
+
+          <!-- Player 2 (Opponent) -->
+          <div class="flex items-center justify-end gap-2 sm:gap-3 text-right">
+            <div class="min-w-0">
+              <div class="flex items-center justify-end gap-1">
+                <span id="p2-type-badge" class="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 font-mono font-black">P2</span>
+                <h4 id="p2-name-display" class="font-display font-black text-xs sm:text-base text-theme-ink truncate">Opponent</h4>
+              </div>
+              <div id="p2-win-nodes" class="flex items-center justify-end gap-1 mt-1"></div>
+            </div>
+            <div class="relative shrink-0">
+              <div id="p2-avatar" class="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-600 to-rose-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner frame-amber select-none">
+                🤖
+              </div>
+              <span id="p2-role-badge" class="absolute -bottom-1 -left-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase">
+                GUESSER
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FAIR PLAY SECURITY STATUS BAR -->
+      <div id="crypto-commit-bar" class="w-full bg-theme-surface border border-theme-line rounded-2xl p-2.5 sm:p-3 px-3 sm:px-4 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs text-xs">
+        <div class="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          <span class="font-mono text-[10px] sm:text-[11px] text-theme-muted uppercase font-bold shrink-0">Fair Play Status:</span>
+          <span id="display-commit-hash" class="font-mono text-[10px] text-emerald-400 truncate bg-theme-surface-alt px-2.5 py-1 rounded-lg border border-theme-line font-semibold">
+            Waiting for secret number lock...
+          </span>
+        </div>
+        <span class="text-[10px] font-mono font-bold text-emerald-400 shrink-0 hidden sm:inline">
+          🛡️ 100% Anti-Cheat Active
+        </span>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- DUAL STAGE: ROLE SPECIFIC WORKSPACES       -->
+      <!-- ========================================== -->
+
+      <!-- STAGE A: WHEN YOU ARE THE SETTER -->
+      <div id="stage-setter" class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center shadow-neon-card relative overflow-hidden space-y-4">
+        
+        <div class="text-center space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-black">
+            <span>🔒 YOU PICK THE SECRET NUMBER</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-display font-black text-theme-ink">Choose Your Secret Number</h3>
+          <p class="text-xs text-theme-muted max-w-md mx-auto">
+            Pick a secret number between <strong id="setter-range-min" class="text-emerald-400">1</strong> and <strong id="setter-range-max" class="text-emerald-400">100</strong>. It will be securely locked so it cannot be altered during the duel.
+          </p>
+        </div>
+
+        <!-- Setter Input Panel (Active during setup) -->
+        <div id="setter-input-panel" class="w-full max-w-md bg-theme-surface-alt border border-theme-line rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+          
+          <div class="flex items-center gap-3">
+            <input id="input-setter-number" type="number" min="1" max="100" placeholder="?" class="flex-1 px-4 py-3 rounded-xl bg-theme-surface border border-theme-line font-mono font-black text-2xl text-emerald-400 text-center focus:border-emerald-500 outline-none shadow-inner" />
+            <button id="btn-setter-random" type="button" class="px-4 py-3 rounded-xl bg-theme-surface hover:bg-theme-surface-alt border border-theme-line text-xs font-bold font-mono text-theme-ink transition-colors shrink-0 flex items-center gap-1">
+              <span>🎲 Random</span>
+            </button>
+          </div>
+
+          <!-- Slider -->
+          <input id="slider-setter-number" type="range" min="1" max="100" value="50" class="w-full" />
+
+          <!-- Commit Button -->
+          <button id="btn-commit-number" type="button" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Lock In Secret Number</span>
+            <span>🔒</span>
+          </button>
+        </div>
+
+        <!-- Setter Spectator Live Radar (Active while Guesser is guessing) -->
+        <div id="setter-spectator-panel" class="hidden w-full max-w-md flex-col items-center space-y-4 text-center">
+          <div class="p-4 rounded-2xl bg-theme-surface-alt border border-theme-line w-full space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-theme-muted">Your Secret Number:</span>
+              <strong id="setter-locked-display" class="text-emerald-400 font-black text-base">---</strong>
+            </div>
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-theme-muted">Opponent Guesses Made:</span>
+              <strong id="setter-guess-count-display" class="text-amber-400 font-bold">0 / 10</strong>
+            </div>
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-theme-muted">Latest Hint Transmitted:</span>
+              <strong id="setter-latest-hint-display" class="text-cyan-400 font-bold">Waiting for 1st guess...</strong>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs font-mono text-theme-muted animate-pulse">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Opponent is formulating their next guess...</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- STAGE B: WHEN YOU ARE THE GUESSER -->
+      <div id="stage-guesser" class="hidden w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center shadow-neon-card relative overflow-hidden space-y-4">
+        
+        <div class="text-center space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-black">
+            <span>🎯 YOUR TURN TO GUESS</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-display font-black text-theme-ink">Crack the Secret Number</h3>
+          <p class="text-xs text-theme-muted max-w-md mx-auto">
+            Target Range: <strong id="guesser-window-min" class="text-emerald-400 font-mono">1</strong> to <strong id="guesser-window-max" class="text-emerald-400 font-mono">100</strong> • Attempts Left: <strong id="guesser-attempts-left" class="text-amber-400 font-mono font-bold">10</strong>
+          </p>
+        </div>
+
+        <!-- Hot / Cold Proximity Radar Gauge -->
+        <div id="proximity-radar" class="w-full max-w-md p-3 sm:p-4 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between gap-3 shadow-inner transition-colors">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span id="radar-emoji" class="text-2xl sm:text-3xl animate-bounce">🌡️</span>
+            <div>
+              <h5 id="radar-title" class="font-display font-black text-sm text-theme-ink leading-tight">Proximity Radar</h5>
+              <p id="radar-desc" class="text-[10px] sm:text-[11px] font-mono text-theme-muted">Make a guess to calibrate temperature</p>
+            </div>
+          </div>
+          <div id="radar-badge" class="px-2.5 py-1 rounded-xl bg-theme-surface border border-theme-line text-[11px] font-mono font-black text-theme-muted shrink-0 uppercase">
+            CALIBRATING
+          </div>
+        </div>
+
+        <!-- Guesser Control Panel -->
+        <div class="w-full max-w-md space-y-3">
+          
+          <!-- Number Input + Submit -->
+          <div class="flex items-center gap-2">
+            <input id="input-guesser-guess" type="number" min="1" max="100" placeholder="Enter guess..." class="flex-1 px-4 py-3 rounded-xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl text-amber-400 text-center focus:border-amber-500 outline-none shadow-inner" />
+            <button id="btn-submit-guess" type="button" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white font-display font-black text-sm shadow-glow-amber transition-all shrink-0 active:scale-95 flex items-center gap-1.5">
+              <span>FIRE GUESS</span>
+              <span>🎯</span>
+            </button>
+          </div>
+
+          <!-- Slider Control -->
+          <input id="slider-guesser-guess" type="range" min="1" max="100" value="50" class="w-full" />
+
+          <!-- Quick Step Nudge Buttons -->
+          <div class="grid grid-cols-5 gap-1.5 text-xs font-mono font-bold">
+            <button id="btn-step-m10" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-muted hover:text-theme-ink transition-colors">-10</button>
+            <button id="btn-step-m1" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-muted hover:text-theme-ink transition-colors">-1</button>
+            <button id="btn-step-mid" class="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 transition-colors text-[11px]" title="Guess halfway in the remaining range">⚡ Halfway</button>
+            <button id="btn-step-p1" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-muted hover:text-theme-ink transition-colors">+1</button>
+            <button id="btn-step-p10" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-muted hover:text-theme-ink transition-colors">+10</button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- GUESS HISTORY STREAM / LADDER -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl p-3 sm:p-4 shadow-sm space-y-2">
+        <div class="flex items-center justify-between pb-1 border-b border-theme-line text-xs font-mono font-bold">
+          <span class="text-theme-muted uppercase">Round Guess Ledger:</span>
+          <span id="ledger-count" class="text-emerald-400">0 Attempts</span>
+        </div>
+        <div id="guess-history-stream" class="flex flex-col-reverse gap-2 max-h-48 overflow-y-auto no-scrollbar pt-1">
+          <div id="empty-history-placeholder" class="text-center py-6 text-xs font-mono text-theme-muted">
+            No guesses submitted yet. Make your first attempt!
+          </div>
+        </div>
+      </div>
+
+      <!-- SOCIAL TAUNTS & EMOTE WHEEL (Mobile Scrollable) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl p-2.5 sm:p-3 px-3 sm:px-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 shadow-xs">
+        
+        <!-- Live Floating Emoji Taunts -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span class="text-[10px] font-mono text-theme-muted font-black uppercase shrink-0">Taunt:</span>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🔥" title="Fire">🔥</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🥶" title="Cold">🥶</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🧠" title="Brain">🧠</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="😱" title="Shock">😱</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="💀" title="Skull">💀</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="👑" title="King">👑</button>
+        </div>
+
+        <div class="flex items-center justify-between sm:justify-end gap-2">
+          <!-- Quick Chat Messages -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="So close! 🔥">
+              So close! 🔥
+            </button>
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="Ice cold 🥶">
+              Ice cold 🥶
+            </button>
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="Pure luck! 🍀">
+              Pure luck! 🍀
+            </button>
+          </div>
+
+          <!-- History Toggle -->
+          <button id="btn-toggle-history" type="button" class="text-xs font-mono font-black text-emerald-400 hover:underline flex items-center gap-1 shrink-0">
+            <span>Rounds (<span id="history-round-count">0</span>)</span>
+            <span id="history-arrow">▼</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Collapsible Match History Table -->
+      <div id="history-drawer" class="hidden bg-theme-surface border border-theme-line rounded-2xl p-3 sm:p-4 shadow-sm overflow-x-auto">
+        <h5 class="font-display font-black text-xs text-theme-ink uppercase tracking-wider mb-2">Round-by-Round Match History</h5>
+        <table class="w-full text-left text-xs font-mono">
+          <thead>
+            <tr class="border-b border-theme-line text-theme-muted text-[10px] uppercase">
+              <th class="py-1.5 px-2">#</th>
+              <th class="py-1.5 px-2">Setter</th>
+              <th class="py-1.5 px-2">Guesser</th>
+              <th class="py-1.5 px-2">Secret</th>
+              <th class="py-1.5 px-2">Tries</th>
+              <th class="py-1.5 px-2">Result</th>
+              <th class="py-1.5 px-2">Fair Play</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body" class="divide-y divide-theme-line/60"></tbody>
+        </table>
+      </div>
+
+      <!-- Leave Match Button -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Match & Return to Lobby</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct P2P Encrypted Session</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ROUND REVEAL & AUDIT RESULT         -->
+  <!-- ========================================== -->
+  <div id="modal-round-reveal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4 animate-pop-in">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <div id="round-reveal-icon" class="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mx-auto shadow-glow-emerald">
+        🎯
+      </div>
+
+      <div>
+        <h3 id="round-reveal-title" class="font-display font-black text-2xl text-theme-ink">BULLSEYE!</h3>
+        <p id="round-reveal-subtitle" class="text-xs font-mono text-theme-muted mt-1">Number correctly cracked in 4 attempts!</p>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2.5 text-left text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted font-medium">Secret Number:</span>
+          <strong id="reveal-secret-number" class="text-emerald-400 text-2xl font-black font-display">42</strong>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-theme-muted font-medium">Total Guesses:</span>
+          <strong id="reveal-guess-count" class="text-theme-ink font-mono font-bold">2 attempts</strong>
+        </div>
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line">
+          <span class="text-theme-muted font-medium">Fair Play Check:</span>
+          <span id="reveal-audit-status" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+            ✓ 100% Fair Play Verified
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-2 pt-2">
+        <span id="auto-next-round-timer" class="text-xs font-mono text-theme-muted">Next round in 4s...</span>
+        <button id="btn-next-round-now" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow">
+          Next Round Now ⏩
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & REWARDS                -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4 animate-pop-in">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-8 relative shadow-2xl space-y-5 text-center">
+      
+      <div id="match-over-icon" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-600 to-cyan-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-emerald mx-auto">
+        👑
+      </div>
+
+      <div>
+        <h2 id="match-over-title" class="text-2xl sm:text-3xl font-display font-black text-emerald-400 tracking-tight">VICTORY! 🏆</h2>
+        <p id="match-over-subtitle" class="text-xs sm:text-sm text-theme-muted mt-1">You triumphed in the Number Guessing Arena!</p>
+      </div>
+
+      <!-- Match Summary Card -->
+      <div class="p-4 rounded-2xl bg-theme-surface-alt border border-theme-line grid grid-cols-3 gap-2 text-center">
+        <div>
+          <span class="text-[10px] font-mono text-theme-muted block uppercase">Rounds</span>
+          <strong id="stat-total-rounds" class="font-display font-black text-base text-theme-ink">5</strong>
+        </div>
+        <div>
+          <span class="text-[10px] font-mono text-theme-muted block uppercase">Score</span>
+          <strong id="stat-final-score" class="font-display font-black text-base text-emerald-400">3 - 2</strong>
+        </div>
+        <div>
+          <span class="text-[10px] font-mono text-theme-muted block uppercase">Accuracy</span>
+          <strong id="stat-final-accuracy" class="font-display font-black text-base text-teal-400">80%</strong>
+        </div>
+      </div>
+
+      <!-- XP & Rating Gains -->
+      <div class="flex items-center justify-center gap-3">
+        <div class="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono font-bold text-xs flex items-center gap-1">
+          <span>⭐</span>
+          <span id="match-xp-gain">+250 XP</span>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono font-bold text-xs flex items-center gap-1">
+          <span>📈</span>
+          <span id="match-elo-gain">+28 MMR</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="space-y-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all active:scale-95 flex items-center justify-center gap-2">
+          <span id="rematch-btn-text">Play Again / Rematch</span>
+          <span>⚔️</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-2.5 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold text-theme-ink transition-colors">
+          Exit to Lobby
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🎯</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Player Passport</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Customize your avatar, frame & title</p>
+          </div>
+        </div>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Battle Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="Player" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-emerald-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-emerald-500">
+          <option value="Number Sleuth">Number Sleuth</option>
+          <option value="Mind Reader">Mind Reader</option>
+          <option value="Hot/Cold Master">Hot/Cold Master</option>
+          <option value="Secret Master">Secret Master</option>
+          <option value="Number Whisperer">Number Whisperer</option>
+          <option value="Bullseye Legend">Bullseye Legend</option>
+          <option value="Grandmaster">Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <!-- Save Profile Button -->
+      <button id="btn-save-profile" type="button" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-black text-xs shadow-glow-emerald transition-all">
+        Save Passport Changes
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Unlock achievements to earn XP & prestige</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & HOW FAIR PLAY WORKS         -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🛡️</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">How Fair Play Works</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Our built-in system guarantees 100% honest gameplay</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <strong class="font-bold text-theme-ink block mb-1">1. Why Anti-Cheat Matters:</strong>
+          In regular online number guessing, an opponent could secretly change their number mid-game to make you lose. ArcadeLab makes cheating impossible!
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">2. Secret Number Locking:</strong>
+          Before any guessing starts, the host's browser generates a secure digital lock for the chosen number. Once locked, the number cannot be altered.
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">3. Automatic Round Verification:</strong>
+          When the round ends, the secret number is revealed, and the game automatically verifies that all Higher / Lower hints were completely honest and accurate.
+        </div>
+
+        <div class="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+          <strong class="font-bold text-theme-ink block mb-1">4. Hot / Cold Temperature Radar:</strong>
+          Watch the temperature gauge after each guess to see how close you are to the secret target:
+          <div class="grid grid-cols-2 gap-1 mt-1 text-[10px] font-mono">
+            <span>🔥 Burning Hot: Super close (within 2%)</span>
+            <span>🌡️ Hot: Very close (within 5%)</span>
+            <span>🌤️ Warm: Getting closer (within 15%)</span>
+            <span>❄️ Cold / Ice: Far away</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs transition-colors">
+        Got It, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MANUAL SDP RELAY (AIR-GAPPED)       -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold font-mono">Player 1 (Host)</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Player 2 (Join)</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Host Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-emerald-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Connection Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Player 2 Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors">
+            Connect Players
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Player 1 Host Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Your Response Code (Send to Player 1):</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-theme-line py-3 px-4 text-center text-[11px] text-theme-muted">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5">
+      <p>© 2026 <strong class="text-theme-ink font-semibold">ArcadeLab</strong> · A playground for browser games.</p>
+      <div class="flex items-center gap-3 text-[11px] flex-wrap justify-center">
+        <a href="/games/" class="hover:text-theme-ink font-semibold text-emerald-400">🕹️ ArcadeLab</a>
+        <a href="/games/endless-runner/" class="hover:text-theme-ink">🏃 Endless Runner</a>
+        <a href="/games/flappy-bird/" class="hover:text-theme-ink">🐦 Flappy Bird</a>
+        <a href="/games/asteroids/" class="hover:text-theme-ink">🚀 Asteroids</a>
+        <a href="/games/sudoku/" class="hover:text-theme-ink">🧩 Sudoku</a>
+        <a href="/games/simon-says/" class="hover:text-theme-ink">🧠 Simon Says</a>
+        <a href="/games/whack-a-mole/" class="hover:text-theme-ink">🐹 Whack-a-Mole</a>
+        <a href="/games/hangman/" class="hover:text-theme-ink">🪢 Hangman</a>
+        <a href="/games/memory-matching/" class="hover:text-theme-ink">🃏 Memory Match</a>
+        <a href="/games/rock-paper-scissors/" class="hover:text-theme-ink">⚔️ Rock Paper Scissors</a>
+        <a href="/games/tic-tac-toe/" class="hover:text-theme-ink">⭕ Tic-Tac-Toe</a>
+        <a href="/tools/" class="hover:text-theme-ink">🛠️ Toolzy</a>
+        <a href="/" class="hover:text-theme-ink">Home</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT GAME ENGINE, CRYPTO, NETWORKING & SOUNDS     -->
+  <!-- ======================================================= -->
+  <script>
+    /* =======================================================
+     * 1. AUDIO SYNTHESIZER (Web Audio API)
+     * ======================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = localStorage.getItem('ng:sound_muted') === 'true';
+      }
+
+      initContext() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        localStorage.setItem('ng:sound_muted', this.isMuted);
+        return this.isMuted;
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.25) {
+        if (this.isMuted) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playHigher() {
+        // Ascending melody
+        this.playTone(330, 'triangle', 0.12, 0.2);
+        setTimeout(() => this.playTone(494, 'triangle', 0.18, 0.2), 80);
+      }
+
+      playLower() {
+        // Descending melody
+        this.playTone(494, 'triangle', 0.12, 0.2);
+        setTimeout(() => this.playTone(330, 'triangle', 0.18, 0.2), 80);
+      }
+
+      playCorrect() {
+        // Euphoric Fanfare
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.25, 0.3), idx * 80);
+        });
+      }
+
+      playTick() {
+        this.playTone(800, 'sine', 0.04, 0.1);
+      }
+
+      playTaunt() {
+        this.playTone(587.33, 'sine', 0.08, 0.2);
+        setTimeout(() => this.playTone(880, 'sine', 0.12, 0.25), 60);
+      }
+
+      playMatchVictory() {
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.3, 0.3), idx * 100);
+        });
+      }
+
+      playMatchDefeat() {
+        [440, 415.3, 392, 369.99].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'sawtooth', 0.35, 0.2), idx * 120);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    function triggerHaptic(duration = 20) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(duration); } catch (e) {}
+      }
+    }
+
+    /* =======================================================
+     * 2. WEBCRYPTO SHA-256 COMMIT-REVEAL ENGINE
+     * ======================================================= */
+    class CryptoEngine {
+      static async generateSalt() {
+        const array = new Uint8Array(16);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      static async computeHash(secretNumber, salt) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(`${secretNumber}:${salt}`);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      static async verifyCommitment(revealedNumber, salt, originalHash) {
+        const recalculated = await this.computeHash(revealedNumber, salt);
+        return recalculated.toLowerCase() === originalHash.toLowerCase();
+      }
+
+      static auditHistory(history, secretNum) {
+        for (const item of history) {
+          if (item.guess < secretNum && item.hint !== 'HIGHER') return false;
+          if (item.guess > secretNum && item.hint !== 'LOWER') return false;
+          if (item.guess === secretNum && item.hint !== 'CORRECT') return false;
+        }
+        return true;
+      }
+    }
+
+    /* =======================================================
+     * 3. PLAYER PASSPORT & ACHIEVEMENTS
+     * ======================================================= */
+    const AVATARS = ['🎯', '⚡', '🤖', '👑', '🔥', '🧠', '🎲', '💎', '🚀', '🐱', '🦊', '🦁', '🐉', '👾', '🎪', '🏆'];
+    const FRAMES = [
+      { id: 'frame-emerald', name: 'Emerald Cyber', class: 'frame-emerald' },
+      { id: 'frame-amber', name: 'Amber Forge', class: 'frame-amber' },
+      { id: 'frame-rose', name: 'Rose Laser', class: 'frame-rose' },
+      { id: 'frame-cyan', name: 'Neon Cyan', class: 'frame-cyan' },
+      { id: 'frame-purple', name: 'Void Glow', class: 'frame-purple' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_clue', name: 'First Clue', desc: 'Complete your first number duel.', icon: '🎯' },
+      { id: 'bullseye', name: 'Bullseye', desc: 'Crack the secret number in 3 guesses or fewer.', icon: '🏹' },
+      { id: 'mind_reader', name: 'Mind Reader', desc: 'Crack the secret number on the very 1st guess.', icon: '🧠' },
+      { id: 'burning_hot', name: 'Burning Hot', desc: 'Trigger a Burning Hot proximity radar alert.', icon: '🔥' },
+      { id: 'binary_master', name: 'Binary Master', desc: 'Win a duel in a range of 1 to 500+.', icon: '⚡' },
+      { id: 'cold_blooded', name: 'Cold Blooded', desc: 'Win a round starting from a Freezing proximity.', icon: '🧊' },
+      { id: 'hot_streak_3', name: 'Hot Streak', desc: 'Win 3 consecutive rounds in a match.', icon: '🔥' },
+      { id: 'flawless_setter', name: 'Unbreakable Setter', desc: 'Win as Setter without opponent guessing correctly.', icon: '🔒' },
+      { id: 'bot_buster', name: 'AI Demolisher', desc: 'Defeat the Smart AI bot in Master difficulty.', icon: '🤖' },
+      { id: 'speed_demon', name: 'Speed Solver', desc: 'Crack the secret number in under 20 seconds.', icon: '⏱️' },
+      { id: 'season_veteran', name: 'Season Veteran', desc: 'Reach Level 5 on your Player Passport.', icon: '🎖️' },
+      { id: 'grandmaster', name: 'Grandmaster Oracle', desc: 'Climb above 2,000 MMR on the ranked ladder.', icon: '👑' }
+    ];
+
+    class PlayerProfile {
+      constructor() {
+        this.load();
+      }
+
+      load() {
+        const data = JSON.parse(localStorage.getItem('ng:player_passport') || '{}');
+        this.name = data.name || 'Player ' + Math.floor(1000 + Math.random() * 9000);
+        this.avatar = data.avatar || '🎯';
+        this.frame = data.frame || 'frame-emerald';
+        this.title = data.title || 'Number Sleuth';
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.elo = data.elo || 1000;
+        this.matchesPlayed = data.matchesPlayed || 0;
+        this.matchesWon = data.matchesWon || 0;
+        this.streak = data.streak || 0;
+        this.unlocked = data.unlocked || [];
+      }
+
+      save() {
+        localStorage.setItem('ng:player_passport', JSON.stringify({
+          name: this.name,
+          avatar: this.avatar,
+          frame: this.frame,
+          title: this.title,
+          level: this.level,
+          xp: this.xp,
+          elo: this.elo,
+          matchesPlayed: this.matchesPlayed,
+          matchesWon: this.matchesWon,
+          streak: this.streak,
+          unlocked: this.unlocked
+        }));
+        this.renderPassport();
+      }
+
+      addXP(amount) {
+        this.xp += amount;
+        const requiredXP = this.level * 100;
+        if (this.xp >= requiredXP) {
+          this.xp -= requiredXP;
+          this.level++;
+          sound.playCorrect();
+          showAlert(`🎉 LEVEL UP! You reached Level ${this.level}!`, 'info');
+          if (this.level >= 5) this.unlockAchievement('season_veteran');
+        }
+        this.save();
+      }
+
+      updateElo(delta) {
+        this.elo = Math.max(100, this.elo + delta);
+        if (this.elo >= 2000) this.unlockAchievement('grandmaster');
+        this.save();
+      }
+
+      unlockAchievement(id) {
+        if (!this.unlocked.includes(id)) {
+          this.unlocked.push(id);
+          const ach = ACHIEVEMENTS.find(a => a.id === id);
+          if (ach) {
+            showAlert(`🏆 Achievement Unlocked: ${ach.name}!`, 'info');
+            sound.playCorrect();
+            this.addXP(100);
+          }
+          this.save();
+        }
+      }
+
+      addMatchResult(isWinner) {
+        this.matchesPlayed++;
+        if (isWinner) {
+          this.matchesWon++;
+          this.streak++;
+          this.addXP(250);
+          this.updateElo(28);
+          if (this.streak >= 3) this.unlockAchievement('hot_streak_3');
+        } else {
+          this.streak = 0;
+          this.addXP(40);
+          this.updateElo(-18);
+        }
+        this.unlockAchievement('first_clue');
+        this.save();
+      }
+
+      getRankTier() {
+        if (this.elo >= 2000) return '👑 Grandmaster';
+        if (this.elo >= 1800) return '💎 Master';
+        if (this.elo >= 1600) return '🔷 Diamond';
+        if (this.elo >= 1400) return '🥇 Platinum';
+        if (this.elo >= 1200) return '🥈 Gold';
+        if (this.elo >= 1100) return '🥉 Silver';
+        return '🏆 Bronze I';
+      }
+
+      renderPassport() {
+        const requiredXP = this.level * 100;
+        const xpPercent = Math.min(100, Math.round((this.xp / requiredXP) * 100));
+        const winrate = this.matchesPlayed > 0 ? Math.round((this.matchesWon / this.matchesPlayed) * 100) : 0;
+
+        document.getElementById('passport-name').innerText = this.name;
+        document.getElementById('passport-avatar').innerText = this.avatar;
+        document.getElementById('passport-avatar').className = `w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-emerald select-none ${this.frame}`;
+        document.getElementById('passport-title').innerText = this.title;
+        document.getElementById('passport-rank-badge').innerText = this.getRankTier();
+        document.getElementById('passport-level-badge').innerText = `LVL ${this.level}`;
+        document.getElementById('passport-xp-bar').style.width = `${xpPercent}%`;
+        document.getElementById('passport-xp-text').innerText = `${this.xp}/${requiredXP} XP`;
+
+        document.getElementById('stat-elo-display').innerText = this.elo.toLocaleString();
+        document.getElementById('stat-accuracy-display').innerText = `${winrate}%`;
+        document.getElementById('stat-streak-display').innerText = `🔥 ${this.streak}`;
+        document.getElementById('unlocked-badge-count').innerText = `${this.unlocked.length}/${ACHIEVEMENTS.length}`;
+      }
+    }
+
+    const player = new PlayerProfile();
+
+    /* =======================================================
+     * 4. SMART AI BOT (Binary Search & Randomness)
+     * ======================================================= */
+    class SmartBot {
+      constructor(rangeMin = 1, rangeMax = 100) {
+        this.rangeMin = rangeMin;
+        this.rangeMax = rangeMax;
+        this.low = rangeMin;
+        this.high = rangeMax;
+        this.secret = null;
+        this.salt = null;
+      }
+
+      async initSetter(rangeMin, rangeMax) {
+        this.rangeMin = rangeMin;
+        this.rangeMax = rangeMax;
+        this.secret = Math.floor(Math.random() * (rangeMax - rangeMin + 1)) + rangeMin;
+        this.salt = await CryptoEngine.generateSalt();
+        const hash = await CryptoEngine.computeHash(this.secret, this.salt);
+        return { secret: this.secret, salt: this.salt, hash };
+      }
+
+      evaluateGuess(guess) {
+        if (guess < this.secret) return 'HIGHER';
+        if (guess > this.secret) return 'LOWER';
+        return 'CORRECT';
+      }
+
+      initGuesser(rangeMin, rangeMax) {
+        this.low = rangeMin;
+        this.high = rangeMax;
+      }
+
+      processFeedback(guess, hint) {
+        if (hint === 'HIGHER') {
+          this.low = Math.max(this.low, guess + 1);
+        } else if (hint === 'LOWER') {
+          this.high = Math.min(this.high, guess - 1);
+        }
+      }
+
+      pickGuess() {
+        if (this.low >= this.high) return this.low;
+        // 80% optimal midpoint binary search, 20% slight heuristic noise
+        const mid = Math.floor((this.low + this.high) / 2);
+        if (Math.random() < 0.2 && (this.high - this.low) > 4) {
+          const jitter = Math.floor(Math.random() * 3) - 1;
+          return Math.max(this.low, Math.min(this.high, mid + jitter));
+        }
+        return mid;
+      }
+    }
+
+    /* =======================================================
+     * 5. GAME STATE & APP MANAGER
+     * ======================================================= */
+    const State = {
+      mode: 'lobby', // 'lobby' | 'waiting' | 'arena'
+      isHost: false,
+      isAI: false,
+      aiBot: null,
+
+      peer: null,
+      conn: null,
+      roomCode: null,
+      pingInterval: null,
+
+      rangeMax: 100,
+      rangeMin: 1,
+      maxAttempts: 10,
+      matchTarget: 5,
+      requiredWins: 3,
+
+      roundNumber: 1,
+      myRole: 'SETTER', // 'SETTER' or 'GUESSER'
+      p1Score: 0,
+      p2Score: 0,
+
+      // Round State
+      secretNumber: null,
+      secretSalt: null,
+      lockedHash: null,
+      roundActive: false,
+      guessHistory: [],
+      currentSearchLow: 1,
+      currentSearchHigh: 100,
+
+      myRematchReady: false,
+      oppRematchReady: false,
+      roundHistory: [],
+    };
+
+    /* =======================================================
+     * 6. DOM ELEMENTS MAP
+     * ======================================================= */
+    const el = {
+      viewLobby: document.getElementById('view-lobby'),
+      viewWaiting: document.getElementById('view-waiting'),
+      viewArena: document.getElementById('view-arena'),
+
+      headerStatusPill: document.getElementById('header-status-pill'),
+      headerStatusDot: document.getElementById('header-status-dot'),
+      headerStatusText: document.getElementById('header-status-text'),
+      headerPingBadge: document.getElementById('header-ping-badge'),
+      roomCodeBadge: document.getElementById('room-code-badge'),
+      roomCodeBadgeText: document.getElementById('room-code-badge-text'),
+      btnOpenTrophies: document.getElementById('btn-open-trophies'),
+      btnRules: document.getElementById('btn-rules'),
+      btnSoundToggle: document.getElementById('btn-sound-toggle'),
+      soundIcon: document.getElementById('sound-icon'),
+      btnThemeToggle: document.getElementById('btn-theme-toggle'),
+      themeIcon: document.getElementById('theme-icon'),
+      globalAlertBanner: document.getElementById('global-alert-banner'),
+      alertIcon: document.getElementById('alert-icon'),
+      alertMessage: document.getElementById('alert-message'),
+      btnAlertClose: document.getElementById('btn-alert-close'),
+
+      // Lobby
+      btnOpenProfileCustomizer: document.getElementById('btn-open-profile-customizer'),
+      selectNumberRange: document.getElementById('select-number-range'),
+      selectMatchFormat: document.getElementById('select-match-format'),
+      btnCreateRoom: document.getElementById('btn-create-room'),
+      inputJoinCode: document.getElementById('input-join-code'),
+      btnJoinRoom: document.getElementById('btn-join-room'),
+      btnStartAI: document.getElementById('btn-start-ai'),
+      btnOpenManualSignaling: document.getElementById('btn-open-manual-signaling'),
+
+      // Waiting View
+      displayRoomCode: document.getElementById('display-room-code'),
+      btnCopyCode: document.getElementById('btn-copy-code'),
+      displayRoomLink: document.getElementById('display-room-link'),
+      btnCopyLink: document.getElementById('btn-copy-link'),
+      shareWhatsapp: document.getElementById('share-whatsapp'),
+      shareTelegram: document.getElementById('share-telegram'),
+      shareTwitter: document.getElementById('share-twitter'),
+      btnToggleQr: document.getElementById('btn-toggle-qr'),
+      qrContainer: document.getElementById('qr-container'),
+      qrWrapper: document.getElementById('qr-code-canvas-wrapper'),
+      btnCancelWaiting: document.getElementById('btn-cancel-waiting'),
+
+      // Arena View
+      p1Avatar: document.getElementById('p1-avatar'),
+      p1NameDisplay: document.getElementById('p1-name-display'),
+      p1RoleBadge: document.getElementById('p1-role-badge'),
+      p1WinNodes: document.getElementById('p1-win-nodes'),
+      p2Avatar: document.getElementById('p2-avatar'),
+      p2NameDisplay: document.getElementById('p2-name-display'),
+      p2RoleBadge: document.getElementById('p2-role-badge'),
+      p2WinNodes: document.getElementById('p2-win-nodes'),
+      p2TypeBadge: document.getElementById('p2-type-badge'),
+      arenaRoundNumber: document.getElementById('arena-round-number'),
+      arenaMatchTarget: document.getElementById('arena-match-target'),
+      arenaRangeText: document.getElementById('arena-range-text'),
+      displayCommitHash: document.getElementById('display-commit-hash'),
+
+      // Stages
+      stageSetter: document.getElementById('stage-setter'),
+      setterInputPanel: document.getElementById('setter-input-panel'),
+      setterSpectatorPanel: document.getElementById('setter-spectator-panel'),
+      inputSetterNumber: document.getElementById('input-setter-number'),
+      sliderSetterNumber: document.getElementById('slider-setter-number'),
+      btnSetterRandom: document.getElementById('btn-setter-random'),
+      btnCommitNumber: document.getElementById('btn-commit-number'),
+      setterRangeMin: document.getElementById('setter-range-min'),
+      setterRangeMax: document.getElementById('setter-range-max'),
+      setterLockedDisplay: document.getElementById('setter-locked-display'),
+      setterGuessCountDisplay: document.getElementById('setter-guess-count-display'),
+      setterLatestHintDisplay: document.getElementById('setter-latest-hint-display'),
+
+      stageGuesser: document.getElementById('stage-guesser'),
+      guesserWindowMin: document.getElementById('guesser-window-min'),
+      guesserWindowMax: document.getElementById('guesser-window-max'),
+      guesserAttemptsLeft: document.getElementById('guesser-attempts-left'),
+      proximityRadar: document.getElementById('proximity-radar'),
+      radarEmoji: document.getElementById('radar-emoji'),
+      radarTitle: document.getElementById('radar-title'),
+      radarDesc: document.getElementById('radar-desc'),
+      radarBadge: document.getElementById('radar-badge'),
+      inputGuesserGuess: document.getElementById('input-guesser-guess'),
+      sliderGuesserGuess: document.getElementById('slider-guesser-guess'),
+      btnSubmitGuess: document.getElementById('btn-submit-guess'),
+      btnStepM10: document.getElementById('btn-step-m10'),
+      btnStepM1: document.getElementById('btn-step-m1'),
+      btnStepMid: document.getElementById('btn-step-mid'),
+      btnStepP1: document.getElementById('btn-step-p1'),
+      btnStepP10: document.getElementById('btn-step-p10'),
+
+      guessHistoryStream: document.getElementById('guess-history-stream'),
+      emptyHistoryPlaceholder: document.getElementById('empty-history-placeholder'),
+      ledgerCount: document.getElementById('ledger-count'),
+
+      // History Table
+      btnToggleHistory: document.getElementById('btn-toggle-history'),
+      historyRoundCount: document.getElementById('history-round-count'),
+      historyDrawer: document.getElementById('history-drawer'),
+      historyTableBody: document.getElementById('history-table-body'),
+      btnLeaveMatch: document.getElementById('btn-leave-match'),
+      tauntsOverlay: document.getElementById('taunts-overlay'),
+
+      // Modals
+      modalRoundReveal: document.getElementById('modal-round-reveal'),
+      roundRevealIcon: document.getElementById('round-reveal-icon'),
+      roundRevealTitle: document.getElementById('round-reveal-title'),
+      roundRevealSubtitle: document.getElementById('round-reveal-subtitle'),
+      revealSecretNumber: document.getElementById('reveal-secret-number'),
+      revealGuessCount: document.getElementById('reveal-guess-count'),
+      revealAuditStatus: document.getElementById('reveal-audit-status'),
+      autoNextRoundTimer: document.getElementById('auto-next-round-timer'),
+      btnNextRoundNow: document.getElementById('btn-next-round-now'),
+
+      modalMatchOver: document.getElementById('modal-match-over'),
+      matchOverIcon: document.getElementById('match-over-icon'),
+      matchOverTitle: document.getElementById('match-over-title'),
+      matchOverSubtitle: document.getElementById('match-over-subtitle'),
+      statTotalRounds: document.getElementById('stat-total-rounds'),
+      statFinalScore: document.getElementById('stat-final-score'),
+      statFinalAccuracy: document.getElementById('stat-final-accuracy'),
+      matchXpGain: document.getElementById('match-xp-gain'),
+      matchEloGain: document.getElementById('match-elo-gain'),
+      btnRequestRematch: document.getElementById('btn-request-rematch'),
+      rematchBtnText: document.getElementById('rematch-btn-text'),
+      btnModalExitLobby: document.getElementById('btn-modal-exit-lobby'),
+
+      modalProfileCustomizer: document.getElementById('modal-profile-customizer'),
+      btnCloseProfile: document.getElementById('btn-close-profile'),
+      customizerNameInput: document.getElementById('customizer-name-input'),
+      selectPlayerTitle: document.getElementById('select-player-title'),
+      avatarGrid: document.getElementById('avatar-grid'),
+      frameGrid: document.getElementById('frame-grid'),
+      btnSaveProfile: document.getElementById('btn-save-profile'),
+
+      modalTrophies: document.getElementById('modal-trophies'),
+      btnCloseTrophies: document.getElementById('btn-close-trophies'),
+      btnAckTrophies: document.getElementById('btn-ack-trophies'),
+      trophiesListContainer: document.getElementById('trophies-list-container'),
+
+      modalRules: document.getElementById('modal-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnAckRules: document.getElementById('btn-ack-rules'),
+
+      modalManualSignaling: document.getElementById('modal-manual-signaling'),
+      btnCloseManualSignaling: document.getElementById('btn-close-manual-signaling'),
+    };
+
+    /* =======================================================
+     * 7. PROXIMITY TEMPERATURE CALCULATOR
+     * ======================================================= */
+    function calculateProximity(guess, secret, maxRange) {
+      const distance = Math.abs(guess - secret);
+      const percent = (distance / maxRange) * 100;
+
+      if (distance === 0) {
+        return { label: 'BULLSEYE', emoji: '🎯', title: 'Target Acquired!', desc: 'Direct hit on secret number', color: 'bg-emerald-500 text-black shadow-glow-emerald' };
+      }
+      if (percent <= 2.5) {
+        return { label: 'BURNING HOT', emoji: '🔥', title: 'Burning Hot!', desc: 'Within 2% of secret number', color: 'bg-rose-600 text-white shadow-glow-rose' };
+      }
+      if (percent <= 6) {
+        return { label: 'HOT', emoji: '🌡️', title: 'Hot!', desc: 'Very close to target', color: 'bg-amber-500 text-black shadow-glow-amber' };
+      }
+      if (percent <= 16) {
+        return { label: 'WARM', emoji: '🌤️', title: 'Warm', desc: 'Approaching target window', color: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' };
+      }
+      if (percent <= 32) {
+        return { label: 'COLD', emoji: '❄️', title: 'Cold', desc: 'Over 15% away from target', color: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' };
+      }
+      return { label: 'FREEZING', emoji: '🧊', title: 'Freezing Ice', desc: 'Way off target', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' };
+    }
+
+    /* =======================================================
+     * 8. UI HELPERS & NOTIFICATIONS
+     * ======================================================= */
+    function showAlert(msg, type = 'info', timeout = 3500) {
+      el.alertMessage.innerText = msg;
+      el.globalAlertBanner.className = `px-3 py-2 text-center text-xs font-medium border-b flex items-center justify-center transition-all duration-300 ${
+        type === 'error' ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' :
+        type === 'warning' ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' :
+        'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+      }`;
+      el.globalAlertBanner.classList.remove('hidden');
+
+      if (window._alertTimer) clearTimeout(window._alertTimer);
+      window._alertTimer = setTimeout(() => {
+        el.globalAlertBanner.classList.add('hidden');
+      }, timeout);
+    }
+
+    el.btnAlertClose.addEventListener('click', () => el.globalAlertBanner.classList.add('hidden'));
+
+    function setView(viewName) {
+      State.mode = viewName;
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.add('hidden');
+
+      if (viewName === 'lobby') el.viewLobby.classList.remove('hidden');
+      if (viewName === 'waiting') el.viewWaiting.classList.remove('hidden');
+      if (viewName === 'arena') el.viewArena.classList.remove('hidden');
+    }
+
+    function updateHeaderStatus(status, text, ping = null) {
+      el.headerStatusText.innerText = text;
+      el.headerStatusDot.className = `w-2 h-2 rounded-full ${
+        status === 'connected' ? 'bg-emerald-400 animate-pulse' :
+        status === 'connecting' ? 'bg-amber-400 animate-ping' :
+        'bg-stone-400'
+      }`;
+
+      if (ping !== null) {
+        el.headerPingBadge.innerText = `${ping}ms`;
+        el.headerPingBadge.classList.remove('hidden');
+      } else {
+        el.headerPingBadge.classList.add('hidden');
+      }
+    }
+
+    function renderWinNodes() {
+      const maxWins = State.requiredWins === Infinity ? 5 : State.requiredWins;
+      
+      el.p1WinNodes.innerHTML = '';
+      for (let i = 0; i < maxWins; i++) {
+        const pip = document.createElement('span');
+        pip.className = `win-pip ${i < State.p1Score ? 'filled-p1' : ''}`;
+        el.p1WinNodes.appendChild(pip);
+      }
+
+      el.p2WinNodes.innerHTML = '';
+      for (let i = 0; i < maxWins; i++) {
+        const pip = document.createElement('span');
+        pip.className = `win-pip ${i < State.p2Score ? 'filled-p2' : ''}`;
+        el.p2WinNodes.appendChild(pip);
+      }
+    }
+
+    /* =======================================================
+     * 9. WEBRTC SIGNALING & DATACHANNEL NETWORKING
+     * ======================================================= */
+    function generateRoomCode() {
+      return 'NUM-' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    function hostOnlineRoom() {
+      sound.playTick();
+      triggerHaptic(25);
+      const code = generateRoomCode();
+      State.roomCode = code;
+      State.isHost = true;
+      State.isAI = false;
+      State.rangeMax = parseInt(el.selectNumberRange.value, 10);
+      State.maxAttempts = State.rangeMax === 50 ? 7 : State.rangeMax === 100 ? 10 : State.rangeMax === 500 ? 12 : 15;
+
+      initPeerConnection(code, true);
+    }
+
+    function joinOnlineRoom(rawCode) {
+      sound.playTick();
+      triggerHaptic(25);
+      const cleanCode = rawCode.trim().toUpperCase();
+      if (!cleanCode) {
+        showAlert('Please enter a valid room code (e.g. NUM-4892)', 'warning');
+        return;
+      }
+
+      State.roomCode = cleanCode;
+      State.isHost = false;
+      State.isAI = false;
+
+      initPeerConnection(cleanCode, false);
+    }
+
+    function initPeerConnection(roomCode, isHost) {
+      updateHeaderStatus('connecting', 'Connecting to P2P relay...');
+      
+      const peerId = isHost ? `arcadelab-ng-${roomCode}` : undefined;
+      const targetHostId = `arcadelab-ng-${roomCode}`;
+
+      if (State.peer) State.peer.destroy();
+
+      State.peer = new Peer(peerId, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      State.peer.on('open', (id) => {
+        el.roomCodeBadge.classList.remove('hidden');
+        el.roomCodeBadge.classList.add('flex');
+        el.roomCodeBadgeText.innerText = roomCode;
+
+        if (isHost) {
+          el.displayRoomCode.innerText = roomCode;
+          const shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+          el.displayRoomLink.value = shareUrl;
+
+          // Social share links
+          el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Play Number Guessing with me on ArcadeLab! Join room ${roomCode}: ${shareUrl}`)}`;
+          el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Play Number Guessing duel with me on ArcadeLab! (Room: ${roomCode})`)}`;
+          el.shareTwitter.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Play Number Guessing duel with me on ArcadeLab! Room: ${roomCode}&url=${shareUrl}`)}`;
+
+          // QR Code
+          el.qrWrapper.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}&margin=2" alt="Join Room QR" class="w-32 h-32 rounded-xl" />`;
+
+          setView('waiting');
+          updateHeaderStatus('connecting', 'Waiting for opponent...');
+
+          // Listen for incoming connection
+          State.peer.on('connection', (conn) => {
+            State.conn = conn;
+            setupDataChannel(conn);
+          });
+        } else {
+          // Connect to Host
+          const conn = State.peer.connect(targetHostId, { reliable: true });
+          State.conn = conn;
+          setupDataChannel(conn);
+        }
+      });
+
+      State.peer.on('error', (err) => {
+        showAlert(`P2P Connection Error: ${err.type || err.message}`, 'error');
+        updateHeaderStatus('idle', 'Connection Failed');
+      });
+    }
+
+    function setupDataChannel(conn) {
+      conn.on('open', () => {
+        updateHeaderStatus('connected', 'P2P Encrypted Session');
+        sound.playCorrect();
+        triggerHaptic([30, 40, 50]);
+
+        if (State.isHost) {
+          // Send match config to Guest
+          sendPacket({
+            type: 'INIT_CONFIG',
+            rangeMax: State.rangeMax,
+            matchTarget: State.matchTarget,
+            playerName: player.name,
+            playerAvatar: player.avatar,
+            playerFrame: player.frame
+          });
+        } else {
+          // Send guest profile to Host
+          sendPacket({
+            type: 'GUEST_READY',
+            playerName: player.name,
+            playerAvatar: player.avatar,
+            playerFrame: player.frame
+          });
+        }
+
+        // Start Ping Heartbeat
+        State.pingInterval = setInterval(() => {
+          if (State.conn && State.conn.open) {
+            sendPacket({ type: 'PING', time: Date.now() });
+          }
+        }, 3000);
+
+        startArenaMatch();
+      });
+
+      conn.on('data', (raw) => {
+        try {
+          const packet = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          handleIncomingPacket(packet);
+        } catch (e) {}
+      });
+
+      conn.on('close', () => {
+        showAlert('⚠️ Opponent disconnected from arena.', 'warning');
+        updateHeaderStatus('idle', 'Opponent Disconnected');
+      });
+    }
+
+    function sendPacket(pkg) {
+      if (State.conn && State.conn.open) {
+        State.conn.send(pkg);
+      }
+    }
+
+    function handleIncomingPacket(pkg) {
+      if (!pkg || !pkg.type) return;
+
+      switch (pkg.type) {
+        case 'PING':
+          sendPacket({ type: 'PONG', time: pkg.time });
+          break;
+
+        case 'PONG':
+          const latency = Math.max(1, Math.round((Date.now() - pkg.time) / 2));
+          updateHeaderStatus('connected', 'P2P Encrypted Session', latency);
+          break;
+
+        case 'INIT_CONFIG':
+          State.rangeMax = pkg.rangeMax;
+          State.maxAttempts = State.rangeMax === 50 ? 7 : State.rangeMax === 100 ? 10 : State.rangeMax === 500 ? 12 : 15;
+          State.matchTarget = pkg.matchTarget;
+          el.p2NameDisplay.innerText = pkg.playerName;
+          el.p2Avatar.innerText = pkg.playerAvatar;
+          el.p2Avatar.className = `w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-600 to-rose-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none ${pkg.playerFrame || 'frame-amber'}`;
+          startArenaMatch();
+          break;
+
+        case 'GUEST_READY':
+          el.p2NameDisplay.innerText = pkg.playerName;
+          el.p2Avatar.innerText = pkg.playerAvatar;
+          el.p2Avatar.className = `w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-600 to-rose-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none ${pkg.playerFrame || 'frame-amber'}`;
+          break;
+
+        case 'COMMIT_NUMBER':
+          handleIncomingCommitment(pkg);
+          break;
+
+        case 'GUESS':
+          handleIncomingGuess(pkg);
+          break;
+
+        case 'GUESS_FEEDBACK':
+          handleIncomingFeedback(pkg);
+          break;
+
+        case 'REVEAL_NUMBER':
+          handleIncomingReveal(pkg);
+          break;
+
+        case 'TAUNT':
+          triggerFloatingEmoji(pkg.emoji, false);
+          break;
+
+        case 'QUICK_CHAT':
+          showOpponentChatBubble(pkg.msg);
+          break;
+
+        case 'REMATCH_REQUEST':
+          State.oppRematchReady = true;
+          if (State.myRematchReady) startNewMatch();
+          break;
+      }
+    }
+
+    /* =======================================================
+     * 10. ARENA MATCH & ROUND LIFECYCLE
+     * ======================================================= */
+    function startArenaMatch() {
+      syncGameFormatUI();
+
+      State.roundNumber = 1;
+      State.p1Score = 0;
+      State.p2Score = 0;
+      State.roundHistory = [];
+
+      el.p1NameDisplay.innerText = player.name;
+      el.p1Avatar.innerText = player.avatar;
+      el.p1Avatar.className = `w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none ${player.frame}`;
+
+      if (State.isAI) {
+        State.aiBot = new SmartBot(1, State.rangeMax);
+        el.p2NameDisplay.innerText = 'Smart AI Bot';
+        el.p2Avatar.innerText = '🤖';
+        el.p2Avatar.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-600 to-rose-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none frame-amber';
+        el.p2TypeBadge.innerText = 'AI BOT';
+      } else {
+        el.p2TypeBadge.innerText = State.isHost ? 'GUEST' : 'HOST';
+      }
+
+      el.modalMatchOver.classList.add('hidden');
+      el.historyTableBody.innerHTML = '';
+      el.historyRoundCount.innerText = '0';
+
+      renderWinNodes();
+      setView('arena');
+      startNewRound();
+    }
+
+    function syncGameFormatUI() {
+      el.arenaRangeText.innerText = `1 — ${State.rangeMax}`;
+      el.setterRangeMin.innerText = '1';
+      el.setterRangeMax.innerText = State.rangeMax;
+      el.inputSetterNumber.max = State.rangeMax;
+      el.sliderSetterNumber.max = State.rangeMax;
+      el.inputGuesserGuess.max = State.rangeMax;
+      el.sliderGuesserGuess.max = State.rangeMax;
+
+      if (State.matchTarget === 0) {
+        State.requiredWins = Infinity;
+        el.arenaMatchTarget.innerText = 'Endless Mode';
+      } else if (State.matchTarget === 1) {
+        State.requiredWins = 1;
+        el.arenaMatchTarget.innerText = 'Sudden Death (1)';
+      } else {
+        State.requiredWins = Math.ceil(State.matchTarget / 2);
+        el.arenaMatchTarget.innerText = `Best of ${State.matchTarget} (First to ${State.requiredWins})`;
+      }
+    }
+
+    function startNewRound() {
+      State.roundActive = false;
+      State.secretNumber = null;
+      State.secretSalt = null;
+      State.lockedHash = null;
+      State.guessHistory = [];
+      State.currentSearchLow = 1;
+      State.currentSearchHigh = State.rangeMax;
+
+      // Role Alternation: Round 1 (Host is Setter), Round 2 (Guest is Setter), etc.
+      const isOddRound = State.roundNumber % 2 === 1;
+      State.myRole = (State.isHost ? isOddRound : !isOddRound) ? 'SETTER' : 'GUESSER';
+
+      el.arenaRoundNumber.innerText = `ROUND ${State.roundNumber}`;
+      el.modalRoundReveal.classList.add('hidden');
+
+      // Update Roles UI
+      if (State.myRole === 'SETTER') {
+        el.p1RoleBadge.innerText = 'SETTER';
+        el.p1RoleBadge.className = 'absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase';
+        el.p2RoleBadge.innerText = 'GUESSER';
+        el.p2RoleBadge.className = 'absolute -bottom-1 -left-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase';
+
+        el.stageSetter.classList.remove('hidden');
+        el.stageGuesser.classList.add('hidden');
+        el.setterInputPanel.classList.remove('hidden');
+        el.setterSpectatorPanel.classList.add('hidden');
+        el.inputSetterNumber.value = '';
+        el.sliderSetterNumber.value = Math.floor(State.rangeMax / 2);
+        el.displayCommitHash.innerText = 'Pick your number & commit...';
+      } else {
+        el.p1RoleBadge.innerText = 'GUESSER';
+        el.p1RoleBadge.className = 'absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase';
+        el.p2RoleBadge.innerText = 'SETTER';
+        el.p2RoleBadge.className = 'absolute -bottom-1 -left-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-black font-black text-[9px] sm:text-[10px] shadow font-mono uppercase';
+
+        el.stageSetter.classList.add('hidden');
+        el.stageGuesser.classList.remove('hidden');
+        el.inputGuesserGuess.value = '';
+        el.sliderGuesserGuess.value = Math.floor(State.rangeMax / 2);
+        el.guesserWindowMin.innerText = '1';
+        el.guesserWindowMax.innerText = State.rangeMax;
+        el.guesserAttemptsLeft.innerText = State.maxAttempts;
+        el.displayCommitHash.innerText = 'Waiting for opponent commitment...';
+
+        resetRadarUI();
+      }
+
+      // Clear guess stream
+      el.guessHistoryStream.innerHTML = '<div id="empty-history-placeholder" class="text-center py-6 text-xs font-mono text-theme-muted">No guesses submitted yet. Make your first attempt!</div>';
+      el.ledgerCount.innerText = '0 Attempts';
+
+      renderWinNodes();
+
+      // If AI is Setter
+      if (State.isAI && State.myRole === 'GUESSER') {
+        setTimeout(async () => {
+          const aiCommit = await State.aiBot.initSetter(1, State.rangeMax);
+          handleIncomingCommitment({
+            commitment: aiCommit.hash,
+            rangeMin: 1,
+            rangeMax: State.rangeMax,
+            maxAttempts: State.maxAttempts
+          });
+        }, 700);
+      }
+    }
+
+    function resetRadarUI() {
+      el.proximityRadar.className = 'w-full max-w-md p-3 sm:p-4 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between gap-3 shadow-inner transition-colors';
+      el.radarEmoji.innerText = '🌡️';
+      el.radarTitle.innerText = 'Proximity Radar';
+      el.radarDesc.innerText = 'Make a guess to calibrate temperature';
+      el.radarBadge.className = 'px-2.5 py-1 rounded-xl bg-theme-surface border border-theme-line text-[11px] font-mono font-black text-theme-muted shrink-0 uppercase';
+      el.radarBadge.innerText = 'CALIBRATING';
+    }
+
+    /* =======================================================
+     * 11. COMMIT-REVEAL & GUESS HANDLING
+     * ======================================================= */
+    async function commitSecretNumber() {
+      const val = parseInt(el.inputSetterNumber.value, 10);
+      if (isNaN(val) || val < 1 || val > State.rangeMax) {
+        showAlert(`Please enter a number between 1 and ${State.rangeMax}`, 'warning');
+        return;
+      }
+
+      sound.playTick();
+      triggerHaptic(30);
+
+      State.secretNumber = val;
+      State.secretSalt = await CryptoEngine.generateSalt();
+      State.lockedHash = await CryptoEngine.computeHash(val, State.secretSalt);
+      State.roundActive = true;
+
+      el.displayCommitHash.innerText = '🔒 Secret Number Locked In';
+      el.setterLockedDisplay.innerText = val;
+      el.setterGuessCountDisplay.innerText = `0 / ${State.maxAttempts}`;
+      el.setterLatestHintDisplay.innerText = 'Waiting for 1st guess...';
+
+      el.setterInputPanel.classList.add('hidden');
+      el.setterSpectatorPanel.classList.remove('hidden');
+      el.setterSpectatorPanel.classList.add('flex');
+
+      showAlert('🔒 Secret number locked in! Guessing has started.', 'info');
+
+      if (!State.isAI) {
+        sendPacket({
+          type: 'COMMIT_NUMBER',
+          commitment: State.lockedHash,
+          rangeMin: 1,
+          rangeMax: State.rangeMax,
+          maxAttempts: State.maxAttempts
+        });
+      } else {
+        // AI is Guesser
+        State.aiBot.initGuesser(1, State.rangeMax);
+        setTimeout(triggerAIGuess, 1200);
+      }
+    }
+
+    function handleIncomingCommitment(pkg) {
+      State.lockedHash = pkg.commitment;
+      State.roundActive = true;
+      el.displayCommitHash.innerText = '🔒 Secret Number Locked In';
+      showAlert('🔒 Opponent locked their secret number. Start guessing!', 'info');
+      sound.playTick();
+      triggerHaptic(30);
+    }
+
+    function submitGuesserGuess() {
+      if (!State.roundActive || State.myRole !== 'GUESSER') return;
+      const guess = parseInt(el.inputGuesserGuess.value, 10);
+      if (isNaN(guess) || guess < 1 || guess > State.rangeMax) {
+        showAlert(`Enter a number between 1 and ${State.rangeMax}`, 'warning');
+        return;
+      }
+
+      sound.playTick();
+      triggerHaptic(20);
+
+      if (!State.isAI) {
+        sendPacket({ type: 'GUESS', guess, attemptNum: State.guessHistory.length + 1 });
+      } else {
+        // AI evaluates guess
+        const hint = State.aiBot.evaluateGuess(guess);
+        const prox = calculateProximity(guess, State.aiBot.secret, State.rangeMax);
+        const attemptsLeft = State.maxAttempts - (State.guessHistory.length + 1);
+
+        setTimeout(() => {
+          handleIncomingFeedback({
+            guess,
+            hint,
+            proximity: prox.label,
+            attemptsLeft
+          });
+
+          // Check for win / loss vs AI
+          if (hint === 'CORRECT' || attemptsLeft <= 0) {
+            setTimeout(async () => {
+              handleIncomingReveal({
+                secretNumber: State.aiBot.secret,
+                salt: State.aiBot.salt
+              });
+            }, 600);
+          }
+        }, 300);
+      }
+    }
+
+    function handleIncomingGuess(pkg) {
+      if (!State.roundActive || State.myRole !== 'SETTER') return;
+
+      const guess = pkg.guess;
+      const hint = guess < State.secretNumber ? 'HIGHER' : guess > State.secretNumber ? 'LOWER' : 'CORRECT';
+      const prox = calculateProximity(guess, State.secretNumber, State.rangeMax);
+      const attemptsLeft = State.maxAttempts - (State.guessHistory.length + 1);
+
+      State.guessHistory.push({ guess, hint, proximity: prox.label });
+      appendGuessToLedger(guess, hint, prox, false);
+
+      el.setterGuessCountDisplay.innerText = `${State.guessHistory.length} / ${State.maxAttempts}`;
+      el.setterLatestHintDisplay.innerText = `Guess ${guess} → ${hint} (${prox.label})`;
+
+      if (hint === 'HIGHER') sound.playHigher();
+      else if (hint === 'LOWER') sound.playLower();
+      else sound.playCorrect();
+
+      // Transmit feedback
+      sendPacket({
+        type: 'GUESS_FEEDBACK',
+        guess,
+        hint,
+        proximity: prox.label,
+        attemptsLeft
+      });
+
+      // If round ended
+      if (hint === 'CORRECT' || attemptsLeft <= 0) {
+        setTimeout(() => {
+          sendPacket({
+            type: 'REVEAL_NUMBER',
+            secretNumber: State.secretNumber,
+            salt: State.secretSalt
+          });
+          resolveRoundOutcome(hint === 'CORRECT' ? 'GUESSER' : 'SETTER', State.secretNumber, State.secretSalt);
+        }, 700);
+      }
+    }
+
+    function handleIncomingFeedback(pkg) {
+      const { guess, hint, proximity, attemptsLeft } = pkg;
+      const prox = calculateProximity(guess, guess, State.rangeMax); // placeholder for style lookup
+      const proximityInfo = getProximityData(proximity);
+
+      State.guessHistory.push({ guess, hint, proximity });
+      appendGuessToLedger(guess, hint, proximityInfo, true);
+
+      // Update Search Window
+      if (hint === 'HIGHER') {
+        State.currentSearchLow = Math.max(State.currentSearchLow, guess + 1);
+        sound.playHigher();
+      } else if (hint === 'LOWER') {
+        State.currentSearchHigh = Math.min(State.currentSearchHigh, guess - 1);
+        sound.playLower();
+      } else {
+        sound.playCorrect();
+      }
+
+      el.guesserWindowMin.innerText = State.currentSearchLow;
+      el.guesserWindowMax.innerText = State.currentSearchHigh;
+      el.guesserAttemptsLeft.innerText = attemptsLeft;
+
+      // Update Radar UI
+      el.radarEmoji.innerText = proximityInfo.emoji;
+      el.radarTitle.innerText = `${hint} • ${proximityInfo.title}`;
+      el.radarDesc.innerText = proximityInfo.desc;
+      el.radarBadge.className = `px-2.5 py-1 rounded-xl text-[11px] font-mono font-black shrink-0 uppercase ${proximityInfo.color}`;
+      el.radarBadge.innerText = proximityInfo.label;
+
+      if (proximity === 'BURNING_HOT') player.unlockAchievement('burning_hot');
+    }
+
+    function getProximityData(label) {
+      switch (label) {
+        case 'BULLSEYE':
+          return { label: 'BULLSEYE', emoji: '🎯', title: 'Bullseye!', desc: 'Direct hit on the secret number', color: 'bg-emerald-500 text-black shadow-glow-emerald' };
+        case 'BURNING_HOT':
+          return { label: 'BURNING HOT', emoji: '🔥', title: 'Burning Hot!', desc: 'Within 2% of the number', color: 'bg-rose-600 text-white shadow-glow-rose' };
+        case 'HOT':
+          return { label: 'HOT', emoji: '🌡️', title: 'Hot!', desc: 'Very close to target', color: 'bg-amber-500 text-black shadow-glow-amber' };
+        case 'WARM':
+          return { label: 'WARM', emoji: '🌤️', title: 'Warm', desc: 'Approaching target window', color: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' };
+        case 'COLD':
+          return { label: 'COLD', emoji: '❄️', title: 'Cold', desc: 'Over 15% away from target', color: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' };
+        default:
+          return { label: 'FREEZING', emoji: '🧊', title: 'Freezing Ice', desc: 'Way off target', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' };
+      }
+    }
+
+    async function handleIncomingReveal(pkg) {
+      const { secretNumber, salt } = pkg;
+      
+      // Cryptographic verification
+      const isValid = await CryptoEngine.verifyCommitment(secretNumber, salt, State.lockedHash);
+      const isAuditPassed = CryptoEngine.auditHistory(State.guessHistory, secretNumber);
+
+      const lastGuess = State.guessHistory[State.guessHistory.length - 1];
+      const isCracked = lastGuess && lastGuess.guess === secretNumber;
+
+      resolveRoundOutcome(isCracked ? 'GUESSER' : 'SETTER', secretNumber, salt, isValid && isAuditPassed);
+    }
+
+    function resolveRoundOutcome(winnerRole, secretNum, salt, isVerified = true) {
+      State.roundActive = false;
+      const isMeWinner = State.myRole === winnerRole;
+
+      if (isMeWinner) {
+        State.p1Score++;
+        sound.playCorrect();
+        triggerHaptic([40, 60, 40]);
+      } else {
+        State.p2Score++;
+        sound.playMatchDefeat();
+        triggerHaptic(80);
+      }
+
+      // Achievement checks
+      if (isMeWinner && State.myRole === 'GUESSER') {
+        if (State.guessHistory.length <= 3) player.unlockAchievement('bullseye');
+        if (State.guessHistory.length === 1) player.unlockAchievement('mind_reader');
+        if (State.rangeMax >= 500) player.unlockAchievement('binary_master');
+      } else if (isMeWinner && State.myRole === 'SETTER') {
+        player.unlockAchievement('flawless_setter');
+      }
+
+      renderWinNodes();
+
+      // Show Round Reveal Modal
+      el.modalRoundReveal.classList.remove('hidden');
+      el.revealSecretNumber.innerText = secretNum;
+      if (el.revealGuessCount) {
+        el.revealGuessCount.innerText = `${State.guessHistory.length} attempt${State.guessHistory.length === 1 ? '' : 's'}`;
+      }
+      if (el.revealSalt) el.revealSalt.innerText = salt;
+      el.revealAuditStatus.innerText = isVerified ? '✓ 100% Fair Play Verified' : '⚠️ Tamper Detected';
+      el.revealAuditStatus.className = isVerified ? 'px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-bold text-[11px] flex items-center gap-1' : 'px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-400 font-bold text-[11px] flex items-center gap-1';
+
+      if (isMeWinner) {
+        el.roundRevealTitle.innerText = 'ROUND WON! 🏆';
+        el.roundRevealTitle.className = 'font-display font-black text-2xl text-emerald-400';
+        el.roundRevealSubtitle.innerText = State.myRole === 'GUESSER' ? `Cracked secret ${secretNum} in ${State.guessHistory.length} attempts!` : `Successfully protected secret ${secretNum}!`;
+      } else {
+        el.roundRevealTitle.innerText = 'ROUND LOST 💀';
+        el.roundRevealTitle.className = 'font-display font-black text-2xl text-rose-400';
+        el.roundRevealSubtitle.innerText = State.myRole === 'GUESSER' ? `Exhausted tries! Secret was ${secretNum}.` : `Opponent cracked your secret ${secretNum}!`;
+      }
+
+      recordRoundHistory(State.roundNumber, State.myRole === 'SETTER' ? 'You' : 'Opponent', State.myRole === 'GUESSER' ? 'You' : 'Opponent', secretNum, State.guessHistory.length, isMeWinner ? 'Won' : 'Lost');
+
+      // Check Match Over
+      if (State.p1Score >= State.requiredWins || State.p2Score >= State.requiredWins) {
+        setTimeout(handleMatchOver, 2200);
+      } else {
+        let nextTimer = 4;
+        el.autoNextRoundTimer.innerText = `Next round in ${nextTimer}s...`;
+        
+        const timerInt = setInterval(() => {
+          nextTimer--;
+          if (nextTimer > 0) {
+            el.autoNextRoundTimer.innerText = `Next round in ${nextTimer}s...`;
+          } else {
+            clearInterval(timerInt);
+            advanceToNextRound();
+          }
+        }, 1000);
+
+        el.btnNextRoundNow.onclick = () => {
+          clearInterval(timerInt);
+          advanceToNextRound();
+        };
+      }
+    }
+
+    function advanceToNextRound() {
+      State.roundNumber++;
+      startNewRound();
+    }
+
+    function appendGuessToLedger(guess, hint, proximityInfo, isMe) {
+      const placeholder = document.getElementById('empty-history-placeholder');
+      if (placeholder) placeholder.remove();
+
+      const item = document.createElement('div');
+      item.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line flex items-center justify-between gap-2 animate-pop-in text-xs font-mono';
+
+      const hintBadge = hint === 'HIGHER' ? '<span class="px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 font-bold">▲ HIGHER</span>' :
+                        hint === 'LOWER' ? '<span class="px-2 py-0.5 rounded bg-purple-500/15 text-purple-400 font-bold">▼ LOWER</span>' :
+                        '<span class="px-2 py-0.5 rounded bg-emerald-500 text-black font-bold">🎯 CORRECT</span>';
+
+      item.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="text-theme-muted font-bold">#${State.guessHistory.length}</span>
+          <strong class="text-theme-ink font-display font-black text-sm">${guess}</strong>
+        </div>
+        <div class="flex items-center gap-2">
+          ${hintBadge}
+          <span class="text-[11px] font-bold text-theme-muted">${proximityInfo.emoji} ${proximityInfo.label}</span>
+        </div>
+      `;
+
+      el.guessHistoryStream.prepend(item);
+      el.ledgerCount.innerText = `${State.guessHistory.length} Attempts`;
+    }
+
+    function recordRoundHistory(roundNum, setter, guesser, secret, tries, result) {
+      State.roundHistory.push({ roundNum, setter, guesser, secret, tries, result });
+      el.historyRoundCount.innerText = State.roundHistory.length;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="py-1.5 px-2 font-bold text-theme-ink">#${roundNum}</td>
+        <td class="py-1.5 px-2 text-theme-muted">${setter}</td>
+        <td class="py-1.5 px-2 text-theme-muted">${guesser}</td>
+        <td class="py-1.5 px-2 font-bold text-emerald-400">${secret}</td>
+        <td class="py-1.5 px-2">${tries} tries</td>
+        <td class="py-1.5 px-2 ${result === 'Won' ? 'text-emerald-400 font-bold' : 'text-rose-400'}">${result}</td>
+        <td class="py-1.5 px-2 text-[9px] text-emerald-400 font-mono">🛡️ Verified</td>
+      `;
+      el.historyTableBody.prepend(row);
+    }
+
+    function triggerAIGuess() {
+      if (!State.roundActive || State.myRole !== 'SETTER') return;
+
+      const guess = State.aiBot.pickGuess();
+      const hint = guess < State.secretNumber ? 'HIGHER' : guess > State.secretNumber ? 'LOWER' : 'CORRECT';
+      const prox = calculateProximity(guess, State.secretNumber, State.rangeMax);
+
+      State.aiBot.processFeedback(guess, hint);
+      State.guessHistory.push({ guess, hint, proximity: prox.label });
+      appendGuessToLedger(guess, hint, prox, false);
+
+      el.setterGuessCountDisplay.innerText = `${State.guessHistory.length} / ${State.maxAttempts}`;
+      el.setterLatestHintDisplay.innerText = `AI Guess ${guess} → ${hint} (${prox.label})`;
+
+      if (hint === 'HIGHER') sound.playHigher();
+      else if (hint === 'LOWER') sound.playLower();
+      else sound.playCorrect();
+
+      if (hint === 'CORRECT' || State.guessHistory.length >= State.maxAttempts) {
+        setTimeout(() => {
+          resolveRoundOutcome(hint === 'CORRECT' ? 'GUESSER' : 'SETTER', State.secretNumber, State.secretSalt, true);
+        }, 800);
+      } else {
+        setTimeout(triggerAIGuess, 1100 + Math.random() * 600);
+      }
+    }
+
+    /* =======================================================
+     * 12. MATCH OVER & REMATCH
+     * ======================================================= */
+    function handleMatchOver() {
+      const isWinner = State.p1Score >= State.requiredWins;
+      
+      el.modalRoundReveal.classList.add('hidden');
+      el.modalMatchOver.classList.remove('hidden');
+      State.myRematchReady = false;
+      State.oppRematchReady = false;
+      el.rematchBtnText.innerText = 'Play Again / Rematch';
+
+      el.statTotalRounds.innerText = State.roundHistory.length;
+      el.statFinalScore.innerText = `${State.p1Score} - ${State.p2Score}`;
+      const accuracy = Math.round((State.p1Score / Math.max(1, State.roundHistory.length)) * 100);
+      el.statFinalAccuracy.innerText = `${accuracy}%`;
+
+      player.addMatchResult(isWinner);
+
+      if (isWinner) {
+        sound.playMatchVictory();
+        triggerHaptic([60, 80, 100, 150]);
+        el.matchOverTitle.innerText = 'VICTORY! 🏆';
+        el.matchOverTitle.className = 'text-2xl sm:text-3xl font-display font-black text-emerald-400 tracking-tight';
+        el.matchOverSubtitle.innerText = `You dominated the arena ${State.p1Score} - ${State.p2Score}!`;
+        el.matchOverIcon.innerText = '👑';
+        el.matchOverIcon.className = 'relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-emerald mx-auto';
+        el.matchXpGain.innerText = '+250 XP';
+        el.matchEloGain.innerText = '+28 MMR';
+
+        if (window.confetti) {
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        }
+      } else {
+        sound.playMatchDefeat();
+        triggerHaptic(100);
+        el.matchOverTitle.innerText = 'DEFEAT 💀';
+        el.matchOverTitle.className = 'text-2xl sm:text-3xl font-display font-black text-rose-400 tracking-tight';
+        el.matchOverSubtitle.innerText = `Opponent took the match ${State.p2Score} - ${State.p1Score}. Ready for revenge?`;
+        el.matchOverIcon.innerText = '💀';
+        el.matchOverIcon.className = 'relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-rose mx-auto';
+        el.matchXpGain.innerText = '+40 XP';
+        el.matchEloGain.innerText = '-18 MMR';
+      }
+    }
+
+    function requestRematch() {
+      sound.playTick();
+      triggerHaptic(30);
+      State.myRematchReady = true;
+      el.rematchBtnText.innerText = 'Waiting for Opponent...';
+
+      if (!State.isAI) {
+        sendPacket({ type: 'REMATCH_REQUEST' });
+      } else {
+        setTimeout(() => {
+          State.oppRematchReady = true;
+          startNewMatch();
+        }, 500);
+      }
+
+      if (State.oppRematchReady) {
+        startNewMatch();
+      }
+    }
+
+    function startNewMatch() {
+      el.modalMatchOver.classList.add('hidden');
+      startArenaMatch();
+    }
+
+    /* =======================================================
+     * 13. SOCIAL TAUNTS & FLOATING EMOJIS
+     * ======================================================= */
+    function triggerFloatingEmoji(emoji, broadcast = true) {
+      sound.playTaunt();
+      triggerHaptic(15);
+
+      const elEmoji = document.createElement('div');
+      elEmoji.className = 'floating-emoji';
+      elEmoji.innerText = emoji;
+
+      const x = 15 + Math.random() * 70;
+      elEmoji.style.left = `${x}%`;
+      elEmoji.style.bottom = '120px';
+
+      el.tauntsOverlay.appendChild(elEmoji);
+      setTimeout(() => elEmoji.remove(), 2200);
+
+      if (broadcast && !State.isAI) {
+        sendPacket({ type: 'TAUNT', emoji });
+      }
+    }
+
+    function sendQuickChat(msg) {
+      sound.playTaunt();
+      triggerHaptic(20);
+      showAlert(`You: "${msg}"`, 'info', 2500);
+      if (!State.isAI) sendPacket({ type: 'QUICK_CHAT', msg });
+    }
+
+    function showOpponentChatBubble(msg) {
+      sound.playTaunt();
+      triggerHaptic(25);
+      showAlert(`${el.p2NameDisplay.innerText}: "${msg}"`, 'info', 3500);
+    }
+
+    /* =======================================================
+     * 14. PROFILE CUSTOMIZER & TROPHIES
+     * ======================================================= */
+    function openProfileCustomizer() {
+      sound.playTick();
+      triggerHaptic(20);
+      el.customizerNameInput.value = player.name;
+      el.selectPlayerTitle.value = player.title;
+
+      // Populate Avatars
+      el.avatarGrid.innerHTML = '';
+      AVATARS.forEach(av => {
+        const btn = document.createElement('button');
+        btn.className = `p-2 rounded-xl text-xl transition-all ${player.avatar === av ? 'bg-emerald-500/20 border-2 border-emerald-500 scale-110 shadow-glow-emerald' : 'bg-theme-surface-alt hover:bg-theme-surface border border-theme-line'}`;
+        btn.innerText = av;
+        btn.onclick = () => {
+          player.avatar = av;
+          openProfileCustomizer();
+        };
+        el.avatarGrid.appendChild(btn);
+      });
+
+      // Populate Frames
+      el.frameGrid.innerHTML = '';
+      FRAMES.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = `p-2 rounded-xl text-xs font-mono font-bold transition-all ${player.frame === f.class ? 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400' : 'bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-muted'}`;
+        btn.innerText = f.name;
+        btn.onclick = () => {
+          player.frame = f.class;
+          openProfileCustomizer();
+        };
+        el.frameGrid.appendChild(btn);
+      });
+
+      el.modalProfileCustomizer.classList.remove('hidden');
+    }
+
+    function saveProfile() {
+      const newName = el.customizerNameInput.value.trim();
+      if (newName) player.name = newName;
+      player.title = el.selectPlayerTitle.value;
+      player.save();
+      el.modalProfileCustomizer.classList.add('hidden');
+      showAlert('Passport preferences saved!', 'info');
+    }
+
+    function openTrophyHall() {
+      sound.playTick();
+      triggerHaptic(20);
+      el.trophiesListContainer.innerHTML = '';
+
+      ACHIEVEMENTS.forEach(ach => {
+        const isUnlocked = player.unlocked.includes(ach.id);
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border flex items-center gap-2.5 transition-all ${
+          isUnlocked ? 'bg-amber-500/10 border-amber-500/30 text-theme-ink' : 'bg-theme-surface-alt/40 border-theme-line opacity-50'
+        }`;
+
+        card.innerHTML = `
+          <div class="w-9 h-9 rounded-xl ${isUnlocked ? 'bg-amber-500/20 text-amber-400 shadow-glow-amber' : 'bg-stone-800 text-stone-500'} flex items-center justify-center text-lg shrink-0">
+            ${ach.icon}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-display font-bold text-xs ${isUnlocked ? 'text-theme-ink' : 'text-theme-muted'}">${ach.name}</span>
+              ${isUnlocked ? '<span class="text-[8px] px-1.5 py-0.2 rounded bg-amber-500 text-black font-black font-mono">UNLOCKED</span>' : '<span class="text-[8px] font-mono text-theme-muted">LOCKED</span>'}
+            </div>
+            <p class="text-[10px] text-theme-muted leading-tight mt-0.5">${ach.desc}</p>
+          </div>
+        `;
+        el.trophiesListContainer.appendChild(card);
+      });
+
+      el.modalTrophies.classList.remove('hidden');
+    }
+
+    /* =======================================================
+     * 15. MANUAL WEBRTC SDP RELAY
+     * ======================================================= */
+    let manualPeerConnection = null;
+    let manualDataChannel = null;
+
+    function openManualSignaling() {
+      el.modalManualSignaling.classList.remove('hidden');
+    }
+
+    async function generateManualOffer() {
+      manualPeerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      manualDataChannel = manualPeerConnection.createDataChannel('gameChannel');
+      setupManualDataChannel(manualDataChannel);
+
+      const offer = await manualPeerConnection.createOffer();
+      await manualPeerConnection.setLocalDescription(offer);
+
+      manualPeerConnection.onicecandidate = () => {
+        document.getElementById('manual-offer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+      };
+      document.getElementById('manual-offer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+    }
+
+    async function acceptManualAnswer() {
+      const answerStr = document.getElementById('manual-answer-input').value.trim();
+      if (!answerStr) return showAlert('Paste answer SDP first', 'warning');
+      try {
+        const answer = JSON.parse(answerStr);
+        await manualPeerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        showAlert('Manual connection established!', 'info');
+      } catch (e) {
+        showAlert('Invalid SDP format: ' + e.message, 'error');
+      }
+    }
+
+    async function generateManualAnswer() {
+      const offerStr = document.getElementById('manual-offer-input').value.trim();
+      if (!offerStr) return showAlert('Paste offer SDP first', 'warning');
+
+      try {
+        const offer = JSON.parse(offerStr);
+        manualPeerConnection = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        manualPeerConnection.ondatachannel = (e) => setupManualDataChannel(e.channel);
+
+        await manualPeerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await manualPeerConnection.createAnswer();
+        await manualPeerConnection.setLocalDescription(answer);
+
+        manualPeerConnection.onicecandidate = () => {
+          document.getElementById('manual-answer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+        };
+        document.getElementById('manual-answer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+      } catch (e) {
+        showAlert('Invalid offer SDP: ' + e.message, 'error');
+      }
+    }
+
+    function setupManualDataChannel(dc) {
+      State.conn = {
+        open: true,
+        send: (pkg) => dc.send(JSON.stringify(pkg))
+      };
+
+      dc.onopen = () => {
+        el.modalManualSignaling.classList.add('hidden');
+        State.roomCode = 'MANUAL';
+        State.isAI = false;
+        startArenaMatch();
+      };
+
+      dc.onmessage = (e) => {
+        try {
+          handleIncomingPacket(JSON.parse(e.data));
+        } catch (err) {}
+      };
+    }
+
+    /* =======================================================
+     * 16. EVENT LISTENERS & INITIALIZATION
+     * ======================================================= */
+    function returnToLobby() {
+      sound.playTick();
+      triggerHaptic(20);
+      clearInterval(State.pingInterval);
+      if (State.peer) {
+        State.peer.destroy();
+        State.peer = null;
+      }
+      State.conn = null;
+      State.roomCode = null;
+      State.isAI = false;
+      State.myRematchReady = false;
+      State.oppRematchReady = false;
+
+      // Close all modals cleanly
+      if (el.modalRoundReveal) el.modalRoundReveal.classList.add('hidden');
+      if (el.modalMatchOver) el.modalMatchOver.classList.add('hidden');
+      if (el.modalProfileCustomizer) el.modalProfileCustomizer.classList.add('hidden');
+      if (el.modalTrophies) el.modalTrophies.classList.add('hidden');
+      if (el.modalRules) el.modalRules.classList.add('hidden');
+      if (el.modalManualSignaling) el.modalManualSignaling.classList.add('hidden');
+
+      // Clear room param from URL without reload
+      if (window.location.search || window.location.hash) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      updateHeaderStatus('idle', 'Lobby Idle');
+      player.renderPassport();
+      setView('lobby');
+    }
+
+    // Profile & Trophies
+    el.btnOpenProfileCustomizer.addEventListener('click', openProfileCustomizer);
+    el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+    el.btnSaveProfile.addEventListener('click', saveProfile);
+
+    el.btnOpenTrophies.addEventListener('click', openTrophyHall);
+    el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+    el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+    // Config Selection
+    el.selectNumberRange.addEventListener('change', (e) => {
+      State.rangeMax = parseInt(e.target.value, 10);
+      State.maxAttempts = State.rangeMax === 50 ? 7 : State.rangeMax === 100 ? 10 : State.rangeMax === 500 ? 12 : 15;
+    });
+
+    el.selectMatchFormat.addEventListener('change', (e) => {
+      State.matchTarget = parseInt(e.target.value, 10);
+    });
+
+    // Host & Join
+    el.btnCreateRoom.addEventListener('click', hostOnlineRoom);
+    el.btnJoinRoom.addEventListener('click', () => joinOnlineRoom(el.inputJoinCode.value));
+    el.inputJoinCode.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') joinOnlineRoom(el.inputJoinCode.value);
+    });
+
+    // AI Mode
+    el.btnStartAI.addEventListener('click', () => {
+      sound.playTick();
+      triggerHaptic(25);
+      State.isAI = true;
+      State.isHost = true;
+      State.roomCode = 'AI-BOT';
+      State.rangeMax = parseInt(el.selectNumberRange.value, 10);
+      State.maxAttempts = State.rangeMax === 50 ? 7 : State.rangeMax === 100 ? 10 : State.rangeMax === 500 ? 12 : 15;
+      updateHeaderStatus('connected', 'AI Match (Single Player)');
+      startArenaMatch();
+    });
+
+    // Setter Controls
+    el.inputSetterNumber.addEventListener('input', (e) => {
+      el.sliderSetterNumber.value = e.target.value;
+    });
+    el.sliderSetterNumber.addEventListener('input', (e) => {
+      el.inputSetterNumber.value = e.target.value;
+    });
+    el.btnSetterRandom.addEventListener('click', () => {
+      sound.playTick();
+      const rand = Math.floor(Math.random() * State.rangeMax) + 1;
+      el.inputSetterNumber.value = rand;
+      el.sliderSetterNumber.value = rand;
+    });
+    el.btnCommitNumber.addEventListener('click', commitSecretNumber);
+
+    // Guesser Controls
+    el.inputGuesserGuess.addEventListener('input', (e) => {
+      el.sliderGuesserGuess.value = e.target.value;
+    });
+    el.sliderGuesserGuess.addEventListener('input', (e) => {
+      el.inputGuesserGuess.value = e.target.value;
+    });
+    el.btnSubmitGuess.addEventListener('click', submitGuesserGuess);
+    el.inputGuesserGuess.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitGuesserGuess();
+    });
+
+    // Step Buttons
+    const adjustGuess = (delta) => {
+      let cur = parseInt(el.inputGuesserGuess.value, 10) || Math.floor((State.currentSearchLow + State.currentSearchHigh) / 2);
+      cur = Math.max(1, Math.min(State.rangeMax, cur + delta));
+      el.inputGuesserGuess.value = cur;
+      el.sliderGuesserGuess.value = cur;
+      sound.playTick();
+    };
+
+    el.btnStepM10.addEventListener('click', () => adjustGuess(-10));
+    el.btnStepM1.addEventListener('click', () => adjustGuess(-1));
+    el.btnStepP1.addEventListener('click', () => adjustGuess(1));
+    el.btnStepP10.addEventListener('click', () => adjustGuess(10));
+    el.btnStepMid.addEventListener('click', () => {
+      const mid = Math.floor((State.currentSearchLow + State.currentSearchHigh) / 2);
+      el.inputGuesserGuess.value = mid;
+      el.sliderGuesserGuess.value = mid;
+      sound.playTick();
+    });
+
+    // Cancel & Leave
+    el.btnCancelWaiting.addEventListener('click', returnToLobby);
+    el.btnLeaveMatch.addEventListener('click', () => {
+      if (confirm('Abandon current match and return to lobby?')) {
+        returnToLobby();
+      }
+    });
+    el.btnModalExitLobby.addEventListener('click', returnToLobby);
+    el.btnRequestRematch.addEventListener('click', requestRematch);
+
+    // Copy Code & Link
+    el.btnCopyCode.addEventListener('click', () => {
+      navigator.clipboard.writeText(State.roomCode);
+      el.btnCopyCode.innerText = 'Copied! ✓';
+      setTimeout(() => { el.btnCopyCode.innerText = 'Copy'; }, 2000);
+    });
+    el.btnCopyLink.addEventListener('click', () => {
+      navigator.clipboard.writeText(el.displayRoomLink.value);
+      el.btnCopyLink.innerText = 'Copied! ✓';
+      setTimeout(() => { el.btnCopyLink.innerText = 'Copy Link'; }, 2000);
+    });
+    el.roomCodeBadge.addEventListener('click', () => {
+      if (State.roomCode) {
+        navigator.clipboard.writeText(State.roomCode);
+        showAlert(`Room Code "${State.roomCode}" copied!`, 'info', 2000);
+      }
+    });
+
+    // QR Code
+    el.btnToggleQr.addEventListener('click', () => {
+      const isHidden = el.qrContainer.classList.toggle('hidden');
+      document.getElementById('qr-arrow').innerText = isHidden ? '▼' : '▲';
+    });
+
+    // Social Taunts
+    document.querySelectorAll('.btn-taunt').forEach(btn => {
+      btn.addEventListener('click', () => triggerFloatingEmoji(btn.dataset.emoji, true));
+    });
+    document.querySelectorAll('.btn-quick-chat').forEach(btn => {
+      btn.addEventListener('click', () => sendQuickChat(btn.dataset.msg));
+    });
+
+    // History Drawer Toggle
+    el.btnToggleHistory.addEventListener('click', () => {
+      const isHidden = el.historyDrawer.classList.toggle('hidden');
+      document.getElementById('history-arrow').innerText = isHidden ? '▼' : '▲';
+    });
+
+    // Rules Modal
+    el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+    el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+    el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+    // Manual Signaling Modal
+    el.btnOpenManualSignaling.addEventListener('click', openManualSignaling);
+    el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+    document.getElementById('tab-manual-host').addEventListener('click', () => {
+      document.getElementById('manual-host-section').classList.remove('hidden');
+      document.getElementById('manual-join-section').classList.add('hidden');
+      document.getElementById('tab-manual-host').className = 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold font-mono';
+      document.getElementById('tab-manual-join').className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+    });
+    document.getElementById('tab-manual-join').addEventListener('click', () => {
+      document.getElementById('manual-host-section').classList.add('hidden');
+      document.getElementById('manual-join-section').classList.remove('hidden');
+      document.getElementById('tab-manual-join').className = 'flex-1 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold font-mono';
+      document.getElementById('tab-manual-host').className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+    });
+    document.getElementById('btn-gen-manual-offer').addEventListener('click', generateManualOffer);
+    document.getElementById('btn-accept-manual-answer').addEventListener('click', acceptManualAnswer);
+    document.getElementById('btn-gen-manual-answer').addEventListener('click', generateManualAnswer);
+
+    // Sound & Theme Toggles
+    el.btnSoundToggle.addEventListener('click', () => {
+      const isMuted = sound.toggleMute();
+      el.soundIcon.innerText = isMuted ? '🔇' : '🔊';
+      showAlert(isMuted ? 'Sound FX Muted' : 'Sound FX Enabled', 'info', 1500);
+    });
+    if (sound.isMuted) el.soundIcon.innerText = '🔇';
+
+    el.btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      el.themeIcon.innerText = isDark ? '🌙' : '☀️';
+      localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('theme-mode') === 'light') {
+      document.documentElement.classList.remove('dark');
+      el.themeIcon.innerText = '☀️';
+    }
+
+    // Auto-Join from URL query string ?room=NUM-XXXX
+    window.addEventListener('DOMContentLoaded', () => {
+      player.renderPassport();
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        el.inputJoinCode.value = roomParam;
+        joinOnlineRoom(roomParam);
+      }
+    });
+  </script>
+</body>
+</html>

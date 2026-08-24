@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Online Asteroids (2D Arcade & Multiplayer) | ArcadeLab</title>
+  <meta name="description" content="Play real-time 2-player Online Asteroids space combat directly in your browser. Co-op survival, PvP dogfight, neon vector physics, WebRTC P2P multiplayer, and zero servers." />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/games/asteroids/" />
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/asteroids/" />
+  <meta property="og:title" content="Online Asteroids | ArcadeLab" />
+  <meta property="og:description" content="Real-time 2-player browser-to-browser Asteroids space duel & co-op survival with host-authoritative WebRTC physics!" />
+
+  <!-- Google Fonts: Inter & Outfit & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/assets/css/site.min.css" />
+
+  <!-- PeerJS WebRTC Library -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+
+    /* Canvas Arena Styling */
+    #game-canvas {
+      background-color: #030712;
+      border: 2px solid rgb(var(--color-line));
+      border-radius: 1.25rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(99, 102, 241, 0.05);
+      touch-action: none;
+    }
+
+    /* Screen Shake Animation on Impact */
+    .screen-shake {
+      animation: impactShake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes impactShake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-5px, 2px, 0); }
+      40%, 60% { transform: translate3d(5px, -3px, 0); }
+    }
+
+    /* Avatar Glow Frames */
+    .frame-indigo { box-shadow: 0 0 15px rgba(99, 102, 241, 0.6); border: 2px solid #6366f1; }
+    .frame-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); border: 2px solid #10b981; }
+    .frame-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); border: 2px solid #f43f5e; }
+    .frame-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b; }
+    .frame-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); border: 2px solid #06b6d4; }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+
+    /* Virtual Mobile Controls */
+    .touch-btn {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      active: scale(0.92);
+    }
+  </style>
+</head>
+<body class="bg-theme-bg text-theme-ink min-h-screen flex flex-col transition-colors duration-300 antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION                        -->
+  <!-- ========================================== -->
+  <header class="border-b border-theme-line bg-theme-surface/70 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Title -->
+      <a href="/games/" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-600 to-pink-500 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform text-white">
+          🚀
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-black text-base tracking-tight text-theme-ink group-hover:text-cyan-400 transition-colors">
+              Asteroids
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              2D ARCADE P2P
+            </span>
+          </div>
+          <p class="text-[10px] text-theme-muted font-mono leading-none">ArcadeLab • 2-Player Real-Time Space Combat</p>
+        </div>
+      </a>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <!-- Player Passport Button -->
+        <button id="btn-passport-toggle" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm text-theme-ink" title="Player Passport">
+          <span id="header-avatar" class="text-sm">🚀</span>
+          <span id="header-elo" class="hidden sm:inline text-cyan-400">1000 ELO</span>
+        </button>
+
+        <!-- Trophy Hall Button -->
+        <button id="btn-trophy-hall" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Trophy Hall">
+          <span>🏆</span>
+          <span id="unlocked-badge-count" class="ml-1 text-[10px] font-mono font-bold text-cyan-400">0/12</span>
+        </button>
+
+        <!-- Rules / How to Play -->
+        <button id="btn-rules" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Flight Manual">
+          📖
+        </button>
+
+        <!-- Audio Toggle -->
+        <button id="btn-sound-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Dark/Light Mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Banner Container -->
+  <div id="alert-banner" class="max-w-md mx-auto fixed top-16 left-4 right-4 z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN CONTAINER (LOBBY / WAITING / ARENA)   -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-center items-center relative">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & MATCHMAKER                 -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="w-full max-w-lg space-y-4 py-2">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-2 relative">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          2D VECTOR ARCADE SPACE COMBAT
+        </div>
+        <h1 class="font-display font-black text-3xl sm:text-4xl text-theme-ink tracking-tight">
+          Online Asteroids
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto">
+          Take command of agile starships! Survive relentless asteroid waves together in live Co-op or battle in intense 1v1 PvP space dogfights.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT BANNER (LOBBY) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div id="lobby-avatar-preview" class="w-12 h-12 rounded-2xl bg-cyan-600 flex items-center justify-center text-2xl shadow-md frame-cyan">
+            🚀
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span id="lobby-player-name" class="font-display font-black text-sm text-theme-ink">CosmicAce</span>
+              <span id="lobby-player-rank" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-mono font-bold">🏆 Bronze I</span>
+            </div>
+            <span id="lobby-player-title" class="text-[11px] font-mono text-theme-muted block">Star Pilot</span>
+          </div>
+        </div>
+
+        <button id="btn-edit-profile" type="button" class="px-3 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-colors text-theme-ink">
+          Customize ⚙️
+        </button>
+      </div>
+
+      <!-- GAME SETTINGS CARD -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <!-- Setting 1: Game Mode (Co-op Survival vs PvP Dogfight) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono uppercase tracking-wider font-bold text-theme-muted">Mission Mode</label>
+            <span class="text-[10px] font-mono text-cyan-400 font-bold">Multiplayer Rules</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-mode-coop" type="button" class="p-2.5 rounded-xl bg-cyan-500/15 border-2 border-cyan-500 text-cyan-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all">
+              <span class="text-base">🤝 Co-op Survival</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Survive endless asteroid waves</span>
+            </button>
+            <button id="btn-mode-pvp" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink">
+              <span class="text-base">⚔️ PvP Dogfight</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Ship-to-ship combat duel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Ship Lives & Powerups -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <!-- Ship Lives -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Pilot Lives</label>
+            <select id="select-lives" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-cyan-500">
+              <option value="3" selected>3 Ships (Standard)</option>
+              <option value="5">5 Ships (Extended)</option>
+              <option value="1">1 Ship (Hardcore)</option>
+            </select>
+          </div>
+
+          <!-- Difficulty / Wave Speed -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Field Density</label>
+            <select id="select-density" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-cyan-500">
+              <option value="normal" selected>Normal (Standard Hazards)</option>
+              <option value="dense">Dense (Swarm Asteroids)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MULTIPLAYER & SINGLE PLAYER ACTION TABS -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <div class="flex items-center gap-2 border-b border-theme-line pb-3">
+          <button id="tab-btn-online" type="button" class="flex-1 py-2 rounded-xl bg-cyan-600 text-white font-display font-black text-xs transition-colors">
+            🌐 2-Player Online Combat
+          </button>
+          <button id="tab-btn-ai" type="button" class="flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors">
+            🤖 Single Player & AI Wingman
+          </button>
+        </div>
+
+        <!-- TAB 1: ONLINE MULTIPLAYER -->
+        <div id="tab-content-online" class="space-y-3.5">
+          <!-- Create Room Button -->
+          <button id="btn-create-room" type="button" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-white font-display font-black text-sm tracking-wide shadow-lg shadow-cyan-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <span>Launch 2-Player Mission</span>
+            <span>🚀</span>
+          </button>
+
+          <!-- Join by Room Code -->
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Or Join Existing Sector</span>
+            <div class="flex items-center gap-2">
+              <input id="input-room-code" type="text" placeholder="AST-XXXX" maxlength="8" class="flex-1 px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold uppercase tracking-wider text-theme-ink placeholder:text-theme-muted outline-none focus:border-cyan-500" />
+              <button id="btn-join-room" type="button" class="px-5 py-2.5 rounded-xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-xs transition-all active:scale-95">
+                Engage
+              </button>
+            </div>
+          </div>
+
+          <!-- Air-Gapped Direct Code Connection -->
+          <div class="pt-2 text-center">
+            <button id="btn-open-manual-signaling" type="button" class="text-[11px] font-mono text-theme-muted hover:text-cyan-400 transition-colors underline">
+              📡 Direct Code Connection (No Cloud Server)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: SINGLE PLAYER & AI WINGMAN -->
+        <div id="tab-content-ai" class="hidden space-y-3.5">
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Single Player Mode</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-play-solo" type="button" class="py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-display font-black text-xs transition-transform active:scale-95 shadow flex items-center justify-center gap-1.5">
+                <span>🚀 Solo Survival</span>
+              </button>
+              <button id="btn-play-ai-duel" type="button" class="py-3.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-black text-xs transition-colors flex items-center justify-center gap-1.5">
+                <span>🤖 Dogfight vs AI Bot</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING FOR OPPONENT               -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden w-full max-w-md space-y-4 text-center py-4">
+      
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
+        
+        <!-- Animated Radar Spinner -->
+        <div class="w-16 h-16 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mx-auto relative">
+          <span class="animate-spin text-2xl">📡</span>
+          <span class="absolute inset-0 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin"></span>
+        </div>
+
+        <div>
+          <h2 class="font-display font-black text-2xl text-theme-ink">Scanning for Wingman...</h2>
+          <p id="waiting-mode-desc" class="text-xs font-mono text-theme-muted mt-1">Co-op Survival Space Odyssey</p>
+        </div>
+
+        <!-- Room Code Display -->
+        <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Sector Room Code</span>
+          <div class="flex items-center justify-center gap-2">
+            <span id="waiting-room-code" class="font-mono font-black text-2xl sm:text-3xl text-cyan-400 tracking-widest select-all">AST-XXXX</span>
+            <button id="btn-copy-code" type="button" class="p-2 rounded-xl bg-theme-surface hover:bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors" title="Copy Code">
+              📋
+            </button>
+          </div>
+        </div>
+
+        <!-- Shareable Link Input -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Instant Flight Link</span>
+          <div class="flex items-center gap-2">
+            <input id="waiting-share-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted truncate outline-none select-all" />
+            <button id="btn-copy-link" type="button" class="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-colors shrink-0">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Share Shortcuts -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>💬 WhatsApp</span>
+          </a>
+          <a id="share-telegram" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>✈️ Telegram</span>
+          </a>
+          <button id="btn-show-qr" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold transition-colors flex items-center gap-1.5 text-theme-ink">
+            <span>📱 QR Code</span>
+          </button>
+        </div>
+
+        <!-- QR Code Container -->
+        <div id="qr-container" class="hidden flex-col items-center justify-center pt-2 space-y-2">
+          <canvas id="qr-canvas" class="rounded-xl border border-theme-line shadow-sm"></canvas>
+          <span class="text-[10px] font-mono text-theme-muted">Scan with phone to fly in the same sector</span>
+        </div>
+
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="mt-4 text-xs font-mono text-theme-muted hover:text-rose-400 transition-colors">
+        ✕ Abort & Return to Hangar
+      </button>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE ASTEROIDS COMBAT ARENA        -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col items-center justify-center w-full space-y-3">
+      
+      <!-- TOP STATUS & SCOREBOARD HUD -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-md relative overflow-hidden">
+        
+        <div class="flex items-center justify-between pb-2.5 border-b border-theme-line text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="arena-network-status" class="font-mono text-[11px] text-emerald-400 font-bold">Connected • P2P Active</span>
+            <span id="arena-ping-badge" class="text-[10px] font-mono text-theme-muted font-semibold hidden sm:inline">16ms</span>
+          </div>
+
+          <!-- Mode & Wave Indicator -->
+          <div class="flex items-center gap-1.5">
+            <span id="arena-mode-badge" class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 font-mono text-[10px] font-bold border border-cyan-500/20">
+              🤝 Co-op Survival
+            </span>
+            <span id="arena-wave-badge" class="px-2 py-0.5 rounded-full bg-theme-surface-alt text-amber-400 font-mono text-[10px] font-bold">
+              Wave 1
+            </span>
+          </div>
+
+          <!-- Mission Timer -->
+          <div class="flex items-center gap-1.5 font-mono">
+            <span class="text-theme-muted text-[11px]">Mission:</span>
+            <strong id="arena-timer" class="font-black text-base sm:text-lg text-cyan-400">00:00</strong>
+          </div>
+        </div>
+
+        <!-- PLAYERS VERSUS & LIVES HUD -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-4 pt-3 items-center relative">
+          
+          <!-- Player 1 (Left - You: Cyan Ship) -->
+          <div id="card-p1" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border-2 border-cyan-500/60 transition-all relative">
+            <div id="arena-p1-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-cyan-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-cyan">
+              🚀
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p1-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">You</span>
+                <span id="p1-powerup-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold animate-pulse">🛡️ SHIELD</span>
+              </div>
+              <div class="flex items-center gap-1 text-[11px] font-mono text-cyan-400">
+                <span id="p1-lives-display">🚀 🚀 🚀</span>
+              </div>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Score</span>
+              <strong id="arena-p1-score" class="text-xl sm:text-2xl font-mono font-black text-cyan-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Player 2 (Right - Opponent / Wingman: Rose Ship) -->
+          <div id="card-p2" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border border-theme-line transition-all relative">
+            <div id="arena-p2-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-rose">
+              🤖
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p2-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">Wingman</span>
+                <span id="p2-powerup-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold animate-pulse">🛡️ SHIELD</span>
+              </div>
+              <div class="flex items-center gap-1 text-[11px] font-mono text-rose-400">
+                <span id="p2-lives-display">🚀 🚀 🚀</span>
+              </div>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Score</span>
+              <strong id="arena-p2-score" class="text-xl sm:text-2xl font-mono font-black text-rose-400">0</strong>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ACTION & TAUNT BAR -->
+      <div class="w-full flex items-center justify-between gap-2 px-1">
+        <!-- Live Action Status Prompt -->
+        <div id="action-prompt-container" class="flex items-center gap-2 text-xs font-mono font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <span id="action-prompt-text" class="text-theme-ink">W / Up to Thrust • Space to Fire • Shift for Hyperspace</span>
+        </div>
+
+        <!-- Emoji Taunts -->
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🚀">🚀</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="💥">💥</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🛡️">🛡️</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="😱">😱</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👑">👑</button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- CANVAS ARENA CONTAINER                     -->
+      <!-- ========================================== -->
+      <div id="canvas-container" class="w-full relative flex items-center justify-center">
+        <canvas id="game-canvas" width="800" height="500" class="w-full max-w-4xl aspect-[16/10]"></canvas>
+
+        <!-- Floating Taunts Overlay -->
+        <div id="arena-taunts-overlay" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- MOBILE VIRTUAL CONTROLS (AUTO SHOWN TOUCH) -->
+      <!-- ========================================== -->
+      <div id="mobile-touch-controls" class="w-full max-w-4xl grid grid-cols-2 gap-3 pt-1 sm:hidden">
+        
+        <!-- Left: Steering & Hyperspace -->
+        <div class="flex items-center gap-2">
+          <button id="touch-left" type="button" class="touch-btn flex-1 py-4 rounded-2xl bg-theme-surface border border-theme-line font-black text-lg text-cyan-400 active:bg-cyan-500/20 shadow">
+            ◀
+          </button>
+          <button id="touch-right" type="button" class="touch-btn flex-1 py-4 rounded-2xl bg-theme-surface border border-theme-line font-black text-lg text-cyan-400 active:bg-cyan-500/20 shadow">
+            ▶
+          </button>
+          <button id="touch-hyper" type="button" class="touch-btn p-4 rounded-2xl bg-theme-surface border border-theme-line text-xs font-mono font-bold text-amber-400 active:bg-amber-500/20 shadow" title="Hyperspace">
+            🌌
+          </button>
+        </div>
+
+        <!-- Right: Thrust & Fire -->
+        <div class="flex items-center gap-2">
+          <button id="touch-thrust" type="button" class="touch-btn flex-1 py-4 rounded-2xl bg-indigo-600/30 border border-indigo-500 text-indigo-400 font-display font-black text-xs active:bg-indigo-600 active:text-white shadow">
+            THRUST ▲
+          </button>
+          <button id="touch-fire" type="button" class="touch-btn flex-1 py-4 rounded-2xl bg-rose-600/30 border border-rose-500 text-rose-400 font-display font-black text-xs active:bg-rose-600 active:text-white shadow">
+            FIRE 💥
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Leave Match & Return -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted w-full">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Abort Mission & Return to Hangar</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct WebRTC 30Hz UDP Snapshot Sync</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & WINNER REVEAL          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <div id="match-over-icon" class="w-16 h-16 rounded-3xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mx-auto shadow-md">
+        👑
+      </div>
+
+      <div>
+        <h3 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">MISSION ACCOMPLISHED!</h3>
+        <p id="match-over-subtitle" class="text-xs font-mono text-theme-muted mt-1">Wave 5 Cleared with 14,200 Points!</p>
+      </div>
+
+      <!-- Match Score Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Final Score:</span>
+          <strong id="stat-final-score" class="text-cyan-400 text-base font-black">14,200</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Highest Wave:</span>
+          <strong id="stat-final-wave" class="text-theme-ink font-bold">Wave 5</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Asteroids Vaporized:</span>
+          <strong id="stat-final-asteroids" class="text-theme-ink font-bold">48 Targets</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-theme-line">
+          <span class="text-theme-muted">Passport XP / ELO:</span>
+          <span class="text-emerald-400 font-bold text-[11px]">
+            <span id="match-xp-gain">+190 XP</span> • <span id="match-elo-gain">+26 ELO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-white font-display font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span id="rematch-btn-text">Relaunch Mission</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+          Exit to Hangar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Pilot Passport</h3>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Callsign Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="CosmicAce" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-cyan-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-cyan-500">
+          <option value="Star Pilot">Star Pilot</option>
+          <option value="Asteroid Slayer">Asteroid Slayer</option>
+          <option value="Dogfight Ace">Dogfight Ace</option>
+          <option value="Plasma Striker">Plasma Striker</option>
+          <option value="Void Walker">Void Walker</option>
+          <option value="Cosmic Grandmaster">Cosmic Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-display font-black text-xs transition-colors shadow">
+        Save Pilot Passport
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">12 unlockable pilot achievements</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & FLIGHT MANUAL               -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📖</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Flight Manual</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Controls, Physics & Power-Ups</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+          <strong class="font-bold text-theme-ink block mb-1">Starship Flight Controls:</strong>
+          Use <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">W</kbd> or <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">↑</kbd> to Thrust forward, <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">A</kbd>/<kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">D</kbd> to rotate, <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">Space</kbd> to fire lasers, and <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[10px]">Shift</kbd> for emergency Hyperspace Jump.
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-cyan-400 block">🛡️ Deflector Shield</span>
+            <span>Invulnerability + asteroid ramming</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-amber-400 block">⚡ Plasma Rapid-Fire</span>
+            <span>3x high-speed laser fire rate</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-rose-400 block">💥 EMP Shockwave</span>
+            <span>Vaporizes nearby asteroids</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-purple-400 block">🔱 Scatter Shot</span>
+            <span>Fires 3 spread laser bolts</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">Screen Wrapping Physics:</strong>
+          Asteroids and starships seamlessly wrap across opposite edges of the space arena.
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-display font-black text-xs transition-colors">
+        Ready for Takeoff!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DIRECT CODE CONNECTION (AIR-GAPPED) -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-bold font-mono">Host Pilot</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Wingman Pilot</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Sector Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Connection Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Wingman Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-black transition-colors">
+            Connect Starships
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Host Sector Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Send Response Code to Host:</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER & CROSS-GAME NAVIGATION             -->
+  <!-- ========================================== -->
+  <footer class="w-full border-t border-theme-line py-6 px-4 bg-theme-surface/40 mt-auto text-center text-xs text-theme-muted space-y-3">
+    <div class="flex items-center justify-center gap-4 sm:gap-6 flex-wrap font-medium">
+      <a href="/games/" class="hover:text-cyan-400 transition-colors">🕹️ All Games</a>
+      <a href="/games/endless-runner/" class="hover:text-cyan-400 transition-colors">🏃 Endless Runner</a>
+      <a href="/games/flappy-bird/" class="hover:text-cyan-400 transition-colors">🐦 Flappy Bird</a>
+      <a href="/games/sudoku/" class="hover:text-cyan-400 transition-colors">🧩 Sudoku</a>
+      <a href="/games/simon-says/" class="hover:text-cyan-400 transition-colors">🧠 Simon Says</a>
+      <a href="/games/whack-a-mole/" class="hover:text-cyan-400 transition-colors">🐹 Whack-a-Mole</a>
+      <a href="/games/hangman/" class="hover:text-cyan-400 transition-colors">🪢 Hangman</a>
+      <a href="/games/memory-matching/" class="hover:text-cyan-400 transition-colors">🃏 Memory Match</a>
+      <a href="/games/number-guessing/" class="hover:text-cyan-400 transition-colors">🎯 Number Guessing</a>
+      <a href="/games/rock-paper-scissors/" class="hover:text-cyan-400 transition-colors">✊ Rock Paper Scissors</a>
+      <a href="/games/tic-tac-toe/" class="hover:text-cyan-400 transition-colors">❌ Tic-Tac-Toe</a>
+      <a href="/tools/" class="hover:text-cyan-400 transition-colors">🧰 Developer Tools</a>
+    </div>
+    <p class="text-[11px] font-mono">
+      ArcadeLab • Built with WebRTC Host-Authoritative Physics & HTML5 Canvas • No custom backend required.
+    </p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT GAME LOGIC, CANVAS 2D PHYSICS, WEBRTC NETWORKING & SYNTHESIZER -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ========================================================================= */
+    /* 1. CONSTANTS & ACHIEVEMENTS                                               */
+    /* ========================================================================= */
+    const AVATARS = ['🚀', '🛸', '🛰️', '⚡', '🔮', '🎯', '🦊', '🦁', '🐼', '🦄', '🐙', '👾', '💎', '🪐', '👑', '🤖'];
+    const FRAMES = [
+      { id: 'cyan', name: 'Glacial Cyan', class: 'frame-cyan' },
+      { id: 'rose', name: 'Plasma Rose', class: 'frame-rose' },
+      { id: 'indigo', name: 'Cyber Indigo', class: 'frame-indigo' },
+      { id: 'emerald', name: 'Emerald Warp', class: 'frame-emerald' },
+      { id: 'amber', name: 'Solar Amber', class: 'frame-amber' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_flight', icon: '🚀', title: 'First Flight', desc: 'Complete your first Asteroids sortie' },
+      { id: 'asteroid_annihilator', icon: '💥', title: 'Asteroid Annihilator', desc: 'Destroy 50 asteroids in one match' },
+      { id: 'sharpshooter', icon: '🎯', title: 'Sharpshooter', desc: 'Maintain high laser accuracy' },
+      { id: 'coop_ace', icon: '🤝', title: 'Co-op Ace', desc: 'Reach Wave 5 with a wingman partner' },
+      { id: 'dogfight_champion', icon: '⚔️', title: 'Dogfight Champion', desc: 'Win a PvP space duel' },
+      { id: 'hyperspace_houdini', icon: '🌌', title: 'Hyperspace Houdini', desc: 'Survive an emergency hyperspace warp' },
+      { id: 'emp_titan', icon: '⚡', title: 'EMP Titan', desc: 'Vaporize asteroids with an EMP shockwave' },
+      { id: 'powerup_hoarder', icon: '🛡️', title: 'Powerup Hoarder', desc: 'Collect 5 powerups in a single life' },
+      { id: 'flawless_pilot', icon: '💎', title: 'Flawless Pilot', desc: 'Complete 3 waves without losing a ship' },
+      { id: 'high_roller', icon: '💯', title: 'High Roller', desc: 'Score 10,000+ points in one game' },
+      { id: 'century_pilot', icon: '🎖️', title: 'Century Pilot', desc: 'Destroy 100 targets across games' },
+      { id: 'cosmic_grandmaster', icon: '👑', title: 'Cosmic Grandmaster', desc: 'Reach 1500+ ELO in Player Passport' }
+    ];
+
+    /* ========================================================================= */
+    /* 2. AUDIO SYNTHESIZER (WEB AUDIO API)                                      */
+    /* ========================================================================= */
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = localStorage.getItem('ast:sound_enabled') !== 'false';
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playLaser(isP1 = true) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          const startFreq = isP1 ? 880 : 740;
+          osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.12);
+
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch (e) {}
+      }
+
+      playExplosion(size = 'large') {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const bufferSize = this.ctx.sampleRate * (size === 'large' ? 0.35 : 0.2);
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(size === 'large' ? 300 : 600, this.ctx.currentTime);
+          filter.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + (size === 'large' ? 0.35 : 0.2));
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + (size === 'large' ? 0.35 : 0.2));
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          noise.start();
+        } catch (e) {}
+      }
+
+      playPowerup() {
+        [440, 554.37, 659.25, 880].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'sine', 0.12, 0.15), i * 50);
+        });
+      }
+
+      playWarp() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.25);
+
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
+      }
+
+      playWin() {
+        const chord = [523.25, 659.25, 783.99, 1046.50];
+        chord.forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.4, 0.2), i * 100);
+        });
+      }
+    }
+
+    const sound = new AudioEngine();
+
+    /* ========================================================================= */
+    /* 3. PLAYER PASSPORT & PROGRESSION                                          */
+    /* ========================================================================= */
+    class PlayerPassport {
+      constructor() {
+        this.storageKey = 'ast:passport_v1';
+        this.name = 'CosmicAce';
+        this.avatar = '🚀';
+        this.frame = 'frame-cyan';
+        this.title = 'Star Pilot';
+        this.xp = 0;
+        this.elo = 1000;
+        this.asteroidsDestroyed = 0;
+        this.matchesWon = 0;
+        this.highestWave = 1;
+        this.trophies = [];
+        this.load();
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          if (raw) {
+            const data = JSON.parse(raw);
+            Object.assign(this, data);
+          }
+        } catch (e) {}
+      }
+
+      save() {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(this));
+        } catch (e) {}
+      }
+
+      getRank() {
+        if (this.elo >= 1800) return '🏆 Cosmic Grandmaster';
+        if (this.elo >= 1600) return '💎 Diamond Ace';
+        if (this.elo >= 1400) return '🥇 Gold Vanguard';
+        if (this.elo >= 1200) return '🥈 Silver Pilot';
+        return '🥉 Bronze Cadet';
+      }
+
+      addXP(amount, eloChange = 0) {
+        this.xp += amount;
+        this.elo = Math.max(800, this.elo + eloChange);
+        if (this.elo >= 1500) this.unlockTrophy('cosmic_grandmaster');
+        this.save();
+      }
+
+      unlockTrophy(id) {
+        if (!this.trophies.includes(id)) {
+          this.trophies.push(id);
+          this.save();
+          const t = ACHIEVEMENTS.find(a => a.id === id);
+          if (t) {
+            showAlert(`🏆 Achievement Unlocked: ${t.title}!`, 'success');
+            sound.playWin();
+          }
+        }
+      }
+    }
+
+    const player = new PlayerPassport();
+
+    /* ========================================================================= */
+    /* 4. GAME STATE & SIMULATION OBJECTS                                        */
+    /* ========================================================================= */
+    const state = {
+      mode: 'coop', // 'coop' or 'pvp'
+      livesSetting: 3,
+      densitySetting: 'normal',
+      
+      // Arena Dimensions
+      width: 800,
+      height: 500,
+      
+      // Simulation Entities
+      players: [], // [p1, p2]
+      asteroids: [],
+      projectiles: [],
+      powerups: [],
+      particles: [],
+      
+      // Match Lifecycle
+      isPlaying: false,
+      isHost: false,
+      isSolo: false,
+      wave: 1,
+      timerSeconds: 0,
+      timerInterval: null,
+      asteroidsDestroyedThisMatch: 0,
+
+      // Networking
+      peer: null,
+      conn: null,
+      roomCode: '',
+      peerProfile: { name: 'Wingman', avatar: '🤖', frame: 'frame-rose' },
+
+      // Local input state
+      input: {
+        thrust: false,
+        rotateLeft: false,
+        rotateRight: false,
+        firing: false,
+        hyperspace: false
+      },
+      lastFireTime: 0
+    };
+
+    /* ========================================================================= */
+    /* 5. DOM ELEMENTS MAP                                                       */
+    /* ========================================================================= */
+    const el = {};
+
+    function initDomElements() {
+      // Views
+      el.viewLobby = document.getElementById('view-lobby');
+      el.viewWaiting = document.getElementById('view-waiting');
+      el.viewArena = document.getElementById('view-arena');
+
+      // Header
+      el.headerAvatar = document.getElementById('header-avatar');
+      el.headerElo = document.getElementById('header-elo');
+      el.unlockedBadgeCount = document.getElementById('unlocked-badge-count');
+      el.soundIcon = document.getElementById('sound-icon');
+      el.themeIcon = document.getElementById('theme-icon');
+      el.btnPassportToggle = document.getElementById('btn-passport-toggle');
+      el.btnTrophyHall = document.getElementById('btn-trophy-hall');
+      el.btnRules = document.getElementById('btn-rules');
+      el.btnSoundToggle = document.getElementById('btn-sound-toggle');
+      el.btnThemeToggle = document.getElementById('btn-theme-toggle');
+      el.alertBanner = document.getElementById('alert-banner');
+
+      // Lobby
+      el.lobbyAvatarPreview = document.getElementById('lobby-avatar-preview');
+      el.lobbyPlayerName = document.getElementById('lobby-player-name');
+      el.lobbyPlayerRank = document.getElementById('lobby-player-rank');
+      el.lobbyPlayerTitle = document.getElementById('lobby-player-title');
+      el.btnEditProfile = document.getElementById('btn-edit-profile');
+
+      el.btnModeCoop = document.getElementById('btn-mode-coop');
+      el.btnModePvp = document.getElementById('btn-mode-pvp');
+      el.selectLives = document.getElementById('select-lives');
+      el.selectDensity = document.getElementById('select-density');
+
+      el.tabBtnOnline = document.getElementById('tab-btn-online');
+      el.tabBtnAi = document.getElementById('tab-btn-ai');
+      el.tabContentOnline = document.getElementById('tab-content-online');
+      el.tabContentAi = document.getElementById('tab-content-ai');
+      el.btnCreateRoom = document.getElementById('btn-create-room');
+      el.inputRoomCode = document.getElementById('input-room-code');
+      el.btnJoinRoom = document.getElementById('btn-join-room');
+      el.btnOpenManualSignaling = document.getElementById('btn-open-manual-signaling');
+      el.btnPlaySolo = document.getElementById('btn-play-solo');
+      el.btnPlayAiDuel = document.getElementById('btn-play-ai-duel');
+
+      // Waiting View
+      el.waitingModeDesc = document.getElementById('waiting-mode-desc');
+      el.waitingRoomCode = document.getElementById('waiting-room-code');
+      el.btnCopyCode = document.getElementById('btn-copy-code');
+      el.waitingShareLink = document.getElementById('waiting-share-link');
+      el.btnCopyLink = document.getElementById('btn-copy-link');
+      el.shareWhatsapp = document.getElementById('share-whatsapp');
+      el.shareTelegram = document.getElementById('share-telegram');
+      el.btnShowQr = document.getElementById('btn-show-qr');
+      el.qrContainer = document.getElementById('qr-container');
+      el.qrCanvas = document.getElementById('qr-canvas');
+      el.btnCancelWaiting = document.getElementById('btn-cancel-waiting');
+
+      // Arena View
+      el.arenaNetworkStatus = document.getElementById('arena-network-status');
+      el.arenaPingBadge = document.getElementById('arena-ping-badge');
+      el.arenaModeBadge = document.getElementById('arena-mode-badge');
+      el.arenaWaveBadge = document.getElementById('arena-wave-badge');
+      el.arenaTimer = document.getElementById('arena-timer');
+
+      el.arenaP1Avatar = document.getElementById('arena-p1-avatar');
+      el.arenaP1Name = document.getElementById('arena-p1-name');
+      el.p1PowerupBadge = document.getElementById('p1-powerup-badge');
+      el.p1LivesDisplay = document.getElementById('p1-lives-display');
+      el.arenaP1Score = document.getElementById('arena-p1-score');
+
+      el.cardP2 = document.getElementById('card-p2');
+      el.arenaP2Avatar = document.getElementById('arena-p2-avatar');
+      el.arenaP2Name = document.getElementById('arena-p2-name');
+      el.p2PowerupBadge = document.getElementById('p2-powerup-badge');
+      el.p2LivesDisplay = document.getElementById('p2-lives-display');
+      el.arenaP2Score = document.getElementById('arena-p2-score');
+
+      el.actionPromptText = document.getElementById('action-prompt-text');
+      el.canvasContainer = document.getElementById('canvas-container');
+      el.gameCanvas = document.getElementById('game-canvas');
+      el.ctx = el.gameCanvas.getContext('2d');
+      el.arenaTauntsOverlay = document.getElementById('arena-taunts-overlay');
+      el.btnLeaveMatch = document.getElementById('btn-leave-match');
+
+      // Touch Controls
+      el.touchLeft = document.getElementById('touch-left');
+      el.touchRight = document.getElementById('touch-right');
+      el.touchHyper = document.getElementById('touch-hyper');
+      el.touchThrust = document.getElementById('touch-thrust');
+      el.touchFire = document.getElementById('touch-fire');
+
+      // Modals
+      el.modalMatchOver = document.getElementById('modal-match-over');
+      el.matchOverIcon = document.getElementById('match-over-icon');
+      el.matchOverTitle = document.getElementById('match-over-title');
+      el.matchOverSubtitle = document.getElementById('match-over-subtitle');
+      el.statFinalScore = document.getElementById('stat-final-score');
+      el.statFinalWave = document.getElementById('stat-final-wave');
+      el.statFinalAsteroids = document.getElementById('stat-final-asteroids');
+      el.matchXpGain = document.getElementById('match-xp-gain');
+      el.matchEloGain = document.getElementById('match-elo-gain');
+      el.btnRequestRematch = document.getElementById('btn-request-rematch');
+      el.rematchBtnText = document.getElementById('rematch-btn-text');
+      el.btnModalExitLobby = document.getElementById('btn-modal-exit-lobby');
+
+      // Profile Modal
+      el.modalProfileCustomizer = document.getElementById('modal-profile-customizer');
+      el.btnCloseProfile = document.getElementById('btn-close-profile');
+      el.customizerNameInput = document.getElementById('customizer-name-input');
+      el.selectPlayerTitle = document.getElementById('select-player-title');
+      el.avatarGrid = document.getElementById('avatar-grid');
+      el.frameGrid = document.getElementById('frame-grid');
+      el.btnSaveProfile = document.getElementById('btn-save-profile');
+
+      // Trophies Modal
+      el.modalTrophies = document.getElementById('modal-trophies');
+      el.btnCloseTrophies = document.getElementById('btn-close-trophies');
+      el.trophiesListContainer = document.getElementById('trophies-list-container');
+      el.btnAckTrophies = document.getElementById('btn-ack-trophies');
+
+      // Rules Modal
+      el.modalRules = document.getElementById('modal-rules');
+      el.btnCloseRules = document.getElementById('btn-close-rules');
+      el.btnAckRules = document.getElementById('btn-ack-rules');
+
+      // Manual Signaling Modal
+      el.modalManualSignaling = document.getElementById('modal-manual-signaling');
+      el.btnCloseManualSignaling = document.getElementById('btn-close-manual-signaling');
+      el.tabManualHost = document.getElementById('tab-manual-host');
+      el.tabManualJoin = document.getElementById('tab-manual-join');
+      el.manualHostSection = document.getElementById('manual-host-section');
+      el.manualJoinSection = document.getElementById('manual-join-section');
+      el.btnGenManualOffer = document.getElementById('btn-gen-manual-offer');
+      el.manualOfferOutput = document.getElementById('manual-offer-output');
+      el.manualAnswerInput = document.getElementById('manual-answer-input');
+      el.btnAcceptManualAnswer = document.getElementById('btn-accept-manual-answer');
+      el.manualOfferInput = document.getElementById('manual-offer-input');
+      el.btnGenManualAnswer = document.getElementById('btn-gen-manual-answer');
+      el.manualAnswerOutput = document.getElementById('manual-answer-output');
+    }
+
+    /* ========================================================================= */
+    /* 6. UI RENDERING & PASSPORT SYNC                                           */
+    /* ========================================================================= */
+    function renderPassportUI() {
+      el.headerAvatar.textContent = player.avatar;
+      el.headerElo.textContent = `${player.elo} ELO`;
+      el.unlockedBadgeCount.textContent = `${player.trophies.length}/${ACHIEVEMENTS.length}`;
+
+      el.lobbyAvatarPreview.textContent = player.avatar;
+      el.lobbyAvatarPreview.className = `w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md ${player.frame}`;
+      el.lobbyPlayerName.textContent = player.name;
+      el.lobbyPlayerRank.textContent = player.getRank();
+      el.lobbyPlayerTitle.textContent = player.title;
+
+      // Render Trophies List
+      el.trophiesListContainer.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = player.trophies.includes(ach.id);
+        return `
+          <div class="p-2.5 rounded-xl border transition-all ${
+            isUnlocked ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-theme-surface-alt/50 border-theme-line opacity-50'
+          }">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">${ach.icon}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="font-display font-bold text-xs text-theme-ink">${ach.title}</strong>
+                  ${isUnlocked ? '<span class="text-[9px] font-mono text-emerald-400 font-bold">UNLOCKED</span>' : ''}
+                </div>
+                <p class="text-[10px] text-theme-muted font-mono leading-tight mt-0.5">${ach.desc}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function populateCustomizerGrids() {
+      el.avatarGrid.innerHTML = AVATARS.map(av => `
+        <button type="button" class="btn-avatar p-2.5 rounded-xl bg-theme-surface-alt hover:bg-cyan-500/20 border border-theme-line text-xl flex items-center justify-center transition-transform hover:scale-110 ${player.avatar === av ? 'border-cyan-500 ring-2 ring-cyan-500/40' : ''}" data-avatar="${av}">
+          ${av}
+        </button>
+      `).join('');
+
+      el.frameGrid.innerHTML = FRAMES.map(fr => `
+        <button type="button" class="btn-frame p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-center transition-transform hover:scale-105 ${player.frame === fr.class ? 'border-cyan-500 ring-2 ring-cyan-500/40' : ''}" data-frame="${fr.class}">
+          <div class="w-8 h-8 mx-auto rounded-lg bg-slate-800 flex items-center justify-center text-sm ${fr.class}">🚀</div>
+          <span class="text-[9px] font-mono block mt-1 text-theme-muted truncate">${fr.name}</span>
+        </button>
+      `).join('');
+
+      el.selectPlayerTitle.value = player.title;
+      el.customizerNameInput.value = player.name;
+    }
+
+    function showAlert(msg, type = 'info') {
+      el.alertBanner.textContent = msg;
+      el.alertBanner.className = `max-w-md mx-auto fixed top-16 left-4 right-4 z-50 p-3 rounded-2xl text-xs font-mono font-bold shadow-2xl text-center transition-all duration-300 transform translate-y-0 opacity-100 ${
+        type === 'success' ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20' :
+        type === 'error' ? 'bg-rose-500 text-white shadow-rose-500/20' :
+        'bg-cyan-600 text-white shadow-cyan-500/20'
+      }`;
+      setTimeout(() => {
+        el.alertBanner.classList.add('-translate-y-8', 'opacity-0');
+      }, 3200);
+    }
+
+    /* ========================================================================= */
+    /* 7. CANVAS 2D VECTOR PHYSICS & RENDERING ENGINE                            */
+    /* ========================================================================= */
+    function createShip(id, x, y, color = '#06b6d4') {
+      return {
+        id,
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        angle: -Math.PI / 2,
+        radius: 14,
+        color,
+        thrust: false,
+        shieldTime: 180, // 3s invulnerability on spawn
+        powerup: null,
+        powerupTime: 0,
+        lives: state.livesSetting,
+        score: 0,
+        dead: false,
+        respawnTimer: 0
+      };
+    }
+
+    function createAsteroid(x, y, size = 3) {
+      // size: 3 (Large: r=38), 2 (Medium: r=22), 1 (Small: r=12)
+      const radius = size === 3 ? 38 : size === 2 ? 22 : 12;
+      const speed = (4 - size) * (0.8 + Math.random() * 0.6);
+      const angle = Math.random() * Math.PI * 2;
+      const points = [];
+      const numPoints = 8 + Math.floor(Math.random() * 5);
+
+      for (let i = 0; i < numPoints; i++) {
+        const a = (i / numPoints) * Math.PI * 2;
+        const variance = radius * (0.75 + Math.random() * 0.4);
+        points.push({
+          x: Math.cos(a) * variance,
+          y: Math.sin(a) * variance
+        });
+      }
+
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size,
+        radius,
+        rotAngle: 0,
+        rotSpeed: (Math.random() - 0.5) * 0.04,
+        points
+      };
+    }
+
+    function createPowerup(x, y) {
+      const types = ['shield', 'rapid', 'emp', 'scatter'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        type,
+        radius: 12,
+        life: 600 // 10s lifetime
+      };
+    }
+
+    function addExplosion(x, y, count = 18, color = '#f59e0b') {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1;
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 30 + Math.random() * 25,
+          maxLife: 55,
+          color,
+          size: Math.random() * 2.5 + 1
+        });
+      }
+    }
+
+    function triggerScreenShake() {
+      el.gameCanvas.classList.remove('screen-shake');
+      void el.gameCanvas.offsetWidth;
+      el.gameCanvas.classList.add('screen-shake');
+    }
+
+    /* Spawn Initial Wave */
+    function spawnWave(waveNum) {
+      state.asteroids = [];
+      const baseCount = (state.densitySetting === 'dense') ? 6 : 4;
+      const count = baseCount + Math.min(6, waveNum * 2);
+
+      for (let i = 0; i < count; i++) {
+        let x, y, dist;
+        do {
+          x = Math.random() * state.width;
+          y = Math.random() * state.height;
+          dist = Math.hypot(x - state.width / 2, y - state.height / 2);
+        } while (dist < 140);
+
+        state.asteroids.push(createAsteroid(x, y, 3));
+      }
+      el.arenaWaveBadge.textContent = `Wave ${waveNum}`;
+    }
+
+    /* ========================================================================= */
+    /* 8. PHYSICS UPDATE LOOP (HOST-AUTHORITATIVE)                              */
+    /* ========================================================================= */
+    function updatePhysics() {
+      if (!state.isPlaying) return;
+
+      const p1 = state.players[0];
+      const p2 = state.players[1];
+
+      // Update P1 (Host) Input
+      if (p1 && !p1.dead) {
+        if (state.input.rotateLeft) p1.angle -= 0.07;
+        if (state.input.rotateRight) p1.angle += 0.07;
+        if (state.input.thrust) {
+          p1.vx += Math.cos(p1.angle) * 0.16;
+          p1.vy += Math.sin(p1.angle) * 0.16;
+          p1.thrust = true;
+
+          // Thruster flame particles
+          state.particles.push({
+            x: p1.x - Math.cos(p1.angle) * 12 + (Math.random() - 0.5) * 4,
+            y: p1.y - Math.sin(p1.angle) * 12 + (Math.random() - 0.5) * 4,
+            vx: -Math.cos(p1.angle) * (Math.random() * 2 + 1) + p1.vx * 0.4,
+            vy: -Math.sin(p1.angle) * (Math.random() * 2 + 1) + p1.vy * 0.4,
+            life: 14,
+            maxLife: 14,
+            color: Math.random() > 0.4 ? '#06b6d4' : '#60a5fa',
+            size: 2
+          });
+        } else {
+          p1.thrust = false;
+        }
+
+        // Fire Laser
+        if (state.input.firing) {
+          firePlayerLaser(p1);
+        }
+
+        // Hyperspace
+        if (state.input.hyperspace) {
+          state.input.hyperspace = false;
+          executeHyperspace(p1);
+        }
+      }
+
+      // Update Players Kinematics & Wrapping
+      state.players.forEach(p => {
+        if (!p) return;
+
+        if (p.dead) {
+          p.respawnTimer--;
+          if (p.respawnTimer <= 0 && p.lives > 0) {
+            p.dead = false;
+            p.x = state.width / (p.id === 0 ? 3 : 1.5);
+            p.y = state.height / 2;
+            p.vx = 0;
+            p.vy = 0;
+            p.shieldTime = 180;
+          }
+          return;
+        }
+
+        p.vx *= 0.988; // Slight inertia decay
+        p.vy *= 0.988;
+        p.x = (p.x + p.vx + state.width) % state.width;
+        p.y = (p.y + p.vy + state.height) % state.height;
+
+        if (p.shieldTime > 0) p.shieldTime--;
+        if (p.powerupTime > 0) {
+          p.powerupTime--;
+          if (p.powerupTime <= 0) p.powerup = null;
+        }
+      });
+
+      // Update Asteroids
+      state.asteroids.forEach(a => {
+        a.x = (a.x + a.vx + state.width) % state.width;
+        a.y = (a.y + a.vy + state.height) % state.height;
+        a.rotAngle += a.rotSpeed;
+      });
+
+      // Update Projectiles
+      for (let i = state.projectiles.length - 1; i >= 0; i--) {
+        const pr = state.projectiles[i];
+        pr.x = (pr.x + pr.vx + state.width) % state.width;
+        pr.y = (pr.y + pr.vy + state.height) % state.height;
+        pr.life--;
+
+        if (pr.life <= 0) {
+          state.projectiles.splice(i, 1);
+          continue;
+        }
+
+        // Host handles collisions
+        if (state.isHost) {
+          // Projectile vs Asteroid
+          for (let j = state.asteroids.length - 1; j >= 0; j--) {
+            const ast = state.asteroids[j];
+            if (Math.hypot(pr.x - ast.x, pr.y - ast.y) < ast.radius + 3) {
+              // Destroy projectile
+              state.projectiles.splice(i, 1);
+
+              // Split asteroid
+              destroyAsteroid(j, pr.playerId);
+              break;
+            }
+          }
+
+          // In PvP: Projectile vs Opponent Ship
+          if (state.mode === 'pvp' && pr) {
+            state.players.forEach(p => {
+              if (p && !p.dead && p.id !== pr.playerId && p.shieldTime <= 0) {
+                if (Math.hypot(pr.x - p.x, pr.y - p.y) < p.radius) {
+                  destroyShip(p);
+                }
+              }
+            });
+          }
+        }
+      }
+
+      // Update Powerups
+      for (let i = state.powerups.length - 1; i >= 0; i--) {
+        const pw = state.powerups[i];
+        pw.x = (pw.x + pw.vx + state.width) % state.width;
+        pw.y = (pw.y + pw.vy + state.height) % state.height;
+        pw.life--;
+
+        if (pw.life <= 0) {
+          state.powerups.splice(i, 1);
+          continue;
+        }
+
+        // Check pickup by players
+        state.players.forEach(p => {
+          if (p && !p.dead && Math.hypot(pw.x - p.x, pw.y - p.y) < pw.radius + p.radius) {
+            applyPowerup(p, pw.type);
+            state.powerups.splice(i, 1);
+          }
+        });
+      }
+
+      // Host Collision: Ship vs Asteroids
+      if (state.isHost) {
+        state.players.forEach(p => {
+          if (!p || p.dead) return;
+
+          state.asteroids.forEach(ast => {
+            if (Math.hypot(p.x - ast.x, p.y - ast.y) < p.radius + ast.radius - 2) {
+              if (p.shieldTime > 0 || p.powerup === 'shield') {
+                // Shield destroys asteroid!
+                destroyAsteroid(state.asteroids.indexOf(ast), p.id);
+              } else {
+                destroyShip(p);
+              }
+            }
+          });
+        });
+
+        // Wave Completion Check
+        if (state.asteroids.length === 0) {
+          state.wave++;
+          spawnWave(state.wave);
+          sound.playWin();
+          player.highestWave = Math.max(player.highestWave, state.wave);
+          if (state.wave >= 5) player.unlockTrophy('coop_ace');
+        }
+      }
+
+      // Update Particles
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const pt = state.particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life--;
+        if (pt.life <= 0) state.particles.splice(i, 1);
+      }
+
+      // Update UI HUD
+      updateHudDisplays();
+    }
+
+    function firePlayerLaser(p) {
+      const now = Date.now();
+      const fireDelay = (p.powerup === 'rapid') ? 90 : 180;
+      if (now - state.lastFireTime < fireDelay) return;
+      state.lastFireTime = now;
+
+      sound.playLaser(p.id === 0);
+
+      const speed = 8.5;
+      const tipX = p.x + Math.cos(p.angle) * p.radius;
+      const tipY = p.y + Math.sin(p.angle) * p.radius;
+
+      if (p.powerup === 'scatter') {
+        // 3-way spread
+        [-0.22, 0, 0.22].forEach(offset => {
+          const a = p.angle + offset;
+          state.projectiles.push({
+            playerId: p.id,
+            x: tipX,
+            y: tipY,
+            vx: Math.cos(a) * speed + p.vx * 0.3,
+            vy: Math.sin(a) * speed + p.vy * 0.3,
+            color: p.color,
+            life: 45
+          });
+        });
+      } else {
+        state.projectiles.push({
+          playerId: p.id,
+          x: tipX,
+          y: tipY,
+          vx: Math.cos(p.angle) * speed + p.vx * 0.3,
+          vy: Math.sin(p.angle) * speed + p.vy * 0.3,
+          color: p.color,
+          life: 50
+        });
+      }
+    }
+
+    function executeHyperspace(p) {
+      sound.playWarp();
+      addExplosion(p.x, p.y, 25, '#c084fc');
+      p.x = Math.random() * state.width;
+      p.y = Math.random() * state.height;
+      p.vx = 0;
+      p.vy = 0;
+      p.shieldTime = 90;
+      player.unlockTrophy('hyperspace_houdini');
+    }
+
+    function destroyAsteroid(idx, shooterId) {
+      if (idx < 0 || idx >= state.asteroids.length) return;
+      const ast = state.asteroids[idx];
+      state.asteroids.splice(idx, 1);
+
+      sound.playExplosion(ast.size === 3 ? 'large' : 'small');
+      addExplosion(ast.x, ast.y, ast.size * 10, '#fbbf24');
+      triggerScreenShake();
+
+      // Score points
+      const points = (4 - ast.size) * 100;
+      const shooter = state.players[shooterId];
+      if (shooter) shooter.score += points;
+
+      state.asteroidsDestroyedThisMatch++;
+      player.asteroidsDestroyed++;
+      if (state.asteroidsDestroyedThisMatch >= 50) player.unlockTrophy('asteroid_annihilator');
+      if (player.asteroidsDestroyed >= 100) player.unlockTrophy('century_pilot');
+
+      // Split into 2 smaller asteroids if size > 1
+      if (ast.size > 1) {
+        state.asteroids.push(createAsteroid(ast.x, ast.y, ast.size - 1));
+        state.asteroids.push(createAsteroid(ast.x, ast.y, ast.size - 1));
+      }
+
+      // Random Power-Up Drop (10% chance)
+      if (Math.random() < 0.12 && state.powerups.length < 3) {
+        state.powerups.push(createPowerup(ast.x, ast.y));
+      }
+    }
+
+    function destroyShip(p) {
+      sound.playExplosion('large');
+      addExplosion(p.x, p.y, 35, p.color);
+      triggerScreenShake();
+
+      p.dead = true;
+      p.lives--;
+      p.respawnTimer = 120; // 2s respawn delay
+      p.powerup = null;
+
+      // Check Match Over
+      const anyAlive = state.players.some(pl => pl.lives > 0);
+      if (!anyAlive) {
+        handleGameOver(false, 'All Starships Destroyed!');
+      } else if (state.mode === 'pvp' && p.lives <= 0) {
+        const winner = state.players.find(pl => pl.id !== p.id);
+        handleGameOver(winner && winner.id === 0, `Player ${winner ? winner.id + 1 : 1} Won the Dogfight!`);
+      }
+    }
+
+    function applyPowerup(p, type) {
+      sound.playPowerup();
+      p.powerup = type;
+      p.powerupTime = 480; // 8 seconds
+
+      if (type === 'emp') {
+        // Vaporize all small/medium asteroids in sector
+        sound.playExplosion('large');
+        triggerScreenShake();
+        let vaporized = 0;
+        for (let i = state.asteroids.length - 1; i >= 0; i--) {
+          if (state.asteroids[i].size <= 2) {
+            addExplosion(state.asteroids[i].x, state.asteroids[i].y, 12, '#60a5fa');
+            state.asteroids.splice(i, 1);
+            vaporized++;
+          }
+        }
+        if (vaporized >= 5) player.unlockTrophy('emp_titan');
+        showAlert('💥 EMP Shockwave Vaporized Asteroids!', 'success');
+      } else {
+        showAlert(`⚡ Power-Up Acquired: ${type.toUpperCase()}!`, 'info');
+      }
+
+      player.unlockTrophy('powerup_hoarder');
+    }
+
+    function updateHudDisplays() {
+      const p1 = state.players[0];
+      const p2 = state.players[1];
+
+      if (p1) {
+        el.arenaP1Score.textContent = p1.score;
+        el.p1LivesDisplay.textContent = '🚀 '.repeat(Math.max(0, p1.lives)) || '💀 Out';
+        if (p1.powerup) {
+          el.p1PowerupBadge.classList.remove('hidden');
+          el.p1PowerupBadge.textContent = `${p1.powerup.toUpperCase()}`;
+        } else {
+          el.p1PowerupBadge.classList.add('hidden');
+        }
+      }
+
+      if (p2) {
+        el.cardP2.classList.remove('hidden');
+        el.arenaP2Score.textContent = p2.score;
+        el.p2LivesDisplay.textContent = '🚀 '.repeat(Math.max(0, p2.lives)) || '💀 Out';
+        if (p2.powerup) {
+          el.p2PowerupBadge.classList.remove('hidden');
+          el.p2PowerupBadge.textContent = `${p2.powerup.toUpperCase()}`;
+        } else {
+          el.p2PowerupBadge.classList.add('hidden');
+        }
+      } else {
+        el.cardP2.classList.add('hidden');
+      }
+    }
+
+    /* ========================================================================= */
+    /* 9. CANVAS RENDER LOOP                                                     */
+    /* ========================================================================= */
+    function renderCanvas() {
+      const ctx = el.ctx;
+      const w = state.width;
+      const h = state.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Starfield Grid Background
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Draw Powerups
+      state.powerups.forEach(pw => {
+        ctx.save();
+        ctx.translate(pw.x, pw.y);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, pw.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pw.type === 'shield' ? '🛡️' : pw.type === 'rapid' ? '⚡' : pw.type === 'emp' ? '💥' : '🔱', 0, 0);
+        ctx.restore();
+      });
+
+      // Draw Asteroids
+      state.asteroids.forEach(a => {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.rotate(a.rotAngle);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 8;
+
+        ctx.beginPath();
+        a.points.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Draw Projectiles
+      state.projectiles.forEach(pr => {
+        ctx.save();
+        ctx.fillStyle = pr.color;
+        ctx.shadowColor = pr.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(pr.x, pr.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Particles
+      state.particles.forEach(pt => {
+        ctx.save();
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life / pt.maxLife;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Starships
+      state.players.forEach(p => {
+        if (!p || p.dead) return;
+
+        // Blinking if in spawn invulnerability
+        if (p.shieldTime > 0 && Math.floor(p.shieldTime / 6) % 2 === 0) return;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+
+        // Deflector Shield Bubble
+        if (p.shieldTime > 0 || p.powerup === 'shield') {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Starship Vector Hull
+        ctx.strokeStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.moveTo(p.radius, 0);
+        ctx.lineTo(-p.radius * 0.8, -p.radius * 0.7);
+        ctx.lineTo(-p.radius * 0.4, 0);
+        ctx.lineTo(-p.radius * 0.8, p.radius * 0.7);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Thruster Fire
+        if (p.thrust) {
+          ctx.strokeStyle = '#f97316';
+          ctx.shadowColor = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(-p.radius * 0.4, 0);
+          ctx.lineTo(-p.radius * 1.3 - Math.random() * 4, 0);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+
+      if (state.isPlaying) {
+        requestAnimationFrame(() => {
+          updatePhysics();
+          renderCanvas();
+        });
+      }
+    }
+
+    /* ========================================================================= */
+    /* 10. NETWORKING & WEBRTC HOST-AUTHORITATIVE STREAMING                     */
+    /* ========================================================================= */
+    function initHostPeer() {
+      const roomCode = 'AST-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      state.roomCode = roomCode;
+      state.isHost = true;
+
+      const peer = new Peer(roomCode, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      state.peer = peer;
+
+      peer.on('open', id => {
+        el.waitingRoomCode.textContent = id;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
+        el.waitingShareLink.value = shareUrl;
+        el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join my 2-player Asteroids combat sector: ' + shareUrl)}`;
+        el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Join my 2-player Asteroids combat sector!')}`;
+        generateQRCode(shareUrl);
+      });
+
+      peer.on('connection', conn => {
+        state.conn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('error', err => {
+        showAlert('Peer error: ' + err.type, 'error');
+      });
+    }
+
+    function joinPeerRoom(roomCode) {
+      state.isHost = false;
+      const peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      state.peer = peer;
+
+      peer.on('open', () => {
+        const conn = peer.connect(roomCode, { reliable: true });
+        state.conn = conn;
+        setupConnectionHandlers(conn);
+      });
+
+      peer.on('error', err => {
+        showAlert('Could not connect to sector: ' + err.type, 'error');
+      });
+    }
+
+    function setupConnectionHandlers(conn) {
+      conn.on('open', () => {
+        el.arenaNetworkStatus.textContent = 'Connected • P2P Active';
+        el.arenaNetworkStatus.className = 'font-mono text-[11px] text-emerald-400 font-bold';
+
+        if (state.isHost) {
+          sendData({
+            type: 'GAME_INIT',
+            mode: state.mode,
+            lives: state.livesSetting,
+            density: state.densitySetting,
+            hostProfile: { name: player.name, avatar: player.avatar, frame: player.frame }
+          });
+          startMatch();
+        } else {
+          sendData({
+            type: 'JOINER_PROFILE',
+            profile: { name: player.name, avatar: player.avatar, frame: player.frame }
+          });
+        }
+      });
+
+      conn.on('data', data => {
+        handleIncomingData(data);
+      });
+
+      conn.on('close', () => {
+        showAlert('Wingman disconnected from sector.', 'error');
+        el.arenaNetworkStatus.textContent = 'Wingman Disconnected';
+        el.arenaNetworkStatus.className = 'font-mono text-[11px] text-rose-400 font-bold';
+      });
+    }
+
+    function sendData(msg) {
+      if (state.conn && state.conn.open) {
+        try { state.conn.send(msg); } catch (e) {}
+      }
+    }
+
+    function handleIncomingData(data) {
+      switch (data.type) {
+        case 'GAME_INIT':
+          state.mode = data.mode;
+          state.livesSetting = data.lives;
+          state.densitySetting = data.density;
+          if (data.hostProfile) state.peerProfile = data.hostProfile;
+          startMatch();
+          break;
+
+        case 'JOINER_PROFILE':
+          if (data.profile) state.peerProfile = data.profile;
+          el.arenaP2Name.textContent = state.peerProfile.name;
+          el.arenaP2Avatar.textContent = state.peerProfile.avatar;
+          break;
+
+        case 'CLIENT_INPUT':
+          // Host receives Client P2 input
+          if (state.isHost && state.players[1]) {
+            const p2 = state.players[1];
+            if (!p2.dead) {
+              if (data.input.rotateLeft) p2.angle -= 0.07;
+              if (data.input.rotateRight) p2.angle += 0.07;
+              p2.thrust = !!data.input.thrust;
+              if (p2.thrust) {
+                p2.vx += Math.cos(p2.angle) * 0.16;
+                p2.vy += Math.sin(p2.angle) * 0.16;
+              }
+              if (data.input.firing) firePlayerLaser(p2);
+              if (data.input.hyperspace) executeHyperspace(p2);
+            }
+          }
+          break;
+
+        case 'WORLD_SNAPSHOT':
+          // Non-host reconciles state
+          if (!state.isHost) {
+            state.asteroids = data.asteroids;
+            state.projectiles = data.projectiles;
+            state.powerups = data.powerups;
+            state.wave = data.wave;
+
+            if (data.players) {
+              // Interpolate P1 (remote) and reconcile P2 (local)
+              if (data.players[0]) state.players[0] = data.players[0];
+              if (data.players[1]) {
+                const lp = state.players[1];
+                const sp = data.players[1];
+                lp.lives = sp.lives;
+                lp.score = sp.score;
+                lp.dead = sp.dead;
+                lp.powerup = sp.powerup;
+                lp.shieldTime = sp.shieldTime;
+                // Soft reconciliation lerp
+                lp.x += (sp.x - lp.x) * 0.2;
+                lp.y += (sp.y - lp.y) * 0.2;
+              }
+            }
+          }
+          break;
+
+        case 'TAUNT':
+          showFloatingTaunt(data.emoji, false);
+          break;
+
+        case 'REMATCH_REQUEST':
+          showAlert(`${state.peerProfile.name} requested a rematch!`, 'info');
+          el.rematchBtnText.textContent = 'Accept Rematch';
+          break;
+      }
+    }
+
+    function showFloatingTaunt(emoji) {
+      const taunt = document.createElement('div');
+      taunt.className = 'absolute text-3xl sm:text-4xl pointer-events-none animate-bounce z-40';
+      taunt.style.left = `${Math.random() * 80 + 10}%`;
+      taunt.style.top = `${Math.random() * 60 + 20}%`;
+      taunt.textContent = emoji;
+      el.arenaTauntsOverlay.appendChild(taunt);
+      setTimeout(() => taunt.remove(), 2000);
+    }
+
+    function generateQRCode(url) {
+      if (window.QRCode && el.qrCanvas) {
+        QRCode.toCanvas(el.qrCanvas, url, { width: 160, margin: 2 }, () => {});
+      }
+    }
+
+    /* ========================================================================= */
+    /* 11. MATCH LIFECYCLE                                                       */
+    /* ========================================================================= */
+    function startMatch() {
+      state.isPlaying = true;
+      state.wave = 1;
+      state.timerSeconds = 0;
+      state.asteroidsDestroyedThisMatch = 0;
+      state.particles = [];
+      state.projectiles = [];
+      state.powerups = [];
+
+      // Setup Players
+      const p1 = createShip(0, state.width / 3, state.height / 2, '#06b6d4');
+      state.players = [p1];
+
+      if (!state.isSolo) {
+        const p2 = createShip(1, (state.width / 3) * 2, state.height / 2, '#f43f5e');
+        state.players.push(p2);
+      }
+
+      el.arenaModeBadge.textContent = (state.mode === 'coop') ? '🤝 Co-op Survival' : '⚔️ PvP Dogfight';
+      el.arenaP1Name.textContent = player.name;
+      el.arenaP1Avatar.textContent = player.avatar;
+      el.arenaP2Name.textContent = state.peerProfile.name;
+      el.arenaP2Avatar.textContent = state.peerProfile.avatar;
+
+      // Timer
+      clearInterval(state.timerInterval);
+      el.arenaTimer.textContent = '00:00';
+      state.timerInterval = setInterval(() => {
+        state.timerSeconds++;
+        const mins = String(Math.floor(state.timerSeconds / 60)).padStart(2, '0');
+        const secs = String(state.timerSeconds % 60).padStart(2, '0');
+        el.arenaTimer.textContent = `${mins}:${secs}`;
+      }, 1000);
+
+      // Switch View
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.remove('hidden');
+
+      if (state.isHost) {
+        spawnWave(1);
+
+        // Host 30Hz snapshot broadcast
+        setInterval(() => {
+          if (state.isPlaying && state.conn && state.conn.open) {
+            sendData({
+              type: 'WORLD_SNAPSHOT',
+              wave: state.wave,
+              players: state.players,
+              asteroids: state.asteroids,
+              projectiles: state.projectiles,
+              powerups: state.powerups
+            });
+          }
+        }, 33);
+      }
+
+      renderCanvas();
+    }
+
+    function handleGameOver(isWin, reason = '') {
+      if (!state.isPlaying) return;
+      state.isPlaying = false;
+      clearInterval(state.timerInterval);
+
+      sound.playWin();
+
+      player.unlockTrophy('first_flight');
+      if (p1().score >= 10000) player.unlockTrophy('high_roller');
+      if (state.mode === 'pvp' && isWin) player.unlockTrophy('dogfight_champion');
+
+      const xpGain = isWin ? 190 : 70;
+      const eloGain = isWin ? 26 : -14;
+      player.addXP(xpGain, eloGain);
+
+      el.matchOverIcon.textContent = isWin ? '👑' : '🏁';
+      el.matchOverTitle.textContent = isWin ? 'MISSION ACCOMPLISHED!' : 'MISSION OVER';
+      el.matchOverSubtitle.textContent = reason || `Sortie concluded in ${el.arenaTimer.textContent}`;
+      el.statFinalScore.textContent = p1().score;
+      el.statFinalWave.textContent = `Wave ${state.wave}`;
+      el.statFinalAsteroids.textContent = `${state.asteroidsDestroyedThisMatch} Targets`;
+      el.matchXpGain.textContent = `+${xpGain} XP`;
+      el.matchEloGain.textContent = `${eloGain >= 0 ? '+' : ''}${eloGain} ELO`;
+
+      renderPassportUI();
+      el.modalMatchOver.classList.remove('hidden');
+    }
+
+    function p1() {
+      return state.players[0] || { score: 0, lives: 0 };
+    }
+
+    function returnToLobby() {
+      state.isPlaying = false;
+      clearInterval(state.timerInterval);
+      if (state.conn) state.conn.close();
+      if (state.peer) state.peer.destroy();
+
+      el.viewArena.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.modalMatchOver.classList.add('hidden');
+      el.viewLobby.classList.remove('hidden');
+    }
+
+    /* ========================================================================= */
+    /* 12. EVENT LISTENERS & CONTROLS                                            */
+    /* ========================================================================= */
+    function setupEventListeners() {
+      // Theme & Audio Toggles
+      el.btnThemeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        el.themeIcon.textContent = isDark ? '🌙' : '☀️';
+      });
+
+      el.btnSoundToggle.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        localStorage.setItem('ast:sound_enabled', sound.enabled);
+        el.soundIcon.textContent = sound.enabled ? '🔊' : '🔇';
+      });
+
+      // Modals
+      el.btnPassportToggle.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnEditProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+
+      el.btnTrophyHall.addEventListener('click', () => el.modalTrophies.classList.remove('hidden'));
+      el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+      el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+      el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+      el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+      el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+      el.btnOpenManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.remove('hidden'));
+      el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+
+      // Avatar & Frame Picker
+      el.avatarGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-avatar');
+        if (!btn) return;
+        player.avatar = btn.dataset.avatar;
+        document.querySelectorAll('.btn-avatar').forEach(b => b.classList.remove('border-cyan-500', 'ring-2', 'ring-cyan-500/40'));
+        btn.classList.add('border-cyan-500', 'ring-2', 'ring-cyan-500/40');
+      });
+
+      el.frameGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-frame');
+        if (!btn) return;
+        player.frame = btn.dataset.frame;
+        document.querySelectorAll('.btn-frame').forEach(b => b.classList.remove('border-cyan-500', 'ring-2', 'ring-cyan-500/40'));
+        btn.classList.add('border-cyan-500', 'ring-2', 'ring-cyan-500/40');
+      });
+
+      el.btnSaveProfile.addEventListener('click', () => {
+        const newName = el.customizerNameInput.value.trim();
+        if (newName) player.name = newName;
+        player.title = el.selectPlayerTitle.value;
+        player.save();
+        renderPassportUI();
+        el.modalProfileCustomizer.classList.add('hidden');
+        showAlert('Pilot Passport updated!', 'success');
+      });
+
+      // Mode Switchers
+      el.btnModeCoop.addEventListener('click', () => {
+        state.mode = 'coop';
+        el.btnModeCoop.className = 'p-2.5 rounded-xl bg-cyan-500/15 border-2 border-cyan-500 text-cyan-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModePvp.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      });
+
+      el.btnModePvp.addEventListener('click', () => {
+        state.mode = 'pvp';
+        el.btnModePvp.className = 'p-2.5 rounded-xl bg-cyan-500/15 border-2 border-cyan-500 text-cyan-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeCoop.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      });
+
+      // Settings Inputs
+      el.selectLives.addEventListener('change', e => state.livesSetting = parseInt(e.target.value));
+      el.selectDensity.addEventListener('change', e => state.densitySetting = e.target.value);
+
+      // Tabs (Online vs AI)
+      el.tabBtnOnline.addEventListener('click', () => {
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-cyan-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentOnline.classList.remove('hidden');
+        el.tabContentAi.classList.add('hidden');
+      });
+
+      el.tabBtnAi.addEventListener('click', () => {
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-cyan-600 text-white font-display font-black text-xs transition-colors';
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentAi.classList.remove('hidden');
+        el.tabContentOnline.classList.add('hidden');
+      });
+
+      // Create & Join Room
+      el.btnCreateRoom.addEventListener('click', () => {
+        state.isSolo = false;
+        el.viewLobby.classList.add('hidden');
+        el.viewWaiting.classList.remove('hidden');
+        el.waitingModeDesc.textContent = `${state.mode === 'coop' ? 'Co-op Survival' : 'PvP Dogfight'} • ${state.livesSetting} Ships`;
+        initHostPeer();
+      });
+
+      el.btnJoinRoom.addEventListener('click', () => {
+        const code = el.inputRoomCode.value.trim().toUpperCase();
+        if (!code) return showAlert('Enter a valid Sector Code!', 'error');
+        state.isSolo = false;
+        joinPeerRoom(code);
+      });
+
+      // Solo Launch
+      el.btnPlaySolo.addEventListener('click', () => {
+        state.isSolo = true;
+        state.isHost = true;
+        state.mode = 'coop';
+        startMatch();
+      });
+
+      el.btnPlayAiDuel.addEventListener('click', () => {
+        state.isSolo = false;
+        state.isHost = true;
+        state.mode = 'pvp';
+        state.peerProfile = { name: 'AI Viper', avatar: '🤖', frame: 'frame-rose' };
+        startMatch();
+      });
+
+      // Copy Buttons
+      el.btnCopyCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(state.roomCode);
+        showAlert('Room code copied!', 'success');
+      });
+
+      el.btnCopyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.waitingShareLink.value);
+        showAlert('Flight link copied!', 'success');
+      });
+
+      el.btnShowQr.addEventListener('click', () => {
+        el.qrContainer.classList.toggle('hidden');
+      });
+
+      el.btnCancelWaiting.addEventListener('click', returnToLobby);
+      el.btnLeaveMatch.addEventListener('click', returnToLobby);
+      el.btnModalExitLobby.addEventListener('click', returnToLobby);
+
+      // Taunts
+      document.querySelectorAll('.btn-taunt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const emoji = btn.dataset.taunt;
+          showFloatingTaunt(emoji);
+          sendData({ type: 'TAUNT', emoji });
+        });
+      });
+
+      // Rematch
+      el.btnRequestRematch.addEventListener('click', () => {
+        if (state.conn && state.conn.open) {
+          sendData({ type: 'REMATCH_REQUEST' });
+          showAlert('Rematch signal broadcasted!', 'info');
+        } else {
+          el.modalMatchOver.classList.add('hidden');
+          startMatch();
+        }
+      });
+
+      // Desktop Keyboard Event Handlers
+      window.addEventListener('keydown', e => {
+        if (!state.isPlaying) return;
+        if (['ArrowUp', 'KeyW'].includes(e.code)) state.input.thrust = true;
+        if (['ArrowLeft', 'KeyA'].includes(e.code)) state.input.rotateLeft = true;
+        if (['ArrowRight', 'KeyD'].includes(e.code)) state.input.rotateRight = true;
+        if (['Space'].includes(e.code)) state.input.firing = true;
+        if (['ShiftLeft', 'ShiftRight', 'KeyS', 'ArrowDown'].includes(e.code)) state.input.hyperspace = true;
+
+        if (!state.isHost && state.conn) {
+          sendData({ type: 'CLIENT_INPUT', input: state.input });
+        }
+      });
+
+      window.addEventListener('keyup', e => {
+        if (['ArrowUp', 'KeyW'].includes(e.code)) state.input.thrust = false;
+        if (['ArrowLeft', 'KeyA'].includes(e.code)) state.input.rotateLeft = false;
+        if (['ArrowRight', 'KeyD'].includes(e.code)) state.input.rotateRight = false;
+        if (['Space'].includes(e.code)) state.input.firing = false;
+        if (['ShiftLeft', 'ShiftRight', 'KeyS', 'ArrowDown'].includes(e.code)) state.input.hyperspace = false;
+
+        if (!state.isHost && state.conn) {
+          sendData({ type: 'CLIENT_INPUT', input: state.input });
+        }
+      });
+
+      // Mobile Touch Handlers
+      const bindTouch = (btn, prop) => {
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); state.input[prop] = true; });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); state.input[prop] = false; });
+        btn.addEventListener('mousedown', () => state.input[prop] = true);
+        btn.addEventListener('mouseup', () => state.input[prop] = false);
+      };
+
+      bindTouch(el.touchLeft, 'rotateLeft');
+      bindTouch(el.touchRight, 'rotateRight');
+      bindTouch(el.touchThrust, 'thrust');
+      bindTouch(el.touchFire, 'firing');
+      bindTouch(el.touchHyper, 'hyperspace');
+
+      // Auto-join from URL param
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        el.inputRoomCode.value = roomParam;
+        el.btnJoinRoom.click();
+      }
+    }
+
+    /* ========================================================================= */
+    /* 13. BOOTSTRAP APPLICATION                                                 */
+    /* ========================================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      initDomElements();
+      renderPassportUI();
+      populateCustomizerGrids();
+      setupEventListeners();
+
+      // Theme restore
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        el.themeIcon.textContent = '☀️';
+      }
+    });
+  </script>
+</body>
+</html>

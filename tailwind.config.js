@@ -3,6 +3,8 @@ export default {
   content: [
     "./index.html",
     "./tools/**/*.html",
+    "./games/**/*.html",
+    "./**/*.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',

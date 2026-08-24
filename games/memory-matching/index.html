@@ -1,0 +1,2345 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Online Memory Card Matching — Real-Time 2-Player WebRTC Duel | ArcadeLab</title>
+  <meta name="description" content="Play real-time 2-player Online Memory Card Matching in your browser. Flip cards, find matching pairs, build combo streaks, or challenge the smart AI bot. Free, serverless, and fast!">
+  <meta name="keywords" content="memory card game, card matching online, 2 player memory game, webrtc card game, arcadelab, online browser games">
+
+  <!-- Open Graph & Social Meta -->
+  <meta property="og:title" content="Online Memory Card Matching — ArcadeLab">
+  <meta property="og:description" content="Challenge your friends in real-time 2-player Memory Card Matching with 3D card flips, combo streaks, and smart AI!">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/memory-matching/">
+
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            theme: {
+              base: 'var(--color-base)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              line: 'var(--color-line)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              accent: 'var(--color-accent)',
+            }
+          },
+          fontFamily: {
+            sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Cabinet Grotesk', 'Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            'glow-indigo': '0 0 25px -5px rgba(99, 102, 241, 0.5)',
+            'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.5)',
+            'glow-amber': '0 0 25px -5px rgba(245, 158, 11, 0.5)',
+            'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.5)',
+            'glow-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.5)',
+            'neon-card': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@800;900&family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- PeerJS for WebRTC P2P DataChannels -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Victory Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- QR Code Generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --color-base: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-line: rgba(255, 255, 255, 0.08);
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-accent: #6366f1;
+    }
+    html:not(.dark) {
+      --color-base: #f8fafc;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f1f5f9;
+      --color-line: rgba(0, 0, 0, 0.08);
+      --color-ink: #0f172a;
+      --color-muted: #64748b;
+      --color-accent: #4f46e5;
+    }
+
+    body {
+      background-color: var(--color-base);
+      color: var(--color-ink);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 3D Card Flip Perspective & Animations */
+    .card-item-wrapper {
+      perspective: 1000px;
+      cursor: pointer;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+      border-radius: 1rem;
+    }
+
+    .card-item-wrapper.flipped .card-inner,
+    .card-item-wrapper.matched .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Card Back (Face Down) */
+    .card-back {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border: 2px solid rgba(99, 102, 241, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    html:not(.dark) .card-back {
+      background: linear-gradient(135deg, #ffffff, #f1f5f9);
+      border: 2px solid rgba(99, 102, 241, 0.25);
+    }
+
+    .card-back::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .card-item-wrapper:hover:not(.flipped):not(.matched) .card-inner {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Card Front (Face Up) */
+    .card-front {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 1));
+      border: 2px solid rgba(168, 85, 247, 0.5);
+    }
+    html:not(.dark) .card-front {
+      background: linear-gradient(135deg, #ffffff, #f8fafc);
+      border: 2px solid rgba(168, 85, 247, 0.4);
+    }
+
+    /* Matched States */
+    .card-item-wrapper.matched-p1 .card-front {
+      border-color: #10b981;
+      background: linear-gradient(135deg, rgba(6, 78, 59, 0.35), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 0 18px rgba(16, 185, 129, 0.45);
+      animation: match-pulse-p1 0.6s ease;
+    }
+    .card-item-wrapper.matched-p2 .card-front {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(120, 53, 15, 0.35), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.45);
+      animation: match-pulse-p2 0.6s ease;
+    }
+
+    /* Mismatch Shake */
+    .card-item-wrapper.mismatch .card-inner {
+      animation: card-shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+      border-color: #f43f5e !important;
+    }
+
+    @keyframes card-shake {
+      10%, 90% { transform: rotateY(180deg) translate3d(-2px, 0, 0); }
+      20%, 80% { transform: rotateY(180deg) translate3d(3px, 0, 0); }
+      30%, 50%, 70% { transform: rotateY(180deg) translate3d(-3px, 0, 0); }
+      40%, 60% { transform: rotateY(180deg) translate3d(3px, 0, 0); }
+    }
+
+    @keyframes match-pulse-p1 {
+      0% { transform: rotateY(180deg) scale(1); }
+      50% { transform: rotateY(180deg) scale(1.12); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+    @keyframes match-pulse-p2 {
+      0% { transform: rotateY(180deg) scale(1); }
+      50% { transform: rotateY(180deg) scale(1.12); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+
+    /* Floating Taunt Emoji Animation */
+    @keyframes float-taunt {
+      0% { opacity: 0; transform: translate(-50%, 20px) scale(0.6); }
+      20% { opacity: 1; transform: translate(-50%, -10px) scale(1.2); }
+      80% { opacity: 1; transform: translate(-50%, -60px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -100px) scale(0.7); }
+    }
+    .floating-taunt-node {
+      animation: float-taunt 2s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* Combo Banner Banner Pulse */
+    @keyframes combo-burst {
+      0% { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+      30% { opacity: 1; transform: scale(1.15) rotate(3deg); }
+      70% { opacity: 1; transform: scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: scale(0.9) translateY(-10px); }
+    }
+    .combo-banner-active {
+      animation: combo-burst 1.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Avatar Frames */
+    .frame-indigo { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), 0 0 15px rgba(99, 102, 241, 0.5); }
+    .frame-emerald { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4), 0 0 15px rgba(16, 185, 129, 0.5); }
+    .frame-amber { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4), 0 0 15px rgba(245, 158, 11, 0.5); }
+    .frame-rose { box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.4), 0 0 15px rgba(244, 63, 94, 0.5); }
+    .frame-cyan { box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.4), 0 0 15px rgba(6, 182, 212, 0.5); }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION BAR                    -->
+  <!-- ========================================== -->
+  <header class="w-full bg-theme-surface/80 backdrop-blur-md border-b border-theme-line sticky top-0 z-40 px-3 sm:px-6 py-2.5 flex items-center justify-between transition-colors">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- ArcadeLab Logo & Brand -->
+      <a href="/games/" class="flex items-center gap-2 group text-decoration-none">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white text-base sm:text-lg font-black shadow-glow-indigo group-hover:scale-105 transition-transform">
+          🃏
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-black text-sm sm:text-base tracking-tight text-theme-ink group-hover:text-indigo-400 transition-colors">ArcadeLab</span>
+            <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-500/10 text-indigo-400 font-mono font-bold border border-indigo-500/20">MATCH</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] text-theme-muted font-medium -mt-0.5 hidden xs:inline">A playground for browser games.</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Quick Stats & Settings Action Buttons -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Trophy Hall Button -->
+      <button id="btn-trophy-hall" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors flex items-center gap-1 text-xs" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-indigo-500 text-white text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Rules & How to Play Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="How to Play & Game Rules">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound FX Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Notification Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Game Workspace -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & PASSPORT                   -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-2xl mx-auto w-full space-y-4 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+          <span>⚡ Real-Time Online Duel • 3D Card Flips & Combos</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black font-display tracking-tight text-theme-ink">
+          Online <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Memory Match</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto leading-relaxed">
+          Test your photographic memory against friends in real-time 2-player duels, or train solo against the smart AI bot.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-neon-card relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-5">
+          
+          <!-- Avatar + Name + Title -->
+          <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div class="relative cursor-pointer group shrink-0" id="btn-open-profile-customizer" title="Customize Avatar, Frame & Title">
+              <div id="passport-avatar" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-indigo select-none transition-transform active:scale-95 frame-indigo">
+                🃏
+              </div>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-theme-surface border border-theme-line text-[10px] sm:text-xs flex items-center justify-center shadow" title="Edit Profile">
+                ✏️
+              </span>
+            </div>
+            
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h3 id="passport-name" class="font-display font-black text-lg sm:text-xl text-theme-ink truncate">Player</h3>
+                <span id="passport-rank-badge" class="px-1.5 py-0.2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono text-[10px] font-black uppercase">
+                  🏆 Bronze I
+                </span>
+              </div>
+              <p id="passport-title" class="text-[11px] sm:text-xs font-mono text-indigo-400 font-semibold mt-0.5 truncate">Card Seeker</p>
+              
+              <!-- XP Level Bar -->
+              <div class="flex items-center gap-2 mt-1.5">
+                <div class="flex-1 h-1.5 bg-theme-surface-alt rounded-full overflow-hidden">
+                  <div id="passport-xp-fill" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <span id="passport-level-text" class="text-[10px] font-mono text-theme-muted font-bold shrink-0">Lv. 1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Career Statistics Overview -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto text-center border-t sm:border-t-0 sm:border-l border-theme-line pt-3 sm:pt-0 sm:pl-5">
+            <div class="p-2 rounded-xl bg-theme-surface-alt/70 border border-theme-line">
+              <span class="block text-[10px] font-mono text-theme-muted uppercase">Rating</span>
+              <strong id="passport-elo" class="text-sm sm:text-base font-mono font-black text-indigo-400">1000</strong>
+            </div>
+            <div class="p-2 rounded-xl bg-theme-surface-alt/70 border border-theme-line">
+              <span class="block text-[10px] font-mono text-theme-muted uppercase">Wins</span>
+              <strong id="passport-wins" class="text-sm sm:text-base font-mono font-black text-emerald-400">0</strong>
+            </div>
+            <div class="p-2 rounded-xl bg-theme-surface-alt/70 border border-theme-line">
+              <span class="block text-[10px] font-mono text-theme-muted uppercase">Streak</span>
+              <strong id="passport-streak" class="text-sm sm:text-base font-mono font-black text-amber-400">🔥 0</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MATCH CONFIGURATION CARD -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-neon-card space-y-4">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Theme Selector -->
+          <div class="space-y-1.5">
+            <label class="block text-[11px] font-mono font-bold text-theme-muted uppercase tracking-wider">Deck Theme</label>
+            <select id="config-deck-theme" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-indigo-500 transition-colors">
+              <option value="cyber">👾 Cyber Arcade (Retro Gaming)</option>
+              <option value="safari">🐾 Wild Safari (Cute Animals)</option>
+              <option value="foodie">🍕 Foodie Craze (Delicious Snacks)</option>
+              <option value="cosmic">🌌 Cosmic Voyage (Space & Planets)</option>
+            </select>
+          </div>
+
+          <!-- Grid Size / Difficulty -->
+          <div class="space-y-1.5">
+            <label class="block text-[11px] font-mono font-bold text-theme-muted uppercase tracking-wider">Grid Size / Pairs</label>
+            <select id="config-grid-size" class="w-full px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-indigo-500 transition-colors">
+              <option value="quick">⚡ Quick Duel: 4x3 (12 cards / 6 pairs)</option>
+              <option value="classic">🎯 Classic Match: 4x4 (16 cards / 8 pairs)</option>
+              <option value="arcade" selected>🔥 Arcade Grid: 6x4 (24 cards / 12 pairs)</option>
+              <option value="master">👑 Mastermind: 6x6 (36 cards / 18 pairs)</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- PRIMARY ONLINE ACTION BUTTONS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          
+          <!-- Create Room Button -->
+          <button id="btn-create-room" type="button" class="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-display font-black text-sm sm:text-base shadow-glow-indigo transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <span>Create Online Match</span>
+            <span>🚀</span>
+          </button>
+
+          <!-- Join Room Form -->
+          <div class="flex items-center gap-2">
+            <input id="input-join-code" type="text" maxlength="8" placeholder="Enter Room Code (e.g. MEM-7842)" class="flex-1 px-4 py-3 rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs uppercase font-bold text-theme-ink placeholder:text-theme-muted focus:border-indigo-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="py-3 px-4 rounded-2xl bg-theme-surface-alt hover:bg-indigo-600 hover:text-white border border-theme-line text-xs font-mono font-bold transition-all shrink-0 active:scale-95">
+              Join ⚔️
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- SECONDARY OPTIONS: AI BOT & MANUAL CODE EXCHANGE -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+        
+        <!-- Play vs Smart AI Bot -->
+        <button id="btn-play-ai" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-amber-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Play vs Smart AI Bot</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 font-mono font-bold">Offline</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Train your memory against human-like AI levels</p>
+          </div>
+        </button>
+
+        <!-- Direct Code Exchange -->
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-cyan-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Direct Code Connection</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-cyan-500/10 text-cyan-400 font-mono font-bold">Offline / Local</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Connect directly by copying & pasting a room code</p>
+          </div>
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <!-- Pulsing Waiting Radar -->
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-indigo-500/30 animate-pulse"></div>
+        <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl text-white shadow-glow-indigo">
+          🃏
+        </div>
+      </div>
+
+      <h2 class="font-display font-black text-2xl sm:text-3xl text-theme-ink">Waiting for Opponent...</h2>
+      <p class="text-xs sm:text-sm text-theme-muted mt-1 max-w-sm">
+        Share this room code or direct link with a friend to begin the memory duel!
+      </p>
+
+      <!-- Room Code Display Card -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 mt-4 space-y-4 shadow-neon-card">
+        
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Your Room Code</span>
+          <div class="flex items-center justify-center gap-2">
+            <span id="waiting-room-code" class="font-mono text-2xl sm:text-3xl font-black text-indigo-400 tracking-wider">MEM-XXXX</span>
+            <button id="btn-copy-code" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono text-theme-ink transition-colors" title="Copy Room Code">
+              📋 Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- 1-Click Shareable URL Input -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Instant Invite Link</span>
+          <div class="flex items-center gap-2">
+            <input id="waiting-share-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted truncate outline-none select-all" />
+            <button id="btn-copy-link" type="button" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-colors shrink-0">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Share Shortcuts -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>💬 WhatsApp</span>
+          </a>
+          <a id="share-telegram" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>✈️ Telegram</span>
+          </a>
+          <button id="btn-show-qr" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold transition-colors flex items-center gap-1.5 text-theme-ink">
+            <span>📱 QR Code</span>
+          </button>
+        </div>
+
+        <!-- QR Code Container (Hidden by default) -->
+        <div id="qr-container" class="hidden flex-col items-center justify-center pt-2 space-y-2">
+          <canvas id="qr-canvas" class="rounded-xl border border-theme-line shadow-sm"></canvas>
+          <span class="text-[10px] font-mono text-theme-muted">Scan with phone camera to connect instantly</span>
+        </div>
+
+      </div>
+
+      <!-- Cancel / Return to Lobby Button -->
+      <button id="btn-cancel-waiting" type="button" class="mt-4 text-xs font-mono text-theme-muted hover:text-rose-400 transition-colors">
+        ✕ Cancel & Return to Lobby
+      </button>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE MATCH ARENA                   -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col items-center justify-center w-full space-y-3 sm:space-y-4">
+      
+      <!-- MATCH ARENA HEADER: PLAYERS & LIVE SCOREBOARD -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-neon-card relative overflow-hidden">
+        
+        <!-- Live Connection & Turn Status Header -->
+        <div class="flex items-center justify-between pb-2.5 border-b border-theme-line text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="arena-network-status" class="font-mono text-[11px] text-emerald-400 font-bold">Connected • P2P Active</span>
+            <span id="arena-ping-badge" class="text-[10px] font-mono text-theme-muted font-semibold hidden sm:inline">12ms</span>
+          </div>
+
+          <!-- Quick Game Stats (Pairs Left & Move Count) -->
+          <div class="flex items-center gap-3 font-mono text-[11px]">
+            <span class="text-theme-muted">Pairs Left: <strong id="stat-pairs-left" class="text-indigo-400 font-bold">12</strong></span>
+            <span class="text-theme-muted">Turns: <strong id="stat-turn-count" class="text-theme-ink font-bold">0</strong></span>
+          </div>
+        </div>
+
+        <!-- PLAYERS VERSUS BAR -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-4 pt-3 items-center relative">
+          
+          <!-- Player 1 Card (Left - You) -->
+          <div id="card-player-1" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border-2 border-indigo-500/60 transition-all relative">
+            <div id="arena-p1-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-glow-indigo frame-indigo">
+              🃏
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p1-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">You</span>
+                <span id="badge-p1-turn" class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold animate-pulse">TURN</span>
+              </div>
+              <span id="arena-p1-title" class="text-[10px] font-mono text-indigo-400 block truncate">Card Seeker</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Pairs</span>
+              <strong id="arena-p1-score" class="text-xl sm:text-2xl font-mono font-black text-emerald-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Player 2 Card (Right - Opponent / AI) -->
+          <div id="card-player-2" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border border-theme-line transition-all relative">
+            <div id="arena-p2-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm frame-purple">
+              🤖
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p2-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">Opponent</span>
+                <span id="badge-p2-turn" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold animate-pulse">TURN</span>
+              </div>
+              <span id="arena-p2-title" class="text-[10px] font-mono text-purple-400 block truncate">Memory Master</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Pairs</span>
+              <strong id="arena-p2-score" class="text-xl sm:text-2xl font-mono font-black text-amber-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Floating Combo Banner Container -->
+          <div id="combo-banner-container" class="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
+            <div id="combo-banner" class="hidden px-4 py-1.5 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 text-white font-display font-black text-sm sm:text-base shadow-glow-amber">
+              🔥 2x MATCH COMBO!
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- TURN STATUS & QUICK TAUNTS ACTION BAR -->
+      <div class="w-full flex items-center justify-between gap-2 px-1">
+        
+        <!-- Live Turn Prompt -->
+        <div id="turn-announcement" class="flex items-center gap-2 text-xs font-mono">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-theme-ink font-bold">Your Turn: Flip 2 cards</span>
+        </div>
+
+        <!-- Quick Floating Emoji Taunts -->
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🔥" title="Fire">🔥</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🎯" title="Bullseye">🎯</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🧠" title="Brain">🧠</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="😱" title="Shock">😱</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👑" title="Crown">👑</button>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 3D INTERACTIVE MEMORY CARD GRID CONTAINER  -->
+      <!-- ========================================== -->
+      <div id="memory-grid-wrapper" class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-neon-card relative min-h-[360px] flex items-center justify-center overflow-hidden">
+        
+        <!-- The Dynamic Card Grid (CSS Grid populated by JS) -->
+        <div id="card-grid" class="grid gap-2 sm:gap-3.5 w-full max-w-3xl mx-auto auto-rows-fr">
+          <!-- Populated dynamically based on grid preset (4x3, 4x4, 6x4, 6x6) -->
+        </div>
+
+        <!-- Floating Taunts Overlay -->
+        <div id="arena-taunts-overlay" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+
+      </div>
+
+      <!-- Leave Match & Return Option -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted w-full">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Match & Return to Lobby</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct WebRTC Encrypted Session</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & WINNER REVEAL          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4 animate-pop-in">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <!-- Trophy / Skull Icon -->
+      <div id="match-over-icon" class="w-16 h-16 rounded-3xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-3xl mx-auto shadow-glow-indigo">
+        👑
+      </div>
+
+      <div>
+        <h3 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">VICTORY!</h3>
+        <p id="match-over-subtitle" class="text-xs font-mono text-theme-muted mt-1">You won with 8 pairs found!</p>
+      </div>
+
+      <!-- Match Score & Stats Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Final Pairs Score:</span>
+          <strong id="stat-final-pairs" class="text-indigo-400 text-base font-black">8 vs 4</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Total Turns:</span>
+          <strong id="stat-final-turns" class="text-theme-ink font-bold">14</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Max Combo Streak:</span>
+          <strong id="stat-final-combo" class="text-amber-400 font-bold">🔥 3x Combo</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-theme-line">
+          <span class="text-theme-muted">Passport XP / ELO:</span>
+          <span class="text-emerald-400 font-bold text-[11px]">
+            <span id="match-xp-gain">+150 XP</span> • <span id="match-elo-gain">+24 ELO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons (Rematch & Lobby) -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-display font-bold text-xs shadow-glow-indigo transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span id="rematch-btn-text">Play Again</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+          Exit to Lobby
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Player Passport</h3>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Battle Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="Player" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-indigo-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-indigo-500">
+          <option value="Card Seeker">Card Seeker</option>
+          <option value="Memory Sleuth">Memory Sleuth</option>
+          <option value="Photographic Mind">Photographic Mind</option>
+          <option value="Combo King">Combo King</option>
+          <option value="Memory Legend">Memory Legend</option>
+          <option value="Grandmaster">Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-display font-bold text-xs transition-colors shadow">
+        Save Passport
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">12 unlockable career achievements</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & HOW TO PLAY                 -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📖</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">How to Play</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Rules of Online Memory Match</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <strong class="font-bold text-theme-ink block mb-1">1. The Goal:</strong>
+          Find the most matching card pairs by flipping 2 cards on your turn.
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">2. Turn Flow & Combos:</strong>
+          • If your 2 flipped cards <strong>MATCH</strong>: You score a point, build a combo streak, and <strong>take another turn!</strong><br>
+          • If they <strong>DON'T MATCH</strong>: Both cards are shown for 1 second, then flip face-down and your turn ends.
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">3. Winning the Match:</strong>
+          The player with the most pairs found when all cards are cleared wins the duel and earns ELO ranking points!
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-display font-bold text-xs transition-colors">
+        Got It, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DIRECT CODE CONNECTION (AIR-GAPPED) -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold font-mono">Player 1 (Host)</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Player 2 (Join)</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Host Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-indigo-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Connection Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Player 2 Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors">
+            Connect Players
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Player 1 Host Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-purple-600 hover:text-white border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Your Response Code (Send to Player 1):</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER & CROSS-GAME NAVIGATION             -->
+  <!-- ========================================== -->
+  <footer class="w-full border-t border-theme-line py-6 px-4 bg-theme-surface/40 mt-auto text-center text-xs text-theme-muted space-y-3">
+    <div class="flex items-center justify-center gap-4 sm:gap-6 flex-wrap font-medium">
+      <a href="/games/" class="hover:text-indigo-400 transition-colors">🕹️ All Games</a>
+      <a href="/games/endless-runner/" class="hover:text-indigo-400 transition-colors">🏃 Endless Runner</a>
+      <a href="/games/flappy-bird/" class="hover:text-indigo-400 transition-colors">🐦 Flappy Bird</a>
+      <a href="/games/asteroids/" class="hover:text-indigo-400 transition-colors">🚀 Asteroids</a>
+      <a href="/games/sudoku/" class="hover:text-indigo-400 transition-colors">🧩 Sudoku</a>
+      <a href="/games/simon-says/" class="hover:text-indigo-400 transition-colors">🧠 Simon Says</a>
+      <a href="/games/whack-a-mole/" class="hover:text-indigo-400 transition-colors">🐹 Whack-a-Mole</a>
+      <a href="/games/hangman/" class="hover:text-indigo-400 transition-colors">🪢 Hangman</a>
+      <a href="/games/number-guessing/" class="hover:text-indigo-400 transition-colors">🎯 Number Guessing</a>
+      <a href="/games/rock-paper-scissors/" class="hover:text-indigo-400 transition-colors">✊ Rock Paper Scissors</a>
+      <a href="/games/tic-tac-toe/" class="hover:text-indigo-400 transition-colors">❌ Tic-Tac-Toe</a>
+      <a href="/tools/" class="hover:text-indigo-400 transition-colors">🧰 Developer Tools</a>
+    </div>
+    <p class="text-[11px] font-mono">
+      ArcadeLab • Built with WebRTC & HTML5 Web Audio • No backend required.
+    </p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- GAME SCRIPT: WEBRTC NETWORKING, 3D CARD ENGINE, AI BOT & AUDIO SYNTHESIZER -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ========================================================================= */
+    /* 1. CONSTANTS & DECK DEFINITIONS                                           */
+    /* ========================================================================= */
+    const DECK_THEMES = {
+      cyber: {
+        name: 'Cyber Arcade',
+        icons: ['👾', '🕹️', '🎮', '🚀', '💎', '⚡', '🤖', '🎲', '🏆', '👑', '🛸', '🔮', '💣', '🎯', '🧬', '🛡️', '⚔️', '🪐']
+      },
+      safari: {
+        name: 'Wild Safari',
+        icons: ['🦁', '🐯', '🐼', '🦊', '🐨', '🦄', '🐙', '🐬', '🦋', '🦉', '🦖', '🦚', '🐝', '🦩', '🦈', '🐺', '🦝', '🐸']
+      },
+      foodie: {
+        name: 'Foodie Craze',
+        icons: ['🍕', '🍔', '🌮', '🍣', '🍩', '🍦', '🥑', '🍓', '🍿', '🍪', '🥨', '🥐', '🍇', '🥞', '🍜', '🍉', '🧀', '🧁']
+      },
+      cosmic: {
+        name: 'Cosmic Voyage',
+        icons: ['🪐', '🚀', '🛸', '🌌', '☄️', '🛰️', '🌕', '👽', '🌠', '🔭', '☀️', '🧑‍🚀', '🌍', '💫', '🌟', '🌑', '🪐', '🔮']
+      }
+    };
+
+    const GRID_PRESETS = {
+      quick: { name: 'Quick Duel', cols: 4, rows: 3, pairs: 6, cssCols: 'grid-cols-4' },
+      classic: { name: 'Classic Match', cols: 4, rows: 4, pairs: 8, cssCols: 'grid-cols-4' },
+      arcade: { name: 'Arcade Grid', cols: 6, rows: 4, pairs: 12, cssCols: 'grid-cols-4 sm:grid-cols-6' },
+      master: { name: 'Mastermind', cols: 6, rows: 6, pairs: 18, cssCols: 'grid-cols-6' }
+    };
+
+    const AVATARS = ['🃏', '🎯', '👑', '🤖', '🚀', '🔮', '⚡', '🦊', '🦁', '🐼', '🦄', '🐙', '👾', '💎', '🍕', '🪐'];
+    const FRAMES = [
+      { id: 'frame-indigo', name: 'Indigo Cyber', class: 'frame-indigo' },
+      { id: 'frame-emerald', name: 'Emerald Forge', class: 'frame-emerald' },
+      { id: 'frame-amber', name: 'Amber Laser', class: 'frame-amber' },
+      { id: 'frame-rose', name: 'Rose Glow', class: 'frame-rose' },
+      { id: 'frame-cyan', name: 'Neon Cyan', class: 'frame-cyan' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_match', name: 'First Match', desc: 'Complete your first memory card match duel.', icon: '🃏' },
+      { id: 'combo_3', name: 'Triple Combo', desc: 'Land a 3x match combo in a single turn.', icon: '🔥' },
+      { id: 'combo_5', name: 'Ultra Combo', desc: 'Land a 5x ultra match combo streak!', icon: '⚡' },
+      { id: 'perfect_first', name: 'Mind Reader', desc: 'Find a matching pair on your very first turn.', icon: '🧠' },
+      { id: 'speed_runner', name: 'Speed Demon', desc: 'Finish a match in under 45 seconds.', icon: '⏱️' },
+      { id: 'comeback_king', name: 'Comeback King', desc: 'Win a duel after trailing by 3 or more pairs.', icon: '👑' },
+      { id: 'mastermind', name: 'Mastermind', desc: 'Win a 36-card (6x6) Mastermind duel.', icon: '🏆' },
+      { id: 'flawless', name: 'Flawless Memory', desc: 'Win without letting opponent score a single pair.', icon: '🛡️' },
+      { id: 'ai_crusher', name: 'AI Demolisher', desc: 'Defeat the Smart AI bot in Master difficulty.', icon: '🤖' },
+      { id: 'safari_explorer', name: 'Safari Explorer', desc: 'Win a match using the Wild Safari theme.', icon: '🦁' },
+      { id: 'cosmic_voyager', name: 'Cosmic Voyager', desc: 'Win a match using the Cosmic theme.', icon: '🌌' },
+      { id: 'grandmaster', name: 'Grandmaster Oracle', desc: 'Reach 2,000+ MMR on the ranked ladder.', icon: '🎖️' }
+    ];
+
+    /* ========================================================================= */
+    /* 2. PLAYER PROFILE & GAMIFIED PASSPORT                                     */
+    /* ========================================================================= */
+    class PlayerProfile {
+      constructor() {
+        this.load();
+      }
+
+      load() {
+        const data = JSON.parse(localStorage.getItem('mm:player_passport') || '{}');
+        this.name = data.name || 'Player ' + Math.floor(1000 + Math.random() * 9000);
+        this.avatar = data.avatar || '🃏';
+        this.frame = data.frame || 'frame-indigo';
+        this.title = data.title || 'Card Seeker';
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.elo = data.elo || 1000;
+        this.matchesPlayed = data.matchesPlayed || 0;
+        this.matchesWon = data.matchesWon || 0;
+        this.streak = data.streak || 0;
+        this.unlocked = data.unlocked || [];
+      }
+
+      save() {
+        localStorage.setItem('mm:player_passport', JSON.stringify({
+          name: this.name,
+          avatar: this.avatar,
+          frame: this.frame,
+          title: this.title,
+          level: this.level,
+          xp: this.xp,
+          elo: this.elo,
+          matchesPlayed: this.matchesPlayed,
+          matchesWon: this.matchesWon,
+          streak: this.streak,
+          unlocked: this.unlocked
+        }));
+      }
+
+      addXP(amt) {
+        this.xp += amt;
+        const nextReq = this.level * 250;
+        if (this.xp >= nextReq) {
+          this.xp -= nextReq;
+          this.level++;
+          sound.playLevelUp();
+          showAlert(`🎉 LEVEL UP! You reached Passport Level ${this.level}!`, 'success');
+        }
+        this.save();
+        renderPassportUI();
+      }
+
+      addElo(amt) {
+        this.elo = Math.max(100, this.elo + amt);
+        if (this.elo >= 2000) this.unlockAchievement('grandmaster');
+        this.save();
+        renderPassportUI();
+      }
+
+      unlockAchievement(id) {
+        if (!this.unlocked.includes(id)) {
+          this.unlocked.push(id);
+          this.save();
+          sound.playAchievement();
+          const item = ACHIEVEMENTS.find(a => a.id === id);
+          if (item) {
+            showAlert(`🏆 TROPHY UNLOCKED: ${item.name}!`, 'success');
+          }
+          renderTrophyBadges();
+        }
+      }
+
+      getRankBadge() {
+        if (this.elo < 1100) return '🏆 Bronze I';
+        if (this.elo < 1300) return '🏆 Silver II';
+        if (this.elo < 1500) return '🏆 Gold III';
+        if (this.elo < 1800) return '💎 Platinum IV';
+        if (this.elo < 2200) return '👑 Diamond Master';
+        return '🌌 Grandmaster';
+      }
+    }
+
+    const player = new PlayerProfile();
+
+    /* ========================================================================= */
+    /* 3. WEB AUDIO SYNTHESIZER                                                  */
+    /* ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.enabled = localStorage.getItem('mm:sound_enabled') !== 'false';
+        this.ctx = null;
+      }
+
+      initCtx() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playFlip() {
+        if (!this.enabled) return;
+        this.initCtx();
+        this.playTone(320, 'triangle', 0.08, 0.08);
+      }
+
+      playMatch() {
+        if (!this.enabled) return;
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.25, 0.15), i * 70);
+        });
+      }
+
+      playCombo(streak) {
+        if (!this.enabled) return;
+        this.initCtx();
+        const base = 440 * Math.pow(1.15, streak);
+        [base, base * 1.25, base * 1.5].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.18), i * 60);
+        });
+      }
+
+      playMismatch() {
+        if (!this.enabled) return;
+        this.initCtx();
+        this.playTone(220, 'sawtooth', 0.15, 0.06);
+        setTimeout(() => this.playTone(180, 'sawtooth', 0.18, 0.06), 90);
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.35, 0.2), i * 90);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [400, 360, 320, 280].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sawtooth', 0.25, 0.1), i * 110);
+        });
+      }
+
+      playLevelUp() {
+        this.playVictory();
+      }
+
+      playAchievement() {
+        this.playMatch();
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ========================================================================= */
+    /* 4. SMART AI BOT WITH HUMAN MEMORY DECAY                                   */
+    /* ========================================================================= */
+    class SmartMemoryAI {
+      constructor(difficulty = 'medium') {
+        this.difficulty = difficulty; // 'easy', 'medium', 'master'
+        this.memoryMap = {}; // { [index]: symbol }
+        this.seenTurn = {};   // { [index]: turnNumber }
+        this.currentTurn = 0;
+      }
+
+      reset() {
+        this.memoryMap = {};
+        this.seenTurn = {};
+        this.currentTurn = 0;
+      }
+
+      observeFlip(index, symbol) {
+        this.currentTurn++;
+        this.memoryMap[index] = symbol;
+        this.seenTurn[index] = this.currentTurn;
+      }
+
+      forgetCards() {
+        if (this.difficulty === 'master') return; // Perfect 100% memory
+        const retentionRate = this.difficulty === 'easy' ? 0.4 : 0.75;
+
+        for (const idx in this.memoryMap) {
+          if (Math.random() > retentionRate && this.seenTurn[idx] < this.currentTurn - 1) {
+            delete this.memoryMap[idx];
+          }
+        }
+      }
+
+      findKnownPair(matchedIndices, currentFlippedIndex = null) {
+        const symbolToIndices = {};
+        for (const [idxStr, sym] of Object.entries(this.memoryMap)) {
+          const idx = parseInt(idxStr, 10);
+          if (matchedIndices.includes(idx)) continue;
+          if (currentFlippedIndex !== null && idx === currentFlippedIndex) continue;
+
+          if (!symbolToIndices[sym]) symbolToIndices[sym] = [];
+          symbolToIndices[sym].push(idx);
+        }
+
+        for (const [sym, indices] of Object.entries(symbolToIndices)) {
+          if (indices.length >= 2) {
+            return indices;
+          }
+        }
+        return null;
+      }
+
+      findMatchFor(symbol, matchedIndices, currentFlippedIndex) {
+        for (const [idxStr, sym] of Object.entries(this.memoryMap)) {
+          const idx = parseInt(idxStr, 10);
+          if (matchedIndices.includes(idx)) continue;
+          if (idx === currentFlippedIndex) continue;
+          if (sym === symbol) return idx;
+        }
+        return null;
+      }
+
+      pickRandomUnflipped(totalCards, matchedIndices, excludedIndex = null) {
+        const available = [];
+        for (let i = 0; i < totalCards; i++) {
+          if (!matchedIndices.includes(i) && i !== excludedIndex) {
+            available.push(i);
+          }
+        }
+        if (available.length === 0) return null;
+        return available[Math.floor(Math.random() * available.length)];
+      }
+
+      decideCard1(totalCards, matchedIndices) {
+        this.forgetCards();
+        const knownPair = this.findKnownPair(matchedIndices);
+        if (knownPair) {
+          return knownPair[0];
+        }
+        return this.pickRandomUnflipped(totalCards, matchedIndices);
+      }
+
+      decideCard2(totalCards, matchedIndices, card1Index, card1Symbol) {
+        this.observeFlip(card1Index, card1Symbol);
+        const matchIdx = this.findMatchFor(card1Symbol, matchedIndices, card1Index);
+        if (matchIdx !== null) {
+          return matchIdx;
+        }
+        return this.pickRandomUnflipped(totalCards, matchedIndices, card1Index);
+      }
+    }
+
+    /* ========================================================================= */
+    /* 5. APPLICATION STATE                                                      */
+    /* ========================================================================= */
+    const State = {
+      // Room & Peer State
+      isHost: false,
+      isAI: false,
+      aiDifficulty: 'medium',
+      aiBot: null,
+      peer: null,
+      conn: null,
+      roomCode: '',
+      connected: false,
+
+      // Board & Card State
+      theme: 'arcade',
+      presetKey: 'arcade',
+      gridCols: 6,
+      gridRows: 4,
+      totalPairs: 12,
+      cards: [], // [{ id, symbol, matched: false, matchedBy: null }]
+      flippedIndices: [], // currently flipped in active turn [idx1, idx2]
+      matchedIndices: [],
+      isEvaluating: false, // debounce / lock during flip animation
+
+      // Turn & Score State
+      currentTurn: 'p1', // 'p1' or 'p2'
+      myPlayerId: 'p1', // 'p1' for host/you, 'p2' for guest
+      p1Score: 0,
+      p2Score: 0,
+      p1Name: 'You',
+      p2Name: 'Opponent',
+      p1Avatar: '🃏',
+      p2Avatar: '🤖',
+      p1Title: 'Card Seeker',
+      p2Title: 'Memory Master',
+      turnCount: 0,
+      comboStreak: 0,
+      maxComboStreak: 0,
+      matchStartTime: 0,
+
+      // Ping Heartbeat
+      pingInterval: null,
+      lastPingTime: 0
+    };
+
+    /* ========================================================================= */
+    /* 6. DOM ELEMENTS MAP                                                       */
+    /* ========================================================================= */
+    const el = {
+      // Views
+      viewLobby: document.getElementById('view-lobby'),
+      viewWaiting: document.getElementById('view-waiting'),
+      viewArena: document.getElementById('view-arena'),
+
+      // Header Buttons
+      btnTrophyHall: document.getElementById('btn-trophy-hall'),
+      btnRules: document.getElementById('btn-rules'),
+      btnSoundToggle: document.getElementById('btn-sound-toggle'),
+      soundIcon: document.getElementById('sound-icon'),
+      btnThemeToggle: document.getElementById('btn-theme-toggle'),
+      themeIcon: document.getElementById('theme-icon'),
+      unlockedBadgeCount: document.getElementById('unlocked-badge-count'),
+
+      // Global Alert
+      globalAlertBanner: document.getElementById('global-alert-banner'),
+      alertIcon: document.getElementById('alert-icon'),
+      alertMessage: document.getElementById('alert-message'),
+      btnAlertClose: document.getElementById('btn-alert-close'),
+
+      // Lobby Elements
+      passportAvatar: document.getElementById('passport-avatar'),
+      passportName: document.getElementById('passport-name'),
+      passportTitle: document.getElementById('passport-title'),
+      passportRankBadge: document.getElementById('passport-rank-badge'),
+      passportXpFill: document.getElementById('passport-xp-fill'),
+      passportLevelText: document.getElementById('passport-level-text'),
+      passportElo: document.getElementById('passport-elo'),
+      passportWins: document.getElementById('passport-wins'),
+      passportStreak: document.getElementById('passport-streak'),
+      btnOpenProfileCustomizer: document.getElementById('btn-open-profile-customizer'),
+      configDeckTheme: document.getElementById('config-deck-theme'),
+      configGridSize: document.getElementById('config-grid-size'),
+      btnCreateRoom: document.getElementById('btn-create-room'),
+      inputJoinCode: document.getElementById('input-join-code'),
+      btnJoinRoom: document.getElementById('btn-join-room'),
+      btnPlayAi: document.getElementById('btn-play-ai'),
+      btnOpenManualSignaling: document.getElementById('btn-open-manual-signaling'),
+
+      // Waiting View Elements
+      waitingRoomCode: document.getElementById('waiting-room-code'),
+      btnCopyCode: document.getElementById('btn-copy-code'),
+      waitingShareLink: document.getElementById('waiting-share-link'),
+      btnCopyLink: document.getElementById('btn-copy-link'),
+      shareWhatsapp: document.getElementById('share-whatsapp'),
+      shareTelegram: document.getElementById('share-telegram'),
+      btnShowQr: document.getElementById('btn-show-qr'),
+      qrContainer: document.getElementById('qr-container'),
+      qrCanvas: document.getElementById('qr-canvas'),
+      btnCancelWaiting: document.getElementById('btn-cancel-waiting'),
+
+      // Arena Elements
+      arenaNetworkStatus: document.getElementById('arena-network-status'),
+      arenaPingBadge: document.getElementById('arena-ping-badge'),
+      statPairsLeft: document.getElementById('stat-pairs-left'),
+      statTurnCount: document.getElementById('stat-turn-count'),
+      cardPlayer1: document.getElementById('card-player-1'),
+      cardPlayer2: document.getElementById('card-player-2'),
+      arenaP1Avatar: document.getElementById('arena-p1-avatar'),
+      arenaP2Avatar: document.getElementById('arena-p2-avatar'),
+      arenaP1Name: document.getElementById('arena-p1-name'),
+      arenaP2Name: document.getElementById('arena-p2-name'),
+      arenaP1Title: document.getElementById('arena-p1-title'),
+      arenaP2Title: document.getElementById('arena-p2-title'),
+      badgeP1Turn: document.getElementById('badge-p1-turn'),
+      badgeP2Turn: document.getElementById('badge-p2-turn'),
+      arenaP1Score: document.getElementById('arena-p1-score'),
+      arenaP2Score: document.getElementById('arena-p2-score'),
+      comboBannerContainer: document.getElementById('combo-banner-container'),
+      comboBanner: document.getElementById('combo-banner'),
+      turnAnnouncement: document.getElementById('turn-announcement'),
+      cardGrid: document.getElementById('card-grid'),
+      arenaTauntsOverlay: document.getElementById('arena-taunts-overlay'),
+      btnLeaveMatch: document.getElementById('btn-leave-match'),
+
+      // Match Over Modal
+      modalMatchOver: document.getElementById('modal-match-over'),
+      matchOverIcon: document.getElementById('match-over-icon'),
+      matchOverTitle: document.getElementById('match-over-title'),
+      matchOverSubtitle: document.getElementById('match-over-subtitle'),
+      statFinalPairs: document.getElementById('stat-final-pairs'),
+      statFinalTurns: document.getElementById('stat-final-turns'),
+      statFinalCombo: document.getElementById('stat-final-combo'),
+      matchXpGain: document.getElementById('match-xp-gain'),
+      matchEloGain: document.getElementById('match-elo-gain'),
+      btnRequestRematch: document.getElementById('btn-request-rematch'),
+      rematchBtnText: document.getElementById('rematch-btn-text'),
+      btnModalExitLobby: document.getElementById('btn-modal-exit-lobby'),
+
+      // Profile Customizer Modal
+      modalProfileCustomizer: document.getElementById('modal-profile-customizer'),
+      btnCloseProfile: document.getElementById('btn-close-profile'),
+      customizerNameInput: document.getElementById('customizer-name-input'),
+      selectPlayerTitle: document.getElementById('select-player-title'),
+      avatarGrid: document.getElementById('avatar-grid'),
+      frameGrid: document.getElementById('frame-grid'),
+      btnSaveProfile: document.getElementById('btn-save-profile'),
+
+      // Trophy Hall Modal
+      modalTrophies: document.getElementById('modal-trophies'),
+      btnCloseTrophies: document.getElementById('btn-close-trophies'),
+      btnAckTrophies: document.getElementById('btn-ack-trophies'),
+      trophiesListContainer: document.getElementById('trophies-list-container'),
+
+      // Rules Modal
+      modalRules: document.getElementById('modal-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnAckRules: document.getElementById('btn-ack-rules'),
+
+      // Manual Signaling Modal
+      modalManualSignaling: document.getElementById('modal-manual-signaling'),
+      btnCloseManualSignaling: document.getElementById('btn-close-manual-signaling'),
+      tabManualHost: document.getElementById('tab-manual-host'),
+      tabManualJoin: document.getElementById('tab-manual-join'),
+      manualHostSection: document.getElementById('manual-host-section'),
+      manualJoinSection: document.getElementById('manual-join-section'),
+      btnGenManualOffer: document.getElementById('btn-gen-manual-offer'),
+      manualOfferOutput: document.getElementById('manual-offer-output'),
+      manualAnswerInput: document.getElementById('manual-answer-input'),
+      btnAcceptManualAnswer: document.getElementById('btn-accept-manual-answer'),
+      manualOfferInput: document.getElementById('manual-offer-input'),
+      btnGenManualAnswer: document.getElementById('btn-gen-manual-answer'),
+      manualAnswerOutput: document.getElementById('manual-answer-output')
+    };
+
+    /* ========================================================================= */
+    /* 7. INITIALIZATION & ROUTING                                               */
+    /* ========================================================================= */
+    function init() {
+      renderPassportUI();
+      renderTrophyBadges();
+      renderCustomizerOptions();
+      bindEvents();
+
+      // Check URL Room parameter (?room=MEM-XXXX)
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        el.inputJoinCode.value = roomParam.toUpperCase();
+        showAlert(`Room code ${roomParam} detected! Click Join to connect.`, 'info');
+      }
+    }
+
+    function switchView(viewName) {
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.add('hidden');
+
+      if (viewName === 'lobby') el.viewLobby.classList.remove('hidden');
+      if (viewName === 'waiting') el.viewWaiting.classList.remove('hidden');
+      if (viewName === 'arena') el.viewArena.classList.remove('hidden');
+    }
+
+    function showAlert(msg, type = 'info') {
+      el.alertMessage.innerText = msg;
+      el.globalAlertBanner.className = `px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300 block ${
+        type === 'error' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
+        type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+        type === 'warning' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+        'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+      }`;
+      el.alertIcon.innerText = type === 'error' ? '🚨' : type === 'success' ? '✨' : type === 'warning' ? '⚠️' : 'ℹ️';
+
+      setTimeout(() => {
+        el.globalAlertBanner.classList.add('hidden');
+      }, 5000);
+    }
+
+    function triggerHaptic(duration = 20) {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(duration); } catch (e) {}
+      }
+    }
+
+    /* ========================================================================= */
+    /* 8. PASSPORT & PROFILE UI                                                  */
+    /* ========================================================================= */
+    function renderPassportUI() {
+      el.passportName.innerText = player.name;
+      el.passportAvatar.innerText = player.avatar;
+      el.passportAvatar.className = `w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-indigo select-none transition-transform active:scale-95 ${player.frame}`;
+      el.passportTitle.innerText = player.title;
+      el.passportRankBadge.innerText = player.getRankBadge();
+      el.passportLevelText.innerText = `Lv. ${player.level}`;
+      el.passportElo.innerText = player.elo;
+      el.passportWins.innerText = player.matchesWon;
+      el.passportStreak.innerText = `🔥 ${player.streak}`;
+
+      const nextReq = player.level * 250;
+      const pct = Math.min(100, Math.round((player.xp / nextReq) * 100));
+      el.passportXpFill.style.width = `${pct}%`;
+    }
+
+    function renderTrophyBadges() {
+      el.unlockedBadgeCount.innerText = `${player.unlocked.length}/${ACHIEVEMENTS.length}`;
+
+      el.trophiesListContainer.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = player.unlocked.includes(ach.id);
+        return `
+          <div class="p-3 rounded-2xl border ${isUnlocked ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300' : 'bg-theme-surface-alt/50 border-theme-line text-theme-muted opacity-60'} flex items-center gap-3">
+            <span class="text-2xl sm:text-3xl ${isUnlocked ? 'scale-110' : 'grayscale'}">${ach.icon}</span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <strong class="font-display font-bold text-xs text-theme-ink">${ach.name}</strong>
+                ${isUnlocked ? '<span class="text-[9px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400 font-mono font-bold">UNLOCKED</span>' : ''}
+              </div>
+              <p class="text-[10px] text-theme-muted mt-0.5 leading-snug">${ach.desc}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCustomizerOptions() {
+      el.customizerNameInput.value = player.name;
+      el.selectPlayerTitle.value = player.title;
+
+      // Avatars
+      el.avatarGrid.innerHTML = AVATARS.map(av => `
+        <button type="button" class="avatar-opt p-2 rounded-xl border ${player.avatar === av ? 'border-indigo-500 bg-indigo-500/20' : 'border-theme-line bg-theme-surface-alt'} text-xl sm:text-2xl hover:scale-110 transition-transform" data-avatar="${av}">
+          ${av}
+        </button>
+      `).join('');
+
+      // Frames
+      el.frameGrid.innerHTML = FRAMES.map(fr => `
+        <button type="button" class="frame-opt p-2 rounded-xl border ${player.frame === fr.id ? 'border-indigo-500 bg-indigo-500/20' : 'border-theme-line bg-theme-surface-alt'} text-xs font-mono font-bold text-theme-ink flex items-center justify-center gap-1.5" data-frame="${fr.id}">
+          <span class="w-3 h-3 rounded-full ${fr.class}"></span>
+          <span class="truncate">${fr.name}</span>
+        </button>
+      `).join('');
+    }
+
+    /* ========================================================================= */
+    /* 9. DECK GENERATION & CARD GRID RENDERING                                  */
+    /* ========================================================================= */
+    function generateShuffledDeck(themeKey, presetKey) {
+      const preset = GRID_PRESETS[presetKey] || GRID_PRESETS.arcade;
+      const theme = DECK_THEMES[themeKey] || DECK_THEMES.cyber;
+      const pairsNeeded = preset.pairs;
+
+      // Pick random distinct symbols
+      const shuffledIcons = [...theme.icons].sort(() => Math.random() - 0.5);
+      const selectedSymbols = shuffledIcons.slice(0, pairsNeeded);
+
+      // Create pairs
+      const cards = [];
+      selectedSymbols.forEach((sym, pairIdx) => {
+        cards.push({ id: pairIdx * 2, symbol: sym, pairId: pairIdx });
+        cards.push({ id: pairIdx * 2 + 1, symbol: sym, pairId: pairIdx });
+      });
+
+      // Fisher-Yates Shuffle
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+
+      return cards.map((c, index) => ({
+        index,
+        symbol: c.symbol,
+        pairId: c.pairId,
+        matched: false,
+        matchedBy: null
+      }));
+    }
+
+    function renderCardGrid() {
+      const preset = GRID_PRESETS[State.presetKey] || GRID_PRESETS.arcade;
+      el.cardGrid.className = `grid ${preset.cssCols} gap-2 sm:gap-3.5 w-full max-w-3xl mx-auto auto-rows-fr`;
+
+      el.cardGrid.innerHTML = State.cards.map(card => `
+        <div class="card-item-wrapper aspect-square" data-index="${card.index}">
+          <div class="card-inner">
+            <!-- Card Back -->
+            <div class="card-face card-back">
+              <span class="text-xl sm:text-2xl opacity-60">🎮</span>
+            </div>
+            <!-- Card Front -->
+            <div class="card-face card-front">
+              <span class="card-symbol text-2xl sm:text-4xl select-none">${card.symbol}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ========================================================================= */
+    /* 10. GAME LOGIC & TURN ENFORCEMENT                                         */
+    /* ========================================================================= */
+    function startMatch(cards, theme, presetKey, isHost) {
+      State.cards = cards;
+      State.theme = theme;
+      State.presetKey = presetKey;
+      const preset = GRID_PRESETS[presetKey] || GRID_PRESETS.arcade;
+      State.totalPairs = preset.pairs;
+      State.gridCols = preset.cols;
+      State.gridRows = preset.rows;
+
+      State.flippedIndices = [];
+      State.matchedIndices = [];
+      State.isEvaluating = false;
+      State.currentTurn = 'p1';
+      State.myPlayerId = isHost ? 'p1' : 'p2';
+      State.p1Score = 0;
+      State.p2Score = 0;
+      State.turnCount = 0;
+      State.comboStreak = 0;
+      State.maxComboStreak = 0;
+      State.matchStartTime = Date.now();
+
+      renderCardGrid();
+      updateArenaUI();
+      switchView('arena');
+
+      if (State.isAI) {
+        State.aiBot = new SmartMemoryAI(State.aiDifficulty);
+      }
+
+      sound.playFlip();
+      showAlert('Match started! Player 1 goes first.', 'info');
+    }
+
+    function onCardClicked(index) {
+      // Validation: Can only click on own turn, not during animation, not if already matched/flipped
+      if (State.isEvaluating) return;
+      if (State.currentTurn !== State.myPlayerId) return;
+      if (State.matchedIndices.includes(index)) return;
+      if (State.flippedIndices.includes(index)) return;
+
+      flipCard(index, true);
+    }
+
+    function flipCard(index, isInitiator) {
+      if (State.flippedIndices.includes(index) || State.matchedIndices.includes(index)) return;
+
+      State.flippedIndices.push(index);
+      sound.playFlip();
+      triggerHaptic(20);
+
+      // Visually flip card
+      const cardEl = document.querySelector(`.card-item-wrapper[data-index="${index}"]`);
+      if (cardEl) {
+        cardEl.classList.add('flipped');
+      }
+
+      if (State.isAI && State.aiBot) {
+        State.aiBot.observeFlip(index, State.cards[index].symbol);
+      }
+
+      // Broadcast flip to opponent
+      if (isInitiator && !State.isAI && State.conn) {
+        sendPacket({ type: 'CARD_FLIP', index });
+      }
+
+      // If 2 cards are now flipped, evaluate match
+      if (State.flippedIndices.length === 2) {
+        State.isEvaluating = true;
+        State.turnCount++;
+        el.statTurnCount.innerText = State.turnCount;
+
+        setTimeout(evaluateFlippedCards, 700);
+      }
+    }
+
+    function evaluateFlippedCards() {
+      const [idx1, idx2] = State.flippedIndices;
+      const card1 = State.cards[idx1];
+      const card2 = State.cards[idx2];
+
+      const isMatch = card1 && card2 && card1.symbol === card2.symbol;
+      const card1El = document.querySelector(`.card-item-wrapper[data-index="${idx1}"]`);
+      const card2El = document.querySelector(`.card-item-wrapper[data-index="${idx2}"]`);
+
+      if (isMatch) {
+        // MATCH!
+        card1.matched = true;
+        card1.matchedBy = State.currentTurn;
+        card2.matched = true;
+        card2.matchedBy = State.currentTurn;
+        State.matchedIndices.push(idx1, idx2);
+
+        const matchClass = State.currentTurn === 'p1' ? 'matched-p1' : 'matched-p2';
+        if (card1El) card1El.classList.add('matched', matchClass);
+        if (card2El) card2El.classList.add('matched', matchClass);
+
+        // Update Score & Combo
+        State.comboStreak++;
+        if (State.comboStreak > State.maxComboStreak) {
+          State.maxComboStreak = State.comboStreak;
+        }
+
+        if (State.currentTurn === 'p1') {
+          State.p1Score++;
+        } else {
+          State.p2Score++;
+        }
+
+        // Play Sound FX
+        if (State.comboStreak > 1) {
+          sound.playCombo(State.comboStreak);
+          showComboBanner(State.comboStreak);
+          if (State.currentTurn === State.myPlayerId) {
+            if (State.comboStreak >= 3) player.unlockAchievement('combo_3');
+            if (State.comboStreak >= 5) player.unlockAchievement('combo_5');
+          }
+        } else {
+          sound.playMatch();
+        }
+
+        if (State.turnCount === 1 && State.currentTurn === State.myPlayerId) {
+          player.unlockAchievement('perfect_first');
+        }
+
+        triggerHaptic([40, 50, 40]);
+        State.flippedIndices = [];
+        State.isEvaluating = false;
+        updateArenaUI();
+
+        // Check if Match Completed
+        if (State.matchedIndices.length >= State.cards.length) {
+          setTimeout(handleMatchOver, 800);
+          return;
+        }
+
+        // Active player KEEPS their turn!
+        if (State.isAI && State.currentTurn === 'p2') {
+          setTimeout(triggerAITurn, 1000);
+        }
+
+      } else {
+        // MISMATCH!
+        State.comboStreak = 0;
+        sound.playMismatch();
+        triggerHaptic(60);
+
+        if (card1El) card1El.classList.add('mismatch');
+        if (card2El) card2El.classList.add('mismatch');
+
+        setTimeout(() => {
+          if (card1El) {
+            card1El.classList.remove('flipped', 'mismatch');
+          }
+          if (card2El) {
+            card2El.classList.remove('flipped', 'mismatch');
+          }
+
+          State.flippedIndices = [];
+          State.isEvaluating = false;
+
+          // Switch Turn
+          State.currentTurn = State.currentTurn === 'p1' ? 'p2' : 'p1';
+          updateArenaUI();
+
+          // If next is AI turn, trigger AI
+          if (State.isAI && State.currentTurn === 'p2') {
+            setTimeout(triggerAITurn, 900);
+          }
+        }, 1000);
+      }
+    }
+
+    function showComboBanner(streak) {
+      el.comboBanner.innerText = `🔥 ${streak}x MATCH COMBO!`;
+      el.comboBanner.classList.remove('hidden', 'combo-banner-active');
+      void el.comboBanner.offsetWidth; // trigger reflow
+      el.comboBanner.classList.add('combo-banner-active');
+
+      setTimeout(() => {
+        el.comboBanner.classList.add('hidden');
+      }, 1600);
+    }
+
+    function updateArenaUI() {
+      el.arenaP1Score.innerText = State.p1Score;
+      el.arenaP2Score.innerText = State.p2Score;
+      const pairsLeft = State.totalPairs - (State.p1Score + State.p2Score);
+      el.statPairsLeft.innerText = pairsLeft;
+
+      const isMyTurn = State.currentTurn === State.myPlayerId;
+      if (State.currentTurn === 'p1') {
+        el.badgeP1Turn.classList.remove('hidden');
+        el.badgeP2Turn.classList.add('hidden');
+        el.cardPlayer1.classList.add('border-indigo-500/80', 'shadow-glow-indigo');
+        el.cardPlayer2.classList.remove('border-amber-500/80', 'shadow-glow-amber');
+      } else {
+        el.badgeP1Turn.classList.add('hidden');
+        el.badgeP2Turn.classList.remove('hidden');
+        el.cardPlayer1.classList.remove('border-indigo-500/80', 'shadow-glow-indigo');
+        el.cardPlayer2.classList.add('border-amber-500/80', 'shadow-glow-amber');
+      }
+
+      el.turnAnnouncement.innerHTML = isMyTurn ? `
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="text-emerald-400 font-bold">Your Turn: Flip 2 cards</span>
+      ` : `
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span class="text-amber-400 font-bold">Opponent's Turn (${State.p2Name} is thinking...)</span>
+      `;
+    }
+
+    /* ========================================================================= */
+    /* 11. AI BOT TURN ORCHESTRATION                                             */
+    /* ========================================================================= */
+    function triggerAITurn() {
+      if (!State.isAI || State.currentTurn !== 'p2' || State.matchedIndices.length >= State.cards.length) return;
+
+      const card1Idx = State.aiBot.decideCard1(State.cards.length, State.matchedIndices);
+      if (card1Idx === null) return;
+
+      flipCard(card1Idx, false);
+
+      setTimeout(() => {
+        if (State.matchedIndices.length >= State.cards.length) return;
+        const card1Symbol = State.cards[card1Idx].symbol;
+        const card2Idx = State.aiBot.decideCard2(State.cards.length, State.matchedIndices, card1Idx, card1Symbol);
+        if (card2Idx === null) return;
+
+        flipCard(card2Idx, false);
+      }, 1000);
+    }
+
+    /* ========================================================================= */
+    /* 12. MATCH COMPLETION & REWARDS                                            */
+    /* ========================================================================= */
+    function handleMatchOver() {
+      const isWinner = (State.myPlayerId === 'p1' && State.p1Score > State.p2Score) ||
+                       (State.myPlayerId === 'p2' && State.p2Score > State.p1Score);
+      const isDraw = State.p1Score === State.p2Score;
+
+      const elapsedSec = Math.round((Date.now() - State.matchStartTime) / 1000);
+      player.matchesPlayed++;
+
+      if (isWinner) {
+        sound.playVictory();
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        player.matchesWon++;
+        player.streak++;
+        player.addXP(150);
+        player.addElo(24);
+
+        el.matchOverIcon.innerText = '👑';
+        el.matchOverIcon.className = 'w-16 h-16 rounded-3xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-3xl mx-auto shadow-glow-indigo';
+        el.matchOverTitle.innerText = 'VICTORY!';
+        el.matchOverTitle.className = 'font-display font-black text-2xl sm:text-3xl text-indigo-400';
+        el.matchOverSubtitle.innerText = `You won ${State.p1Score} to ${State.p2Score} pairs!`;
+        el.matchXpGain.innerText = '+150 XP';
+        el.matchEloGain.innerText = '+24 ELO';
+
+        player.unlockAchievement('first_match');
+        if (elapsedSec <= 45) player.unlockAchievement('speed_runner');
+        if (State.presetKey === 'master') player.unlockAchievement('mastermind');
+        if (State.p2Score === 0) player.unlockAchievement('flawless');
+        if (State.isAI && State.aiDifficulty === 'master') player.unlockAchievement('ai_crusher');
+        if (State.theme === 'safari') player.unlockAchievement('safari_explorer');
+        if (State.theme === 'cosmic') player.unlockAchievement('cosmic_voyager');
+
+      } else if (isDraw) {
+        sound.playMatch();
+        player.streak = 0;
+        player.addXP(60);
+        el.matchOverIcon.innerText = '🤝';
+        el.matchOverTitle.innerText = 'DRAW MATCH!';
+        el.matchOverTitle.className = 'font-display font-black text-2xl sm:text-3xl text-amber-400';
+        el.matchOverSubtitle.innerText = `Tied at ${State.p1Score} pairs each!`;
+        el.matchXpGain.innerText = '+60 XP';
+        el.matchEloGain.innerText = '+0 ELO';
+      } else {
+        sound.playDefeat();
+        player.streak = 0;
+        player.addXP(40);
+        player.addElo(-15);
+        el.matchOverIcon.innerText = '💀';
+        el.matchOverIcon.className = 'w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-3xl mx-auto shadow-glow-rose';
+        el.matchOverTitle.innerText = 'DEFEAT';
+        el.matchOverTitle.className = 'font-display font-black text-2xl sm:text-3xl text-rose-400';
+        el.matchOverSubtitle.innerText = `Opponent won ${State.p2Score} to ${State.p1Score} pairs.`;
+        el.matchXpGain.innerText = '+40 XP';
+        el.matchEloGain.innerText = '-15 ELO';
+      }
+
+      el.statFinalPairs.innerText = `${State.p1Score} vs ${State.p2Score}`;
+      el.statFinalTurns.innerText = State.turnCount;
+      el.statFinalCombo.innerText = `🔥 ${State.maxComboStreak}x Combo`;
+
+      el.modalMatchOver.classList.remove('hidden');
+    }
+
+    /* ========================================================================= */
+    /* 13. WEBRTC P2P NETWORKING (PEERJS)                                        */
+    /* ========================================================================= */
+    function generateRoomCode() {
+      const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let code = 'MEM-';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function initHostRoom() {
+      State.isHost = true;
+      State.isAI = false;
+      State.roomCode = generateRoomCode();
+      const peerId = `arcadelab-${State.roomCode.toLowerCase()}`;
+
+      el.waitingRoomCode.innerText = State.roomCode;
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${State.roomCode}`;
+      el.waitingShareLink.value = shareUrl;
+      el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Play Memory Card Match with me on ArcadeLab! ${shareUrl}`)}`;
+      el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Join my 2-player Memory Match duel!')}`;
+
+      if (window.QRCode && el.qrCanvas) {
+        QRCode.toCanvas(el.qrCanvas, shareUrl, { width: 160, margin: 1 }, () => {});
+      }
+
+      switchView('waiting');
+      setupPeer(peerId, true);
+    }
+
+    function joinRoom(code) {
+      State.isHost = false;
+      State.isAI = false;
+      State.roomCode = code.toUpperCase();
+      const hostPeerId = `arcadelab-${State.roomCode.toLowerCase()}`;
+      const guestPeerId = `arcadelab-guest-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      showAlert(`Connecting to Room ${State.roomCode}...`, 'info');
+      setupPeer(guestPeerId, false, hostPeerId);
+    }
+
+    function setupPeer(myId, isHost, hostPeerId = null) {
+      if (State.peer) {
+        try { State.peer.destroy(); } catch (e) {}
+      }
+
+      State.peer = new Peer(myId, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      State.peer.on('open', (id) => {
+        if (!isHost && hostPeerId) {
+          const conn = State.peer.connect(hostPeerId, { reliable: true });
+          setupConnection(conn);
+        }
+      });
+
+      State.peer.on('connection', (conn) => {
+        setupConnection(conn);
+      });
+
+      State.peer.on('error', (err) => {
+        showAlert(`Connection notice: ${err.type || 'P2P network error'}`, 'warning');
+      });
+    }
+
+    function setupConnection(conn) {
+      State.conn = conn;
+
+      conn.on('open', () => {
+        State.connected = true;
+        el.arenaNetworkStatus.innerText = 'Connected • P2P Active';
+
+        if (State.isHost) {
+          // Host generates deck and transmits full synchronized board to guest
+          const themeKey = el.configDeckTheme.value;
+          const presetKey = el.configGridSize.value;
+          const cards = generateShuffledDeck(themeKey, presetKey);
+
+          sendPacket({
+            type: 'DECK_SYNC',
+            cards,
+            themeKey,
+            presetKey,
+            hostProfile: {
+              name: player.name,
+              avatar: player.avatar,
+              title: player.title,
+              frame: player.frame
+            }
+          });
+
+          State.p1Name = player.name;
+          State.p1Avatar = player.avatar;
+          State.p1Title = player.title;
+          startMatch(cards, themeKey, presetKey, true);
+
+        } else {
+          // Guest sends profile to host
+          sendPacket({
+            type: 'GUEST_PROFILE',
+            profile: {
+              name: player.name,
+              avatar: player.avatar,
+              title: player.title,
+              frame: player.frame
+            }
+          });
+        }
+
+        startPingHeartbeat();
+      });
+
+      conn.on('data', (data) => {
+        handleIncomingPacket(data);
+      });
+
+      conn.on('close', () => {
+        State.connected = false;
+        el.arenaNetworkStatus.innerText = 'Opponent Disconnected';
+        showAlert('Opponent disconnected from the match.', 'error');
+      });
+    }
+
+    function sendPacket(pkg) {
+      if (State.conn && State.conn.open) {
+        State.conn.send(pkg);
+      }
+    }
+
+    function handleIncomingPacket(pkg) {
+      if (!pkg || !pkg.type) return;
+
+      switch (pkg.type) {
+        case 'DECK_SYNC':
+          State.p2Name = pkg.hostProfile ? pkg.hostProfile.name : 'Opponent';
+          State.p2Avatar = pkg.hostProfile ? pkg.hostProfile.avatar : '🃏';
+          State.p2Title = pkg.hostProfile ? pkg.hostProfile.title : 'Host';
+          el.arenaP2Name.innerText = State.p2Name;
+          el.arenaP2Avatar.innerText = State.p2Avatar;
+          el.arenaP2Title.innerText = State.p2Title;
+
+          State.p1Name = player.name;
+          State.p1Avatar = player.avatar;
+          State.p1Title = player.title;
+
+          startMatch(pkg.cards, pkg.themeKey, pkg.presetKey, false);
+          break;
+
+        case 'GUEST_PROFILE':
+          State.p2Name = pkg.profile.name;
+          State.p2Avatar = pkg.profile.avatar;
+          State.p2Title = pkg.profile.title;
+          el.arenaP2Name.innerText = State.p2Name;
+          el.arenaP2Avatar.innerText = State.p2Avatar;
+          el.arenaP2Title.innerText = State.p2Title;
+          break;
+
+        case 'CARD_FLIP':
+          flipCard(pkg.index, false);
+          break;
+
+        case 'TAUNT':
+          triggerFloatingTaunt(pkg.emoji, false);
+          break;
+
+        case 'REMATCH_REQUEST':
+          showAlert(`${State.p2Name} wants to play a rematch!`, 'info');
+          el.rematchBtnText.innerText = 'Accept Rematch ⏩';
+          break;
+
+        case 'REMATCH_ACCEPT':
+          el.modalMatchOver.classList.add('hidden');
+          const themeKey = el.configDeckTheme.value;
+          const presetKey = el.configGridSize.value;
+          const newCards = generateShuffledDeck(themeKey, presetKey);
+          startMatch(newCards, themeKey, presetKey, State.isHost);
+          break;
+
+        case 'PING':
+          sendPacket({ type: 'PONG', time: pkg.time });
+          break;
+
+        case 'PONG':
+          const rtt = Math.max(1, Math.round(Date.now() - pkg.time));
+          el.arenaPingBadge.innerText = `${rtt}ms`;
+          break;
+      }
+    }
+
+    function startPingHeartbeat() {
+      if (State.pingInterval) clearInterval(State.pingInterval);
+      State.pingInterval = setInterval(() => {
+        if (State.conn && State.conn.open) {
+          sendPacket({ type: 'PING', time: Date.now() });
+        }
+      }, 4000);
+    }
+
+    /* ========================================================================= */
+    /* 14. FLOATING TAUNTS                                                       */
+    /* ========================================================================= */
+    function triggerFloatingTaunt(emoji, isMe = true) {
+      sound.playFlip();
+      const node = document.createElement('div');
+      node.className = 'floating-taunt-node absolute text-3xl sm:text-4xl select-none z-40';
+      node.innerText = emoji;
+      node.style.left = isMe ? '25%' : '75%';
+      node.style.top = '50%';
+
+      el.arenaTauntsOverlay.appendChild(node);
+      setTimeout(() => node.remove(), 2000);
+    }
+
+    /* ========================================================================= */
+    /* 15. DOM EVENT HANDLERS                                                    */
+    /* ========================================================================= */
+    function bindEvents() {
+      // Lobby Config & Actions
+      el.btnCreateRoom.addEventListener('click', initHostRoom);
+
+      el.btnJoinRoom.addEventListener('click', () => {
+        const code = el.inputJoinCode.value.trim();
+        if (!code) {
+          showAlert('Please enter a room code (e.g. MEM-7842)', 'warning');
+          return;
+        }
+        joinRoom(code);
+      });
+
+      el.btnPlayAi.addEventListener('click', () => {
+        State.isAI = true;
+        State.isHost = true;
+        State.p1Name = player.name;
+        State.p1Avatar = player.avatar;
+        State.p1Title = player.title;
+        State.p2Name = 'Smart AI Bot';
+        State.p2Avatar = '🤖';
+        State.p2Title = 'Memory Engine';
+
+        el.arenaP1Name.innerText = State.p1Name;
+        el.arenaP1Avatar.innerText = State.p1Avatar;
+        el.arenaP1Title.innerText = State.p1Title;
+        el.arenaP2Name.innerText = State.p2Name;
+        el.arenaP2Avatar.innerText = State.p2Avatar;
+        el.arenaP2Title.innerText = State.p2Title;
+
+        const themeKey = el.configDeckTheme.value;
+        const presetKey = el.configGridSize.value;
+        const cards = generateShuffledDeck(themeKey, presetKey);
+        startMatch(cards, themeKey, presetKey, true);
+      });
+
+      // Card Grid Flip Delegation
+      el.cardGrid.addEventListener('click', (e) => {
+        const wrapper = e.target.closest('.card-item-wrapper');
+        if (!wrapper) return;
+        const index = parseInt(wrapper.getAttribute('data-index'), 10);
+        if (!isNaN(index)) {
+          onCardClicked(index);
+        }
+      });
+
+      // Copy Buttons
+      el.btnCopyCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(State.roomCode);
+        showAlert('Room code copied to clipboard!', 'success');
+      });
+
+      el.btnCopyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.waitingShareLink.value);
+        showAlert('Direct invite link copied to clipboard!', 'success');
+      });
+
+      el.btnShowQr.addEventListener('click', () => {
+        el.qrContainer.classList.toggle('hidden');
+      });
+
+      el.btnCancelWaiting.addEventListener('click', () => {
+        if (State.peer) State.peer.destroy();
+        switchView('lobby');
+      });
+
+      el.btnLeaveMatch.addEventListener('click', () => {
+        if (confirm('Leave match and return to lobby?')) {
+          if (State.peer) State.peer.destroy();
+          switchView('lobby');
+        }
+      });
+
+      // Modals
+      el.btnTrophyHall.addEventListener('click', () => {
+        renderTrophyBadges();
+        el.modalTrophies.classList.remove('hidden');
+      });
+      el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+      el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+      el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+      el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+      el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+      el.btnOpenProfileCustomizer.addEventListener('click', () => {
+        renderCustomizerOptions();
+        el.modalProfileCustomizer.classList.remove('hidden');
+      });
+      el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+
+      // Avatar & Frame Picker in Customizer
+      el.avatarGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.avatar-opt');
+        if (!btn) return;
+        document.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('border-indigo-500', 'bg-indigo-500/20'));
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/20');
+        player.avatar = btn.getAttribute('data-avatar');
+      });
+
+      el.frameGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.frame-opt');
+        if (!btn) return;
+        document.querySelectorAll('.frame-opt').forEach(b => b.classList.remove('border-indigo-500', 'bg-indigo-500/20'));
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/20');
+        player.frame = btn.getAttribute('data-frame');
+      });
+
+      el.btnSaveProfile.addEventListener('click', () => {
+        const name = el.customizerNameInput.value.trim();
+        if (name) player.name = name;
+        player.title = el.selectPlayerTitle.value;
+        player.save();
+        renderPassportUI();
+        el.modalProfileCustomizer.classList.add('hidden');
+        showAlert('Player Passport saved!', 'success');
+      });
+
+      // Sound & Theme
+      el.btnSoundToggle.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        localStorage.setItem('mm:sound_enabled', sound.enabled);
+        el.soundIcon.innerText = sound.enabled ? '🔊' : '🔇';
+        showAlert(sound.enabled ? 'Sound FX Enabled' : 'Sound FX Muted', 'info');
+      });
+
+      el.btnThemeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        el.themeIcon.innerText = isDark ? '🌙' : '☀️';
+      });
+
+      // Taunts
+      document.querySelectorAll('.btn-taunt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const emoji = btn.getAttribute('data-taunt');
+          triggerFloatingTaunt(emoji, true);
+          if (!State.isAI && State.conn) {
+            sendPacket({ type: 'TAUNT', emoji });
+          }
+        });
+      });
+
+      // Rematch Actions
+      el.btnRequestRematch.addEventListener('click', () => {
+        if (State.isAI) {
+          el.modalMatchOver.classList.add('hidden');
+          const themeKey = el.configDeckTheme.value;
+          const presetKey = el.configGridSize.value;
+          const cards = generateShuffledDeck(themeKey, presetKey);
+          startMatch(cards, themeKey, presetKey, true);
+        } else {
+          sendPacket({ type: 'REMATCH_REQUEST' });
+          showAlert('Rematch request sent to opponent!', 'info');
+        }
+      });
+
+      el.btnModalExitLobby.addEventListener('click', () => {
+        el.modalMatchOver.classList.add('hidden');
+        if (State.peer) State.peer.destroy();
+        switchView('lobby');
+      });
+
+      el.btnAlertClose.addEventListener('click', () => {
+        el.globalAlertBanner.classList.add('hidden');
+      });
+
+      // Manual Signaling
+      el.btnOpenManualSignaling.addEventListener('click', () => {
+        el.modalManualSignaling.classList.remove('hidden');
+      });
+      el.btnCloseManualSignaling.addEventListener('click', () => {
+        el.modalManualSignaling.classList.add('hidden');
+      });
+
+      el.tabManualHost.addEventListener('click', () => {
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold font-mono';
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualHostSection.classList.remove('hidden');
+        el.manualJoinSection.classList.add('hidden');
+      });
+
+      el.tabManualJoin.addEventListener('click', () => {
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold font-mono';
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualJoinSection.classList.remove('hidden');
+        el.manualHostSection.classList.add('hidden');
+      });
+
+      el.btnGenManualOffer.addEventListener('click', () => {
+        const code = generateRoomCode();
+        el.manualOfferOutput.value = btoa(JSON.stringify({ type: 'MANUAL_OFFER', code, time: Date.now() }));
+        showAlert('Host code generated! Share with Player 2.', 'info');
+      });
+
+      el.btnAcceptManualAnswer.addEventListener('click', () => {
+        const val = el.manualAnswerInput.value.trim();
+        if (!val) {
+          showAlert('Please paste the response code from Player 2', 'warning');
+          return;
+        }
+        el.modalManualSignaling.classList.add('hidden');
+        initHostRoom();
+      });
+
+      el.btnGenManualAnswer.addEventListener('click', () => {
+        const val = el.manualOfferInput.value.trim();
+        if (!val) {
+          showAlert('Please paste the host connection code first', 'warning');
+          return;
+        }
+        try {
+          const parsed = JSON.parse(atob(val));
+          el.manualAnswerOutput.value = btoa(JSON.stringify({ type: 'MANUAL_ANSWER', accepted: true, code: parsed.code }));
+          showAlert('Response code generated! Send back to Player 1.', 'success');
+          setTimeout(() => {
+            el.modalManualSignaling.classList.add('hidden');
+            joinRoom(parsed.code);
+          }, 1500);
+        } catch (e) {
+          showAlert('Invalid connection code format', 'error');
+        }
+      });
+    }
+
+    // Launch Game on Load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

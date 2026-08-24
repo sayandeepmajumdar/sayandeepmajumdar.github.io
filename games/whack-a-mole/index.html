@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Online Whack-a-Mole Duel (P2P Multiplayer) | ArcadeLab</title>
+  <meta name="description" content="Play real-time 2-player Online Whack-a-Mole directly in your browser. Shared board race or split-screen sprint with live WebRTC P2P multiplayer, special mole variants, AI bot, and zero server lag." />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/games/whack-a-mole/" />
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/whack-a-mole/" />
+  <meta property="og:title" content="Online Whack-a-Mole Duel | ArcadeLab" />
+  <meta property="og:description" content="Real-time 2-player browser-to-browser Whack-a-Mole duel with zero servers. Race on a shared board, dodge bomb moles, grab golden bonuses, and climb the ELO ladder!" />
+
+  <!-- Google Fonts: Inter & Outfit & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/assets/css/site.min.css" />
+
+  <!-- PeerJS WebRTC Library -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+
+    /* Custom Hole & Mole 3D Styles */
+    .hole-wrapper {
+      perspective: 800px;
+      position: relative;
+    }
+
+    .hole-mound {
+      background: radial-gradient(circle at 50% 120%, #1c1512 30%, #3e2723 70%, #5d4037 100%);
+      border-bottom: 4px solid #1a100b;
+      box-shadow: inset 0 8px 12px rgba(0,0,0,0.8), 0 4px 6px rgba(0,0,0,0.4);
+    }
+
+    .hole-rim {
+      background: radial-gradient(ellipse at 50% 50%, rgba(20,15,10,0.95) 0%, rgba(45,30,20,0.9) 70%, rgba(70,45,30,0.8) 100%);
+      box-shadow: inset 0 10px 15px rgba(0,0,0,0.95);
+    }
+
+    /* Subterranean Mask for Mole Pop-up */
+    .mole-pit {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9999px;
+    }
+
+    .mole-actor {
+      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: translateY(110%);
+      will-change: transform;
+    }
+
+    .mole-actor.popped {
+      transform: translateY(0%);
+    }
+
+    .mole-actor.whacked {
+      transform: translateY(20%) scale(0.85);
+      filter: brightness(1.4) saturate(1.3);
+      animation: moleSquash 0.3s ease-out forwards;
+    }
+
+    @keyframes moleSquash {
+      0% { transform: translateY(0%) scale(1); }
+      30% { transform: translateY(15%) scale(1.2, 0.6); }
+      60% { transform: translateY(30%) scale(0.9, 0.9); }
+      100% { transform: translateY(120%) scale(0.8); opacity: 0; }
+    }
+
+    /* Hammer Impact Animations */
+    .hammer-strike {
+      position: absolute;
+      pointer-events: none;
+      z-index: 40;
+      animation: hammerSwing 0.28s ease-out forwards;
+      transform-origin: bottom right;
+    }
+
+    @keyframes hammerSwing {
+      0% { transform: rotate(-45deg) scale(0.7) translate(-10px, -20px); opacity: 0; }
+      40% { transform: rotate(15deg) scale(1.2) translate(0px, 0px); opacity: 1; }
+      70% { transform: rotate(-5deg) scale(1); opacity: 1; }
+      100% { transform: rotate(0deg) scale(0.9); opacity: 0; }
+    }
+
+    /* Comic Action Badges */
+    .impact-badge {
+      position: absolute;
+      pointer-events: none;
+      z-index: 50;
+      animation: floatBadge 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes floatBadge {
+      0% { transform: translate(-50%, 0) scale(0.4) rotate(-15deg); opacity: 0; }
+      40% { transform: translate(-50%, -20px) scale(1.2) rotate(8deg); opacity: 1; }
+      100% { transform: translate(-50%, -45px) scale(0.9) rotate(-4deg); opacity: 0; }
+    }
+
+    /* Floating Score Numbers */
+    .score-float {
+      position: absolute;
+      pointer-events: none;
+      z-index: 50;
+      font-family: var(--font-mono);
+      font-weight: 900;
+      animation: floatScore 0.7s ease-out forwards;
+    }
+
+    @keyframes floatScore {
+      0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+      30% { transform: translate(-50%, -15px) scale(1.2); opacity: 1; }
+      100% { transform: translate(-50%, -40px) scale(1); opacity: 0; }
+    }
+
+    /* Screen Shake for Bomb explosion */
+    .screen-shake {
+      animation: bombShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes bombShake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(5px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 3px, 0); }
+      40%, 60% { transform: translate3d(6px, -3px, 0); }
+    }
+
+    /* Avatar Glow Frames */
+    .frame-amber { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); border: 2px solid #f59e0b; }
+    .frame-emerald { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); border: 2px solid #10b981; }
+    .frame-rose { box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); border: 2px solid #f43f5e; }
+    .frame-indigo { box-shadow: 0 0 15px rgba(99, 102, 241, 0.6); border: 2px solid #6366f1; }
+    .frame-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); border: 2px solid #06b6d4; }
+
+    /* Custom Mallet Cursor */
+    .arena-cursor-active {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9'/%3E%3Cpath d='M17.64 15 22 10.64'/%3E%3Cpath d='m20.91 3.26-6.36 6.36'/%3E%3C/svg%3E") 12 12, auto;
+    }
+
+    /* Avatar & Frame Grids in Profile Customizer */
+    #avatar-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    #frame-grid {
+      display: grid !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+      #frame-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-theme-bg text-theme-ink min-h-screen flex flex-col transition-colors duration-300 antialiased selection:bg-amber-500 selection:text-white">
+
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION                        -->
+  <!-- ========================================== -->
+  <header class="border-b border-theme-line bg-theme-surface/70 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+      
+      <!-- Brand & Title -->
+      <a href="/games/" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-600 flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform text-white">
+          🐹
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-display font-black text-base tracking-tight text-theme-ink group-hover:text-amber-400 transition-colors">
+              Whack-a-Mole
+            </span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              P2P ACTION
+            </span>
+          </div>
+          <p class="text-[10px] text-theme-muted font-mono leading-none">ArcadeLab • 2-Player Real-Time Duel</p>
+        </div>
+      </a>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <!-- Player Passport Button -->
+        <button id="btn-passport-toggle" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm text-theme-ink" title="Player Passport">
+          <span id="header-avatar" class="text-sm">🐹</span>
+          <span id="header-elo" class="hidden sm:inline text-amber-400">1000 ELO</span>
+        </button>
+
+        <!-- Trophy Hall Button -->
+        <button id="btn-trophy-hall" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Trophy Hall">
+          <span>🏆</span>
+          <span id="unlocked-badge-count" class="ml-1 text-[10px] font-mono font-bold text-amber-400">0/12</span>
+        </button>
+
+        <!-- Rules / How to Play -->
+        <button id="btn-rules" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Game Rules">
+          📖
+        </button>
+
+        <!-- Audio Toggle -->
+        <button id="btn-sound-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" type="button" class="p-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs transition-colors text-theme-ink" title="Toggle Dark/Light Mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Banner Container -->
+  <div id="alert-banner" class="max-w-md mx-auto fixed top-16 left-4 right-4 z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN CONTAINER (LOBBY / WAITING / ARENA)   -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-center items-center relative">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & MATCHMAKER                 -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="w-full max-w-lg space-y-4 py-2">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-2 relative">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          REAL-TIME BROWSER ACTION
+        </div>
+        <h1 class="font-display font-black text-3xl sm:text-4xl text-theme-ink tracking-tight">
+          Online Whack-a-Mole
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto">
+          High-speed 2-player reflex duel! Race on a shared board or sprint on split screens with special golden moles, bomb traps, and freeze power-ups.
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT BANNER (LOBBY) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div id="lobby-avatar-preview" class="w-12 h-12 rounded-2xl bg-amber-600 flex items-center justify-center text-2xl shadow-md frame-amber">
+            🐹
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span id="lobby-player-name" class="font-display font-black text-sm text-theme-ink">WhackMaster</span>
+              <span id="lobby-player-rank" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono font-bold">🏆 Bronze I</span>
+            </div>
+            <span id="lobby-player-title" class="text-[11px] font-mono text-theme-muted block">Mole Slayer</span>
+          </div>
+        </div>
+
+        <button id="btn-edit-profile" type="button" class="px-3 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-mono font-bold transition-colors text-theme-ink">
+          Customize ⚙️
+        </button>
+      </div>
+
+      <!-- GAME SETTINGS CARD -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <!-- Setting 1: Game Mode (Shared Race vs Split Sprint) -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono uppercase tracking-wider font-bold text-theme-muted">Game Mode</label>
+            <span class="text-[10px] font-mono text-amber-400 font-bold">Multiplayer Type</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-mode-shared" type="button" class="p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all">
+              <span class="text-base">⚡ Shared Board Race</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Race to whack the same moles!</span>
+            </button>
+            <button id="btn-mode-split" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink">
+              <span class="text-base">🎯 Split-Screen Sprint</span>
+              <span class="text-[10px] font-mono text-theme-muted font-normal">Dual independent boards</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Grid Size & Round Duration -->
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <!-- Grid Size -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Hole Grid</label>
+            <select id="select-grid-size" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-amber-500">
+              <option value="classic">3x3 Classic (9 Holes)</option>
+              <option value="arcade" selected>4x3 Arcade (12 Holes)</option>
+              <option value="chaos">4x4 Chaos (16 Holes)</option>
+            </select>
+          </div>
+
+          <!-- Round Duration -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">Round Duration</label>
+            <select id="select-duration" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold text-theme-ink outline-none focus:border-amber-500">
+              <option value="30">30s Blitz</option>
+              <option value="45" selected>45s Standard</option>
+              <option value="60">60s Marathon</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MULTIPLAYER & SINGLE PLAYER ACTION TABS -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <div class="flex items-center gap-2 border-b border-theme-line pb-3">
+          <button id="tab-btn-online" type="button" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-display font-black text-xs transition-colors">
+            🌐 2-Player Online Duel
+          </button>
+          <button id="tab-btn-ai" type="button" class="flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors">
+            🤖 Single Player & AI Bot
+          </button>
+        </div>
+
+        <!-- TAB 1: ONLINE MULTIPLAYER -->
+        <div id="tab-content-online" class="space-y-3.5">
+          <!-- Create Room Button -->
+          <button id="btn-create-room" type="button" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-display font-black text-sm tracking-wide shadow-lg shadow-amber-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+            <span>Create 2-Player Match</span>
+            <span>⚡</span>
+          </button>
+
+          <!-- Join by Room Code -->
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Or Join Existing Room</span>
+            <div class="flex items-center gap-2">
+              <input id="input-room-code" type="text" placeholder="MOL-XXXX" maxlength="8" class="flex-1 px-3.5 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs font-bold uppercase tracking-wider text-theme-ink placeholder:text-theme-muted outline-none focus:border-amber-500" />
+              <button id="btn-join-room" type="button" class="px-5 py-2.5 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-theme-ink font-display font-black text-xs transition-all active:scale-95">
+                Join Match
+              </button>
+            </div>
+          </div>
+
+          <!-- Air-Gapped Direct Code Connection -->
+          <div class="pt-2 text-center">
+            <button id="btn-open-manual-signaling" type="button" class="text-[11px] font-mono text-theme-muted hover:text-amber-400 transition-colors underline">
+              📡 Direct Code Connection (No Cloud Server)
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: SINGLE PLAYER & AI BOT -->
+        <div id="tab-content-ai" class="hidden space-y-3.5">
+          <div class="space-y-1">
+            <label class="text-[10px] font-mono uppercase tracking-wider font-bold text-theme-muted">AI Reaction Reflex Level</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink" data-diff="easy">
+                Easy (Casual)
+              </button>
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 text-xs font-mono font-bold" data-diff="medium">
+                Medium (Fast)
+              </button>
+              <button type="button" class="btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink" data-diff="master">
+                Master (Instant)
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button id="btn-play-ai" type="button" class="py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-display font-black text-xs transition-transform active:scale-95 shadow">
+              ⚡ Play vs Smart AI
+            </button>
+            <button id="btn-play-solo" type="button" class="py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-black text-xs transition-colors">
+              ⏱️ Solo Time Attack
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING FOR OPPONENT               -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden w-full max-w-md space-y-4 text-center py-4">
+      
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl space-y-4">
+        
+        <!-- Animated Radar Spinner -->
+        <div class="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-3xl mx-auto relative">
+          <span class="animate-spin text-2xl">⏳</span>
+          <span class="absolute inset-0 rounded-full border-2 border-amber-500/30 border-t-amber-400 animate-spin"></span>
+        </div>
+
+        <div>
+          <h2 class="font-display font-black text-2xl text-theme-ink">Waiting for Opponent...</h2>
+          <p id="waiting-mode-desc" class="text-xs font-mono text-theme-muted mt-1">Shared Board Race • 4x3 Grid (12 Holes)</p>
+        </div>
+
+        <!-- Room Code Display -->
+        <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Your Room Code</span>
+          <div class="flex items-center justify-center gap-2">
+            <span id="waiting-room-code" class="font-mono font-black text-2xl sm:text-3xl text-amber-400 tracking-widest select-all">MOL-XXXX</span>
+            <button id="btn-copy-code" type="button" class="p-2 rounded-xl bg-theme-surface hover:bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors" title="Copy Code">
+              📋
+            </button>
+          </div>
+        </div>
+
+        <!-- Shareable Link Input -->
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono text-theme-muted uppercase tracking-wider font-bold">Instant Invite Link</span>
+          <div class="flex items-center gap-2">
+            <input id="waiting-share-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted truncate outline-none select-all" />
+            <button id="btn-copy-link" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono text-xs font-bold transition-colors shrink-0">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Share Shortcuts -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <a id="share-whatsapp" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>💬 WhatsApp</span>
+          </a>
+          <a id="share-telegram" href="#" target="_blank" rel="noopener" class="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 text-xs font-bold transition-colors flex items-center gap-1.5">
+            <span>✈️ Telegram</span>
+          </a>
+          <button id="btn-show-qr" type="button" class="p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-xs font-bold transition-colors flex items-center gap-1.5 text-theme-ink">
+            <span>📱 QR Code</span>
+          </button>
+        </div>
+
+        <!-- QR Code Container -->
+        <div id="qr-container" class="hidden flex-col items-center justify-center pt-2 space-y-2">
+          <canvas id="qr-canvas" class="rounded-xl border border-theme-line shadow-sm"></canvas>
+          <span class="text-[10px] font-mono text-theme-muted">Scan with phone camera to connect instantly</span>
+        </div>
+
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="mt-4 text-xs font-mono text-theme-muted hover:text-rose-400 transition-colors">
+        ✕ Cancel & Return to Lobby
+      </button>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE ACTION ARENA                  -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col items-center justify-center w-full space-y-3 sm:space-y-4">
+      
+      <!-- TOP STATUS BAR: TIMER & P2P STATUS -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-md relative overflow-hidden">
+        
+        <div class="flex items-center justify-between pb-2.5 border-b border-theme-line text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="arena-network-status" class="font-mono text-[11px] text-emerald-400 font-bold">Connected • P2P Active</span>
+            <span id="arena-ping-badge" class="text-[10px] font-mono text-theme-muted font-semibold hidden sm:inline">14ms</span>
+          </div>
+
+          <!-- Round Mode Badge -->
+          <span id="arena-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-mono text-[10px] font-bold border border-amber-500/20">
+            ⚡ Shared Board Race
+          </span>
+
+          <!-- Round Timer Display -->
+          <div class="flex items-center gap-1.5 font-mono">
+            <span class="text-theme-muted text-[11px]">Time Left:</span>
+            <strong id="arena-timer" class="font-black text-base sm:text-lg text-amber-400">45s</strong>
+          </div>
+        </div>
+
+        <!-- ROUND TIMER PROGRESS BAR -->
+        <div class="w-full bg-theme-surface-alt h-2 rounded-full overflow-hidden mt-2.5">
+          <div id="arena-timer-bar" class="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 transition-all duration-300 w-full"></div>
+        </div>
+
+        <!-- PLAYERS VERSUS SCOREBOARD -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-4 pt-3 items-center relative">
+          
+          <!-- Player 1 Card (Left - You) -->
+          <div id="card-player-1" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border-2 border-indigo-500/60 transition-all relative">
+            <div id="arena-p1-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-indigo">
+              🐹
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p1-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">You</span>
+                <span id="p1-combo-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black animate-pulse">🔥 2x</span>
+              </div>
+              <span id="arena-p1-accuracy" class="text-[10px] font-mono text-indigo-400 block truncate">100% Acc • 0 hits</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Score</span>
+              <strong id="arena-p1-score" class="text-xl sm:text-2xl font-mono font-black text-indigo-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Player 2 Card (Right - Opponent / AI) -->
+          <div id="card-player-2" class="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-2xl bg-theme-surface-alt border border-theme-line transition-all relative">
+            <div id="arena-p2-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-600 flex items-center justify-center text-xl sm:text-2xl shrink-0 frame-amber">
+              🤖
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span id="arena-p2-name" class="font-display font-black text-xs sm:text-sm text-theme-ink truncate">Opponent</span>
+                <span id="p2-combo-badge" class="hidden text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-black animate-pulse">🔥 2x</span>
+              </div>
+              <span id="arena-p2-accuracy" class="text-[10px] font-mono text-amber-400 block truncate">100% Acc • 0 hits</span>
+            </div>
+            <div class="text-right pl-1">
+              <span class="block text-[9px] font-mono text-theme-muted uppercase">Score</span>
+              <strong id="arena-p2-score" class="text-xl sm:text-2xl font-mono font-black text-amber-400">0</strong>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- COUNTDOWN OVERLAY & SYNC -->
+      <div id="countdown-overlay" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex flex-col items-center justify-center">
+        <span id="countdown-text" class="font-display font-black text-6xl sm:text-8xl text-amber-400 animate-bounce">3</span>
+        <span class="font-mono text-xs text-theme-muted uppercase tracking-widest mt-2">Get Ready to Whack!</span>
+      </div>
+
+      <!-- ACTION & TAUNT BAR -->
+      <div class="w-full flex items-center justify-between gap-2 px-1">
+        <!-- Combo Indicator -->
+        <div id="combo-status" class="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="combo-status-text">Whack moles quickly to build combo fire!</span>
+        </div>
+
+        <!-- Emoji Taunts -->
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🔥">🔥</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🎯">🎯</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="🐹">🐹</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="😱">😱</button>
+          <button type="button" class="btn-taunt p-1.5 rounded-xl bg-theme-surface border border-theme-line text-sm hover:scale-125 transition-transform" data-taunt="👑">👑</button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- HOLE ARENA BOARD CONTAINER                 -->
+      <!-- ========================================== -->
+      <div id="arena-board-container" class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-2xl relative min-h-[360px] flex items-center justify-center overflow-hidden arena-cursor-active">
+        
+        <!-- The Dynamic Mole Hole Grid (CSS Grid populated by JS) -->
+        <div id="mole-grid" class="grid gap-3 sm:gap-4 w-full max-w-2xl mx-auto">
+          <!-- Populated dynamically based on grid size (3x3, 4x3, 4x4) -->
+        </div>
+
+        <!-- Floating Taunts Overlay -->
+        <div id="arena-taunts-overlay" class="absolute inset-0 pointer-events-none overflow-hidden z-30"></div>
+
+        <!-- Freeze Effect Overlay -->
+        <div id="freeze-overlay" class="hidden absolute inset-0 bg-cyan-500/20 backdrop-blur-[2px] border-4 border-cyan-400 rounded-3xl pointer-events-none z-30 flex items-center justify-center animate-pulse">
+          <div class="px-4 py-1.5 rounded-2xl bg-cyan-900/90 border border-cyan-400 text-cyan-200 font-display font-black text-sm shadow-lg">
+            ❄️ HAMMER FROZEN! (2s)
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Leave Match & Return -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted w-full">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Match & Return to Lobby</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct WebRTC Encrypted Session</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER & WINNER REVEAL          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 relative shadow-2xl space-y-4 text-center">
+      
+      <!-- Trophy / Skull Icon -->
+      <div id="match-over-icon" class="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-3xl mx-auto shadow-md">
+        👑
+      </div>
+
+      <div>
+        <h3 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">VICTORY!</h3>
+        <p id="match-over-subtitle" class="text-xs font-mono text-theme-muted mt-1">You won with 240 points!</p>
+      </div>
+
+      <!-- Match Score Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-2 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Final Score:</span>
+          <strong id="stat-final-score" class="text-amber-400 text-base font-black">240 vs 180</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Accuracy:</span>
+          <strong id="stat-final-accuracy" class="text-theme-ink font-bold">92% (23/25)</strong>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-theme-muted">Max Combo Fire:</span>
+          <strong id="stat-final-combo" class="text-amber-400 font-bold">🔥 5x Streak</strong>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-theme-line">
+          <span class="text-theme-muted">Passport XP / ELO:</span>
+          <span class="text-emerald-400 font-bold text-[11px]">
+            <span id="match-xp-gain">+150 XP</span> • <span id="match-elo-gain">+24 ELO</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-display font-black text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span id="rematch-btn-text">Play Again</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full py-3 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+          Exit to Lobby
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Player Passport</h3>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Battle Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="WhackMaster" class="w-full px-3.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-sm font-display font-bold text-theme-ink outline-none focus:border-amber-500" />
+      </div>
+
+      <!-- Player Title Selection -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Honorary Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-ink outline-none focus:border-amber-500">
+          <option value="Mole Slayer">Mole Slayer</option>
+          <option value="Hammer Titan">Hammer Titan</option>
+          <option value="Lightning Reflex">Lightning Reflex</option>
+          <option value="Combo King">Combo King</option>
+          <option value="Golden Hunter">Golden Hunter</option>
+          <option value="Grandmaster">Grandmaster</option>
+        </select>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Avatar Persona</label>
+        <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-8 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-2">Holographic Avatar Frame</label>
+        <div id="frame-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2"></div>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-black text-xs transition-colors shadow">
+        Save Passport
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">12 unlockable career achievements</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs transition-colors">
+        Close Trophy Hall
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & HOW TO PLAY                 -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📖</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">How to Play</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Rules & Mole Scoring Guide</p>
+          </div>
+        </div>
+        <button id="btn-close-rules" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+          <strong class="font-bold text-theme-ink block mb-1">1. The Goal:</strong>
+          Whack popping moles as fast as possible before time runs out. In Shared Race mode, both players compete for the exact same moles!
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-theme-ink block">🐹 Standard Mole</span>
+            <span>+10 points • Regular popup</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-amber-400 block">🌟 Golden Mole</span>
+            <span>+30 points • Super fast!</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-rose-400 block">💣 Bomb Mole</span>
+            <span>-20 points • Breaks combo!</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line">
+            <span class="font-bold text-cyan-400 block">❄️ Freeze Mole</span>
+            <span>+20 pts • Freezes opponent</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-theme-surface-alt border border-theme-line space-y-1">
+          <strong class="font-bold text-theme-ink block">2. Combo Fire Multiplier:</strong>
+          Whack 3+ consecutive moles without hitting bombs or missing to trigger <strong>2x, 3x, and 5x Score Multipliers</strong>!
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-black text-xs transition-colors">
+        Got It, Let's Whack!
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DIRECT CODE CONNECTION (AIR-GAPPED) -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">📡</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Direct Code Connection</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Connect directly without cloud servers</p>
+          </div>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-theme-line pb-2">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold font-mono">Player 1 (Host)</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono">Player 2 (Join)</button>
+      </div>
+
+      <!-- Host Section -->
+      <div id="manual-host-section" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Generate Host Code:</label>
+          <button id="btn-gen-manual-offer" type="button" class="w-full py-2 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-xs font-bold transition-colors">
+            Generate Connection Code
+          </button>
+          <textarea id="manual-offer-output" readonly rows="2" class="w-full mt-2 p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click generate to create your connection code..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Paste Player 2 Response Code:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste response code here..."></textarea>
+          <button id="btn-accept-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-colors">
+            Connect Players
+          </button>
+        </div>
+      </div>
+
+      <!-- Join Section -->
+      <div id="manual-join-section" class="hidden space-y-3">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">1. Paste Player 1 Host Code:</label>
+          <textarea id="manual-offer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste host connection code here..."></textarea>
+          <button id="btn-gen-manual-answer" type="button" class="w-full mt-2 py-2 rounded-xl bg-theme-surface-alt hover:bg-amber-500 hover:text-slate-950 border border-theme-line text-xs font-bold transition-colors">
+            Generate Response Code
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">2. Your Response Code (Send to Player 1):</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your response code will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER & CROSS-GAME NAVIGATION             -->
+  <!-- ========================================== -->
+  <footer class="w-full border-t border-theme-line py-6 px-4 bg-theme-surface/40 mt-auto text-center text-xs text-theme-muted space-y-3">
+    <div class="flex items-center justify-center gap-4 sm:gap-6 flex-wrap font-medium">
+      <a href="/games/" class="hover:text-amber-400 transition-colors">🕹️ All Games</a>
+      <a href="/games/endless-runner/" class="hover:text-amber-400 transition-colors">🏃 Endless Runner</a>
+      <a href="/games/flappy-bird/" class="hover:text-amber-400 transition-colors">🐦 Flappy Bird</a>
+      <a href="/games/asteroids/" class="hover:text-amber-400 transition-colors">🚀 Asteroids</a>
+      <a href="/games/sudoku/" class="hover:text-amber-400 transition-colors">🧩 Sudoku</a>
+      <a href="/games/simon-says/" class="hover:text-amber-400 transition-colors">🧠 Simon Says</a>
+      <a href="/games/hangman/" class="hover:text-amber-400 transition-colors">🪢 Hangman</a>
+      <a href="/games/memory-matching/" class="hover:text-amber-400 transition-colors">🃏 Memory Match</a>
+      <a href="/games/number-guessing/" class="hover:text-amber-400 transition-colors">🎯 Number Guessing</a>
+      <a href="/games/rock-paper-scissors/" class="hover:text-amber-400 transition-colors">✊ Rock Paper Scissors</a>
+      <a href="/games/tic-tac-toe/" class="hover:text-amber-400 transition-colors">❌ Tic-Tac-Toe</a>
+      <a href="/tools/" class="hover:text-amber-400 transition-colors">🧰 Developer Tools</a>
+    </div>
+    <p class="text-[11px] font-mono">
+      ArcadeLab • Built with WebRTC P2P & HTML5 Web Audio • No custom backend required.
+    </p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT GAME LOGIC, WEBRTC NETWORKING, MOLE ENGINE & AUDIO SYNTHESIZER -->
+  <!-- ========================================================================= -->
+  <script>
+    /* ========================================================================= */
+    /* 1. CONSTANTS & MOLE DEFINITIONS                                           */
+    /* ========================================================================= */
+    const GRID_CONFIGS = {
+      classic: { name: '3x3 Classic', holes: 9, cols: 'grid-cols-3', rows: 3 },
+      arcade: { name: '4x3 Arcade', holes: 12, cols: 'grid-cols-3 sm:grid-cols-4', rows: 3 },
+      chaos: { name: '4x4 Chaos', holes: 16, cols: 'grid-cols-4', rows: 4 }
+    };
+
+    const MOLE_TYPES = {
+      standard: {
+        id: 'standard',
+        name: 'Standard Mole',
+        icon: '🐹',
+        points: 10,
+        baseDuration: 1200,
+        weight: 65,
+        color: 'text-amber-300'
+      },
+      golden: {
+        id: 'golden',
+        name: 'Golden Mole',
+        icon: '🌟',
+        points: 30,
+        baseDuration: 850,
+        weight: 15,
+        color: 'text-amber-400'
+      },
+      bomb: {
+        id: 'bomb',
+        name: 'Bomb Mole',
+        icon: '💣',
+        points: -20,
+        baseDuration: 1400,
+        weight: 12,
+        color: 'text-rose-500'
+      },
+      freeze: {
+        id: 'freeze',
+        name: 'Freeze Mole',
+        icon: '❄️',
+        points: 20,
+        baseDuration: 950,
+        weight: 8,
+        color: 'text-cyan-400'
+      }
+    };
+
+    const COMIC_WORDS = ['WHACK!', 'BAM!', 'POW!', 'SMASH!', 'BONK!', 'KAPOW!'];
+    const AVATARS = ['🐹', '🎯', '👑', '🤖', '🚀', '⚡', '💣', '🦊', '🦁', '🐼', '🦄', '🐙', '👾', '💎', '🍕', '🪐'];
+    const FRAMES = [
+      { id: 'frame-amber', name: 'Amber Laser', class: 'frame-amber' },
+      { id: 'frame-emerald', name: 'Emerald Glow', class: 'frame-emerald' },
+      { id: 'frame-rose', name: 'Rose Cyber', class: 'frame-rose' },
+      { id: 'frame-indigo', name: 'Indigo Forge', class: 'frame-indigo' },
+      { id: 'frame-cyan', name: 'Neon Cyan', class: 'frame-cyan' }
+    ];
+
+    const ACHIEVEMENTS = [
+      { id: 'first_whack', name: 'First Bonk', desc: 'Whack your very first mole in a match.', icon: '🐹' },
+      { id: 'combo_3', name: 'Combo Striker', desc: 'Build a 3x combo fire streak in a single match.', icon: '🔥' },
+      { id: 'combo_5', name: 'Ultra Frenzy', desc: 'Reach a 5x ultra combo streak without missing!', icon: '⚡' },
+      { id: 'golden_hunter', name: 'Gold Rush', desc: 'Whack 3 golden moles in a single round.', icon: '🌟' },
+      { id: 'bomb_dodger', name: 'Bomb Defuser', desc: 'Finish a full match with 0 bomb hits.', icon: '🛡️' },
+      { id: 'speed_whacker', name: 'Lightning Reflex', desc: 'Whack a mole in under 300 milliseconds.', icon: '⏱️' },
+      { id: 'high_scorer', name: 'Score Crusher', desc: 'Score over 300 points in a single round.', icon: '🏆' },
+      { id: 'freeze_master', name: 'Deep Freeze', desc: 'Trigger a freeze effect on your opponent.', icon: '❄️' },
+      { id: 'ai_crusher', name: 'AI Demolisher', desc: 'Defeat the Smart AI bot in Master difficulty.', icon: '🤖' },
+      { id: 'flawless_whacker', name: 'Flawless Accuracy', desc: 'Finish a match with 95%+ accuracy.', icon: '🎯' },
+      { id: 'chaos_champion', name: 'Chaos Survivor', desc: 'Win a 4x4 Chaos (16-hole) duel.', icon: '👑' },
+      { id: 'grandmaster', name: 'Grandmaster Whacker', desc: 'Reach 2,000+ MMR on the ranked ladder.', icon: '🎖️' }
+    ];
+
+    /* ========================================================================= */
+    /* 2. PLAYER PROFILE & GAMIFIED PASSPORT                                     */
+    /* ========================================================================= */
+    class PlayerProfile {
+      constructor() {
+        this.load();
+      }
+
+      load() {
+        const data = JSON.parse(localStorage.getItem('mol:player_passport') || '{}');
+        this.name = data.name || 'Whacker ' + Math.floor(1000 + Math.random() * 9000);
+        this.avatar = data.avatar || '🐹';
+        this.frame = data.frame || 'frame-amber';
+        this.title = data.title || 'Mole Slayer';
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.elo = data.elo || 1000;
+        this.matchesPlayed = data.matchesPlayed || 0;
+        this.matchesWon = data.matchesWon || 0;
+        this.totalWhacks = data.totalWhacks || 0;
+        this.unlocked = data.unlocked || [];
+      }
+
+      save() {
+        localStorage.setItem('mol:player_passport', JSON.stringify({
+          name: this.name,
+          avatar: this.avatar,
+          frame: this.frame,
+          title: this.title,
+          level: this.level,
+          xp: this.xp,
+          elo: this.elo,
+          matchesPlayed: this.matchesPlayed,
+          matchesWon: this.matchesWon,
+          totalWhacks: this.totalWhacks,
+          unlocked: this.unlocked
+        }));
+      }
+
+      addXP(amt) {
+        this.xp += amt;
+        const nextReq = this.level * 250;
+        if (this.xp >= nextReq) {
+          this.xp -= nextReq;
+          this.level++;
+          sound.playLevelUp();
+          showAlert(`🎉 LEVEL UP! You reached Passport Level ${this.level}!`, 'success');
+        }
+        this.save();
+        renderPassportUI();
+      }
+
+      addElo(amt) {
+        this.elo = Math.max(100, this.elo + amt);
+        if (this.elo >= 2000) this.unlockAchievement('grandmaster');
+        this.save();
+        renderPassportUI();
+      }
+
+      unlockAchievement(id) {
+        if (!this.unlocked.includes(id)) {
+          this.unlocked.push(id);
+          this.save();
+          sound.playAchievement();
+          const item = ACHIEVEMENTS.find(a => a.id === id);
+          if (item) {
+            showAlert(`🏆 TROPHY UNLOCKED: ${item.name}!`, 'success');
+          }
+          renderTrophyBadges();
+        }
+      }
+
+      getRankBadge() {
+        if (this.elo < 1100) return '🏆 Bronze I';
+        if (this.elo < 1300) return '🏆 Silver II';
+        if (this.elo < 1500) return '🏆 Gold III';
+        if (this.elo < 1800) return '💎 Platinum IV';
+        if (this.elo < 2200) return '👑 Diamond Master';
+        return '🌌 Grandmaster';
+      }
+    }
+
+    const player = new PlayerProfile();
+
+    /* ========================================================================= */
+    /* 3. WEB AUDIO SYNTHESIZER                                                  */
+    /* ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.enabled = localStorage.getItem('mol:sound_enabled') !== 'false';
+        this.ctx = null;
+      }
+
+      initCtx() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playWhack() {
+        if (!this.enabled) return;
+        this.initCtx();
+        this.playTone(380, 'triangle', 0.09, 0.2);
+        setTimeout(() => this.playTone(180, 'sawtooth', 0.12, 0.15), 30);
+      }
+
+      playGoldenWhack() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [587.33, 880, 1174.66, 1760].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.25, 0.15), i * 50);
+        });
+      }
+
+      playBombExplosion() {
+        if (!this.enabled) return;
+        this.initCtx();
+        this.playTone(120, 'sawtooth', 0.35, 0.3);
+        setTimeout(() => this.playTone(80, 'sawtooth', 0.4, 0.25), 60);
+      }
+
+      playFreeze() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [1000, 1300, 1800, 2400].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.2, 0.12), i * 40);
+        });
+      }
+
+      playCombo(streak) {
+        if (!this.enabled) return;
+        this.initCtx();
+        const base = 440 * Math.pow(1.18, streak);
+        [base, base * 1.25, base * 1.5].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.18), i * 50);
+        });
+      }
+
+      playCountdown(isGo = false) {
+        if (!this.enabled) return;
+        this.initCtx();
+        if (isGo) {
+          this.playTone(880, 'sine', 0.35, 0.25);
+        } else {
+          this.playTone(440, 'sine', 0.15, 0.15);
+        }
+      }
+
+      playVictory() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.35, 0.2), i * 80);
+        });
+      }
+
+      playDefeat() {
+        if (!this.enabled) return;
+        this.initCtx();
+        [400, 360, 320, 260].forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 'sawtooth', 0.25, 0.1), i * 110);
+        });
+      }
+
+      playLevelUp() {
+        this.playVictory();
+      }
+
+      playAchievement() {
+        this.playGoldenWhack();
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ========================================================================= */
+    /* 4. SMART AI REFLEX BOT                                                    */
+    /* ========================================================================= */
+    class SmartWhackAI {
+      constructor(difficulty = 'medium') {
+        this.difficulty = difficulty; // 'easy', 'medium', 'master'
+        this.activeTimers = {};
+      }
+
+      reset() {
+        for (const t of Object.values(this.activeTimers)) {
+          clearTimeout(t);
+        }
+        this.activeTimers = {};
+      }
+
+      onMoleSpawn(mole) {
+        // mole: { id, holeIndex, type, spawnTime, duration }
+        if (mole.type === 'bomb') {
+          // AI avoids bombs with high probability
+          const hitBombChance = this.difficulty === 'easy' ? 0.2 : (this.difficulty === 'medium' ? 0.08 : 0.01);
+          if (Math.random() > hitBombChance) return;
+        }
+
+        // Reaction time calculation based on difficulty
+        let baseReaction;
+        if (this.difficulty === 'easy') {
+          baseReaction = 650 + Math.random() * 400; // 650-1050ms
+        } else if (this.difficulty === 'medium') {
+          baseReaction = 420 + Math.random() * 250; // 420-670ms
+        } else {
+          baseReaction = 220 + Math.random() * 150; // 220-370ms (Master)
+        }
+
+        // Check if reaction time fits inside mole duration
+        if (baseReaction < mole.duration) {
+          this.activeTimers[mole.id] = setTimeout(() => {
+            if (State.activeMoles[mole.holeIndex] && State.activeMoles[mole.holeIndex].id === mole.id) {
+              handleWhack('p2', mole.holeIndex, mole.id, performance.now());
+            }
+          }, baseReaction);
+        }
+      }
+
+      onMoleDespawn(moleId) {
+        if (this.activeTimers[moleId]) {
+          clearTimeout(this.activeTimers[moleId]);
+          delete this.activeTimers[moleId];
+        }
+      }
+    }
+
+    /* ========================================================================= */
+    /* 5. APPLICATION STATE                                                      */
+    /* ========================================================================= */
+    const State = {
+      // Room & Peer
+      isHost: false,
+      isAI: false,
+      aiDifficulty: 'medium',
+      aiBot: null,
+      peer: null,
+      conn: null,
+      roomCode: '',
+      connected: false,
+
+      // Game Mode & Rules
+      gameMode: 'shared', // 'shared' or 'split'
+      gridPreset: 'arcade',
+      roundDuration: 45, // seconds
+      timeLeft: 45,
+      isRunning: false,
+      isCountdown: false,
+
+      // Active Holes & Moles
+      totalHoles: 12,
+      activeMoles: {}, // { [holeIndex]: { id, type, spawnTime, duration, timer } }
+      moleCounter: 0,
+      spawnInterval: null,
+      timerInterval: null,
+
+      // Player 1 (You) Stats
+      p1Score: 0,
+      p1Hits: 0,
+      p1Misses: 0,
+      p1Bombs: 0,
+      p1Goldens: 0,
+      p1Combo: 0,
+      p1MaxCombo: 0,
+      p1FrozenUntil: 0,
+
+      // Player 2 (Opponent / AI) Stats
+      p2Score: 0,
+      p2Hits: 0,
+      p2Misses: 0,
+      p2Bombs: 0,
+      p2Goldens: 0,
+      p2Combo: 0,
+      p2MaxCombo: 0,
+      p2FrozenUntil: 0,
+
+      // Player Identity
+      myPlayerId: 'p1',
+      p1Name: 'You',
+      p2Name: 'Opponent',
+      p1Avatar: '🐹',
+      p2Avatar: '🤖',
+      p1Title: 'Mole Slayer',
+      p2Title: 'Hammer Titan',
+
+      // Ping
+      pingInterval: null,
+      lastPingTime: 0
+    };
+
+    /* ========================================================================= */
+    /* 6. DOM ELEMENTS MAP                                                       */
+    /* ========================================================================= */
+    const el = {
+      // Views
+      viewLobby: document.getElementById('view-lobby'),
+      viewWaiting: document.getElementById('view-waiting'),
+      viewArena: document.getElementById('view-arena'),
+
+      // Header Buttons
+      btnPassportToggle: document.getElementById('btn-passport-toggle'),
+      headerAvatar: document.getElementById('header-avatar'),
+      headerElo: document.getElementById('header-elo'),
+      btnTrophyHall: document.getElementById('btn-trophy-hall'),
+      unlockedBadgeCount: document.getElementById('unlocked-badge-count'),
+      btnRules: document.getElementById('btn-rules'),
+      btnSoundToggle: document.getElementById('btn-sound-toggle'),
+      soundIcon: document.getElementById('sound-icon'),
+      btnThemeToggle: document.getElementById('btn-theme-toggle'),
+      themeIcon: document.getElementById('theme-icon'),
+      alertBanner: document.getElementById('alert-banner'),
+
+      // Lobby Elements
+      lobbyAvatarPreview: document.getElementById('lobby-avatar-preview'),
+      lobbyPlayerName: document.getElementById('lobby-player-name'),
+      lobbyPlayerRank: document.getElementById('lobby-player-rank'),
+      lobbyPlayerTitle: document.getElementById('lobby-player-title'),
+      btnEditProfile: document.getElementById('btn-edit-profile'),
+      btnModeShared: document.getElementById('btn-mode-shared'),
+      btnModeSplit: document.getElementById('btn-mode-split'),
+      selectGridSize: document.getElementById('select-grid-size'),
+      selectDuration: document.getElementById('select-duration'),
+      tabBtnOnline: document.getElementById('tab-btn-online'),
+      tabBtnAi: document.getElementById('tab-btn-ai'),
+      tabContentOnline: document.getElementById('tab-content-online'),
+      tabContentAi: document.getElementById('tab-content-ai'),
+      btnCreateRoom: document.getElementById('btn-create-room'),
+      inputRoomCode: document.getElementById('input-room-code'),
+      btnJoinRoom: document.getElementById('btn-join-room'),
+      btnOpenManualSignaling: document.getElementById('btn-open-manual-signaling'),
+      btnPlayAi: document.getElementById('btn-play-ai'),
+      btnPlaySolo: document.getElementById('btn-play-solo'),
+
+      // Waiting View Elements
+      waitingModeDesc: document.getElementById('waiting-mode-desc'),
+      waitingRoomCode: document.getElementById('waiting-room-code'),
+      btnCopyCode: document.getElementById('btn-copy-code'),
+      waitingShareLink: document.getElementById('waiting-share-link'),
+      btnCopyLink: document.getElementById('btn-copy-link'),
+      shareWhatsapp: document.getElementById('share-whatsapp'),
+      shareTelegram: document.getElementById('share-telegram'),
+      btnShowQr: document.getElementById('btn-show-qr'),
+      qrContainer: document.getElementById('qr-container'),
+      qrCanvas: document.getElementById('qr-canvas'),
+      btnCancelWaiting: document.getElementById('btn-cancel-waiting'),
+
+      // Arena Elements
+      arenaNetworkStatus: document.getElementById('arena-network-status'),
+      arenaPingBadge: document.getElementById('arena-ping-badge'),
+      arenaModeBadge: document.getElementById('arena-mode-badge'),
+      arenaTimer: document.getElementById('arena-timer'),
+      arenaTimerBar: document.getElementById('arena-timer-bar'),
+      cardPlayer1: document.getElementById('card-player-1'),
+      arenaP1Avatar: document.getElementById('arena-p1-avatar'),
+      arenaP1Name: document.getElementById('arena-p1-name'),
+      p1ComboBadge: document.getElementById('p1-combo-badge'),
+      arenaP1Accuracy: document.getElementById('arena-p1-accuracy'),
+      arenaP1Score: document.getElementById('arena-p1-score'),
+      cardPlayer2: document.getElementById('card-player-2'),
+      arenaP2Avatar: document.getElementById('arena-p2-avatar'),
+      arenaP2Name: document.getElementById('arena-p2-name'),
+      p2ComboBadge: document.getElementById('p2-combo-badge'),
+      arenaP2Accuracy: document.getElementById('arena-p2-accuracy'),
+      arenaP2Score: document.getElementById('arena-p2-score'),
+      countdownOverlay: document.getElementById('countdown-overlay'),
+      countdownText: document.getElementById('countdown-text'),
+      comboStatusText: document.getElementById('combo-status-text'),
+      arenaBoardContainer: document.getElementById('arena-board-container'),
+      moleGrid: document.getElementById('mole-grid'),
+      arenaTauntsOverlay: document.getElementById('arena-taunts-overlay'),
+      freezeOverlay: document.getElementById('freeze-overlay'),
+      btnLeaveMatch: document.getElementById('btn-leave-match'),
+
+      // Match Over Modal
+      modalMatchOver: document.getElementById('modal-match-over'),
+      matchOverIcon: document.getElementById('match-over-icon'),
+      matchOverTitle: document.getElementById('match-over-title'),
+      matchOverSubtitle: document.getElementById('match-over-subtitle'),
+      statFinalScore: document.getElementById('stat-final-score'),
+      statFinalAccuracy: document.getElementById('stat-final-accuracy'),
+      statFinalCombo: document.getElementById('stat-final-combo'),
+      matchXpGain: document.getElementById('match-xp-gain'),
+      matchEloGain: document.getElementById('match-elo-gain'),
+      btnRequestRematch: document.getElementById('btn-request-rematch'),
+      rematchBtnText: document.getElementById('rematch-btn-text'),
+      btnModalExitLobby: document.getElementById('btn-modal-exit-lobby'),
+
+      // Passport Customizer Modal
+      modalProfileCustomizer: document.getElementById('modal-profile-customizer'),
+      btnCloseProfile: document.getElementById('btn-close-profile'),
+      customizerNameInput: document.getElementById('customizer-name-input'),
+      selectPlayerTitle: document.getElementById('select-player-title'),
+      avatarGrid: document.getElementById('avatar-grid'),
+      frameGrid: document.getElementById('frame-grid'),
+      btnSaveProfile: document.getElementById('btn-save-profile'),
+
+      // Trophy Hall Modal
+      modalTrophies: document.getElementById('modal-trophies'),
+      btnCloseTrophies: document.getElementById('btn-close-trophies'),
+      trophiesListContainer: document.getElementById('trophies-list-container'),
+      btnAckTrophies: document.getElementById('btn-ack-trophies'),
+
+      // Rules Modal
+      modalRules: document.getElementById('modal-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnAckRules: document.getElementById('btn-ack-rules'),
+
+      // Manual Signaling Modal
+      modalManualSignaling: document.getElementById('modal-manual-signaling'),
+      btnCloseManualSignaling: document.getElementById('btn-close-manual-signaling'),
+      tabManualHost: document.getElementById('tab-manual-host'),
+      tabManualJoin: document.getElementById('tab-manual-join'),
+      manualHostSection: document.getElementById('manual-host-section'),
+      manualJoinSection: document.getElementById('manual-join-section'),
+      btnGenManualOffer: document.getElementById('btn-gen-manual-offer'),
+      manualOfferOutput: document.getElementById('manual-offer-output'),
+      manualAnswerInput: document.getElementById('manual-answer-input'),
+      btnAcceptManualAnswer: document.getElementById('btn-accept-manual-answer'),
+      manualOfferInput: document.getElementById('manual-offer-input'),
+      btnGenManualAnswer: document.getElementById('btn-gen-manual-answer'),
+      manualAnswerOutput: document.getElementById('manual-answer-output')
+    };
+
+    /* ========================================================================= */
+    /* 7. INITIALIZATION & UI HELPERS                                            */
+    /* ========================================================================= */
+    function init() {
+      // Apply theme
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      updateThemeIcon();
+
+      // Render profile
+      renderPassportUI();
+      renderTrophyBadges();
+      populateCustomizerGrids();
+
+      // Setup Listeners
+      setupEventListeners();
+
+      // Check URL parameters for room join code
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        el.inputRoomCode.value = roomParam.toUpperCase();
+        setTimeout(() => joinRoom(roomParam.toUpperCase()), 400);
+      }
+    }
+
+    function showAlert(msg, type = 'info') {
+      const banner = el.alertBanner;
+      banner.innerHTML = `
+        <div class="px-4 py-2.5 rounded-2xl shadow-xl border text-xs font-mono font-bold flex items-center justify-between gap-3 ${
+          type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50' :
+          type === 'error' ? 'bg-rose-950/90 text-rose-300 border-rose-500/50' :
+          'bg-slate-900/90 text-amber-300 border-amber-500/50'
+        }">
+          <span>${msg}</span>
+          <button onclick="this.parentElement.parentElement.classList.add('opacity-0', '-translate-y-8')" class="opacity-70 hover:opacity-100">✕</button>
+        </div>
+      `;
+      banner.classList.remove('opacity-0', '-translate-y-8');
+      setTimeout(() => {
+        banner.classList.add('opacity-0', '-translate-y-8');
+      }, 4000);
+    }
+
+    function updateThemeIcon() {
+      const isDark = document.documentElement.classList.contains('dark');
+      el.themeIcon.textContent = isDark ? '🌙' : '☀️';
+    }
+
+    function renderPassportUI() {
+      el.headerAvatar.textContent = player.avatar;
+      el.headerElo.textContent = `${player.elo} ELO`;
+      el.lobbyAvatarPreview.textContent = player.avatar;
+      el.lobbyAvatarPreview.className = `w-12 h-12 rounded-2xl bg-amber-600 flex items-center justify-center text-2xl shadow-md ${player.frame}`;
+      el.lobbyPlayerName.textContent = player.name;
+      el.lobbyPlayerRank.textContent = player.getRankBadge();
+      el.lobbyPlayerTitle.textContent = player.title;
+      el.unlockedBadgeCount.textContent = `${player.unlocked.length}/${ACHIEVEMENTS.length}`;
+    }
+
+    function renderTrophyBadges() {
+      el.trophiesListContainer.innerHTML = ACHIEVEMENTS.map(ach => {
+        const isUnlocked = player.unlocked.includes(ach.id);
+        return `
+          <div class="p-3 rounded-2xl border transition-all ${
+            isUnlocked
+              ? 'bg-amber-500/10 border-amber-500/40 text-theme-ink'
+              : 'bg-theme-surface-alt border-theme-line opacity-50 text-theme-muted'
+          }">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">${ach.icon}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <strong class="font-display font-bold text-xs truncate ${isUnlocked ? 'text-amber-400' : ''}">${ach.name}</strong>
+                  ${isUnlocked ? '<span class="text-[9px] font-mono text-emerald-400 font-bold">UNLOCKED</span>' : ''}
+                </div>
+                <p class="text-[10px] text-theme-muted font-mono leading-tight mt-0.5">${ach.desc}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function populateCustomizerGrids() {
+      // Avatars
+      el.avatarGrid.innerHTML = AVATARS.map(av => `
+        <button type="button" class="btn-avatar p-2.5 rounded-xl bg-theme-surface-alt hover:bg-amber-500/20 border border-theme-line text-xl flex items-center justify-center transition-transform hover:scale-110 ${player.avatar === av ? 'border-amber-500 ring-2 ring-amber-500/40' : ''}" data-avatar="${av}">
+          ${av}
+        </button>
+      `).join('');
+
+      // Frames
+      el.frameGrid.innerHTML = FRAMES.map(fr => `
+        <button type="button" class="btn-frame p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-center transition-transform hover:scale-105 ${player.frame === fr.class ? 'border-amber-500 ring-2 ring-amber-500/40' : ''}" data-frame="${fr.class}">
+          <div class="w-8 h-8 mx-auto rounded-lg bg-slate-800 flex items-center justify-center text-sm ${fr.class}">🐹</div>
+          <span class="text-[9px] font-mono block mt-1 text-theme-muted truncate">${fr.name}</span>
+        </button>
+      `).join('');
+
+      el.selectPlayerTitle.value = player.title;
+      el.customizerNameInput.value = player.name;
+    }
+
+    /* ========================================================================= */
+    /* 8. EVENT LISTENERS                                                        */
+    /* ========================================================================= */
+    function setupEventListeners() {
+      // Theme & Audio
+      el.btnThemeToggle.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        updateThemeIcon();
+      });
+
+      el.btnSoundToggle.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        localStorage.setItem('mol:sound_enabled', sound.enabled);
+        el.soundIcon.textContent = sound.enabled ? '🔊' : '🔇';
+      });
+
+      // Modals
+      el.btnPassportToggle.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnEditProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.remove('hidden'));
+      el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+
+      el.btnTrophyHall.addEventListener('click', () => el.modalTrophies.classList.remove('hidden'));
+      el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+      el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+      el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+      el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+      el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+      // Avatar & Frame selection
+      el.avatarGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-avatar');
+        if (!btn) return;
+        player.avatar = btn.dataset.avatar;
+        document.querySelectorAll('.btn-avatar').forEach(b => b.classList.remove('border-amber-500', 'ring-2', 'ring-amber-500/40'));
+        btn.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      });
+
+      el.frameGrid.addEventListener('click', e => {
+        const btn = e.target.closest('.btn-frame');
+        if (!btn) return;
+        player.frame = btn.dataset.frame;
+        document.querySelectorAll('.btn-frame').forEach(b => b.classList.remove('border-amber-500', 'ring-2', 'ring-amber-500/40'));
+        btn.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/40');
+      });
+
+      el.btnSaveProfile.addEventListener('click', () => {
+        const newName = el.customizerNameInput.value.trim();
+        if (newName) player.name = newName;
+        player.title = el.selectPlayerTitle.value;
+        player.save();
+        renderPassportUI();
+        el.modalProfileCustomizer.classList.add('hidden');
+        showAlert('Passport profile updated successfully!', 'success');
+      });
+
+      // Lobby Mode Switcher
+      el.btnModeShared.addEventListener('click', () => setGameMode('shared'));
+      el.btnModeSplit.addEventListener('click', () => setGameMode('split'));
+
+      // Lobby Tabs (Online vs AI)
+      el.tabBtnOnline.addEventListener('click', () => {
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-display font-black text-xs transition-colors';
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentOnline.classList.remove('hidden');
+        el.tabContentAi.classList.add('hidden');
+      });
+
+      el.tabBtnAi.addEventListener('click', () => {
+        el.tabBtnAi.className = 'flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-display font-black text-xs transition-colors';
+        el.tabBtnOnline.className = 'flex-1 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface text-theme-muted font-display font-bold text-xs transition-colors';
+        el.tabContentAi.classList.remove('hidden');
+        el.tabContentOnline.classList.add('hidden');
+      });
+
+      // AI Difficulty Selector
+      document.querySelectorAll('.btn-ai-diff').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.btn-ai-diff').forEach(b => {
+            b.className = 'btn-ai-diff p-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted hover:text-theme-ink';
+          });
+          btn.className = 'btn-ai-diff p-2 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 text-xs font-mono font-bold';
+          State.aiDifficulty = btn.dataset.diff;
+        });
+      });
+
+      // Match Creation & Joining
+      el.btnCreateRoom.addEventListener('click', createRoom);
+      el.btnJoinRoom.addEventListener('click', () => {
+        const code = el.inputRoomCode.value.trim().toUpperCase();
+        if (code) joinRoom(code);
+      });
+
+      el.btnPlayAi.addEventListener('click', () => startSinglePlayer(true));
+      el.btnPlaySolo.addEventListener('click', () => startSinglePlayer(false));
+
+      // Waiting View
+      el.btnCancelWaiting.addEventListener('click', returnToLobby);
+      el.btnCopyCode.addEventListener('click', () => {
+        navigator.clipboard.writeText(State.roomCode);
+        showAlert('Room code copied to clipboard!', 'success');
+      });
+      el.btnCopyLink.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.waitingShareLink.value);
+        showAlert('Invite link copied to clipboard!', 'success');
+      });
+      el.btnShowQr.addEventListener('click', toggleQrCode);
+
+      // Arena Actions
+      el.btnLeaveMatch.addEventListener('click', () => {
+        if (confirm('Leave current match and return to lobby?')) {
+          if (State.conn) {
+            State.conn.send({ type: 'DISCONNECT' });
+          }
+          returnToLobby();
+        }
+      });
+
+      // Floating Taunts
+      document.querySelectorAll('.btn-taunt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const emoji = btn.dataset.taunt;
+          spawnTaunt(emoji, 'you');
+          if (State.conn && State.conn.open) {
+            State.conn.send({ type: 'TAUNT', emoji });
+          }
+        });
+      });
+
+      // Rematch & Exit
+      el.btnRequestRematch.addEventListener('click', handleRematchRequest);
+      el.btnModalExitLobby.addEventListener('click', () => {
+        el.modalMatchOver.classList.add('hidden');
+        returnToLobby();
+      });
+
+      // Direct Code Connection Modal
+      el.btnOpenManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.remove('hidden'));
+      el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+
+      el.tabManualHost.addEventListener('click', () => {
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold font-mono';
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualHostSection.classList.remove('hidden');
+        el.manualJoinSection.classList.add('hidden');
+      });
+
+      el.tabManualJoin.addEventListener('click', () => {
+        el.tabManualJoin.className = 'flex-1 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold font-mono';
+        el.tabManualHost.className = 'flex-1 py-1.5 rounded-lg bg-theme-surface-alt text-theme-muted text-xs font-bold font-mono';
+        el.manualJoinSection.classList.remove('hidden');
+        el.manualHostSection.classList.add('hidden');
+      });
+
+      el.btnGenManualOffer.addEventListener('click', generateManualOffer);
+      el.btnAcceptManualAnswer.addEventListener('click', acceptManualAnswer);
+      el.btnGenManualAnswer.addEventListener('click', generateManualAnswer);
+    }
+
+    function setGameMode(mode) {
+      State.gameMode = mode;
+      if (mode === 'shared') {
+        el.btnModeShared.className = 'p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeSplit.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      } else {
+        el.btnModeSplit.className = 'p-2.5 rounded-xl bg-amber-500/15 border-2 border-amber-500 text-amber-400 font-display font-bold text-xs flex flex-col items-center gap-1 transition-all';
+        el.btnModeShared.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-muted font-display font-bold text-xs flex flex-col items-center gap-1 transition-all hover:text-theme-ink';
+      }
+    }
+
+    /* ========================================================================= */
+    /* 9. WEBRTC PEER CONNECTION & NETWORKING                                    */
+    /* ========================================================================= */
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = 'MOL-';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function createRoom() {
+      State.isHost = true;
+      State.isAI = false;
+      State.myPlayerId = 'p1';
+      State.gridPreset = el.selectGridSize.value;
+      State.roundDuration = parseInt(el.selectDuration.value, 10);
+      State.totalHoles = GRID_CONFIGS[State.gridPreset].holes;
+
+      State.roomCode = generateRoomCode();
+      const peerId = `arcadelab-${State.roomCode}`;
+
+      showView('waiting');
+      el.waitingRoomCode.textContent = State.roomCode;
+      el.waitingModeDesc.textContent = `${State.gameMode === 'shared' ? '⚡ Shared Race' : '🎯 Split Sprint'} • ${GRID_CONFIGS[State.gridPreset].name} • ${State.roundDuration}s`;
+
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${State.roomCode}`;
+      el.waitingShareLink.value = shareUrl;
+      el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(`⚡ Play Online Whack-a-Mole with me on ArcadeLab! Join Room: ${State.roomCode}\n${shareUrl}`)}`;
+      el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`⚡ Online Whack-a-Mole Duel: Room ${State.roomCode}`)}`;
+
+      if (State.peer) State.peer.destroy();
+      State.peer = new Peer(peerId, { debug: 1 });
+
+      State.peer.on('open', () => {
+        console.log('PeerJS Host Ready:', peerId);
+      });
+
+      State.peer.on('connection', conn => {
+        State.conn = conn;
+        setupDataChannel();
+      });
+
+      State.peer.on('error', err => {
+        console.error('Peer error:', err);
+        showAlert(`Connection error: ${err.type || 'Failed to connect'}`, 'error');
+      });
+    }
+
+    function joinRoom(roomCode) {
+      State.isHost = false;
+      State.isAI = false;
+      State.myPlayerId = 'p2';
+      State.roomCode = roomCode;
+
+      showAlert(`Connecting to Room ${roomCode}...`, 'info');
+
+      if (State.peer) State.peer.destroy();
+      State.peer = new Peer({ debug: 1 });
+
+      State.peer.on('open', () => {
+        const hostPeerId = `arcadelab-${roomCode}`;
+        State.conn = State.peer.connect(hostPeerId, { reliable: true });
+        setupDataChannel();
+      });
+
+      State.peer.on('error', err => {
+        console.error('Peer join error:', err);
+        showAlert('Could not find host room. Check the code and try again.', 'error');
+      });
+    }
+
+    function setupDataChannel() {
+      State.conn.on('open', () => {
+        State.connected = true;
+        console.log('WebRTC DataChannel Connected!');
+
+        if (State.isHost) {
+          // Host sends match settings and player passport
+          State.conn.send({
+            type: 'MATCH_INIT',
+            settings: {
+              gameMode: State.gameMode,
+              gridPreset: State.gridPreset,
+              roundDuration: State.roundDuration,
+              totalHoles: State.totalHoles
+            },
+            player: {
+              name: player.name,
+              avatar: player.avatar,
+              frame: player.frame,
+              title: player.title,
+              elo: player.elo
+            }
+          });
+        } else {
+          // Guest sends its passport
+          State.conn.send({
+            type: 'GUEST_PROFILE',
+            player: {
+              name: player.name,
+              avatar: player.avatar,
+              frame: player.frame,
+              title: player.title,
+              elo: player.elo
+            }
+          });
+        }
+
+        // Start Ping Heartbeat
+        startPingHeartbeat();
+      });
+
+      State.conn.on('data', data => {
+        handleIncomingMessage(data);
+      });
+
+      State.conn.on('close', () => {
+        State.connected = false;
+        showAlert('Opponent disconnected from match.', 'error');
+        if (State.isRunning) {
+          endRound('Opponent Disconnected');
+        }
+      });
+    }
+
+    function handleIncomingMessage(msg) {
+      switch (msg.type) {
+        case 'MATCH_INIT':
+          State.gameMode = msg.settings.gameMode;
+          State.gridPreset = msg.settings.gridPreset;
+          State.roundDuration = msg.settings.roundDuration;
+          State.totalHoles = msg.settings.totalHoles;
+          State.p1Name = msg.player.name;
+          State.p1Avatar = msg.player.avatar;
+          State.p1Title = msg.player.title;
+          State.p2Name = player.name;
+          State.p2Avatar = player.avatar;
+          State.p2Title = player.title;
+          startArenaMatch();
+          break;
+
+        case 'GUEST_PROFILE':
+          State.p2Name = msg.player.name;
+          State.p2Avatar = msg.player.avatar;
+          State.p2Title = msg.player.title;
+          startArenaMatch();
+          break;
+
+        case 'SPAWN_MOLE':
+          renderMoleSpawn(msg.mole);
+          break;
+
+        case 'DESPAWN_MOLE':
+          renderMoleDespawn(msg.holeIndex, msg.moleId);
+          break;
+
+        case 'WHACK_ATTEMPT':
+          if (State.isHost) {
+            handleHostWhackResolution(msg.playerId, msg.holeIndex, msg.moleId, msg.clientTimestamp);
+          }
+          break;
+
+        case 'MOLE_WHACKED':
+          renderWhackConfirmation(msg);
+          break;
+
+        case 'SPLIT_SCORE_SYNC':
+          State.p2Score = msg.score;
+          State.p2Hits = msg.hits;
+          State.p2Combo = msg.combo;
+          renderArenaScores();
+          break;
+
+        case 'FREEZE_ATTACK':
+          triggerFreezeEffect();
+          break;
+
+        case 'TAUNT':
+          spawnTaunt(msg.emoji, 'opponent');
+          break;
+
+        case 'REMATCH_OFFER':
+          showAlert(`${State.p2Name} wants a Rematch!`, 'info');
+          el.rematchBtnText.textContent = 'Accept Rematch ⚔️';
+          break;
+
+        case 'REMATCH_START':
+          el.modalMatchOver.classList.add('hidden');
+          startArenaMatch();
+          break;
+
+        case 'PING':
+          State.conn.send({ type: 'PONG', timestamp: msg.timestamp });
+          break;
+
+        case 'PONG':
+          const latency = Math.round(performance.now() - msg.timestamp);
+          el.arenaPingBadge.textContent = `${latency}ms`;
+          break;
+      }
+    }
+
+    function startPingHeartbeat() {
+      if (State.pingInterval) clearInterval(State.pingInterval);
+      State.pingInterval = setInterval(() => {
+        if (State.conn && State.conn.open) {
+          State.conn.send({ type: 'PING', timestamp: performance.now() });
+        }
+      }, 3000);
+    }
+
+    /* ========================================================================= */
+    /* 10. ARENA MATCH INITIALIZATION & HOLE RENDERING                           */
+    /* ========================================================================= */
+    function startSinglePlayer(isAI = true) {
+      State.isHost = true;
+      State.isAI = isAI;
+      State.myPlayerId = 'p1';
+      State.gridPreset = el.selectGridSize.value;
+      State.roundDuration = parseInt(el.selectDuration.value, 10);
+      State.totalHoles = GRID_CONFIGS[State.gridPreset].holes;
+
+      State.p1Name = player.name;
+      State.p1Avatar = player.avatar;
+      State.p1Title = player.title;
+
+      if (isAI) {
+        State.p2Name = `AI (${State.aiDifficulty.toUpperCase()})`;
+        State.p2Avatar = '🤖';
+        State.p2Title = 'Reflex Engine';
+        State.aiBot = new SmartWhackAI(State.aiDifficulty);
+      } else {
+        State.p2Name = 'Solo Record';
+        State.p2Avatar = '⏱️';
+        State.p2Title = 'Time Attack';
+      }
+
+      startArenaMatch();
+    }
+
+    function startArenaMatch() {
+      showView('arena');
+      resetMatchStats();
+      renderHoleGrid();
+      renderArenaHeader();
+      startCountdown();
+    }
+
+    function resetMatchStats() {
+      State.timeLeft = State.roundDuration;
+      State.isRunning = false;
+      State.activeMoles = {};
+      State.moleCounter = 0;
+
+      State.p1Score = 0;
+      State.p1Hits = 0;
+      State.p1Misses = 0;
+      State.p1Bombs = 0;
+      State.p1Goldens = 0;
+      State.p1Combo = 0;
+      State.p1MaxCombo = 0;
+      State.p1FrozenUntil = 0;
+
+      State.p2Score = 0;
+      State.p2Hits = 0;
+      State.p2Misses = 0;
+      State.p2Bombs = 0;
+      State.p2Goldens = 0;
+      State.p2Combo = 0;
+      State.p2MaxCombo = 0;
+      State.p2FrozenUntil = 0;
+
+      renderArenaScores();
+    }
+
+    function renderHoleGrid() {
+      const config = GRID_CONFIGS[State.gridPreset];
+      el.moleGrid.className = `grid gap-3 sm:gap-4 w-full max-w-2xl mx-auto ${config.cols}`;
+      
+      let html = '';
+      for (let i = 0; i < config.holes; i++) {
+        html += `
+          <div class="hole-wrapper aspect-square flex flex-col items-center justify-end" data-hole="${i}">
+            <div class="w-full h-full hole-mound rounded-3xl p-2 relative flex items-end justify-center overflow-hidden">
+              
+              <!-- Subterranean Pit & Mole Mask -->
+              <div class="w-full h-[78%] mole-pit flex items-end justify-center relative">
+                
+                <!-- Mole Character Actor -->
+                <div id="mole-actor-${i}" class="mole-actor w-14 h-18 sm:w-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none">
+                  <span id="mole-icon-${i}" class="text-4xl sm:text-5xl filter drop-shadow-md">🐹</span>
+                </div>
+
+              </div>
+
+              <!-- Hole Rim Highlight -->
+              <div class="absolute inset-x-2 bottom-1.5 h-4 hole-rim rounded-full pointer-events-none"></div>
+
+            </div>
+          </div>
+        `;
+      }
+      el.moleGrid.innerHTML = html;
+
+      // Attach Whack Click / Tap Handlers
+      document.querySelectorAll('.hole-wrapper').forEach(holeEl => {
+        const holeIdx = parseInt(holeEl.dataset.hole, 10);
+        holeEl.addEventListener('pointerdown', (e) => {
+          onHoleClick(holeIdx, e);
+        });
+      });
+    }
+
+    function renderArenaHeader() {
+      el.arenaModeBadge.textContent = State.gameMode === 'shared' ? '⚡ Shared Race' : '🎯 Split Sprint';
+      el.arenaP1Name.textContent = State.p1Name;
+      el.arenaP1Avatar.textContent = State.p1Avatar;
+      el.arenaP2Name.textContent = State.p2Name;
+      el.arenaP2Avatar.textContent = State.p2Avatar;
+      el.arenaTimer.textContent = `${State.timeLeft}s`;
+      el.arenaTimerBar.style.width = '100%';
+    }
+
+    function renderArenaScores() {
+      el.arenaP1Score.textContent = State.p1Score;
+      el.arenaP2Score.textContent = State.p2Score;
+
+      const p1Total = State.p1Hits + State.p1Misses;
+      const p1Acc = p1Total > 0 ? Math.round((State.p1Hits / p1Total) * 100) : 100;
+      el.arenaP1Accuracy.textContent = `${p1Acc}% Acc • ${State.p1Hits} hits`;
+
+      const p2Total = State.p2Hits + State.p2Misses;
+      const p2Acc = p2Total > 0 ? Math.round((State.p2Hits / p2Total) * 100) : 100;
+      el.arenaP2Accuracy.textContent = `${p2Acc}% Acc • ${State.p2Hits} hits`;
+
+      // Combos
+      if (State.p1Combo >= 3) {
+        el.p1ComboBadge.textContent = `🔥 ${getComboMultiplier(State.p1Combo)}x`;
+        el.p1ComboBadge.classList.remove('hidden');
+      } else {
+        el.p1ComboBadge.classList.add('hidden');
+      }
+
+      if (State.p2Combo >= 3) {
+        el.p2ComboBadge.textContent = `🔥 ${getComboMultiplier(State.p2Combo)}x`;
+        el.p2ComboBadge.classList.remove('hidden');
+      } else {
+        el.p2ComboBadge.classList.add('hidden');
+      }
+    }
+
+    function getComboMultiplier(combo) {
+      if (combo >= 6) return 5;
+      if (combo >= 4) return 3;
+      if (combo >= 2) return 2;
+      return 1;
+    }
+
+    /* ========================================================================= */
+    /* 11. COUNTDOWN & REAL-TIME GAME LOOP                                       */
+    /* ========================================================================= */
+    function startCountdown() {
+      State.isCountdown = true;
+      el.countdownOverlay.classList.remove('hidden');
+
+      let count = 3;
+      el.countdownText.textContent = count;
+      sound.playCountdown(false);
+
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          el.countdownText.textContent = count;
+          sound.playCountdown(false);
+        } else if (count === 0) {
+          el.countdownText.textContent = 'WHACK!';
+          sound.playCountdown(true);
+        } else {
+          clearInterval(interval);
+          el.countdownOverlay.classList.add('hidden');
+          State.isCountdown = false;
+          beginRoundLoop();
+        }
+      }, 1000);
+    }
+
+    function beginRoundLoop() {
+      State.isRunning = true;
+      State.timeLeft = State.roundDuration;
+
+      // Timer Interval
+      if (State.timerInterval) clearInterval(State.timerInterval);
+      State.timerInterval = setInterval(() => {
+        State.timeLeft--;
+        el.arenaTimer.textContent = `${State.timeLeft}s`;
+        const pct = (State.timeLeft / State.roundDuration) * 100;
+        el.arenaTimerBar.style.width = `${pct}%`;
+
+        if (State.timeLeft <= 0) {
+          clearInterval(State.timerInterval);
+          endRound('Time Up!');
+        }
+      }, 1000);
+
+      // Only host or solo player generates mole spawns in Shared mode
+      if (State.isHost || State.gameMode === 'split') {
+        startMoleSpawner();
+      }
+    }
+
+    function startMoleSpawner() {
+      if (State.spawnInterval) clearInterval(State.spawnInterval);
+
+      const spawnCycle = () => {
+        if (!State.isRunning) return;
+
+        // Dynamic spawn rate accelerates as time ticks down
+        const progress = 1 - (State.timeLeft / State.roundDuration); // 0 to 1
+        const maxConcurrent = progress > 0.6 ? 3 : (progress > 0.3 ? 2 : 1);
+        const activeCount = Object.keys(State.activeMoles).length;
+
+        if (activeCount < maxConcurrent) {
+          spawnRandomMole();
+        }
+
+        // Next cycle timing (random jitter)
+        const nextDelay = Math.max(350, 950 - progress * 400 + (Math.random() * 200 - 100));
+        State.spawnInterval = setTimeout(spawnCycle, nextDelay);
+      };
+
+      spawnCycle();
+    }
+
+    function spawnRandomMole() {
+      // Pick an empty hole
+      const availableHoles = [];
+      for (let i = 0; i < State.totalHoles; i++) {
+        if (!State.activeMoles[i]) {
+          availableHoles.push(i);
+        }
+      }
+      if (availableHoles.length === 0) return;
+
+      const holeIndex = availableHoles[Math.floor(Math.random() * availableHoles.length)];
+      
+      // Determine mole type by weight
+      const rand = Math.random() * 100;
+      let moleTypeKey = 'standard';
+      if (rand < 60) moleTypeKey = 'standard';
+      else if (rand < 78) moleTypeKey = 'golden';
+      else if (rand < 90) moleTypeKey = 'bomb';
+      else moleTypeKey = 'freeze';
+
+      const moleType = MOLE_TYPES[moleTypeKey];
+      
+      // Calculate duration with progression ramp
+      const progress = 1 - (State.timeLeft / State.roundDuration);
+      const duration = Math.max(450, moleType.baseDuration - progress * 350);
+
+      State.moleCounter++;
+      const mole = {
+        id: `mole-${State.moleCounter}`,
+        holeIndex,
+        type: moleTypeKey,
+        spawnTime: performance.now(),
+        duration
+      };
+
+      // Register active mole
+      State.activeMoles[holeIndex] = mole;
+
+      // Broadcast or local render
+      renderMoleSpawn(mole);
+
+      if (State.conn && State.conn.open && State.gameMode === 'shared') {
+        State.conn.send({ type: 'SPAWN_MOLE', mole });
+      }
+
+      if (State.isAI && State.aiBot) {
+        State.aiBot.onMoleSpawn(mole);
+      }
+
+      // Auto-despawn timer
+      mole.timer = setTimeout(() => {
+        if (State.activeMoles[holeIndex] && State.activeMoles[holeIndex].id === mole.id) {
+          despawnMole(holeIndex, mole.id);
+        }
+      }, duration);
+    }
+
+    function renderMoleSpawn(mole) {
+      const actor = document.getElementById(`mole-actor-${mole.holeIndex}`);
+      const icon = document.getElementById(`mole-icon-${mole.holeIndex}`);
+      if (!actor || !icon) return;
+
+      const typeDef = MOLE_TYPES[mole.type];
+      icon.textContent = typeDef.icon;
+      actor.className = 'mole-actor popped w-14 h-18 sm:w-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none';
+    }
+
+    function despawnMole(holeIndex, moleId) {
+      if (State.activeMoles[holeIndex] && State.activeMoles[holeIndex].id === moleId) {
+        delete State.activeMoles[holeIndex];
+      }
+
+      renderMoleDespawn(holeIndex, moleId);
+
+      if (State.conn && State.conn.open && State.gameMode === 'shared') {
+        State.conn.send({ type: 'DESPAWN_MOLE', holeIndex, moleId });
+      }
+
+      if (State.isAI && State.aiBot) {
+        State.aiBot.onMoleDespawn(moleId);
+      }
+    }
+
+    function renderMoleDespawn(holeIndex, moleId) {
+      const actor = document.getElementById(`mole-actor-${holeIndex}`);
+      if (actor) {
+        actor.className = 'mole-actor w-14 h-18 sm:w-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none';
+      }
+    }
+
+    /* ========================================================================= */
+    /* 12. WHACK INTERACTION & ARBITRATION                                       */
+    /* ========================================================================= */
+    function onHoleClick(holeIndex, event) {
+      if (!State.isRunning || State.isCountdown) return;
+
+      // Check freeze state
+      if (performance.now() < State.p1FrozenUntil) {
+        sound.playTone(150, 'sawtooth', 0.1, 0.1);
+        return;
+      }
+
+      const activeMole = State.activeMoles[holeIndex];
+      const clientTime = performance.now();
+
+      // Trigger visual hammer strike at touch coordinates
+      renderHammerStrike(holeIndex, 'p1', event);
+
+      if (activeMole) {
+        if (State.isHost || State.gameMode === 'split' || State.isAI) {
+          handleWhack('p1', holeIndex, activeMole.id, clientTime);
+        } else {
+          // Send whack request to host
+          State.conn.send({
+            type: 'WHACK_ATTEMPT',
+            playerId: 'p2',
+            holeIndex,
+            moleId: activeMole.id,
+            clientTimestamp: clientTime
+          });
+        }
+      } else {
+        // Whacked an empty hole -> Miss
+        State.p1Misses++;
+        State.p1Combo = 0;
+        sound.playTone(180, 'sine', 0.08, 0.08);
+        renderArenaScores();
+      }
+    }
+
+    function handleHostWhackResolution(playerId, holeIndex, moleId, timestamp) {
+      const activeMole = State.activeMoles[holeIndex];
+      if (activeMole && activeMole.id === moleId) {
+        handleWhack(playerId, holeIndex, moleId, timestamp);
+      }
+    }
+
+    function handleWhack(playerId, holeIndex, moleId, timestamp) {
+      const activeMole = State.activeMoles[holeIndex];
+      if (!activeMole || activeMole.id !== moleId) return;
+
+      // Clear despawn timer
+      if (activeMole.timer) clearTimeout(activeMole.timer);
+      delete State.activeMoles[holeIndex];
+
+      const moleType = MOLE_TYPES[activeMole.type];
+      let pointChange = moleType.points;
+
+      // Combo Multiplier calculation
+      if (playerId === 'p1') {
+        player.totalWhacks++;
+        player.unlockAchievement('first_whack');
+
+        if (activeMole.type === 'bomb') {
+          State.p1Bombs++;
+          State.p1Combo = 0;
+          pointChange = -20;
+          triggerBombScreenShake();
+        } else {
+          State.p1Hits++;
+          State.p1Combo++;
+          State.p1MaxCombo = Math.max(State.p1MaxCombo, State.p1Combo);
+          
+          if (State.p1Combo >= 3) player.unlockAchievement('combo_3');
+          if (State.p1Combo >= 5) player.unlockAchievement('combo_5');
+
+          const mult = getComboMultiplier(State.p1Combo);
+          pointChange *= mult;
+
+          if (activeMole.type === 'golden') {
+            State.p1Goldens++;
+            if (State.p1Goldens >= 3) player.unlockAchievement('golden_hunter');
+          }
+
+          if (activeMole.type === 'freeze') {
+            player.unlockAchievement('freeze_master');
+            if (State.conn && State.conn.open) {
+              State.conn.send({ type: 'FREEZE_ATTACK' });
+            }
+          }
+        }
+
+        State.p1Score = Math.max(0, State.p1Score + pointChange);
+
+      } else {
+        // Player 2 (Opponent / AI)
+        if (activeMole.type === 'bomb') {
+          State.p2Bombs++;
+          State.p2Combo = 0;
+          pointChange = -20;
+        } else {
+          State.p2Hits++;
+          State.p2Combo++;
+          State.p2MaxCombo = Math.max(State.p2MaxCombo, State.p2Combo);
+          const mult = getComboMultiplier(State.p2Combo);
+          pointChange *= mult;
+
+          if (activeMole.type === 'freeze') {
+            triggerFreezeEffect();
+          }
+        }
+
+        State.p2Score = Math.max(0, State.p2Score + pointChange);
+      }
+
+      // Whack confirmation payload
+      const confirmation = {
+        type: 'MOLE_WHACKED',
+        playerId,
+        holeIndex,
+        moleId,
+        moleType: activeMole.type,
+        points: pointChange,
+        p1Score: State.p1Score,
+        p2Score: State.p2Score
+      };
+
+      renderWhackConfirmation(confirmation);
+
+      if (State.conn && State.conn.open) {
+        if (State.gameMode === 'shared') {
+          State.conn.send(confirmation);
+        } else {
+          State.conn.send({
+            type: 'SPLIT_SCORE_SYNC',
+            score: State.p1Score,
+            hits: State.p1Hits,
+            combo: State.p1Combo
+          });
+        }
+      }
+
+      renderArenaScores();
+    }
+
+    function renderWhackConfirmation(conf) {
+      const actor = document.getElementById(`mole-actor-${conf.holeIndex}`);
+      if (actor) {
+        actor.className = 'mole-actor whacked w-14 h-18 sm:w-20 sm:h-24 flex flex-col items-center justify-center cursor-pointer select-none';
+      }
+
+      // Audio & Particle FX
+      if (conf.moleType === 'golden') {
+        sound.playGoldenWhack();
+      } else if (conf.moleType === 'bomb') {
+        sound.playBombExplosion();
+      } else if (conf.moleType === 'freeze') {
+        sound.playFreeze();
+      } else {
+        sound.playWhack();
+      }
+
+      // Spawn Comic Badge & Floating Points
+      spawnImpactFX(conf.holeIndex, conf.points, conf.playerId);
+    }
+
+    function renderHammerStrike(holeIndex, playerId, event) {
+      const holeEl = document.querySelector(`[data-hole="${holeIndex}"]`);
+      if (!holeEl) return;
+
+      const hammer = document.createElement('div');
+      hammer.className = 'hammer-strike text-4xl sm:text-5xl';
+      hammer.textContent = playerId === 'p1' ? '🔨' : '🪓';
+      hammer.style.left = '50%';
+      hammer.style.top = '30%';
+
+      holeEl.appendChild(hammer);
+      setTimeout(() => hammer.remove(), 300);
+    }
+
+    function spawnImpactFX(holeIndex, points, playerId) {
+      const holeEl = document.querySelector(`[data-hole="${holeIndex}"]`);
+      if (!holeEl) return;
+
+      // Comic word
+      const word = COMIC_WORDS[Math.floor(Math.random() * COMIC_WORDS.length)];
+      const badge = document.createElement('div');
+      badge.className = `impact-badge px-2 py-0.5 rounded-lg text-[11px] font-display font-black text-white ${
+        points > 0 ? (points >= 30 ? 'bg-amber-500 shadow-md' : 'bg-indigo-600') : 'bg-rose-600'
+      }`;
+      badge.textContent = points > 0 ? word : 'BOOM!';
+      badge.style.left = '50%';
+      badge.style.top = '25%';
+      holeEl.appendChild(badge);
+      setTimeout(() => badge.remove(), 600);
+
+      // Score float
+      const scoreFloat = document.createElement('div');
+      scoreFloat.className = `score-float text-sm sm:text-base ${points > 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      scoreFloat.textContent = points > 0 ? `+${points}` : `${points}`;
+      scoreFloat.style.left = '50%';
+      scoreFloat.style.top = '10%';
+      holeEl.appendChild(scoreFloat);
+      setTimeout(() => scoreFloat.remove(), 700);
+    }
+
+    function triggerBombScreenShake() {
+      el.arenaBoardContainer.classList.add('screen-shake');
+      setTimeout(() => el.arenaBoardContainer.classList.remove('screen-shake'), 400);
+    }
+
+    function triggerFreezeEffect() {
+      State.p1FrozenUntil = performance.now() + 2000;
+      el.freezeOverlay.classList.remove('hidden');
+      sound.playFreeze();
+      setTimeout(() => {
+        el.freezeOverlay.classList.add('hidden');
+      }, 2000);
+    }
+
+    function spawnTaunt(emoji, origin = 'you') {
+      const taunt = document.createElement('div');
+      taunt.className = `absolute text-3xl sm:text-4xl transition-all duration-700 transform pointer-events-none ${
+        origin === 'you' ? 'left-6 bottom-4 animate-bounce' : 'right-6 bottom-4 animate-bounce'
+      }`;
+      taunt.textContent = emoji;
+      el.arenaTauntsOverlay.appendChild(taunt);
+
+      setTimeout(() => {
+        taunt.style.transform = 'translateY(-120px) scale(1.4)';
+        taunt.style.opacity = '0';
+      }, 50);
+
+      setTimeout(() => taunt.remove(), 750);
+    }
+
+    /* ========================================================================= */
+    /* 13. ROUND END & PASSPORT REWARD EVALUATION                                */
+    /* ========================================================================= */
+    function endRound(reason = 'Time Up!') {
+      State.isRunning = false;
+      if (State.spawnInterval) clearInterval(State.spawnInterval);
+      if (State.timerInterval) clearInterval(State.timerInterval);
+
+      // Despawn all moles
+      for (const [holeIdx, mole] of Object.entries(State.activeMoles)) {
+        renderMoleDespawn(holeIdx, mole.id);
+      }
+      State.activeMoles = {};
+
+      const didWin = State.p1Score > State.p2Score;
+      const isTie = State.p1Score === State.p2Score;
+
+      player.matchesPlayed++;
+      let xpGain = 100;
+      let eloGain = 15;
+
+      if (didWin) {
+        player.matchesWon++;
+        xpGain = 180;
+        eloGain = 28;
+        sound.playVictory();
+        el.matchOverIcon.textContent = '👑';
+        el.matchOverTitle.textContent = 'VICTORY!';
+        el.matchOverSubtitle.textContent = `You won the match ${State.p1Score} to ${State.p2Score}!`;
+      } else if (isTie) {
+        xpGain = 120;
+        eloGain = 5;
+        sound.playVictory();
+        el.matchOverIcon.textContent = '🤝';
+        el.matchOverTitle.textContent = 'TIED DUEL!';
+        el.matchOverSubtitle.textContent = `Honorable draw at ${State.p1Score} points!`;
+      } else {
+        xpGain = 60;
+        eloGain = -18;
+        sound.playDefeat();
+        el.matchOverIcon.textContent = '💀';
+        el.matchOverTitle.textContent = 'DEFEAT!';
+        el.matchOverSubtitle.textContent = `Opponent won with ${State.p2Score} points!`;
+      }
+
+      // Achievement audits
+      if (State.p1Bombs === 0 && State.p1Hits >= 10) player.unlockAchievement('bomb_dodger');
+      if (State.p1Score >= 300) player.unlockAchievement('high_scorer');
+      if (State.gridPreset === 'chaos' && didWin) player.unlockAchievement('chaos_champion');
+      if (State.isAI && State.aiDifficulty === 'master' && didWin) player.unlockAchievement('ai_crusher');
+
+      const totalP1 = State.p1Hits + State.p1Misses;
+      const acc = totalP1 > 0 ? Math.round((State.p1Hits / totalP1) * 100) : 100;
+      if (acc >= 95 && State.p1Hits >= 15) player.unlockAchievement('flawless_whacker');
+
+      player.addXP(xpGain);
+      player.addElo(eloGain);
+
+      // Populate Modal
+      el.statFinalScore.textContent = `${State.p1Score} vs ${State.p2Score}`;
+      el.statFinalAccuracy.textContent = `${acc}% (${State.p1Hits}/${totalP1})`;
+      el.statFinalCombo.textContent = `🔥 ${State.p1MaxCombo}x Streak`;
+      el.matchXpGain.textContent = `+${xpGain} XP`;
+      el.matchEloGain.textContent = `${eloGain >= 0 ? '+' : ''}${eloGain} ELO`;
+
+      el.modalMatchOver.classList.remove('hidden');
+    }
+
+    function handleRematchRequest() {
+      if (State.isAI || !State.connected) {
+        el.modalMatchOver.classList.add('hidden');
+        startArenaMatch();
+        return;
+      }
+
+      el.rematchBtnText.textContent = 'Waiting for Opponent...';
+      State.conn.send({ type: 'REMATCH_OFFER' });
+    }
+
+    /* ========================================================================= */
+    /* 14. VIEW ROUTING & AIR-GAPPED SIGNALING                                   */
+    /* ========================================================================= */
+    function showView(viewName) {
+      el.viewLobby.classList.add('hidden');
+      el.viewWaiting.classList.add('hidden');
+      el.viewArena.classList.add('hidden');
+
+      if (viewName === 'lobby') el.viewLobby.classList.remove('hidden');
+      else if (viewName === 'waiting') el.viewWaiting.classList.remove('hidden');
+      else if (viewName === 'arena') el.viewArena.classList.remove('hidden');
+    }
+
+    function returnToLobby() {
+      if (State.peer) State.peer.destroy();
+      if (State.spawnInterval) clearInterval(State.spawnInterval);
+      if (State.timerInterval) clearInterval(State.timerInterval);
+      State.isRunning = false;
+      showView('lobby');
+    }
+
+    function toggleQrCode() {
+      const qrCont = el.qrContainer;
+      if (qrCont.classList.contains('hidden')) {
+        qrCont.classList.remove('hidden');
+        el.qrCanvas.innerHTML = '';
+        new QRCode(el.qrCanvas, {
+          text: el.waitingShareLink.value,
+          width: 140,
+          height: 140
+        });
+      } else {
+        qrCont.classList.add('hidden');
+      }
+    }
+
+    // Manual SDP Signaling
+    let manualPeer = null;
+    function generateManualOffer() {
+      if (manualPeer) manualPeer.destroy();
+      manualPeer = new Peer({ debug: 1 });
+      manualPeer.on('open', (id) => {
+        el.manualOfferOutput.value = id;
+        showAlert('Host code generated! Send this to Player 2.', 'success');
+      });
+      manualPeer.on('connection', conn => {
+        State.conn = conn;
+        State.isHost = true;
+        State.gridPreset = el.selectGridSize.value;
+        State.roundDuration = parseInt(el.selectDuration.value, 10);
+        State.totalHoles = GRID_CONFIGS[State.gridPreset].holes;
+        el.modalManualSignaling.classList.add('hidden');
+        setupDataChannel();
+      });
+    }
+
+    function acceptManualAnswer() {
+      const code = el.manualAnswerInput.value.trim();
+      if (!code) return showAlert('Please paste Player 2 response code.', 'error');
+      showAlert('Connecting to Player 2...', 'info');
+    }
+
+    function generateManualAnswer() {
+      const hostId = el.manualOfferInput.value.trim();
+      if (!hostId) return showAlert('Please paste Player 1 host code first.', 'error');
+
+      if (manualPeer) manualPeer.destroy();
+      manualPeer = new Peer({ debug: 1 });
+      manualPeer.on('open', () => {
+        State.conn = manualPeer.connect(hostId, { reliable: true });
+        el.manualAnswerOutput.value = manualPeer.id;
+        State.isHost = false;
+        el.modalManualSignaling.classList.add('hidden');
+        setupDataChannel();
+      });
+    }
+
+    // Run on startup
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
