@@ -1,0 +1,2926 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Online Rock Paper Scissors — Real-Time WebRTC P2P Duel & Ranked Arena</title>
+  <meta name="description" content="Arcade-style online Rock Paper Scissors with WebRTC real-time P2P multiplayer, cryptographic SHA-256 commit-reveal anti-cheat, ranked ELO ladder, unlockable achievements, holographic visual FX, and dynamic audio synthesizer." />
+  <meta name="keywords" content="Rock Paper Scissors Online, WebRTC Game, P2P Rock Paper Scissors, Esports Browser Game, Ranked RPS, Commit Reveal Anti Cheat, RPSLS, Arcade Game" />
+  
+  <!-- OpenGraph / Social Meta Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Online Rock Paper Scissors — Real-Time WebRTC P2P Duel & Ranked Arena" />
+  <meta property="og:description" content="Arcade-style browser-to-browser Rock Paper Scissors with zero backend. Ranked ladder, holographic cards, anti-cheat, and custom profile rewards." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/rock-paper-scissors/" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              'surface-card': 'var(--color-surface-card)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+            }
+          },
+          boxShadow: {
+            'glow-indigo': '0 0 30px -5px rgba(99, 102, 241, 0.55)',
+            'glow-emerald': '0 0 30px -5px rgba(16, 185, 129, 0.55)',
+            'glow-rose': '0 0 30px -5px rgba(244, 63, 94, 0.55)',
+            'glow-amber': '0 0 30px -5px rgba(245, 158, 11, 0.55)',
+            'glow-cyan': '0 0 30px -5px rgba(6, 182, 212, 0.55)',
+            'glow-purple': '0 0 30px -5px rgba(168, 85, 247, 0.55)',
+            'neon-card': '0 10px 30px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+          },
+          animation: {
+            'bounce-subtle': 'bounceSubtle 2s infinite ease-in-out',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shake-p1': 'shakeP1 0.5s infinite ease-in-out',
+            'shake-p2': 'shakeP2 0.5s infinite ease-in-out',
+            'reveal-pop': 'revealPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'float-up': 'floatUp 2.2s ease-out forwards',
+            'screen-shake': 'screenShake 0.4s ease-in-out',
+            'aura-pulse': 'auraPulse 1.2s infinite alternate ease-in-out',
+          },
+          keyframes: {
+            bounceSubtle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            shakeP1: {
+              '0%, 100%': { transform: 'rotate(0deg) translateY(0)' },
+              '50%': { transform: 'rotate(-20deg) translateY(-14px) scale(1.05)' },
+            },
+            shakeP2: {
+              '0%, 100%': { transform: 'rotate(0deg) translateY(0) scaleX(-1)' },
+              '50%': { transform: 'rotate(20deg) translateY(-14px) scaleX(-1) scale(1.05)' },
+            },
+            revealPop: {
+              '0%': { transform: 'scale(0.2) rotate(-20deg)', opacity: '0' },
+              '70%': { transform: 'scale(1.2) rotate(6deg)', opacity: '1' },
+              '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7) rotate(-5deg)', opacity: '1' },
+              '80%': { opacity: '0.9' },
+              '100%': { transform: 'translateY(-140px) scale(1.2) rotate(10deg)', opacity: '0' },
+            },
+            screenShake: {
+              '0%, 100%': { transform: 'translate(0, 0)' },
+              '20%': { transform: 'translate(-4px, 4px)' },
+              '40%': { transform: 'translate(4px, -3px)' },
+              '60%': { transform: 'translate(-3px, 2px)' },
+              '80%': { transform: 'translate(3px, -2px)' },
+            },
+            auraPulse: {
+              '0%': { filter: 'drop-shadow(0 0 10px rgba(99, 102, 241, 0.6)) brightness(1)' },
+              '100%': { filter: 'drop-shadow(0 0 25px rgba(236, 72, 153, 0.9)) brightness(1.25)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <!-- PeerJS for WebRTC Signaling & P2P DataChannels -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Victory Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #f4f6fb;
+      --color-surface: #ffffff;
+      --color-surface-alt: #eef2f8;
+      --color-surface-card: #ffffff;
+      --color-ink: #090e1a;
+      --color-muted: #5e6b82;
+      --color-line: #dbe2ef;
+      --color-accent: #6366f1;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #07070a;
+      --color-surface: #0f1015;
+      --color-surface-alt: #161720;
+      --color-surface-card: #1c1d27;
+      --color-ink: #f4f6fb;
+      --color-muted: #8b95a8;
+      --color-line: #232534;
+      --color-accent: #818cf8;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient Cyber Grid */
+    .bg-cyber-grid {
+      background-size: 28px 28px;
+      background-image: 
+        linear-gradient(to right, rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+    }
+    html.dark .bg-cyber-grid {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.15), transparent 70%),
+        linear-gradient(to right, rgba(99, 102, 241, 0.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(99, 102, 241, 0.07) 1px, transparent 1px);
+    }
+
+    /* 3D Holographic Card Feel */
+    .holo-card {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .holo-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.1) 45%,
+        rgba(255, 255, 255, 0.25) 50%,
+        rgba(255, 255, 255, 0.1) 55%,
+        transparent 70%
+      );
+      transform: rotate(35deg) translateY(-100%);
+      transition: transform 0.6s ease;
+      pointer-events: none;
+    }
+    .holo-card:hover::after {
+      transform: rotate(35deg) translateY(100%);
+    }
+    .holo-card:active {
+      transform: translateY(2px) scale(0.97);
+    }
+
+    /* Custom Avatar Frames */
+    .frame-neon {
+      border: 3px solid #ec4899;
+      box-shadow: 0 0 16px #ec4899, inset 0 0 8px #ec4899;
+    }
+    .frame-gold {
+      border: 3px solid #f59e0b;
+      box-shadow: 0 0 18px #f59e0b, inset 0 0 10px #f59e0b;
+    }
+    .frame-cyber {
+      border: 3px solid #06b6d4;
+      box-shadow: 0 0 16px #06b6d4, inset 0 0 8px #06b6d4;
+    }
+    .frame-void {
+      border: 3px solid #a855f7;
+      box-shadow: 0 0 18px #a855f7, inset 0 0 10px #9333ea;
+    }
+    .frame-ice {
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 16px #38bdf8, inset 0 0 8px #0284c7;
+    }
+
+    /* Win Node Indicator (Fighting Game Style) */
+    .win-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      border: 2px solid var(--color-line);
+      background-color: var(--color-surface-alt);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @media (min-width: 640px) {
+      .win-pip { width: 14px; height: 14px; }
+    }
+    .win-pip.filled {
+      background-color: #10b981;
+      border-color: #34d399;
+      box-shadow: 0 0 10px #10b981;
+      transform: scale(1.15);
+    }
+    .win-pip.filled-p2 {
+      background-color: #ec4899;
+      border-color: #f472b6;
+      box-shadow: 0 0 10px #ec4899;
+      transform: scale(1.15);
+    }
+
+    /* Floating Taunt Animation */
+    .floating-emoji {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      animation: floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      z-index: 60;
+      font-size: 2.25rem;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+    }
+    @media (min-width: 640px) {
+      .floating-emoji { font-size: 2.75rem; }
+    }
+
+    /* Custom scrollbars */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500/25 selection:text-indigo-400 bg-cyber-grid relative">
+
+  <!-- Floating Reaction Emojis Canvas / Overlay Layer -->
+  <div id="taunts-overlay" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+  <!-- Top Navigation Header (Mobile-Optimized) -->
+  <header class="h-14 sm:h-16 border-b border-theme-line bg-theme-surface/90 backdrop-blur-lg px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <a href="/games/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-glow-indigo">
+          ⚔️
+        </span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1">
+            <span class="font-display font-black text-sm sm:text-lg tracking-tight leading-none bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              RPS ARENA
+            </span>
+            <span class="px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] sm:text-[9px] font-mono font-black uppercase">P2P</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted tracking-wider uppercase font-semibold hidden xs:inline">WebRTC • Anti-Cheat</span>
+        </div>
+      </a>
+
+      <!-- Direct P2P Status Pill -->
+      <div id="header-status-pill" class="hidden lg:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-xs font-mono">
+        <span id="header-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="header-status-text" class="text-theme-muted font-medium">Lobby Idle</span>
+        <span id="header-ping-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">--ms</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Active Room Code Badge -->
+      <div id="room-code-badge" class="hidden items-center gap-1 px-2 sm:px-3 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-mono text-xs font-bold cursor-pointer hover:bg-indigo-500/20 transition-colors" title="Click to copy Room Code">
+        <span class="hidden sm:inline">Room:</span>
+        <span id="room-code-badge-text">------</span>
+        <span class="text-[10px] opacity-70">📋</span>
+      </div>
+
+      <!-- Trophy Hall Button -->
+      <button id="btn-open-trophies" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display font-bold text-xs flex items-center gap-1 transition-all" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Rules Modal Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Game Rules & Anti-Cheat Protocol">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Game Container -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & GAMIFIED PASSPORT          -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-3xl mx-auto w-full space-y-4 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>True P2P WebRTC • Ranked Ladder • Anti-Cheat</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl md:text-6xl font-black font-display tracking-tight text-theme-ink">
+          Rock Paper Scissors <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Arena</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-md mx-auto leading-relaxed">
+          Duel friends in direct encrypted WebRTC matches. Level up, climb the ELO ladder, unlock custom avatar frames, and collect trophies!
+        </p>
+      </div>
+
+      <!-- PLAYER PASSPORT & PROGRESSION BAR -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-neon-card relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-5">
+          
+          <!-- Avatar + Name + Title -->
+          <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div class="relative cursor-pointer group shrink-0" id="btn-open-profile-customizer" title="Customize Avatar, Frame & Title">
+              <div id="passport-avatar" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-indigo select-none transition-transform active:scale-95 frame-neon">
+                🧙‍♂️
+              </div>
+              <span class="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-theme-surface border border-theme-line text-[10px] sm:text-xs flex items-center justify-center shadow" title="Edit Profile">
+                ✏️
+              </span>
+            </div>
+            
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h3 id="passport-name" class="font-display font-black text-lg sm:text-xl text-theme-ink truncate">Player</h3>
+                <span id="passport-rank-badge" class="px-1.5 py-0.2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono text-[10px] font-black uppercase">
+                  🏆 Bronze I
+                </span>
+              </div>
+              <p id="passport-title" class="text-[11px] sm:text-xs font-mono text-indigo-400 font-semibold mt-0.5 truncate">Mind Hacker</p>
+              
+              <!-- XP Level Bar -->
+              <div class="flex items-center gap-2 mt-1.5">
+                <span id="passport-level-badge" class="text-[9px] sm:text-[10px] px-1 py-0.2 rounded bg-theme-surface-alt border border-theme-line font-mono font-bold text-theme-muted shrink-0">
+                  LVL 1
+                </span>
+                <div class="flex-1 max-w-[140px] sm:max-w-[180px] h-2 rounded-full bg-theme-surface-alt overflow-hidden border border-theme-line">
+                  <div id="passport-xp-bar" class="h-full bg-gradient-to-r from-indigo-500 to-pink-500 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <span id="passport-xp-text" class="text-[9px] sm:text-[10px] font-mono text-theme-muted font-bold shrink-0">25/100 XP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats Pills (3-column responsive grid) -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto text-center border-t sm:border-t-0 sm:border-l border-theme-line pt-3 sm:pt-0 sm:pl-5">
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Rating</span>
+              <strong id="stat-elo-display" class="font-display font-black text-sm sm:text-base text-indigo-400">1,000</strong>
+            </div>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Win Rate</span>
+              <strong id="stat-winrate-display" class="font-display font-black text-sm sm:text-base text-emerald-400">0%</strong>
+            </div>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60">
+              <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted block uppercase">Streak</span>
+              <strong id="stat-streak-display" class="font-display font-black text-sm sm:text-base text-amber-400">🔥 0</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MATCH CONFIGURATION BAR -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <span class="text-[11px] sm:text-xs font-mono font-bold text-theme-muted uppercase">Rules:</span>
+          <div class="flex items-center p-0.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-bold">
+            <button id="toggle-rule-classic" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-xs transition-colors text-[11px] sm:text-xs">
+              Classic (🪨 📄 ✂️)
+            </button>
+            <button id="toggle-rule-rpsls" type="button" class="px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink transition-colors text-[11px] sm:text-xs">
+              Extended (🦎 🖖)
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs font-mono font-bold text-theme-muted uppercase">Target:</span>
+            <select id="select-match-format" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-bold rounded-xl px-2 py-1.5 focus:border-indigo-500 outline-none cursor-pointer">
+              <option value="3">Best of 3</option>
+              <option value="5" selected>Best of 5</option>
+              <option value="7">Best of 7</option>
+              <option value="1">Sudden Death (1)</option>
+              <option value="0">Endless</option>
+            </select>
+          </div>
+
+          <!-- Speed Blitz Toggle -->
+          <button id="btn-toggle-blitz" type="button" class="px-2.5 py-1.5 rounded-xl bg-theme-surface-alt hover:border-amber-500 border border-theme-line text-xs font-mono font-bold text-theme-muted flex items-center gap-1 transition-colors" title="5s Speed Blitz Rounds">
+            <span>⚡ Blitz:</span>
+            <span id="blitz-status-text" class="text-theme-muted">OFF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HERO ACTION BUTTONS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        
+        <!-- CARD 1: Host Online Room -->
+        <div class="bg-theme-surface hover:border-indigo-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group holo-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-indigo">
+              ⚡
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Host Online Duel</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Create an encrypted room. Share a room code or instant 1-click invite link with a friend.
+            </p>
+          </div>
+
+          <button id="btn-create-room" type="button" class="mt-4 sm:mt-6 w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-display font-black text-sm shadow-glow-indigo transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Create Arena & Invite</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- CARD 2: Join Existing Room -->
+        <div class="bg-theme-surface hover:border-purple-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group holo-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-purple">
+              🔗
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Join Existing Arena</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Enter the 6-character room code or paste the direct invite link from your opponent.
+            </p>
+          </div>
+
+          <div class="mt-3 sm:mt-4 space-y-2">
+            <input id="input-join-code" type="text" placeholder="e.g. RPS-7842" class="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line text-sm font-mono uppercase tracking-widest text-theme-ink placeholder:text-theme-muted placeholder:normal-case placeholder:tracking-normal focus:border-purple-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="w-full py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-purple-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+              <span>Join Duel</span>
+              <span>⚔️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY ACTIONS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        <button id="btn-start-ai" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-emerald-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-glow-emerald">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Play vs CyberBot AI</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold">Offline</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Instant single-player match with Markov-chain bot</p>
+          </div>
+        </button>
+
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-amber-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group holo-card active:scale-95">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-glow-amber">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-display font-bold text-sm text-theme-ink">Manual SDP Relay</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 font-mono font-bold">Zero-Server</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-theme-muted mt-0.5">Exchange raw WebRTC SDP offer & answer text</p>
+          </div>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-indigo-500/30 animate-pulse"></div>
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-indigo">
+          📡
+        </div>
+      </div>
+
+      <h2 class="text-xl sm:text-3xl font-display font-black text-theme-ink">Waiting for Opponent...</h2>
+      <p class="text-xs text-theme-muted mt-1 max-w-sm px-2">
+        Share the code or scan the QR. The battle will launch automatically once Player 2 joins!
+      </p>
+
+      <!-- Room Code Box -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 my-4 sm:my-5 space-y-3 sm:space-y-4 shadow-neon-card text-left">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Room Code</label>
+          <div class="flex items-center gap-2">
+            <div id="display-room-code" class="flex-1 px-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl sm:text-2xl tracking-widest text-indigo-400 text-center select-all">
+              ------
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1 active:scale-95" title="Copy Code">
+              <span>Copy</span>
+              <span id="copy-code-icon">📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Direct Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input id="display-room-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted select-all outline-none truncate" />
+            <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors active:scale-95">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Social Quick Share -->
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+          <span class="text-theme-muted font-medium text-[11px]">Share:</span>
+          <div class="flex items-center gap-1.5">
+            <a id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px]">WhatsApp</a>
+            <a id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-semibold text-[11px]">Telegram</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-semibold text-[11px]">X</a>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="pt-2 border-t border-theme-line flex flex-col items-center">
+          <button id="btn-toggle-qr" type="button" class="text-xs text-indigo-400 hover:underline font-semibold flex items-center gap-1">
+            <span>📱 Show QR Code for Mobile</span>
+            <span id="qr-arrow">▼</span>
+          </button>
+          <div id="qr-container" class="hidden mt-2.5 p-2.5 bg-white rounded-xl shadow-lg border border-theme-line flex flex-col items-center">
+            <div id="qr-code-canvas-wrapper" class="w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center"></div>
+            <span class="text-[9px] text-stone-700 font-mono mt-1 font-semibold">Scan with camera to connect</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="text-xs text-theme-muted hover:text-rose-400 font-semibold transition-colors">
+        ✕ Cancel Duel & Return to Lobby
+      </button>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: ARENA BATTLE SCREEN (LIVE MATCH)   -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col gap-3 sm:gap-4 w-full">
+      
+      <!-- Top Scoreboard Bar -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-neon-card">
+        <div class="grid grid-cols-3 items-center">
+          
+          <!-- Player 1 (You) -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <div class="relative shrink-0">
+              <div id="p1-avatar" class="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner frame-neon select-none">
+                🧙‍♂️
+              </div>
+              <span id="p1-ready-indicator" class="hidden absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-theme-surface animate-ping" title="Locked In"></span>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1">
+                <h4 id="p1-name-display" class="font-display font-black text-xs sm:text-base text-theme-ink truncate">You</h4>
+                <span class="text-[9px] px-1 py-0.2 rounded bg-indigo-500/10 text-indigo-400 font-mono font-black">P1</span>
+              </div>
+              <div id="p1-win-nodes" class="flex items-center gap-1 mt-1"></div>
+            </div>
+          </div>
+
+          <!-- Center Match Status -->
+          <div class="text-center flex flex-col items-center">
+            <div class="inline-flex items-center gap-1 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-theme-surface-alt border border-theme-line text-[10px] sm:text-[11px] font-mono font-black text-theme-muted mb-0.5">
+              <span id="arena-round-number">ROUND 1</span>
+            </div>
+            
+            <div id="round-timer-wrapper" class="flex items-center gap-1 text-[11px] sm:text-xs font-mono font-black text-theme-muted">
+              <span id="timer-icon">⏳</span>
+              <span id="timer-seconds">10s</span>
+            </div>
+
+            <div class="mt-0.5 hidden sm:flex items-center gap-1 text-[9px] font-mono text-emerald-400/90 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>SHA-256 Commit Active</span>
+            </div>
+          </div>
+
+          <!-- Player 2 (Opponent) -->
+          <div class="flex items-center justify-end gap-2 sm:gap-3 text-right">
+            <div class="min-w-0">
+              <div class="flex items-center justify-end gap-1">
+                <span id="p2-role-badge" class="text-[9px] px-1 py-0.2 rounded bg-purple-500/10 text-purple-400 font-mono font-black">P2</span>
+                <h4 id="p2-name-display" class="font-display font-black text-xs sm:text-base text-theme-ink truncate">Opponent</h4>
+              </div>
+              <div id="p2-win-nodes" class="flex items-center justify-end gap-1 mt-1"></div>
+            </div>
+            <div class="relative shrink-0">
+              <div id="p2-avatar" class="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner frame-void select-none">
+                🥷
+              </div>
+              <span id="p2-ready-indicator" class="hidden absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-theme-surface animate-ping" title="Locked In"></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CENTER BATTLE SHOWDOWN STAGE -->
+      <div id="clash-stage" class="relative w-full min-h-[220px] sm:min-h-[300px] bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden shadow-neon-card">
+        
+        <div id="clash-bg-glow" class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/10 to-pink-500/5 pointer-events-none transition-colors duration-500"></div>
+
+        <!-- Stage State 1: Idle -->
+        <div id="stage-idle" class="flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3 z-10">
+          <div class="flex items-center justify-center gap-6 sm:gap-20">
+            <div id="idle-hand-p1" class="text-6xl sm:text-8xl md:text-9xl select-none filter drop-shadow-xl transition-all duration-300">
+              👊
+            </div>
+            <div class="text-xl sm:text-4xl font-black font-display text-theme-muted opacity-30">
+              VS
+            </div>
+            <div id="idle-hand-p2" class="text-6xl sm:text-8xl md:text-9xl select-none filter drop-shadow-xl transform -scale-x-100 transition-all duration-300">
+              👊
+            </div>
+          </div>
+          <div id="stage-status-banner" class="px-3.5 py-1.5 rounded-full bg-theme-surface-alt border border-theme-line text-[11px] sm:text-xs font-mono font-black text-theme-ink tracking-wider uppercase">
+            ⚡ Lock in your move below!
+          </div>
+        </div>
+
+        <!-- Stage State 2: Countdown -->
+        <div id="stage-countdown" class="hidden flex-col items-center justify-center text-center space-y-2 sm:space-y-3 z-10">
+          <div class="flex items-center justify-center gap-6 sm:gap-20">
+            <div class="text-6xl sm:text-8xl md:text-9xl select-none animate-shake-p1 filter drop-shadow-2xl animate-aura-pulse">
+              👊
+            </div>
+            <div id="countdown-number" class="text-5xl sm:text-8xl font-black font-display bg-gradient-to-r from-indigo-400 via-pink-500 to-amber-400 bg-clip-text text-transparent animate-bounce">
+              3
+            </div>
+            <div class="text-6xl sm:text-8xl md:text-9xl select-none animate-shake-p2 filter drop-shadow-2xl animate-aura-pulse">
+              👊
+            </div>
+          </div>
+          <div class="text-[11px] sm:text-xs font-mono font-black text-indigo-400 uppercase tracking-widest animate-pulse">
+            ⚔️ CLASH IN PROGRESS...
+          </div>
+        </div>
+
+        <!-- Stage State 3: Move Reveal -->
+        <div id="stage-reveal" class="hidden flex-col items-center justify-center text-center space-y-3 sm:space-y-4 z-10 w-full">
+          <div class="flex items-center justify-center gap-3 sm:gap-14 w-full">
+            
+            <!-- P1 Card -->
+            <div class="flex flex-col items-center gap-1 sm:gap-2">
+              <div id="reveal-card-p1" class="w-20 h-20 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-indigo-500/10 border-2 border-indigo-500 flex items-center justify-center text-4xl sm:text-6xl shadow-glow-indigo animate-reveal-pop select-none">
+                🪨
+              </div>
+              <span id="reveal-label-p1" class="font-display font-black text-xs sm:text-sm text-indigo-400 uppercase">ROCK</span>
+            </div>
+
+            <!-- Outcome Badge -->
+            <div class="flex flex-col items-center">
+              <div id="round-outcome-badge" class="px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-indigo-600 text-white font-display font-black text-xs sm:text-lg shadow-2xl uppercase tracking-wider animate-bounce">
+                YOU WIN! 🏆
+              </div>
+              <span id="round-reason-text" class="text-[10px] sm:text-xs font-mono text-theme-muted mt-1 max-w-[140px] sm:max-w-[200px] text-center font-medium leading-tight">
+                Rock crushes Scissors
+              </span>
+            </div>
+
+            <!-- P2 Card -->
+            <div class="flex flex-col items-center gap-1 sm:gap-2">
+              <div id="reveal-card-p2" class="w-20 h-20 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-purple-500/10 border-2 border-purple-500 flex items-center justify-center text-4xl sm:text-6xl shadow-glow-rose animate-reveal-pop select-none">
+                ✂️
+              </div>
+              <span id="reveal-label-p2" class="font-display font-black text-xs sm:text-sm text-purple-400 uppercase">SCISSORS</span>
+            </div>
+
+          </div>
+
+          <!-- Next Round Button -->
+          <div class="pt-1 flex items-center gap-2">
+            <span id="auto-next-indicator" class="text-[11px] font-mono text-theme-muted font-bold">Next round in 3s...</span>
+            <button id="btn-next-round-now" type="button" class="px-3 py-1.5 rounded-lg sm:rounded-xl bg-theme-surface-alt hover:bg-indigo-600 hover:text-white border border-theme-line text-xs font-bold transition-all active:scale-95">
+              Next ⏩
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MOVE DOCK: HOLOGRAPHIC 3D CARDS (Touch-Optimized) -->
+      <div id="moves-dock" class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-5 shadow-neon-card flex flex-col gap-2 sm:gap-3">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-mono font-black text-theme-muted uppercase tracking-wider text-[10px] sm:text-[11px]">Choose Your Weapon:</span>
+          <span class="text-theme-muted font-mono text-[10px] hidden sm:inline font-semibold">Hotkeys: [1] Rock • [2] Paper • [3] Scissors</span>
+        </div>
+
+        <!-- Move Selection Buttons Grid -->
+        <div id="moves-button-grid" class="grid grid-cols-3 gap-2 sm:gap-4">
+          
+          <button id="btn-move-rock" data-move="rock" type="button" class="btn-move holo-card bg-theme-surface-alt hover:border-indigo-500 border-2 border-theme-line rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95">
+            <span class="text-3xl sm:text-5xl select-none filter drop-shadow">🪨</span>
+            <span class="font-display font-black text-[11px] sm:text-sm text-theme-ink tracking-wide uppercase">Rock</span>
+          </button>
+
+          <button id="btn-move-paper" data-move="paper" type="button" class="btn-move holo-card bg-theme-surface-alt hover:border-indigo-500 border-2 border-theme-line rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95">
+            <span class="text-3xl sm:text-5xl select-none filter drop-shadow">📄</span>
+            <span class="font-display font-black text-[11px] sm:text-sm text-theme-ink tracking-wide uppercase">Paper</span>
+          </button>
+
+          <button id="btn-move-scissors" data-move="scissors" type="button" class="btn-move holo-card bg-theme-surface-alt hover:border-indigo-500 border-2 border-theme-line rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95">
+            <span class="text-3xl sm:text-5xl select-none filter drop-shadow">✂️</span>
+            <span class="font-display font-black text-[11px] sm:text-sm text-theme-ink tracking-wide uppercase">Scissors</span>
+          </button>
+
+          <button id="btn-move-lizard" data-move="lizard" type="button" class="btn-move holo-card hidden bg-theme-surface-alt hover:border-emerald-500 border-2 border-theme-line rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95">
+            <span class="text-3xl sm:text-5xl select-none filter drop-shadow">🦎</span>
+            <span class="font-display font-black text-[11px] sm:text-sm text-theme-ink tracking-wide uppercase">Lizard</span>
+          </button>
+
+          <button id="btn-move-spock" data-move="spock" type="button" class="btn-move holo-card hidden bg-theme-surface-alt hover:border-sky-500 border-2 border-theme-line rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95">
+            <span class="text-3xl sm:text-5xl select-none filter drop-shadow">🖖</span>
+            <span class="font-display font-black text-[11px] sm:text-sm text-theme-ink tracking-wide uppercase">Spock</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- SOCIAL TAUNTS & EMOTE WHEEL (Mobile Scrollable) -->
+      <div class="bg-theme-surface border border-theme-line rounded-2xl p-2.5 sm:p-3 px-3 sm:px-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 shadow-xs">
+        
+        <!-- Live Floating Emoji Taunts -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span class="text-[10px] font-mono text-theme-muted font-black uppercase shrink-0">Taunt:</span>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🔥" title="Fire">🔥</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="😂" title="Laugh">😂</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="👏" title="Clap">👏</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="💀" title="Skull">💀</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="😱" title="Shock">😱</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🏆" title="Trophy">🏆</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="🧠" title="Brain">🧠</button>
+          <button class="btn-taunt p-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-base sm:text-lg shrink-0 active:scale-125 transition-transform" data-emoji="👑" title="King">👑</button>
+        </div>
+
+        <div class="flex items-center justify-between sm:justify-end gap-2">
+          <!-- Quick Chat Messages -->
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="Good Game! 🤝">
+              GG 🤝
+            </button>
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="Calculated 🧠">
+              Calculated 🧠
+            </button>
+            <button class="btn-quick-chat px-2 py-1 rounded-lg bg-theme-surface-alt border border-theme-line text-[11px] font-semibold text-theme-muted shrink-0" data-msg="Rematch ready! ⚔️">
+              Rematch? ⚔️
+            </button>
+          </div>
+
+          <!-- History Toggle -->
+          <button id="btn-toggle-history" type="button" class="text-xs font-mono font-black text-indigo-400 hover:underline flex items-center gap-1 shrink-0">
+            <span>Ledger (<span id="history-round-count">0</span>)</span>
+            <span id="history-arrow">▼</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Collapsible Match History Table -->
+      <div id="history-drawer" class="hidden bg-theme-surface border border-theme-line rounded-2xl p-3 sm:p-4 shadow-sm overflow-x-auto">
+        <h5 class="font-display font-black text-xs text-theme-ink uppercase tracking-wider mb-2">Round-by-Round Cryptographic Ledger</h5>
+        <table class="w-full text-left text-xs font-mono">
+          <thead>
+            <tr class="border-b border-theme-line text-theme-muted text-[10px] uppercase">
+              <th class="py-1.5 px-2">#</th>
+              <th class="py-1.5 px-2">You</th>
+              <th class="py-1.5 px-2">Opponent</th>
+              <th class="py-1.5 px-2">Outcome</th>
+              <th class="py-1.5 px-2">Security</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body" class="divide-y divide-theme-line/60"></tbody>
+        </table>
+      </div>
+
+      <!-- Leave Match -->
+      <div class="flex justify-between items-center px-1 text-[11px] sm:text-xs text-theme-muted">
+        <button id="btn-leave-match" type="button" class="hover:text-rose-400 transition-colors font-semibold flex items-center gap-1">
+          <span>← Leave Duel</span>
+        </button>
+        <span class="font-mono text-[10px] hidden xs:inline">Direct P2P Session</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PROFILE & PASSPORT CUSTOMIZER       -->
+  <!-- ========================================== -->
+  <div id="modal-profile-customizer" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🧙‍♂️</span>
+          <div>
+            <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Player Passport</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Customize your avatar & persona</p>
+          </div>
+        </div>
+        <button id="btn-close-profile" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Player Tag Input -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Battle Tag</label>
+        <input id="customizer-name-input" type="text" maxlength="15" value="Player" class="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-display font-bold text-sm text-theme-ink focus:border-indigo-500 outline-none" />
+      </div>
+
+      <!-- Avatar Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1.5">Select Avatar</label>
+        <div id="avatar-picker-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+      </div>
+
+      <!-- Frame Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1.5">Avatar Frame</label>
+        <div id="frame-picker-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono font-bold"></div>
+      </div>
+
+      <!-- Title Picker -->
+      <div>
+        <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Player Title</label>
+        <select id="select-player-title" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-bold text-theme-ink outline-none focus:border-indigo-500">
+          <option value="Novice Brawler">Novice Brawler</option>
+          <option value="Rock Smasher">Rock Smasher</option>
+          <option value="Paper Sorcerer">Paper Sorcerer</option>
+          <option value="Blade Master">Blade Master</option>
+          <option value="Mind Hacker">Mind Hacker</option>
+          <option value="Spock Disciple">Spock Disciple</option>
+          <option value="Undefeated Legend">Undefeated Legend</option>
+        </select>
+      </div>
+
+      <button id="btn-save-profile" type="button" class="w-full py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-display font-black text-sm shadow-glow-indigo transition-all active:scale-95">
+        Save Battle Persona ✓
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-7 relative shadow-2xl space-y-4 max-h-[88vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-xl sm:text-2xl">🏆</span>
+          <div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Trophy Hall</h3>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted font-mono">Unlock badges and rise through tiers</p>
+          </div>
+        </div>
+        <button id="btn-close-trophies" class="p-1.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt text-sm">✕</button>
+      </div>
+
+      <!-- Rank Tier Card -->
+      <div class="bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 border border-amber-500/30 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
+        <div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-amber-400 uppercase font-bold block">Current Tier</span>
+          <h4 id="trophy-modal-rank-title" class="font-display font-black text-lg sm:text-xl text-theme-ink">Bronze I</h4>
+          <span id="trophy-modal-elo" class="text-[11px] font-mono text-theme-muted">1,000 MMR</span>
+        </div>
+        <div class="text-3xl sm:text-4xl">👑</div>
+      </div>
+
+      <!-- Badges Grid -->
+      <div>
+        <h4 class="font-mono font-bold text-xs text-theme-muted uppercase mb-2">Achievements (12)</h4>
+        <div id="trophies-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+      </div>
+
+      <button id="btn-ack-trophies" type="button" class="w-full py-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line font-bold text-xs text-theme-ink transition-colors">
+        Close Trophy Hall
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER                          -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-8 text-center relative shadow-2xl animate-reveal-pop space-y-4">
+      
+      <div class="relative inline-flex items-center justify-center">
+        <div id="match-over-glow" class="absolute inset-0 rounded-full bg-indigo-500/30 blur-2xl"></div>
+        <div id="match-over-icon" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-indigo">
+          🏆
+        </div>
+      </div>
+
+      <div>
+        <h2 id="match-over-title" class="text-2xl sm:text-3xl font-display font-black text-theme-ink tracking-tight">
+          VICTORY!
+        </h2>
+        <p id="match-over-subtitle" class="text-xs sm:text-sm text-theme-muted mt-1 font-medium">
+          You conquered the duel!
+        </p>
+      </div>
+
+      <div class="bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/30 rounded-2xl p-2.5 flex items-center justify-around font-mono text-xs font-bold">
+        <div class="text-indigo-400">
+          <span>XP: </span>
+          <strong id="match-xp-gain" class="text-white">+250 XP</strong>
+        </div>
+        <div class="text-amber-400">
+          <span>MMR: </span>
+          <strong id="match-elo-gain" class="text-white">+28 ELO</strong>
+        </div>
+      </div>
+
+      <div class="bg-theme-surface-alt border border-theme-line rounded-2xl p-3 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+        <div>
+          <span class="text-[9px] text-theme-muted block uppercase">Rounds</span>
+          <strong id="stat-total-rounds" class="text-sm sm:text-base text-theme-ink font-bold font-display">4</strong>
+        </div>
+        <div>
+          <span class="text-[9px] text-theme-muted block uppercase">Score</span>
+          <strong id="stat-final-score" class="text-sm sm:text-base text-indigo-400 font-bold font-display">3 - 1</strong>
+        </div>
+        <div>
+          <span class="text-[9px] text-theme-muted block uppercase">Win Rate</span>
+          <strong id="stat-win-rate" class="text-sm sm:text-base text-emerald-400 font-bold font-display">75%</strong>
+        </div>
+      </div>
+
+      <div id="rematch-status-badge" class="hidden py-1.5 px-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-mono font-bold animate-pulse">
+        Opponent wants a rematch!
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+        <button id="btn-request-rematch" type="button" class="w-full py-3 px-4 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-display font-bold text-sm shadow-glow-indigo transition-all flex items-center justify-center gap-2 active:scale-95">
+          <span id="rematch-btn-text">Play Again / Rematch</span>
+          <span>🔄</span>
+        </button>
+        <button id="btn-modal-exit-lobby" type="button" class="w-full sm:w-auto py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink font-display font-bold text-xs sm:text-sm transition-colors">
+          Exit
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: GAME RULES                          -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-7 relative shadow-2xl space-y-3.5 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-lg sm:text-xl">📜</span>
+          <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Rules & Anti-Cheat Protocol</h3>
+        </div>
+        <button id="btn-close-rules" class="p-1 rounded-lg text-theme-muted hover:text-theme-ink text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-theme-muted">
+        <div>
+          <h4 class="font-bold text-theme-ink uppercase font-mono text-[10px] mb-1">Classic RPS Rules</h4>
+          <ul class="list-disc pl-4 space-y-0.5">
+            <li><strong>Rock (🪨)</strong> beats Scissors (crushes)</li>
+            <li><strong>Scissors (✂️)</strong> beats Paper (cuts)</li>
+            <li><strong>Paper (📄)</strong> beats Rock (covers)</li>
+          </ul>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-theme-ink">
+          <h4 class="font-bold text-indigo-400 uppercase font-mono text-[10px] mb-1">Extended RPSLS Rules</h4>
+          <ul class="list-disc pl-4 space-y-0.5 text-[11px]">
+            <li>Scissors cuts Paper & decapitates Lizard</li>
+            <li>Paper covers Rock & disproves Spock</li>
+            <li>Rock crushes Scissors & crushes Lizard</li>
+            <li>Lizard poisons Spock & eats Paper</li>
+            <li>Spock smashes Scissors & vaporizes Rock</li>
+          </ul>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-theme-ink">
+          <h4 class="font-bold text-emerald-400 uppercase font-mono text-[10px] mb-1">🛡️ Cryptographic Anti-Cheat</h4>
+          <p class="text-[11px] leading-relaxed text-theme-muted">
+            Your client generates <code>SHA256(choice + salt + roundId)</code> and exchanges only the hash first. Once both players lock in, moves & salts are revealed and cryptographically verified.
+          </p>
+        </div>
+      </div>
+
+      <button id="btn-ack-rules" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors">
+        Got it, Let's Clash! ⚔️
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MANUAL SIGNALING RELAY              -->
+  <!-- ========================================== -->
+  <div id="modal-manual-signaling" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-7 relative shadow-2xl space-y-3.5 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2.5 border-b border-theme-line">
+        <div class="flex items-center gap-2">
+          <span class="text-lg sm:text-xl">📡</span>
+          <h3 class="font-display font-black text-base sm:text-lg text-theme-ink">Air-Gapped Manual SDP Relay</h3>
+        </div>
+        <button id="btn-close-manual-signaling" class="p-1 rounded-lg text-theme-muted hover:text-theme-ink text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 p-1 bg-theme-surface-alt rounded-xl border border-theme-line text-xs font-bold">
+        <button id="tab-manual-host" class="flex-1 py-1.5 rounded-lg bg-indigo-600 text-white">1. Host (Offer)</button>
+        <button id="tab-manual-join" class="flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink">2. Join (Answer)</button>
+      </div>
+
+      <div id="manual-host-section" class="space-y-2.5">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your WebRTC Offer SDP:</label>
+          <textarea id="manual-offer-output" readonly rows="3" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Click 'Generate Offer' below..."></textarea>
+          <button id="btn-generate-offer" class="mt-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs">
+            Generate Offer
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Paste Player 2's Answer SDP:</label>
+          <textarea id="manual-answer-input" rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste answer SDP here..."></textarea>
+          <button id="btn-accept-answer" class="mt-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+            Accept & Connect
+          </button>
+        </div>
+      </div>
+
+      <div id="manual-join-section" class="hidden space-y-2.5">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Paste Player 1's Offer SDP:</label>
+          <textarea id="manual-offer-input" rows="3" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none resize-none" placeholder="Paste offer SDP here..."></textarea>
+          <button id="btn-generate-answer" class="mt-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs">
+            Generate Answer
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Your Answer SDP (Send to Player 1):</label>
+          <textarea id="manual-answer-output" readonly rows="2" class="w-full p-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-[10px] text-theme-ink outline-none select-all resize-none" placeholder="Your answer will appear here..."></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-theme-line py-3 px-4 text-center text-[11px] text-theme-muted">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5">
+      <p>© 2026 Sayandeep Majumdar · Frontend WebRTC Game Suite</p>
+      <div class="flex items-center gap-3 text-[11px]">
+        <a href="/tools/" class="hover:text-theme-ink font-semibold text-indigo-400">🛠️ Toolzy</a>
+        <a href="/games/" class="hover:text-theme-ink">🎮 Games</a>
+        <a href="https://github.com/sayandeepmajumdar" target="_blank" rel="noopener noreferrer" class="hover:text-theme-ink">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT GAME LOGIC, PROGRESSION, NETWORKING & AUDIO  -->
+  <!-- ======================================================= -->
+  <script>
+    /* =======================================================
+     * 1. AUDIO SYNTHESIZER (Web Audio API)
+     * ======================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = localStorage.getItem('rps:sound_muted') === 'true';
+      }
+
+      initContext() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        localStorage.setItem('rps:sound_muted', this.isMuted);
+        return this.isMuted;
+      }
+
+      playTone(freq, type = 'sine', duration = 0.1, gainValue = 0.15) {
+        if (this.isMuted) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainValue, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playTick() {
+        this.playTone(850, 'triangle', 0.04, 0.08);
+      }
+
+      playLockMove() {
+        if (this.isMuted) return;
+        this.initContext();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(780, this.ctx.currentTime + 0.15);
+
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.15);
+        } catch (e) {}
+      }
+
+      playHeartThump() {
+        this.playTone(65, 'sine', 0.12, 0.35);
+      }
+
+      playClash() {
+        if (this.isMuted) return;
+        this.initContext();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.35);
+
+          gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.35);
+        } catch (e) {}
+      }
+
+      playWinRound() {
+        if (this.isMuted) return;
+        setTimeout(() => this.playTone(523.25, 'sine', 0.12, 0.2), 0);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.15, 0.2), 100);
+        setTimeout(() => this.playTone(783.99, 'sine', 0.25, 0.25), 200);
+      }
+
+      playLoseRound() {
+        if (this.isMuted) return;
+        setTimeout(() => this.playTone(392.00, 'sawtooth', 0.15, 0.15), 0);
+        setTimeout(() => this.playTone(329.63, 'sawtooth', 0.25, 0.15), 120);
+      }
+
+      playTieRound() {
+        if (this.isMuted) return;
+        setTimeout(() => this.playTone(440, 'triangle', 0.1, 0.15), 0);
+        setTimeout(() => this.playTone(440, 'triangle', 0.15, 0.15), 100);
+      }
+
+      playLevelUp() {
+        if (this.isMuted) return;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'square', 0.18, 0.2), i * 90);
+        });
+      }
+
+      playMatchVictory() {
+        if (this.isMuted) return;
+        const melody = [
+          { f: 523.25, d: 0.12, t: 0 },
+          { f: 659.25, d: 0.12, t: 120 },
+          { f: 783.99, d: 0.15, t: 240 },
+          { f: 1046.50, d: 0.45, t: 380 }
+        ];
+        melody.forEach(n => {
+          setTimeout(() => this.playTone(n.f, 'triangle', n.d, 0.3), n.t);
+        });
+      }
+
+      playMatchDefeat() {
+        if (this.isMuted) return;
+        const melody = [
+          { f: 440, d: 0.2, t: 0 },
+          { f: 415.30, d: 0.2, t: 180 },
+          { f: 392.00, d: 0.4, t: 360 }
+        ];
+        melody.forEach(n => {
+          setTimeout(() => this.playTone(n.f, 'sawtooth', n.d, 0.2), n.t);
+        });
+      }
+
+      playTaunt() {
+        this.playTone(950, 'sine', 0.08, 0.15);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // Haptic feedback helper
+    function triggerHaptic(duration = 30) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(duration); } catch (e) {}
+      }
+    }
+
+    /* =======================================================
+     * 2. PROGRESSION, ELO & ACHIEVEMENTS SYSTEM
+     * ======================================================= */
+    const ACHIEVEMENTS = [
+      { id: 'first_blood', name: 'First Blood', desc: 'Win your first round in the arena', icon: '⚔️' },
+      { id: 'rock_solid', name: 'Rock Solid', desc: 'Win 5 rounds using Rock', icon: '🪨', target: 5 },
+      { id: 'origami_master', name: 'Paper Master', desc: 'Win 5 rounds using Paper', icon: '📄', target: 5 },
+      { id: 'blade_runner', name: 'Blade Runner', desc: 'Win 5 rounds using Scissors', icon: '✂️', target: 5 },
+      { id: 'lizard_poison', name: 'Lizard King', desc: 'Win 3 rounds with Lizard in RPSLS', icon: '🦎', target: 3 },
+      { id: 'spock_logic', name: 'Spock Deity', desc: 'Win 3 rounds with Spock in RPSLS', icon: '🖖', target: 3 },
+      { id: 'hot_streak', name: 'Hot Streak', desc: 'Achieve a 3-round win streak', icon: '🔥' },
+      { id: 'godlike', name: 'Unstoppable', desc: 'Achieve a 5-round win streak', icon: '⚡' },
+      { id: 'clean_sweep', name: 'Flawless Sweep', desc: 'Win a match without dropping a round', icon: '👑' },
+      { id: 'bot_slayer', name: 'Cyber Slayer', desc: 'Defeat the AI Bot 3 times', icon: '🤖', target: 3 },
+      { id: 'mind_reader', name: 'Mind Reader', desc: 'Win 3 matches in total', icon: '🧠', target: 3 },
+      { id: 'grandmaster', name: 'Grandmaster', desc: 'Reach Diamond Rank (1,500+ MMR)', icon: '💎' },
+    ];
+
+    class PlayerProgression {
+      constructor() {
+        this.load();
+      }
+
+      load() {
+        try {
+          const raw = localStorage.getItem('rps:player_profile_v2');
+          const data = raw ? JSON.parse(raw) : {};
+          this.name = data.name || 'Player';
+          this.avatar = data.avatar || '🧙‍♂️';
+          this.frame = data.frame || 'frame-neon';
+          this.title = data.title || 'Mind Hacker';
+          this.xp = data.xp || 0;
+          this.level = data.level || 1;
+          this.elo = data.elo || 1000;
+          this.wins = data.wins || 0;
+          this.losses = data.losses || 0;
+          this.currentStreak = data.currentStreak || 0;
+          this.bestStreak = data.bestStreak || 0;
+          this.rockWins = data.rockWins || 0;
+          this.paperWins = data.paperWins || 0;
+          this.scissorsWins = data.scissorsWins || 0;
+          this.lizardWins = data.lizardWins || 0;
+          this.spockWins = data.spockWins || 0;
+          this.botWins = data.botWins || 0;
+          this.matchesWon = data.matchesWon || 0;
+          this.unlocked = data.unlocked || [];
+        } catch (e) {
+          this.name = 'Player';
+          this.avatar = '🧙‍♂️';
+          this.frame = 'frame-neon';
+          this.title = 'Mind Hacker';
+          this.xp = 0;
+          this.level = 1;
+          this.elo = 1000;
+          this.wins = 0;
+          this.losses = 0;
+          this.currentStreak = 0;
+          this.bestStreak = 0;
+          this.rockWins = 0;
+          this.paperWins = 0;
+          this.scissorsWins = 0;
+          this.lizardWins = 0;
+          this.spockWins = 0;
+          this.botWins = 0;
+          this.matchesWon = 0;
+          this.unlocked = [];
+        }
+      }
+
+      save() {
+        try {
+          localStorage.setItem('rps:player_profile_v2', JSON.stringify({
+            name: this.name,
+            avatar: this.avatar,
+            frame: this.frame,
+            title: this.title,
+            xp: this.xp,
+            level: this.level,
+            elo: this.elo,
+            wins: this.wins,
+            losses: this.losses,
+            currentStreak: this.currentStreak,
+            bestStreak: this.bestStreak,
+            rockWins: this.rockWins,
+            paperWins: this.paperWins,
+            scissorsWins: this.scissorsWins,
+            lizardWins: this.lizardWins,
+            spockWins: this.spockWins,
+            botWins: this.botWins,
+            matchesWon: this.matchesWon,
+            unlocked: this.unlocked,
+          }));
+        } catch (e) {}
+      }
+
+      getRankTier() {
+        if (this.elo >= 2000) return { name: 'Grandmaster', color: 'text-amber-300' };
+        if (this.elo >= 1700) return { name: 'Master', color: 'text-purple-400' };
+        if (this.elo >= 1500) return { name: 'Diamond', color: 'text-cyan-400' };
+        if (this.elo >= 1300) return { name: 'Platinum', color: 'text-emerald-400' };
+        if (this.elo >= 1150) return { name: 'Gold', color: 'text-amber-400' };
+        if (this.elo >= 1050) return { name: 'Silver', color: 'text-stone-300' };
+        return { name: 'Bronze I', color: 'text-amber-500' };
+      }
+
+      getXPNeeded() {
+        return this.level * 120;
+      }
+
+      addXP(amount) {
+        this.xp += amount;
+        const needed = this.getXPNeeded();
+        if (this.xp >= needed) {
+          this.xp -= needed;
+          this.level++;
+          sound.playLevelUp();
+          triggerHaptic(60);
+          showAlert(`🎉 LEVEL UP! You reached Level ${this.level}!`, 'info', 4000);
+        }
+        this.save();
+        this.renderPassport();
+      }
+
+      addRoundWin(move) {
+        this.wins++;
+        this.currentStreak++;
+        if (this.currentStreak > this.bestStreak) this.bestStreak = this.currentStreak;
+
+        if (move === 'rock') this.rockWins++;
+        else if (move === 'paper') this.paperWins++;
+        else if (move === 'scissors') this.scissorsWins++;
+        else if (move === 'lizard') this.lizardWins++;
+        else if (move === 'spock') this.spockWins++;
+
+        this.checkAchievements();
+        this.addXP(40 + this.currentStreak * 10);
+      }
+
+      addRoundLoss() {
+        this.losses++;
+        this.currentStreak = 0;
+        this.save();
+        this.renderPassport();
+      }
+
+      addMatchResult(isWinner, isAI = false, oppLossRounds = 0) {
+        if (isWinner) {
+          this.matchesWon++;
+          this.elo += 28;
+          if (isAI) this.botWins++;
+          if (oppLossRounds === 0) this.unlockAchievement('clean_sweep');
+          this.addXP(150);
+        } else {
+          this.elo = Math.max(800, this.elo - 20);
+          this.addXP(30);
+        }
+        this.checkAchievements();
+        this.save();
+        this.renderPassport();
+      }
+
+      checkAchievements() {
+        if (this.wins >= 1) this.unlockAchievement('first_blood');
+        if (this.rockWins >= 5) this.unlockAchievement('rock_solid');
+        if (this.paperWins >= 5) this.unlockAchievement('origami_master');
+        if (this.scissorsWins >= 5) this.unlockAchievement('blade_runner');
+        if (this.lizardWins >= 3) this.unlockAchievement('lizard_poison');
+        if (this.spockWins >= 3) this.unlockAchievement('spock_logic');
+        if (this.currentStreak >= 3) this.unlockAchievement('hot_streak');
+        if (this.currentStreak >= 5) this.unlockAchievement('godlike');
+        if (this.botWins >= 3) this.unlockAchievement('bot_slayer');
+        if (this.matchesWon >= 3) this.unlockAchievement('mind_reader');
+        if (this.elo >= 1500) this.unlockAchievement('grandmaster');
+      }
+
+      unlockAchievement(id) {
+        if (!this.unlocked.includes(id)) {
+          this.unlocked.push(id);
+          const ach = ACHIEVEMENTS.find(a => a.id === id);
+          if (ach) {
+            sound.playLevelUp();
+            triggerHaptic(50);
+            showAlert(`🏆 ACHIEVEMENT UNLOCKED: ${ach.icon} ${ach.name}!`, 'info', 5000);
+          }
+          this.save();
+          this.renderPassport();
+        }
+      }
+
+      renderPassport() {
+        const passportAvatar = document.getElementById('passport-avatar');
+        if (passportAvatar) {
+          passportAvatar.innerText = this.avatar;
+          passportAvatar.className = `w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-indigo select-none transition-transform active:scale-95 ${this.frame}`;
+        }
+        document.getElementById('passport-name').innerText = this.name;
+        document.getElementById('passport-title').innerText = this.title;
+
+        const rank = this.getRankTier();
+        const rankBadge = document.getElementById('passport-rank-badge');
+        rankBadge.innerText = `🏆 ${rank.name}`;
+        
+        document.getElementById('passport-level-badge').innerText = `LVL ${this.level}`;
+        const needed = this.getXPNeeded();
+        const pct = Math.min(100, Math.round((this.xp / needed) * 100));
+        document.getElementById('passport-xp-bar').style.width = `${pct}%`;
+        document.getElementById('passport-xp-text').innerText = `${this.xp}/${needed} XP`;
+
+        document.getElementById('stat-elo-display').innerText = this.elo.toLocaleString();
+        const total = this.wins + this.losses;
+        const winrate = total > 0 ? Math.round((this.wins / total) * 100) : 0;
+        document.getElementById('stat-winrate-display').innerText = `${winrate}%`;
+        document.getElementById('stat-streak-display').innerText = `🔥 ${this.currentStreak}`;
+
+        document.getElementById('unlocked-badge-count').innerText = `${this.unlocked.length}/${ACHIEVEMENTS.length}`;
+      }
+    }
+
+    const player = new PlayerProgression();
+
+    /* =======================================================
+     * 3. CRYPTOGRAPHIC COMMIT-REVEAL PROTOCOL
+     * ======================================================= */
+    class CryptoCommitEngine {
+      static generateSalt() {
+        const array = new Uint8Array(16);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      static async computeHash(choice, salt, roundId) {
+        const message = `${choice}:${salt}:${roundId}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(message);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      static async verifyReveal(choice, salt, roundId, expectedHash) {
+        const computed = await this.computeHash(choice, salt, roundId);
+        return computed.toLowerCase() === expectedHash.toLowerCase();
+      }
+    }
+
+    /* =======================================================
+     * 4. GAME RULES & WINNER RESOLUTION LOGIC
+     * ======================================================= */
+    const MOVE_DATA = {
+      rock: { name: 'Rock', icon: '🪨', beats: ['scissors', 'lizard'], verbs: { scissors: 'crushes Scissors', lizard: 'crushes Lizard' } },
+      paper: { name: 'Paper', icon: '📄', beats: ['rock', 'spock'], verbs: { rock: 'covers Rock', spock: 'disproves Spock' } },
+      scissors: { name: 'Scissors', icon: '✂️', beats: ['paper', 'lizard'], verbs: { paper: 'cuts Paper', lizard: 'decapitates Lizard' } },
+      lizard: { name: 'Lizard', icon: '🦎', beats: ['spock', 'paper'], verbs: { spock: 'poisons Spock', paper: 'eats Paper' } },
+      spock: { name: 'Spock', icon: '🖖', beats: ['scissors', 'rock'], verbs: { scissors: 'smashes Scissors', rock: 'vaporizes Rock' } },
+    };
+
+    function resolveRound(move1, move2) {
+      if (move1 === move2) {
+        return { winner: 0, reason: 'Both players clashed with the same move!' };
+      }
+
+      const p1Rule = MOVE_DATA[move1];
+      if (p1Rule && p1Rule.beats.includes(move2)) {
+        return { winner: 1, reason: `${p1Rule.name} ${p1Rule.verbs[move2] || 'beats ' + move2}` };
+      }
+
+      const p2Rule = MOVE_DATA[move2];
+      return { winner: 2, reason: `${p2Rule.name} ${p2Rule.verbs[move1] || 'beats ' + move1}` };
+    }
+
+    /* =======================================================
+     * 5. AI OPPONENT BOT
+     * ======================================================= */
+    class AIBot {
+      constructor(variant = 'classic') {
+        this.variant = variant;
+        this.history = [];
+        this.moves = variant === 'rpsls' 
+          ? ['rock', 'paper', 'scissors', 'lizard', 'spock'] 
+          : ['rock', 'paper', 'scissors'];
+        this.name = 'CyberBot AI 🤖';
+        this.avatar = '🤖';
+      }
+
+      pickMove() {
+        if (this.history.length < 2) {
+          return this.moves[Math.floor(Math.random() * this.moves.length)];
+        }
+
+        const lastRound = this.history[this.history.length - 1];
+        if (lastRound.winner === 1) {
+          return this.getWinningCounter(lastRound.p1Move);
+        } else if (lastRound.winner === 2) {
+          const whatBeatBot = this.getWinningCounter(lastRound.botMove);
+          return this.getWinningCounter(whatBeatBot);
+        } else {
+          const predicted = this.getWinningCounter(lastRound.p1Move);
+          return this.getWinningCounter(predicted);
+        }
+      }
+
+      getWinningCounter(move) {
+        const counters = [];
+        this.moves.forEach(m => {
+          if (MOVE_DATA[m].beats.includes(move)) counters.push(m);
+        });
+        return counters[Math.floor(Math.random() * counters.length)] || this.moves[0];
+      }
+
+      recordRound(p1Move, botMove, winner) {
+        this.history.push({ p1Move, botMove, winner });
+      }
+    }
+
+    function generateQRCodeSVG(url) {
+      const encoded = encodeURIComponent(url);
+      return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encoded}&margin=2" alt="Join Room QR" class="w-32 h-32 sm:w-36 sm:h-36 rounded-xl" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-xs text-stone-500 font-mono text-center p-2\\'>Room link:<br><strong class=\\'text-indigo-600 break-all\\'>${url}</strong></div>'"/>`;
+    }
+
+    /* =======================================================
+     * 6. APP STATE & GAME MANAGER
+     * ======================================================= */
+    const State = {
+      mode: 'lobby',
+      isHost: false,
+      isAI: false,
+      peer: null,
+      conn: null,
+      peerId: null,
+      roomCode: null,
+      
+      variant: 'classic',
+      matchTarget: 5,
+      requiredWins: 3,
+      roundTimerSeconds: 10,
+      isBlitz: false,
+      timerInterval: null,
+      timeLeft: 10,
+
+      roundNumber: 1,
+      p1Score: 0,
+      p2Score: 0,
+      roundHistory: [],
+      
+      myChoice: null,
+      mySalt: null,
+      myCommitHash: null,
+      oppCommitHash: null,
+      oppChoice: null,
+      oppSalt: null,
+      roundResolved: false,
+
+      myRematchReady: false,
+      oppRematchReady: false,
+
+      pingInterval: null,
+      lastPingSent: null,
+      latency: null,
+
+      aiBot: null
+    };
+
+    /* =======================================================
+     * 7. DOM ELEMENTS SELECTION
+     * ======================================================= */
+    const el = {
+      viewLobby: document.getElementById('view-lobby'),
+      viewWaiting: document.getElementById('view-waiting'),
+      viewArena: document.getElementById('view-arena'),
+
+      headerStatusPill: document.getElementById('header-status-pill'),
+      headerStatusDot: document.getElementById('header-status-dot'),
+      headerStatusText: document.getElementById('header-status-text'),
+      headerPingBadge: document.getElementById('header-ping-badge'),
+      roomCodeBadge: document.getElementById('room-code-badge'),
+      roomCodeBadgeText: document.getElementById('room-code-badge-text'),
+      btnOpenTrophies: document.getElementById('btn-open-trophies'),
+      btnRules: document.getElementById('btn-rules'),
+      btnSoundToggle: document.getElementById('btn-sound-toggle'),
+      soundIcon: document.getElementById('sound-icon'),
+      btnThemeToggle: document.getElementById('btn-theme-toggle'),
+      themeIcon: document.getElementById('theme-icon'),
+      globalAlertBanner: document.getElementById('global-alert-banner'),
+      alertIcon: document.getElementById('alert-icon'),
+      alertMessage: document.getElementById('alert-message'),
+      btnAlertClose: document.getElementById('btn-alert-close'),
+
+      // Lobby
+      btnOpenProfileCustomizer: document.getElementById('btn-open-profile-customizer'),
+      toggleRuleClassic: document.getElementById('toggle-rule-classic'),
+      toggleRuleRpsls: document.getElementById('toggle-rule-rpsls'),
+      selectMatchFormat: document.getElementById('select-match-format'),
+      btnToggleBlitz: document.getElementById('btn-toggle-blitz'),
+      blitzStatusText: document.getElementById('blitz-status-text'),
+      btnCreateRoom: document.getElementById('btn-create-room'),
+      inputJoinCode: document.getElementById('input-join-code'),
+      btnJoinRoom: document.getElementById('btn-join-room'),
+      btnStartAI: document.getElementById('btn-start-ai'),
+      btnOpenManualSignaling: document.getElementById('btn-open-manual-signaling'),
+
+      // Waiting View
+      displayRoomCode: document.getElementById('display-room-code'),
+      btnCopyCode: document.getElementById('btn-copy-code'),
+      displayRoomLink: document.getElementById('display-room-link'),
+      btnCopyLink: document.getElementById('btn-copy-link'),
+      shareWhatsapp: document.getElementById('share-whatsapp'),
+      shareTelegram: document.getElementById('share-telegram'),
+      shareTwitter: document.getElementById('share-twitter'),
+      btnToggleQr: document.getElementById('btn-toggle-qr'),
+      qrContainer: document.getElementById('qr-container'),
+      qrWrapper: document.getElementById('qr-code-canvas-wrapper'),
+      btnCancelWaiting: document.getElementById('btn-cancel-waiting'),
+
+      // Arena View
+      p1Avatar: document.getElementById('p1-avatar'),
+      p1NameDisplay: document.getElementById('p1-name-display'),
+      p1WinNodes: document.getElementById('p1-win-nodes'),
+      p1ReadyIndicator: document.getElementById('p1-ready-indicator'),
+      p2Avatar: document.getElementById('p2-avatar'),
+      p2NameDisplay: document.getElementById('p2-name-display'),
+      p2WinNodes: document.getElementById('p2-win-nodes'),
+      p2ReadyIndicator: document.getElementById('p2-ready-indicator'),
+      p2RoleBadge: document.getElementById('p2-role-badge'),
+      arenaRoundNumber: document.getElementById('arena-round-number'),
+      timerSeconds: document.getElementById('timer-seconds'),
+      
+      clashStage: document.getElementById('clash-stage'),
+      stageIdle: document.getElementById('stage-idle'),
+      stageCountdown: document.getElementById('stage-countdown'),
+      stageReveal: document.getElementById('stage-reveal'),
+      stageStatusBanner: document.getElementById('stage-status-banner'),
+      countdownNumber: document.getElementById('countdown-number'),
+      revealCardP1: document.getElementById('reveal-card-p1'),
+      revealLabelP1: document.getElementById('reveal-label-p1'),
+      revealCardP2: document.getElementById('reveal-card-p2'),
+      revealLabelP2: document.getElementById('reveal-label-p2'),
+      roundOutcomeBadge: document.getElementById('round-outcome-badge'),
+      roundReasonText: document.getElementById('round-reason-text'),
+      autoNextIndicator: document.getElementById('auto-next-indicator'),
+      btnNextRoundNow: document.getElementById('btn-next-round-now'),
+
+      btnMoveRock: document.getElementById('btn-move-rock'),
+      btnMovePaper: document.getElementById('btn-move-paper'),
+      btnMoveScissors: document.getElementById('btn-move-scissors'),
+      btnMoveLizard: document.getElementById('btn-move-lizard'),
+      btnMoveSpock: document.getElementById('btn-move-spock'),
+      moveButtons: document.querySelectorAll('.btn-move'),
+
+      btnToggleHistory: document.getElementById('btn-toggle-history'),
+      historyRoundCount: document.getElementById('history-round-count'),
+      historyDrawer: document.getElementById('history-drawer'),
+      historyTableBody: document.getElementById('history-table-body'),
+      btnLeaveMatch: document.getElementById('btn-leave-match'),
+      tauntsOverlay: document.getElementById('taunts-overlay'),
+
+      // Modals
+      modalMatchOver: document.getElementById('modal-match-over'),
+      matchOverTitle: document.getElementById('match-over-title'),
+      matchOverSubtitle: document.getElementById('match-over-subtitle'),
+      matchOverIcon: document.getElementById('match-over-icon'),
+      statTotalRounds: document.getElementById('stat-total-rounds'),
+      statFinalScore: document.getElementById('stat-final-score'),
+      statWinRate: document.getElementById('stat-win-rate'),
+      matchXpGain: document.getElementById('match-xp-gain'),
+      matchEloGain: document.getElementById('match-elo-gain'),
+      rematchStatusBadge: document.getElementById('rematch-status-badge'),
+      btnRequestRematch: document.getElementById('btn-request-rematch'),
+      rematchBtnText: document.getElementById('rematch-btn-text'),
+      btnModalExitLobby: document.getElementById('btn-modal-exit-lobby'),
+
+      modalProfileCustomizer: document.getElementById('modal-profile-customizer'),
+      btnCloseProfile: document.getElementById('btn-close-profile'),
+      customizerNameInput: document.getElementById('customizer-name-input'),
+      avatarPickerGrid: document.getElementById('avatar-picker-grid'),
+      framePickerGrid: document.getElementById('frame-picker-grid'),
+      selectPlayerTitle: document.getElementById('select-player-title'),
+      btnSaveProfile: document.getElementById('btn-save-profile'),
+
+      modalTrophies: document.getElementById('modal-trophies'),
+      btnCloseTrophies: document.getElementById('btn-close-trophies'),
+      btnAckTrophies: document.getElementById('btn-ack-trophies'),
+      trophiesListContainer: document.getElementById('trophies-list-container'),
+
+      modalRules: document.getElementById('modal-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnAckRules: document.getElementById('btn-ack-rules'),
+
+      modalManualSignaling: document.getElementById('modal-manual-signaling'),
+      btnCloseManualSignaling: document.getElementById('btn-close-manual-signaling'),
+    };
+
+    /* =======================================================
+     * 8. UI HELPERS & PROFILE INITIALIZATION
+     * ======================================================= */
+    const ALL_AVATARS = ['🧙‍♂️', '🥷', '🦁', '🤖', '👑', '⚡', '🦊', '🐉', '🚀', '👽', '💀', '🥋', '🐺', '🐯', '🦄', '⚔️'];
+    const ALL_FRAMES = [
+      { id: 'frame-neon', name: 'Neon Pulse' },
+      { id: 'frame-gold', name: 'Gold Flame' },
+      { id: 'frame-cyber', name: 'Cyber Matrix' },
+      { id: 'frame-ice', name: 'Diamond Ice' },
+      { id: 'frame-void', name: 'Cosmic Void' },
+    ];
+
+    function setView(viewName) {
+      State.mode = viewName;
+      el.viewLobby.classList.toggle('hidden', viewName !== 'lobby');
+      el.viewWaiting.classList.toggle('hidden', viewName !== 'waiting');
+      el.viewArena.classList.toggle('hidden', viewName !== 'arena');
+
+      if (viewName === 'arena' || viewName === 'waiting') {
+        el.roomCodeBadge.classList.remove('hidden');
+        el.roomCodeBadge.classList.add('flex');
+        el.roomCodeBadgeText.innerText = State.roomCode || (State.isAI ? 'AI BOT' : 'MANUAL');
+      } else {
+        el.roomCodeBadge.classList.add('hidden');
+      }
+    }
+
+    function showAlert(msg, type = 'info', autoDismiss = 4000) {
+      el.globalAlertBanner.classList.remove('hidden', 'bg-rose-500/15', 'border-rose-500/30', 'text-rose-400', 'bg-amber-500/15', 'border-amber-500/30', 'text-amber-400', 'bg-indigo-500/15', 'border-indigo-500/30', 'text-indigo-400');
+      
+      if (type === 'error') {
+        el.globalAlertBanner.classList.add('bg-rose-500/15', 'border-rose-500/30', 'text-rose-400');
+        el.alertIcon.innerText = '❌';
+      } else if (type === 'warning') {
+        el.globalAlertBanner.classList.add('bg-amber-500/15', 'border-amber-500/30', 'text-amber-400');
+        el.alertIcon.innerText = '⚠️';
+      } else {
+        el.globalAlertBanner.classList.add('bg-indigo-500/15', 'border-indigo-500/30', 'text-indigo-400');
+        el.alertIcon.innerText = 'ℹ️';
+      }
+
+      el.alertMessage.innerText = msg;
+      if (autoDismiss) {
+        setTimeout(() => el.globalAlertBanner.classList.add('hidden'), autoDismiss);
+      }
+    }
+
+    function updateHeaderStatus(status, text, latency = null) {
+      el.headerStatusPill.classList.remove('hidden');
+      el.headerStatusDot.className = 'w-2 h-2 rounded-full ' + (
+        status === 'connected' ? 'bg-emerald-400 animate-pulse' :
+        status === 'connecting' ? 'bg-amber-400 animate-ping' :
+        status === 'waiting' ? 'bg-indigo-400 animate-pulse' : 'bg-stone-400'
+      );
+      el.headerStatusText.innerText = text;
+
+      if (latency !== null) {
+        el.headerPingBadge.classList.remove('hidden');
+        el.headerPingBadge.innerText = `${latency}ms`;
+      } else {
+        el.headerPingBadge.classList.add('hidden');
+      }
+    }
+
+    function renderWinNodes() {
+      el.p1WinNodes.innerHTML = '';
+      el.p2WinNodes.innerHTML = '';
+      
+      const count = State.requiredWins === Infinity ? 5 : State.requiredWins;
+      for (let i = 0; i < count; i++) {
+        const pip1 = document.createElement('div');
+        pip1.className = `win-pip ${i < State.p1Score ? 'filled' : ''}`;
+        el.p1WinNodes.appendChild(pip1);
+
+        const pip2 = document.createElement('div');
+        pip2.className = `win-pip ${i < State.p2Score ? 'filled-p2' : ''}`;
+        el.p2WinNodes.appendChild(pip2);
+      }
+    }
+
+    /* =======================================================
+     * 9. WEBRTC SIGNALING & NETWORKING
+     * ======================================================= */
+    function generateFriendlyRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = 'RPS-';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function initPeer(customId = null) {
+      return new Promise((resolve, reject) => {
+        const peerOptions = {
+          debug: 1,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+            ]
+          }
+        };
+
+        const peer = customId ? new Peer(customId, peerOptions) : new Peer(peerOptions);
+
+        peer.on('open', (id) => {
+          State.peerId = id;
+          resolve(peer);
+        });
+
+        peer.on('error', (err) => {
+          console.error('PeerJS error:', err);
+          if (err.type === 'unavailable-id') {
+            showAlert('Room code already active. Retrying...', 'warning');
+            reject(err);
+          } else {
+            showAlert('Network error: ' + (err.message || err.type), 'error');
+            reject(err);
+          }
+        });
+      });
+    }
+
+    async function hostOnlineRoom() {
+      sound.playTick();
+      triggerHaptic(25);
+      const rawCode = generateFriendlyRoomCode();
+      const peerId = 'rps-room-' + rawCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+      State.roomCode = rawCode;
+      State.isHost = true;
+      State.isAI = false;
+
+      updateHeaderStatus('waiting', 'Creating Arena...');
+
+      try {
+        State.peer = await initPeer(peerId);
+        el.displayRoomCode.innerText = rawCode;
+        
+        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${rawCode}`;
+        el.displayRoomLink.value = roomUrl;
+
+        el.shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('Join my Rock Paper Scissors arena: ' + roomUrl)}`;
+        el.shareTelegram.href = `https://t.me/share/url?url=${encodeURIComponent(roomUrl)}&text=${encodeURIComponent('Join my Rock Paper Scissors arena!')}`;
+        el.shareTwitter.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent('Join my Rock Paper Scissors duel! ⚔️ ' + roomUrl)}`;
+
+        el.qrWrapper.innerHTML = generateQRCodeSVG(roomUrl);
+
+        setView('waiting');
+        updateHeaderStatus('waiting', 'Waiting for Opponent');
+
+        State.peer.on('connection', (conn) => {
+          setupConnection(conn);
+        });
+
+      } catch (err) {
+        if (err && err.type === 'unavailable-id') {
+          setTimeout(hostOnlineRoom, 500);
+        }
+      }
+    }
+
+    async function joinOnlineRoom(codeToJoin) {
+      if (!codeToJoin || codeToJoin.trim().length === 0) {
+        showAlert('Please enter a valid Room Code or Link', 'warning');
+        return;
+      }
+
+      sound.playTick();
+      triggerHaptic(25);
+      let cleanCode = codeToJoin.trim();
+      if (cleanCode.includes('room=')) {
+        cleanCode = cleanCode.split('room=')[1].split('&')[0];
+      } else if (cleanCode.includes('#')) {
+        cleanCode = cleanCode.split('#')[1];
+      }
+
+      cleanCode = cleanCode.toUpperCase();
+      const peerIdToConnect = 'rps-room-' + cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      State.roomCode = cleanCode;
+      State.isHost = false;
+      State.isAI = false;
+
+      updateHeaderStatus('connecting', 'Connecting to ' + cleanCode + '...');
+      showAlert('Connecting to Arena ' + cleanCode + '...', 'info');
+
+      try {
+        State.peer = await initPeer();
+        const conn = State.peer.connect(peerIdToConnect, { reliable: true });
+        setupConnection(conn);
+      } catch (err) {
+        showAlert('Failed to connect: ' + err.message, 'error');
+        updateHeaderStatus('idle', 'Disconnected');
+      }
+    }
+
+    function setupConnection(conn) {
+      State.conn = conn;
+
+      conn.on('open', () => {
+        sound.playWinRound();
+        triggerHaptic(50);
+        showAlert('Opponent connected! Entering Arena...', 'info', 2000);
+        updateHeaderStatus('connected', 'Direct P2P Connected');
+
+        sendPacket({
+          type: 'HANDSHAKE',
+          name: player.name,
+          avatar: player.avatar,
+          frame: player.frame,
+          title: player.title,
+          variant: State.variant,
+          matchTarget: State.matchTarget,
+          isBlitz: State.isBlitz,
+          isHost: State.isHost
+        });
+
+        startHeartbeat();
+        startArenaMatch();
+      });
+
+      conn.on('data', (data) => handleIncomingPacket(data));
+      conn.on('close', () => handleOpponentLeft());
+      conn.on('error', (err) => showAlert('Connection error: ' + err.message, 'error'));
+    }
+
+    function sendPacket(packet) {
+      if (State.conn && State.conn.open) {
+        State.conn.send(packet);
+      }
+    }
+
+    function startHeartbeat() {
+      clearInterval(State.pingInterval);
+      State.pingInterval = setInterval(() => {
+        if (State.conn && State.conn.open) {
+          State.lastPingSent = Date.now();
+          sendPacket({ type: 'PING', timestamp: State.lastPingSent });
+        }
+      }, 3500);
+    }
+
+    function handleOpponentLeft() {
+      sound.playLoseRound();
+      triggerHaptic(60);
+      showAlert('Opponent disconnected from the duel.', 'warning');
+      updateHeaderStatus('idle', 'Opponent Left');
+      clearInterval(State.timerInterval);
+      clearInterval(State.pingInterval);
+
+      setTimeout(() => {
+        if (confirm('Opponent has left the game. Return to lobby?')) {
+          returnToLobby();
+        }
+      }, 1500);
+    }
+
+    /* =======================================================
+     * 10. PACKET HANDLING
+     * ======================================================= */
+    function handleIncomingPacket(data) {
+      if (!data || !data.type) return;
+
+      switch (data.type) {
+        case 'PING':
+          sendPacket({ type: 'PONG', timestamp: data.timestamp });
+          break;
+
+        case 'PONG':
+          if (State.lastPingSent) {
+            State.latency = Math.max(1, Math.round(Date.now() - data.timestamp));
+            updateHeaderStatus('connected', 'Direct P2P', State.latency);
+          }
+          break;
+
+        case 'HANDSHAKE':
+          el.p2NameDisplay.innerText = data.name || 'Opponent';
+          el.p2Avatar.innerText = data.avatar || '🥷';
+          el.p2Avatar.className = `w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none ${data.frame || 'frame-void'}`;
+          
+          if (!State.isHost) {
+            State.variant = data.variant || 'classic';
+            State.matchTarget = data.matchTarget !== undefined ? data.matchTarget : 5;
+            State.isBlitz = data.isBlitz || false;
+            syncGameFormatUI();
+          }
+          break;
+
+        case 'COMMIT':
+          if (data.round === State.roundNumber) {
+            State.oppCommitHash = data.hash;
+            el.p2ReadyIndicator.classList.remove('hidden');
+            sound.playTick();
+
+            if (State.myChoice && State.myCommitHash) {
+              revealMove();
+            } else {
+              el.stageStatusBanner.innerText = 'Opponent locked in! Pick your move...';
+            }
+          }
+          break;
+
+        case 'REVEAL':
+          if (data.round === State.roundNumber) {
+            State.oppChoice = data.choice;
+            State.oppSalt = data.salt;
+
+            if (State.myChoice && State.mySalt) {
+              verifyAndResolveRound();
+            }
+          }
+          break;
+
+        case 'TAUNT':
+          triggerFloatingEmoji(data.emoji, false);
+          break;
+
+        case 'QUICK_CHAT':
+          showOpponentChatBubble(data.msg);
+          break;
+
+        case 'REMATCH_REQUEST':
+          State.oppRematchReady = true;
+          el.rematchStatusBadge.classList.remove('hidden');
+          sound.playTaunt();
+          triggerHaptic(30);
+
+          if (State.myRematchReady) {
+            startNewMatch();
+          }
+          break;
+
+        case 'ADVANCE_ROUND':
+          if (data.round === State.roundNumber + 1) {
+            startNewRound();
+          }
+          break;
+      }
+    }
+
+    /* =======================================================
+     * 11. ARENA MATCH & ROUND LIFECYCLE
+     * ======================================================= */
+    function startArenaMatch() {
+      State.roundTimerSeconds = State.isBlitz ? 5 : 10;
+      syncGameFormatUI();
+
+      State.roundNumber = 1;
+      State.p1Score = 0;
+      State.p2Score = 0;
+      State.roundHistory = [];
+
+      el.p1NameDisplay.innerText = player.name;
+      el.p1Avatar.innerText = player.avatar;
+      el.p1Avatar.className = `w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none ${player.frame}`;
+
+      if (State.isAI) {
+        State.aiBot = new AIBot(State.variant);
+        el.p2NameDisplay.innerText = State.aiBot.name;
+        el.p2Avatar.innerText = State.aiBot.avatar;
+        el.p2Avatar.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-2xl sm:text-3xl shadow-inner select-none frame-cyber';
+        el.p2RoleBadge.innerText = 'AI BOT';
+      } else {
+        el.p2RoleBadge.innerText = State.isHost ? 'PLAYER 2' : 'HOST';
+      }
+
+      el.modalMatchOver.classList.add('hidden');
+      el.historyTableBody.innerHTML = '';
+      el.historyRoundCount.innerText = '0';
+
+      renderWinNodes();
+      setView('arena');
+      startNewRound();
+    }
+
+    function syncGameFormatUI() {
+      const isRpsls = State.variant === 'rpsls';
+      el.btnMoveLizard.classList.toggle('hidden', !isRpsls);
+      el.btnMoveSpock.classList.toggle('hidden', !isRpsls);
+
+      // Adjust grid columns for mobile
+      const moveGrid = document.getElementById('moves-button-grid');
+      if (moveGrid) {
+        if (isRpsls) {
+          moveGrid.className = 'grid grid-cols-5 gap-1.5 sm:gap-3';
+        } else {
+          moveGrid.className = 'grid grid-cols-3 gap-2 sm:gap-4';
+        }
+      }
+
+      if (State.matchTarget === 0) {
+        State.requiredWins = Infinity;
+      } else if (State.matchTarget === 1) {
+        State.requiredWins = 1;
+      } else {
+        State.requiredWins = Math.ceil(State.matchTarget / 2);
+      }
+    }
+
+    function startNewRound() {
+      State.myChoice = null;
+      State.mySalt = null;
+      State.myCommitHash = null;
+      State.oppCommitHash = null;
+      State.oppChoice = null;
+      State.oppSalt = null;
+      State.roundResolved = false;
+
+      el.p1ReadyIndicator.classList.add('hidden');
+      el.p2ReadyIndicator.classList.add('hidden');
+      el.arenaRoundNumber.innerText = `ROUND ${State.roundNumber}`;
+      el.stageStatusBanner.innerText = '⚡ Lock in your move below!';
+      
+      el.stageIdle.classList.remove('hidden');
+      el.stageCountdown.classList.add('hidden');
+      el.stageReveal.classList.add('hidden');
+
+      el.moveButtons.forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-40', 'border-indigo-500', 'bg-indigo-500/20', 'scale-95');
+      });
+
+      renderWinNodes();
+      startRoundTimer();
+
+      if (State.isAI) {
+        setTimeout(async () => {
+          const aiChoice = State.aiBot.pickMove();
+          const aiSalt = CryptoCommitEngine.generateSalt();
+          const aiHash = await CryptoCommitEngine.computeHash(aiChoice, aiSalt, State.roundNumber);
+          
+          State.oppCommitHash = aiHash;
+          State.oppChoice = aiChoice;
+          State.oppSalt = aiSalt;
+          el.p2ReadyIndicator.classList.remove('hidden');
+
+          if (State.myChoice && State.myCommitHash) {
+            revealMove();
+          }
+        }, 500 + Math.random() * 600);
+      }
+    }
+
+    function startRoundTimer() {
+      clearInterval(State.timerInterval);
+      State.timeLeft = State.roundTimerSeconds;
+      el.timerSeconds.innerText = `${State.timeLeft}s`;
+      el.timerSeconds.className = 'text-theme-muted font-black';
+
+      State.timerInterval = setInterval(() => {
+        State.timeLeft--;
+        el.timerSeconds.innerText = `${State.timeLeft}s`;
+
+        if (State.timeLeft <= 3 && State.timeLeft > 0) {
+          sound.playHeartThump();
+          triggerHaptic(20);
+          el.timerSeconds.className = 'text-rose-500 font-black animate-pulse';
+        }
+
+        if (State.timeLeft <= 0) {
+          clearInterval(State.timerInterval);
+          if (!State.myChoice) {
+            const availableMoves = State.variant === 'rpsls' 
+              ? ['rock', 'paper', 'scissors', 'lizard', 'spock'] 
+              : ['rock', 'paper', 'scissors'];
+            const randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+            showAlert('Time up! Auto-selected ' + randomMove.toUpperCase(), 'warning');
+            selectMove(randomMove);
+          }
+        }
+      }, 1000);
+    }
+
+    /* =======================================================
+     * 12. MOVE COMMIT & REVEAL PIPELINE
+     * ======================================================= */
+    async function selectMove(moveKey) {
+      if (State.myChoice || State.roundResolved) return;
+
+      sound.playLockMove();
+      triggerHaptic(30);
+      State.myChoice = moveKey;
+      State.mySalt = CryptoCommitEngine.generateSalt();
+
+      el.moveButtons.forEach(btn => {
+        if (btn.dataset.move === moveKey) {
+          btn.classList.add('border-indigo-500', 'bg-indigo-500/20');
+        } else {
+          btn.classList.add('opacity-40', 'scale-95');
+        }
+        btn.disabled = true;
+      });
+
+      State.myCommitHash = await CryptoCommitEngine.computeHash(State.myChoice, State.mySalt, State.roundNumber);
+      el.p1ReadyIndicator.classList.remove('hidden');
+
+      if (!State.isAI) {
+        sendPacket({
+          type: 'COMMIT',
+          round: State.roundNumber,
+          hash: State.myCommitHash
+        });
+      }
+
+      if (State.oppCommitHash) {
+        revealMove();
+      } else {
+        el.stageStatusBanner.innerText = `🔒 Locked in ${MOVE_DATA[moveKey].name}! Waiting for opponent...`;
+      }
+    }
+
+    function revealMove() {
+      clearInterval(State.timerInterval);
+
+      if (!State.isAI) {
+        sendPacket({
+          type: 'REVEAL',
+          round: State.roundNumber,
+          choice: State.myChoice,
+          salt: State.mySalt
+        });
+      }
+
+      if (State.oppChoice && State.oppSalt) {
+        verifyAndResolveRound();
+      }
+    }
+
+    async function verifyAndResolveRound() {
+      if (State.roundResolved) return;
+      State.roundResolved = true;
+
+      const isValid = await CryptoCommitEngine.verifyReveal(
+        State.oppChoice,
+        State.oppSalt,
+        State.roundNumber,
+        State.oppCommitHash
+      );
+
+      if (!isValid) {
+        showAlert('⚠️ ANTI-CHEAT ALERT: Opponent hash mismatch detected! Round aborted.', 'error', 8000);
+        return;
+      }
+
+      el.stageIdle.classList.add('hidden');
+      el.stageCountdown.classList.remove('hidden');
+
+      let count = 3;
+      el.countdownNumber.innerText = count;
+      sound.playHeartThump();
+      triggerHaptic(25);
+
+      const countdownInt = setInterval(() => {
+        count--;
+        if (count > 0) {
+          el.countdownNumber.innerText = count;
+          sound.playHeartThump();
+          triggerHaptic(25);
+        } else {
+          clearInterval(countdownInt);
+          
+          el.clashStage.classList.add('animate-screen-shake');
+          setTimeout(() => el.clashStage.classList.remove('animate-screen-shake'), 400);
+
+          sound.playClash();
+          triggerHaptic(60);
+          displayRoundOutcome();
+        }
+      }, 450);
+    }
+
+    function displayRoundOutcome() {
+      el.stageCountdown.classList.add('hidden');
+      el.stageReveal.classList.remove('hidden');
+
+      const p1MoveObj = MOVE_DATA[State.myChoice];
+      const p2MoveObj = MOVE_DATA[State.oppChoice];
+
+      el.revealCardP1.innerText = p1MoveObj.icon;
+      el.revealLabelP1.innerText = p1MoveObj.name;
+      el.revealCardP2.innerText = p2MoveObj.icon;
+      el.revealLabelP2.innerText = p2MoveObj.name;
+
+      const outcome = resolveRound(State.myChoice, State.oppChoice);
+      const isP1Win = outcome.winner === 1;
+      const isP2Win = outcome.winner === 2;
+
+      if (isP1Win) {
+        State.p1Score++;
+        player.addRoundWin(State.myChoice);
+        sound.playWinRound();
+        triggerHaptic([40, 60, 40]);
+        
+        el.roundOutcomeBadge.innerText = 'YOU SCORED! 🏆';
+        el.roundOutcomeBadge.className = 'px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600 text-white font-display font-black text-xs sm:text-lg shadow-glow-emerald uppercase tracking-wider animate-bounce';
+      } else if (isP2Win) {
+        State.p2Score++;
+        player.addRoundLoss();
+        sound.playLoseRound();
+        triggerHaptic(80);
+
+        el.roundOutcomeBadge.innerText = 'OPPONENT SCORED! 💀';
+        el.roundOutcomeBadge.className = 'px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-rose-600 text-white font-display font-black text-xs sm:text-lg shadow-glow-rose uppercase tracking-wider animate-bounce';
+      } else {
+        sound.playTieRound();
+        triggerHaptic(30);
+        el.roundOutcomeBadge.innerText = 'ROUND DRAW! ⚔️';
+        el.roundOutcomeBadge.className = 'px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-amber-600 text-white font-display font-black text-xs sm:text-lg shadow-glow-amber uppercase tracking-wider animate-bounce';
+      }
+
+      el.roundReasonText.innerText = outcome.reason;
+      renderWinNodes();
+
+      if (State.isAI && State.aiBot) {
+        State.aiBot.recordRound(State.myChoice, State.oppChoice, outcome.winner);
+      }
+
+      recordRoundHistory(State.roundNumber, State.myChoice, State.oppChoice, outcome.winner, outcome.reason);
+
+      if (State.p1Score >= State.requiredWins || State.p2Score >= State.requiredWins) {
+        setTimeout(handleMatchOver, 1800);
+      } else {
+        let nextTimer = 3;
+        el.autoNextIndicator.innerText = `Next in ${nextTimer}s...`;
+        
+        const nextInt = setInterval(() => {
+          nextTimer--;
+          if (nextTimer > 0) {
+            el.autoNextIndicator.innerText = `Next in ${nextTimer}s...`;
+          } else {
+            clearInterval(nextInt);
+            advanceToNextRound();
+          }
+        }, 1000);
+
+        el.btnNextRoundNow.onclick = () => {
+          clearInterval(nextInt);
+          advanceToNextRound();
+        };
+      }
+    }
+
+    function advanceToNextRound() {
+      State.roundNumber++;
+      if (!State.isAI) {
+        sendPacket({ type: 'ADVANCE_ROUND', round: State.roundNumber });
+      }
+      startNewRound();
+    }
+
+    function recordRoundHistory(roundNum, p1Move, p2Move, winner, reason) {
+      State.roundHistory.push({ roundNum, p1Move, p2Move, winner, reason });
+      el.historyRoundCount.innerText = State.roundHistory.length;
+
+      const row = document.createElement('tr');
+      const winnerLabel = winner === 1 ? '<span class="text-emerald-400 font-bold">You</span>' :
+                          winner === 2 ? '<span class="text-rose-400 font-bold">Opponent</span>' :
+                          '<span class="text-amber-400">Tie</span>';
+
+      row.innerHTML = `
+        <td class="py-1.5 px-2 font-bold text-theme-ink">#${roundNum}</td>
+        <td class="py-1.5 px-2">${MOVE_DATA[p1Move].icon} ${MOVE_DATA[p1Move].name}</td>
+        <td class="py-1.5 px-2">${MOVE_DATA[p2Move].icon} ${MOVE_DATA[p2Move].name}</td>
+        <td class="py-1.5 px-2">${winnerLabel}</td>
+        <td class="py-1.5 px-2 text-[9px] text-emerald-400 font-mono">🛡️ Verified</td>
+      `;
+      el.historyTableBody.prepend(row);
+    }
+
+    /* =======================================================
+     * 13. MATCH OVER & REWARDS
+     * ======================================================= */
+    function handleMatchOver() {
+      const isWinner = State.p1Score >= State.requiredWins;
+      
+      el.modalMatchOver.classList.remove('hidden');
+      el.rematchStatusBadge.classList.add('hidden');
+      State.myRematchReady = false;
+      State.oppRematchReady = false;
+      el.rematchBtnText.innerText = 'Play Again / Rematch';
+
+      el.statTotalRounds.innerText = State.roundHistory.length;
+      el.statFinalScore.innerText = `${State.p1Score} - ${State.p2Score}`;
+      const winRate = Math.round((State.p1Score / Math.max(1, State.roundHistory.length)) * 100);
+      el.statWinRate.innerText = `${winRate}%`;
+
+      player.addMatchResult(isWinner, State.isAI, State.p2Score);
+
+      if (isWinner) {
+        sound.playMatchVictory();
+        triggerHaptic([60, 80, 100, 150]);
+        el.matchOverTitle.innerText = 'VICTORY! 🏆';
+        el.matchOverTitle.className = 'text-2xl sm:text-3xl font-display font-black text-emerald-400 tracking-tight';
+        el.matchOverSubtitle.innerText = `You dominated the arena ${State.p1Score} - ${State.p2Score}!`;
+        el.matchOverIcon.innerText = '👑';
+        el.matchOverIcon.className = 'relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-emerald';
+        el.matchXpGain.innerText = '+250 XP';
+        el.matchEloGain.innerText = '+28 MMR';
+
+        if (window.confetti) {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
+      } else {
+        sound.playMatchDefeat();
+        triggerHaptic(100);
+        el.matchOverTitle.innerText = 'DEFEAT 💀';
+        el.matchOverTitle.className = 'text-2xl sm:text-3xl font-display font-black text-rose-400 tracking-tight';
+        el.matchOverSubtitle.innerText = `Opponent took the match ${State.p2Score} - ${State.p1Score}.`;
+        el.matchOverIcon.innerText = '💀';
+        el.matchOverIcon.className = 'relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-rose';
+        el.matchXpGain.innerText = '+30 XP';
+        el.matchEloGain.innerText = '-20 MMR';
+      }
+    }
+
+    function requestRematch() {
+      sound.playTick();
+      triggerHaptic(30);
+      State.myRematchReady = true;
+      el.rematchBtnText.innerText = 'Waiting for Opponent...';
+
+      if (!State.isAI) {
+        sendPacket({ type: 'REMATCH_REQUEST' });
+      } else {
+        setTimeout(() => {
+          State.oppRematchReady = true;
+          startNewMatch();
+        }, 500);
+      }
+
+      if (State.oppRematchReady) {
+        startNewMatch();
+      }
+    }
+
+    function startNewMatch() {
+      el.modalMatchOver.classList.add('hidden');
+      startArenaMatch();
+    }
+
+    /* =======================================================
+     * 14. SOCIAL TAUNTS & FLOATING EMOJIS
+     * ======================================================= */
+    function triggerFloatingEmoji(emoji, broadcast = true) {
+      sound.playTaunt();
+      triggerHaptic(15);
+
+      const elEmoji = document.createElement('div');
+      elEmoji.className = 'floating-emoji';
+      elEmoji.innerText = emoji;
+
+      const x = 15 + Math.random() * 70;
+      elEmoji.style.left = `${x}%`;
+      elEmoji.style.bottom = '120px';
+
+      el.tauntsOverlay.appendChild(elEmoji);
+
+      setTimeout(() => elEmoji.remove(), 2200);
+
+      if (broadcast && !State.isAI) {
+        sendPacket({ type: 'TAUNT', emoji });
+      }
+    }
+
+    function sendQuickChat(msg) {
+      sound.playTaunt();
+      triggerHaptic(20);
+      showAlert(`You: "${msg}"`, 'info', 2500);
+      if (!State.isAI) sendPacket({ type: 'QUICK_CHAT', msg });
+    }
+
+    function showOpponentChatBubble(msg) {
+      sound.playTaunt();
+      triggerHaptic(25);
+      showAlert(`${el.p2NameDisplay.innerText}: "${msg}"`, 'info', 3500);
+    }
+
+    /* =======================================================
+     * 15. PROFILE CUSTOMIZER & TROPHY HALL
+     * ======================================================= */
+    function openProfileCustomizer() {
+      sound.playTick();
+      triggerHaptic(20);
+      el.customizerNameInput.value = player.name;
+      el.selectPlayerTitle.value = player.title;
+
+      el.avatarPickerGrid.innerHTML = '';
+      ALL_AVATARS.forEach(av => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded-xl border text-xl sm:text-2xl hover:scale-110 active:scale-95 transition-transform ${player.avatar === av ? 'border-indigo-500 bg-indigo-500/20' : 'border-theme-line bg-theme-surface-alt'}`;
+        btn.innerText = av;
+        btn.addEventListener('click', () => {
+          player.avatar = av;
+          openProfileCustomizer();
+        });
+        el.avatarPickerGrid.appendChild(btn);
+      });
+
+      el.framePickerGrid.innerHTML = '';
+      ALL_FRAMES.forEach(fr => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded-xl border text-center text-xs transition-all active:scale-95 ${player.frame === fr.id ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400' : 'border-theme-line bg-theme-surface-alt text-theme-muted'}`;
+        btn.innerText = fr.name;
+        btn.addEventListener('click', () => {
+          player.frame = fr.id;
+          openProfileCustomizer();
+        });
+        el.framePickerGrid.appendChild(btn);
+      });
+
+      el.modalProfileCustomizer.classList.remove('hidden');
+    }
+
+    function saveProfile() {
+      sound.playTick();
+      triggerHaptic(30);
+      const newName = el.customizerNameInput.value.trim();
+      if (newName) player.name = newName;
+      player.title = el.selectPlayerTitle.value;
+      player.save();
+      player.renderPassport();
+      el.modalProfileCustomizer.classList.add('hidden');
+      showAlert('Battle Persona saved!', 'info', 2000);
+    }
+
+    function openTrophyHall() {
+      sound.playTick();
+      triggerHaptic(20);
+      const rank = player.getRankTier();
+      document.getElementById('trophy-modal-rank-title').innerText = rank.name;
+      document.getElementById('trophy-modal-elo').innerText = `${player.elo.toLocaleString()} MMR`;
+
+      el.trophiesListContainer.innerHTML = '';
+      ACHIEVEMENTS.forEach(ach => {
+        const isUnlocked = player.unlocked.includes(ach.id);
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border flex items-center gap-2.5 transition-all ${
+          isUnlocked 
+            ? 'bg-amber-500/10 border-amber-500/30 text-theme-ink' 
+            : 'bg-theme-surface-alt/40 border-theme-line opacity-50'
+        }`;
+
+        card.innerHTML = `
+          <div class="w-9 h-9 rounded-xl ${isUnlocked ? 'bg-amber-500/20 text-amber-400 shadow-glow-amber' : 'bg-stone-800 text-stone-500'} flex items-center justify-center text-lg shrink-0">
+            ${ach.icon}
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-display font-bold text-xs ${isUnlocked ? 'text-theme-ink' : 'text-theme-muted'}">${ach.name}</span>
+              ${isUnlocked ? '<span class="text-[8px] px-1.5 py-0.2 rounded bg-amber-500 text-black font-black font-mono">UNLOCKED</span>' : '<span class="text-[8px] font-mono text-theme-muted">LOCKED</span>'}
+            </div>
+            <p class="text-[10px] text-theme-muted leading-tight mt-0.5">${ach.desc}</p>
+          </div>
+        `;
+        el.trophiesListContainer.appendChild(card);
+      });
+
+      el.modalTrophies.classList.remove('hidden');
+    }
+
+    /* =======================================================
+     * 16. MANUAL WEBRTC SDP RELAY
+     * ======================================================= */
+    let manualPeerConnection = null;
+    let manualDataChannel = null;
+
+    function openManualSignaling() {
+      el.modalManualSignaling.classList.remove('hidden');
+    }
+
+    async function generateManualOffer() {
+      manualPeerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      manualDataChannel = manualPeerConnection.createDataChannel('gameChannel');
+      setupManualDataChannel(manualDataChannel);
+
+      const offer = await manualPeerConnection.createOffer();
+      await manualPeerConnection.setLocalDescription(offer);
+
+      manualPeerConnection.onicecandidate = () => {
+        document.getElementById('manual-offer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+      };
+      document.getElementById('manual-offer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+    }
+
+    async function acceptManualAnswer() {
+      const answerStr = document.getElementById('manual-answer-input').value.trim();
+      if (!answerStr) return showAlert('Paste answer SDP first', 'warning');
+      try {
+        const answer = JSON.parse(answerStr);
+        await manualPeerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        showAlert('Manual connection established!', 'info');
+      } catch (e) {
+        showAlert('Invalid SDP format: ' + e.message, 'error');
+      }
+    }
+
+    async function generateManualAnswer() {
+      const offerStr = document.getElementById('manual-offer-input').value.trim();
+      if (!offerStr) return showAlert('Paste offer SDP first', 'warning');
+
+      try {
+        const offer = JSON.parse(offerStr);
+        manualPeerConnection = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        manualPeerConnection.ondatachannel = (e) => setupManualDataChannel(e.channel);
+
+        await manualPeerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await manualPeerConnection.createAnswer();
+        await manualPeerConnection.setLocalDescription(answer);
+
+        manualPeerConnection.onicecandidate = () => {
+          document.getElementById('manual-answer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+        };
+        document.getElementById('manual-answer-output').value = JSON.stringify(manualPeerConnection.localDescription);
+      } catch (e) {
+        showAlert('Invalid offer SDP: ' + e.message, 'error');
+      }
+    }
+
+    function setupManualDataChannel(dc) {
+      State.conn = {
+        open: true,
+        send: (pkg) => dc.send(JSON.stringify(pkg))
+      };
+
+      dc.onopen = () => {
+        el.modalManualSignaling.classList.add('hidden');
+        State.roomCode = 'MANUAL';
+        State.isAI = false;
+        startArenaMatch();
+      };
+
+      dc.onmessage = (e) => {
+        try {
+          handleIncomingPacket(JSON.parse(e.data));
+        } catch (err) {}
+      };
+    }
+
+    /* =======================================================
+     * 17. EVENT LISTENERS & INITIALIZATION
+     * ======================================================= */
+    function returnToLobby() {
+      clearInterval(State.timerInterval);
+      clearInterval(State.pingInterval);
+      if (State.peer) {
+        State.peer.destroy();
+        State.peer = null;
+      }
+      State.conn = null;
+      updateHeaderStatus('idle', 'Lobby Idle');
+      player.renderPassport();
+      setView('lobby');
+    }
+
+    // Profile & Trophies
+    el.btnOpenProfileCustomizer.addEventListener('click', openProfileCustomizer);
+    el.btnCloseProfile.addEventListener('click', () => el.modalProfileCustomizer.classList.add('hidden'));
+    el.btnSaveProfile.addEventListener('click', saveProfile);
+
+    el.btnOpenTrophies.addEventListener('click', openTrophyHall);
+    el.btnCloseTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+    el.btnAckTrophies.addEventListener('click', () => el.modalTrophies.classList.add('hidden'));
+
+    // Rule toggles
+    el.toggleRuleClassic.addEventListener('click', () => {
+      sound.playTick();
+      triggerHaptic(15);
+      State.variant = 'classic';
+      el.toggleRuleClassic.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-xs transition-colors text-[11px] sm:text-xs';
+      el.toggleRuleRpsls.className = 'px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink transition-colors text-[11px] sm:text-xs';
+    });
+    el.toggleRuleRpsls.addEventListener('click', () => {
+      sound.playTick();
+      triggerHaptic(15);
+      State.variant = 'rpsls';
+      el.toggleRuleRpsls.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-xs transition-colors text-[11px] sm:text-xs';
+      el.toggleRuleClassic.className = 'px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink transition-colors text-[11px] sm:text-xs';
+    });
+
+    // Blitz mode toggle
+    el.btnToggleBlitz.addEventListener('click', () => {
+      sound.playTick();
+      triggerHaptic(20);
+      State.isBlitz = !State.isBlitz;
+      el.blitzStatusText.innerText = State.isBlitz ? '5s ON' : 'OFF';
+      el.blitzStatusText.className = State.isBlitz ? 'text-amber-400 font-bold animate-pulse' : 'text-theme-muted';
+      el.btnToggleBlitz.className = State.isBlitz 
+        ? 'px-2.5 py-1.5 rounded-xl bg-amber-500/10 border-amber-500/40 border text-xs font-mono font-bold text-amber-400 flex items-center gap-1 transition-colors active:scale-95'
+        : 'px-2.5 py-1.5 rounded-xl bg-theme-surface-alt border-theme-line border text-xs font-mono font-bold text-theme-muted flex items-center gap-1 transition-colors active:scale-95';
+    });
+
+    // Format selection
+    el.selectMatchFormat.addEventListener('change', (e) => {
+      State.matchTarget = parseInt(e.target.value, 10);
+    });
+
+    // Host & Join
+    el.btnCreateRoom.addEventListener('click', hostOnlineRoom);
+    el.btnJoinRoom.addEventListener('click', () => joinOnlineRoom(el.inputJoinCode.value));
+    el.inputJoinCode.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') joinOnlineRoom(el.inputJoinCode.value);
+    });
+
+    // AI Mode
+    el.btnStartAI.addEventListener('click', () => {
+      sound.playTick();
+      triggerHaptic(25);
+      State.isAI = true;
+      State.roomCode = 'AI-BOT';
+      updateHeaderStatus('connected', 'Single-Player (vs AI)');
+      startArenaMatch();
+    });
+
+    // Cancel & Leave
+    el.btnCancelWaiting.addEventListener('click', returnToLobby);
+    el.btnLeaveMatch.addEventListener('click', () => {
+      if (confirm('Abandon current match and return to lobby?')) {
+        returnToLobby();
+      }
+    });
+    el.btnModalExitLobby.addEventListener('click', returnToLobby);
+    el.btnRequestRematch.addEventListener('click', requestRematch);
+
+    // Copy Code & Link
+    el.btnCopyCode.addEventListener('click', () => {
+      navigator.clipboard.writeText(State.roomCode);
+      el.btnCopyCode.innerText = 'Copied! ✓';
+      setTimeout(() => { el.btnCopyCode.innerText = 'Copy'; }, 2000);
+    });
+    el.btnCopyLink.addEventListener('click', () => {
+      navigator.clipboard.writeText(el.displayRoomLink.value);
+      el.btnCopyLink.innerText = 'Copied! ✓';
+      setTimeout(() => { el.btnCopyLink.innerText = 'Copy Link'; }, 2000);
+    });
+    el.roomCodeBadge.addEventListener('click', () => {
+      if (State.roomCode) {
+        navigator.clipboard.writeText(State.roomCode);
+        showAlert(`Room Code "${State.roomCode}" copied!`, 'info', 2000);
+      }
+    });
+
+    // QR Code
+    el.btnToggleQr.addEventListener('click', () => {
+      const isHidden = el.qrContainer.classList.toggle('hidden');
+      document.getElementById('qr-arrow').innerText = isHidden ? '▼' : '▲';
+    });
+
+    // Move Selection Clicks
+    el.moveButtons.forEach(btn => {
+      btn.addEventListener('click', () => selectMove(btn.dataset.move));
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (State.mode !== 'arena') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const key = e.key.toLowerCase();
+      if (key === '1' || key === 'r') selectMove('rock');
+      else if (key === '2' || key === 'p') selectMove('paper');
+      else if (key === '3' || key === 's') selectMove('scissors');
+      else if ((key === '4' || key === 'l') && State.variant === 'rpsls') selectMove('lizard');
+      else if ((key === '5' || key === 'k') && State.variant === 'rpsls') selectMove('spock');
+    });
+
+    // Social Taunts
+    document.querySelectorAll('.btn-taunt').forEach(btn => {
+      btn.addEventListener('click', () => triggerFloatingEmoji(btn.dataset.emoji, true));
+    });
+    document.querySelectorAll('.btn-quick-chat').forEach(btn => {
+      btn.addEventListener('click', () => sendQuickChat(btn.dataset.msg));
+    });
+
+    // History Toggle
+    el.btnToggleHistory.addEventListener('click', () => {
+      const isHidden = el.historyDrawer.classList.toggle('hidden');
+      document.getElementById('history-arrow').innerText = isHidden ? '▼' : '▲';
+    });
+
+    // Rules
+    el.btnRules.addEventListener('click', () => el.modalRules.classList.remove('hidden'));
+    el.btnCloseRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+    el.btnAckRules.addEventListener('click', () => el.modalRules.classList.add('hidden'));
+
+    // Manual Signaling
+    el.btnOpenManualSignaling.addEventListener('click', openManualSignaling);
+    el.btnCloseManualSignaling.addEventListener('click', () => el.modalManualSignaling.classList.add('hidden'));
+    document.getElementById('tab-manual-host').addEventListener('click', () => {
+      document.getElementById('manual-host-section').classList.remove('hidden');
+      document.getElementById('manual-join-section').classList.add('hidden');
+      document.getElementById('tab-manual-host').className = 'flex-1 py-1.5 rounded-lg bg-indigo-600 text-white';
+      document.getElementById('tab-manual-join').className = 'flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink';
+    });
+    document.getElementById('tab-manual-join').addEventListener('click', () => {
+      document.getElementById('manual-host-section').classList.add('hidden');
+      document.getElementById('manual-join-section').classList.remove('hidden');
+      document.getElementById('tab-manual-join').className = 'flex-1 py-1.5 rounded-lg bg-purple-600 text-white';
+      document.getElementById('tab-manual-host').className = 'flex-1 py-1.5 rounded-lg text-theme-muted hover:text-theme-ink';
+    });
+    document.getElementById('btn-generate-offer').addEventListener('click', generateManualOffer);
+    document.getElementById('btn-accept-answer').addEventListener('click', acceptManualAnswer);
+    document.getElementById('btn-generate-answer').addEventListener('click', generateManualAnswer);
+
+    // Audio & Theme Toggles
+    el.btnSoundToggle.addEventListener('click', () => {
+      const isMuted = sound.toggleMute();
+      el.soundIcon.innerText = isMuted ? '🔇' : '🔊';
+    });
+    el.soundIcon.innerText = sound.isMuted ? '🔇' : '🔊';
+
+    el.btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      el.themeIcon.innerText = isDark ? '🌙' : '☀️';
+      localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+    });
+
+    el.btnAlertClose.addEventListener('click', () => el.globalAlertBanner.classList.add('hidden'));
+
+    // Init App
+    window.addEventListener('DOMContentLoaded', () => {
+      player.renderPassport();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room') || (window.location.hash ? window.location.hash.substring(1) : null);
+      if (roomParam) {
+        el.inputJoinCode.value = roomParam;
+        joinOnlineRoom(roomParam);
+      }
+    });
+  </script>
+</body>
+</html>

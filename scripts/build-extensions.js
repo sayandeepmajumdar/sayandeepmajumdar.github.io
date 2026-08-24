@@ -20,6 +20,7 @@ const DIST_EXT = path.join(ROOT_DIR, 'dist-extension');
 const DIST_CHROME = path.join(ROOT_DIR, 'dist-extension-chrome');
 const DIST_FIREFOX = path.join(ROOT_DIR, 'dist-extension-firefox');
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
+const DIST_PACKAGES = path.join(ROOT_DIR, 'dist-packages');
 const VENDOR_CACHE = path.join(ROOT_DIR, '.vendor-cache');
 
 // Directories to exclude from copying into the extension package
@@ -171,9 +172,34 @@ async function processHtmlForManifestV3(distPath, vendorFilesMap) {
       }
 
       if (vendorInfo) {
-        // Copy to dist _vendor
         fs.writeFileSync(path.join(vendorDir, vendorInfo.fileName), vendorInfo.content, 'utf8');
         const localTag = `<script src="../_vendor/${vendorInfo.fileName}"></script>`;
+        html = html.replace(fullTag, localTag);
+      }
+    }
+
+    // 2. Download & Replace Remote CSS Stylesheets
+    const remoteCssRegex = /<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>/gi;
+    const remoteCssMatches = [...html.matchAll(remoteCssRegex)];
+
+    for (const match of remoteCssMatches) {
+      const fullTag = match[0];
+      const url = match[1];
+
+      // Skip Google Fonts in CSS tags as fonts are optional
+      if (url.includes('fonts.googleapis.com')) continue;
+
+      let vendorInfo = vendorFilesMap.get(url);
+      if (!vendorInfo) {
+        vendorInfo = await fetchVendorScript(url);
+        if (vendorInfo) {
+          vendorFilesMap.set(url, vendorInfo);
+        }
+      }
+
+      if (vendorInfo) {
+        fs.writeFileSync(path.join(vendorDir, vendorInfo.fileName), vendorInfo.content, 'utf8');
+        const localTag = fullTag.replace(url, `../_vendor/${vendorInfo.fileName}`);
         html = html.replace(fullTag, localTag);
       }
     }
@@ -283,18 +309,33 @@ async function main() {
   const shouldZip = process.argv.includes('--zip');
   if (shouldZip) {
     console.log('🗜️ Step 8: Packaging ZIP distributions for Web Store & AMO...');
+    fs.mkdirSync(DIST_PACKAGES, { recursive: true });
     fs.mkdirSync(DIST_DIR, { recursive: true });
 
-    const chromeZip = path.join(DIST_DIR, 'toolzy-chrome-extension.zip');
-    const firefoxZip = path.join(DIST_DIR, 'toolzy-firefox-extension.zip');
+    const chromeZip = path.join(DIST_PACKAGES, 'toolzy-chrome-extension.zip');
+    const firefoxZip = path.join(DIST_PACKAGES, 'toolzy-firefox-extension.zip');
+    const sourceZip = path.join(DIST_PACKAGES, 'toolzy-source-code.zip');
 
     createZip(DIST_CHROME, chromeZip);
     createZip(DIST_FIREFOX, firefoxZip);
 
+    if (fs.existsSync(sourceZip)) fs.unlinkSync(sourceZip);
+    execSync(
+      `cd "${ROOT_DIR}" && zip -r -q "${sourceZip}" . -x "node_modules/*" -x "dist/*" -x "dist-packages/*" -x "dist-extension/*" -x "dist-extension-chrome/*" -x "dist-extension-firefox/*" -x ".git/*" -x ".vendor-cache/*" -x ".gemini/*" -x ".claude/*"`,
+      { stdio: 'inherit' }
+    );
+
+    // Also copy to dist/ for convenience
+    fs.copyFileSync(chromeZip, path.join(DIST_DIR, 'toolzy-chrome-extension.zip'));
+    fs.copyFileSync(firefoxZip, path.join(DIST_DIR, 'toolzy-firefox-extension.zip'));
+    fs.copyFileSync(sourceZip, path.join(DIST_DIR, 'toolzy-source-code.zip'));
+
     const chromeSize = (fs.statSync(chromeZip).size / (1024 * 1024)).toFixed(2);
     const firefoxSize = (fs.statSync(firefoxZip).size / (1024 * 1024)).toFixed(2);
-    console.log(`   ✓ Chrome ZIP:  dist/toolzy-chrome-extension.zip (${chromeSize} MB)`);
-    console.log(`   ✓ Firefox ZIP: dist/toolzy-firefox-extension.zip (${firefoxSize} MB)`);
+    const sourceSize = (fs.statSync(sourceZip).size / (1024 * 1024)).toFixed(2);
+    console.log(`   ✓ Chrome ZIP:      dist-packages/toolzy-chrome-extension.zip (${chromeSize} MB)`);
+    console.log(`   ✓ Firefox ZIP:     dist-packages/toolzy-firefox-extension.zip (${firefoxSize} MB)`);
+    console.log(`   ✓ Source Code ZIP: dist-packages/toolzy-source-code.zip (${sourceSize} MB)`);
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
