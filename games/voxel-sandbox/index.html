@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Online Voxel Sandbox — ArcadeLab</title>
+  <meta name="description" content="ArcadeLab: Real-time, two-player Online 3D Voxel Sandbox powered by Three.js WebGL and WebRTC peer-to-peer networking. Features chunked face-culled meshing, seeded world generation, block diff sync, first-person physics, and 3D Steve avatars." />
+  <meta name="keywords" content="Online Minecraft, Voxel Sandbox, WebRTC Voxel, Three.js Voxel, P2P Minecraft, WebGL Voxel Game, Block Building, ArcadeLab" />
+
+  <!-- OpenGraph Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Online Voxel Sandbox — Real-Time WebRTC P2P Block World" />
+  <meta property="og:description" content="Explore and build together in a real-time 3D voxel sandbox over WebRTC with zero servers! Seeded terrain, chunk meshing, 15 blocks, hotbar, and 3D avatars." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/voxel-sandbox/" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              'surface-card': 'var(--color-surface-card)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              voxel: '#22c55e',
+              ore: '#38bdf8',
+            }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 35px -5px rgba(34, 197, 94, 0.65)',
+            'glow-cyan': '0 0 35px -5px rgba(6, 182, 212, 0.65)',
+            'glow-amber': '0 0 35px -5px rgba(245, 158, 11, 0.65)',
+            'voxel-card': '0 15px 35px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+            'hotbar-slot': 'inset 0 2px 4px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.2)',
+          },
+          animation: {
+            'pop-in': 'popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'float-up': 'floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            'arm-swing': 'armSwing 0.22s ease-in-out',
+          },
+          keyframes: {
+            popIn: {
+              '0%': { transform: 'scale(0.3) translateY(10px)', opacity: '0' },
+              '70%': { transform: 'scale(1.08) translateY(-2px)', opacity: '1' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7)', opacity: '1' },
+              '80%': { opacity: '0.9' },
+              '100%': { transform: 'translateY(-140px) scale(1.2)', opacity: '0' },
+            },
+            armSwing: {
+              '0%': { transform: 'rotate(0deg) translate(0, 0)' },
+              '50%': { transform: 'rotate(-25deg) translate(-8px, 12px)' },
+              '100%': { transform: 'rotate(0deg) translate(0, 0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <!-- Three.js 3D WebGL Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <!-- PeerJS for WebRTC Signaling & P2P DataChannels -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Achievements & Milestones -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- QRCode.js for Mobile QR Code scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #f4f6fb;
+      --color-surface: #ffffff;
+      --color-surface-alt: #edf1f8;
+      --color-surface-card: #ffffff;
+      --color-ink: #090e1a;
+      --color-muted: #5e6b82;
+      --color-line: #dbe2ef;
+      --color-accent: #22c55e;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #07090e;
+      --color-surface: #0e121b;
+      --color-surface-alt: #151a26;
+      --color-surface-card: #1b2131;
+      --color-ink: #f4f6fb;
+      --color-muted: #8b95a8;
+      --color-line: #222a3d;
+      --color-accent: #4ade80;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient Voxel Grid Background */
+    .bg-voxel-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(34, 197, 94, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(34, 197, 94, 0.04) 1px, transparent 1px);
+    }
+    html.dark .bg-voxel-grid {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(34, 197, 94, 0.15), transparent 70%),
+        linear-gradient(to right, rgba(34, 197, 94, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(34, 197, 94, 0.06) 1px, transparent 1px);
+    }
+
+    /* 3D Voxel Stage Container */
+    .webgl-stage-wrapper {
+      position: relative;
+      width: 100%;
+      height: 66vh;
+      min-height: 440px;
+      max-height: 740px;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      background-color: #030712;
+      box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8), inset 0 0 0 1px var(--color-line);
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: crosshair;
+    }
+
+    /* Minecraft Crosshair */
+    .crosshair-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+      z-index: 30;
+      mix-blend-mode: difference;
+    }
+    .crosshair-center::before, .crosshair-center::after {
+      content: '';
+      position: absolute;
+      background-color: white;
+    }
+    .crosshair-center::before {
+      top: 0; left: 8px; width: 2px; height: 18px;
+    }
+    .crosshair-center::after {
+      top: 8px; left: 0; width: 18px; height: 2px;
+    }
+
+    /* Minecraft Hotbar Slot */
+    .hotbar-slot {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    @media (min-width: 640px) {
+      .hotbar-slot { width: 50px; height: 50px; }
+    }
+    .hotbar-slot.active-slot {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.25);
+      transform: translateY(-4px) scale(1.08);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+    }
+    .hotbar-slot-num {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* First-Person Hand View */
+    #fp-hand-container {
+      position: absolute;
+      bottom: -10px;
+      right: 20px;
+      width: 140px;
+      height: 140px;
+      pointer-events: none;
+      z-index: 25;
+      transform-origin: bottom right;
+    }
+
+    /* Custom Touch Controls */
+    .touch-btn {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .touch-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Custom scrollbars */
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-400 bg-voxel-grid relative">
+
+  <!-- Floating Reaction Emojis Canvas / Overlay Layer -->
+  <div id="taunts-overlay" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 sm:h-16 border-b border-theme-line bg-theme-surface/90 backdrop-blur-lg px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <a href="/games/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity" title="Back to ArcadeLab">
+        <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-600 to-cyan-500 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-glow-emerald">
+          🧱
+        </span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1">
+            <span class="font-display font-black text-sm sm:text-lg tracking-tight leading-none bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
+              ArcadeLab
+            </span>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] sm:text-[9px] font-mono font-black uppercase">VOXEL SANDBOX</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted tracking-wider uppercase font-semibold hidden xs:inline">Three.js P2P Block World</span>
+        </div>
+      </a>
+
+      <!-- Direct P2P Status Pill -->
+      <div id="header-status-pill" class="hidden lg:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-xs font-mono">
+        <span id="header-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="header-status-text" class="text-theme-muted font-medium">World Idle</span>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Active Room Code Badge -->
+      <div id="room-code-badge" class="hidden items-center gap-1 px-2 sm:px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors" title="Click to copy Room Code">
+        <span class="hidden sm:inline">Room:</span>
+        <span id="room-code-badge-text">------</span>
+        <span class="text-[10px] opacity-70">📋</span>
+      </div>
+
+      <!-- Flight Mode Toggle Pill -->
+      <button id="btn-toggle-flight" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-theme-surface-alt hover:bg-theme-line border border-theme-line text-theme-ink font-mono text-xs font-bold flex items-center gap-1 transition-all" title="Toggle Creative Flight Mode">
+        <span>🕊️</span>
+        <span id="flight-mode-label" class="hidden sm:inline">Walk</span>
+      </button>
+
+      <!-- Trophy Hall Button -->
+      <button id="btn-open-trophies" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display font-bold text-xs flex items-center gap-1 transition-all" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Controls & Guide Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Controls & Voxel Engine Guide">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher (Dark / Light) -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Alert Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & WORLD CONFIG SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-4xl mx-auto w-full space-y-5 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Three.js WebGL • Chunk Face-Culling • Seeded World Gen • P2P Diff Sync</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black font-display tracking-tight text-theme-ink">
+          Online <span class="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">Voxel Sandbox</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-lg mx-auto leading-relaxed">
+          Explore and build together in a 3D block world directly over WebRTC! Seed-generated terrain, chunk-meshed voxels, hotbar palette, and 3D avatars with zero backend servers.
+        </p>
+      </div>
+
+      <!-- BIOME & SEED SELECTOR CARD -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 w-full">
+        
+        <!-- Biome Preset (7 cols) -->
+        <div class="sm:col-span-7 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
+          <h3 class="font-display font-black text-sm uppercase tracking-wider text-theme-ink flex items-center gap-2">
+            <span>🌲 World Biome Preset</span>
+          </h3>
+
+          <div id="biome-select-grid" class="grid grid-cols-3 gap-2">
+            <button type="button" class="biome-btn active-biome p-3 rounded-2xl border border-emerald-500 bg-emerald-500/15 text-left transition-all" data-biome="temperate">
+              <span class="text-xl">🌳</span>
+              <h4 class="font-display font-bold text-xs text-theme-ink mt-1">Oak Hills</h4>
+              <p class="text-[10px] text-theme-muted">Lush grass & trees</p>
+            </button>
+            <button type="button" class="biome-btn p-3 rounded-2xl border border-theme-line bg-theme-surface-alt hover:border-emerald-500/40 text-left transition-all" data-biome="desert">
+              <span class="text-xl">🏜️</span>
+              <h4 class="font-display font-bold text-xs text-theme-ink mt-1">Dune Oasis</h4>
+              <p class="text-[10px] text-theme-muted">Sand dunes & palms</p>
+            </button>
+            <button type="button" class="biome-btn p-3 rounded-2xl border border-theme-line bg-theme-surface-alt hover:border-emerald-500/40 text-left transition-all" data-biome="mountains">
+              <span class="text-xl">🏔️</span>
+              <h4 class="font-display font-bold text-xs text-theme-ink mt-1">Crag Peaks</h4>
+              <p class="text-[10px] text-theme-muted">Steep stone cliffs</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom World Seed (5 cols) -->
+        <div class="sm:col-span-5 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3 flex flex-col justify-between">
+          <div>
+            <h3 class="font-display font-black text-sm uppercase tracking-wider text-theme-ink flex items-center gap-2 mb-2">
+              <span>🎲 World Seed</span>
+            </h3>
+            <div class="flex items-center gap-2">
+              <input id="input-world-seed" type="text" value="1337" class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm text-theme-ink font-bold outline-none focus:border-emerald-500 transition-colors" />
+              <button id="btn-random-seed" type="button" class="px-3 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors" title="Generate Random Seed">
+                🎲 Random
+              </button>
+            </div>
+          </div>
+
+          <p class="text-[11px] font-mono text-theme-muted">
+            Bounded 64×64×32 chunked voxel world (131,072 voxels).
+          </p>
+        </div>
+
+      </div>
+
+      <!-- MATCHMAKING ACTION BUTTONS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        
+        <!-- CARD 1: Host Online Room -->
+        <div class="bg-theme-surface hover:border-emerald-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-emerald">
+              🌐
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Host Co-op Sandbox</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Generate a seeded block world and share a room code or direct link with a friend.
+            </p>
+          </div>
+
+          <button id="btn-create-room" type="button" class="mt-4 sm:mt-6 w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Create Voxel Grid</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- CARD 2: Join Existing Room -->
+        <div class="bg-theme-surface hover:border-cyan-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-cyan">
+              🔗
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Join Existing World</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Enter the room code from your partner to load the identical seed and build together.
+            </p>
+          </div>
+
+          <div class="mt-3 sm:mt-4 space-y-2">
+            <input id="input-join-code" type="text" placeholder="e.g. VOXEL-4821" class="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line text-sm font-mono uppercase tracking-widest text-theme-ink placeholder:text-theme-muted placeholder:normal-case placeholder:tracking-normal focus:border-cyan-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="w-full py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-cyan-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+              <span>Join Voxel World</span>
+              <span>⛏️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY MODES -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        <!-- Solo Creative Sandbox -->
+        <button id="btn-start-solo" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-amber-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            🔨
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Solo Creative Sandbox</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Explore & build offline with infinite blocks</p>
+          </div>
+        </button>
+
+        <!-- Manual SDP Relay -->
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-purple-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Manual SDP Relay</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Air-gapped text exchange connection</p>
+          </div>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-emerald-500/30 animate-pulse"></div>
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-emerald">
+          🧱
+        </div>
+      </div>
+
+      <h2 class="text-xl sm:text-3xl font-display font-black text-theme-ink">Waiting for Builder...</h2>
+      <p class="text-xs text-theme-muted mt-1 max-w-sm px-2">
+        Share the room code or QR code. The voxel world launches automatically when Player 2 connects!
+      </p>
+
+      <!-- Room Code Box -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 my-4 sm:my-5 space-y-3 sm:space-y-4 shadow-sm text-left">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Room Code</label>
+          <div class="flex items-center gap-2">
+            <div id="display-room-code" class="flex-1 px-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl sm:text-2xl tracking-widest text-emerald-400 text-center select-all">
+              ------
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1 active:scale-95" title="Copy Code">
+              <span>Copy</span>
+              <span id="copy-code-icon">📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Direct Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input id="display-room-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted select-all outline-none truncate" />
+            <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors active:scale-95">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Share Links -->
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+          <span class="text-theme-muted font-medium text-[11px]">Share via:</span>
+          <div class="flex items-center gap-1.5">
+            <a id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px] hover:bg-emerald-500/20 transition-colors">WhatsApp</a>
+            <a id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-semibold text-[11px] hover:bg-sky-500/20 transition-colors">Telegram</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 font-semibold text-[11px] hover:bg-cyan-500/20 transition-colors">X</a>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="pt-2 border-t border-theme-line flex flex-col items-center">
+          <button id="btn-toggle-qr" type="button" class="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1">
+            <span>📱 Show QR Code for Mobile</span>
+            <span id="qr-arrow">▼</span>
+          </button>
+          <div id="qr-container" class="hidden mt-2.5 p-3 bg-white rounded-xl shadow-lg border border-theme-line flex flex-col items-center">
+            <div id="qr-code-canvas-wrapper" class="w-36 h-36 flex items-center justify-center"></div>
+            <span class="text-[9px] text-stone-700 font-mono mt-1 font-semibold">Scan with camera to join</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="text-xs text-theme-muted hover:text-rose-400 font-semibold transition-colors">
+        ✕ Cancel & Return
+      </button>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: LIVE 3D VOXEL SANDBOX WORLD        -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col gap-3 w-full">
+      
+      <!-- TOP WORLD INFO BAR -->
+      <div class="flex items-center justify-between px-2 text-xs font-mono">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="px-3 py-1 rounded-xl bg-theme-surface border border-theme-line font-bold flex items-center gap-1 text-theme-ink">
+            <span class="text-theme-muted">POS</span>
+            <span id="hud-pos-text" class="text-emerald-400 font-black">X: 32, Y: 18, Z: 32</span>
+          </div>
+          <div class="px-3 py-1 rounded-xl bg-theme-surface border border-theme-line font-bold hidden sm:flex items-center gap-1 text-theme-ink">
+            <span class="text-theme-muted">CHUNKS</span>
+            <span id="hud-chunks-text" class="text-cyan-400 font-black">16 / 16</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Action Mode Toggle (Place vs Break) -->
+          <div class="flex items-center p-0.5 rounded-xl bg-theme-surface border border-theme-line">
+            <button id="btn-mode-place" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-black font-bold text-xs flex items-center gap-1 shadow-sm transition-all">
+              <span>🧱 Place</span>
+            </button>
+            <button id="btn-mode-break" type="button" class="px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink font-bold text-xs flex items-center gap-1 transition-all">
+              <span>⛏️ Break</span>
+            </button>
+          </div>
+
+          <div id="hud-mode-pill" class="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 text-[11px]">
+            CREATIVE
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN THREE.JS 3D VIEWPORT -->
+      <div id="threejs-container" class="webgl-stage-wrapper relative select-none">
+        
+        <!-- CENTER CROSSHAIR -->
+        <div class="crosshair-center"></div>
+
+        <!-- HELD ITEM DISPLAY (TOP-LEFT) -->
+        <div class="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur border border-white/15 text-white text-xs font-mono flex items-center gap-2 pointer-events-none shadow-lg">
+          <span id="held-item-icon" class="text-base">🌱</span>
+          <div>
+            <span class="text-[9px] text-stone-400 block uppercase">Held Block</span>
+            <strong id="held-item-name" class="text-emerald-400 font-bold">Grass Block</strong>
+          </div>
+        </div>
+
+        <!-- FIRST PERSON HAND/ITEM RENDER OVERLAY -->
+        <div id="fp-hand-container">
+          <canvas id="fp-hand-canvas" width="140" height="140" class="w-full h-full"></canvas>
+        </div>
+
+        <!-- POINTER LOCK CLICK PROMPT OVERLAY -->
+        <div id="pointer-lock-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center cursor-pointer">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl mb-3 shadow-glow-emerald">
+            🖱️
+          </div>
+          <h3 class="font-display font-black text-xl text-white">Click to Enter Voxel World</h3>
+          <p class="text-xs text-stone-300 mt-1 max-w-xs">
+            Left-Click / Tap = Break or Place • Right-Click = Place • 1-9 = Select Block • ESC = Release Mouse
+          </p>
+        </div>
+
+        <!-- MINECRAFT 9-SLOT HOTBAR OVERLAY -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 rounded-2xl bg-black/75 backdrop-blur-md border border-white/15 shadow-2xl">
+          <div class="hotbar-slot active-slot" data-slot="1" data-block="1" title="1: Grass Block">
+            <span class="hotbar-slot-num">1</span>
+            <span class="text-xl">🌱</span>
+          </div>
+          <div class="hotbar-slot" data-slot="2" data-block="2" title="2: Dirt Block">
+            <span class="hotbar-slot-num">2</span>
+            <span class="text-xl">🟫</span>
+          </div>
+          <div class="hotbar-slot" data-slot="3" data-block="3" title="3: Stone Block">
+            <span class="hotbar-slot-num">3</span>
+            <span class="text-xl">🪨</span>
+          </div>
+          <div class="hotbar-slot" data-slot="4" data-block="4" title="4: Cobblestone">
+            <span class="hotbar-slot-num">4</span>
+            <span class="text-xl">🧱</span>
+          </div>
+          <div class="hotbar-slot" data-slot="5" data-block="5" title="5: Oak Log">
+            <span class="hotbar-slot-num">5</span>
+            <span class="text-xl">🪵</span>
+          </div>
+          <div class="hotbar-slot" data-slot="6" data-block="6" title="6: Oak Leaves">
+            <span class="hotbar-slot-num">6</span>
+            <span class="text-xl">🍃</span>
+          </div>
+          <div class="hotbar-slot" data-slot="7" data-block="7" title="7: Wood Planks">
+            <span class="hotbar-slot-num">7</span>
+            <span class="text-xl">📦</span>
+          </div>
+          <div class="hotbar-slot" data-slot="8" data-block="12" title="8: Diamond Ore">
+            <span class="hotbar-slot-num">8</span>
+            <span class="text-xl">💎</span>
+          </div>
+          <div class="hotbar-slot" data-slot="9" data-block="11" title="9: Glowstone">
+            <span class="hotbar-slot-num">9</span>
+            <span class="text-xl">✨</span>
+          </div>
+        </div>
+
+        <!-- ON-SCREEN MOBILE TOUCH CONTROLS OVERLAY -->
+        <div id="mobile-touch-controls" class="sm:hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-3">
+          <!-- Top touch buttons -->
+          <div class="flex items-center justify-between pointer-events-auto">
+            <button id="touch-btn-break" class="touch-btn px-3 py-2 rounded-xl bg-rose-500/40 backdrop-blur border border-rose-500/50 text-rose-300 font-bold text-xs flex items-center gap-1 active:bg-rose-500">
+              <span>⛏️ Break</span>
+            </button>
+            <button id="touch-btn-place" class="touch-btn px-3 py-2 rounded-xl bg-emerald-500/40 backdrop-blur border border-emerald-500/50 text-emerald-300 font-bold text-xs flex items-center gap-1 active:bg-emerald-500">
+              <span>🧱 Place</span>
+            </button>
+          </div>
+
+          <!-- Bottom movement D-Pad -->
+          <div class="flex items-end justify-between pointer-events-auto">
+            <div class="grid grid-cols-3 gap-1">
+              <div></div>
+              <button id="touch-move-up" class="touch-btn w-12 h-12 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold text-lg flex items-center justify-center">▲</button>
+              <div></div>
+              <button id="touch-move-left" class="touch-btn w-12 h-12 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold text-lg flex items-center justify-center">◀</button>
+              <button id="touch-move-down" class="touch-btn w-12 h-12 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold text-lg flex items-center justify-center">▼</button>
+              <button id="touch-move-right" class="touch-btn w-12 h-12 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold text-lg flex items-center justify-center">▶</button>
+            </div>
+
+            <button id="touch-btn-jump" class="touch-btn w-14 h-14 rounded-2xl bg-cyan-500/40 backdrop-blur border border-cyan-500/50 text-cyan-300 font-bold text-sm flex items-center justify-center active:bg-cyan-500">
+              JUMP
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- IN-GAME SOCIAL & CONTROLS FOOTER -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        
+        <!-- Live Chat & Quick Taunts (8 cols) -->
+        <div class="md:col-span-8 bg-theme-surface border border-theme-line rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] font-mono text-theme-muted font-bold">Taunt:</span>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="⛏️">⛏️</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🧱">🧱</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🌲">🌲</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="💎">💎</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🔥">🔥</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🏆">🏆</button>
+          </div>
+
+          <form id="arena-chat-form" class="flex items-center gap-1 flex-1 max-w-xs">
+            <input id="arena-chat-input" type="text" placeholder="Type message..." maxlength="80" class="w-full px-2.5 py-1 rounded-xl bg-theme-surface-alt border border-theme-line text-xs text-theme-ink outline-none focus:border-emerald-500" />
+            <button type="submit" class="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors">Send</button>
+          </form>
+        </div>
+
+        <!-- Actions (4 cols) -->
+        <div class="md:col-span-4 flex items-center justify-end gap-2">
+          <button id="btn-save-world" type="button" class="px-3 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-line border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors flex items-center gap-1" title="Save World to Browser">
+            <span>💾 Save</span>
+          </button>
+          <button id="btn-leave-world" type="button" class="px-3 py-2 rounded-xl bg-theme-surface-alt hover:bg-rose-500/10 border border-theme-line hover:border-rose-500/40 text-xs font-mono font-bold text-rose-400 transition-colors">
+            🚪 Leave World
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <div>
+          <h3 class="font-display font-black text-lg text-theme-ink">Voxel Sandbox Trophy Hall</h3>
+          <p class="text-[11px] text-theme-muted font-mono">Unlock building and mining achievements</p>
+        </div>
+        <button id="btn-close-trophies" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div id="achievements-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- Loaded by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CONTROLS & GUIDE                    -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="font-display font-black text-lg text-theme-ink">Controls & Voxel Engine Guide</h3>
+        <button id="btn-close-rules" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-theme-muted leading-relaxed">
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1.5">🎮 Desktop Keyboard & Mouse</h4>
+          <div class="grid grid-cols-2 gap-2 font-mono text-[11px]">
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">WASD</kbd> Walk / Move</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">Mouse</kbd> Look Around (Pointer Lock)</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">Left Click</kbd> Break Block</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">Right Click</kbd> Place Selected Block</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">Space</kbd> Jump / Fly Up</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">Shift</kbd> Sneak / Fly Down</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">1 - 9</kbd> Select Hotbar Slot</div>
+            <div><kbd class="px-1.5 py-0.5 rounded bg-theme-surface border font-bold text-theme-ink">F</kbd> Toggle Flight Mode</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1">🧱 Chunk Meshing & Diff Sync</h4>
+          <ul class="list-disc pl-4 space-y-1 mt-1 font-mono text-[11px]">
+            <li><strong>Face-Culled Chunk Geometry</strong>: Only visible exposed block faces are generated, keeping draw calls minimal and rendering buttery at 60FPS.</li>
+            <li><strong>P2P Single-Block Diffs</strong>: World generation is 100% deterministic from the shared seed; block placements are broadcast as 4-byte diffs `{x,y,z,type}`.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MANUAL SDP RELAY                    -->
+  <!-- ========================================== -->
+  <div id="modal-manual-sdp" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-3 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-2">
+        <h3 class="font-display font-black text-lg text-theme-ink">Manual WebRTC SDP Relay</h3>
+        <button id="btn-close-manual-sdp" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-theme-muted">
+        Connect across restricted firewalls by exchanging raw SDP offer/answer text strings.
+      </p>
+
+      <div class="space-y-2">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Local SDP Offer / Answer</label>
+          <textarea id="manual-local-sdp" readonly rows="3" class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-muted select-all outline-none"></textarea>
+          <button id="btn-copy-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors">Copy Local SDP</button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Remote SDP (Paste from Partner)</label>
+          <textarea id="manual-remote-sdp" rows="3" placeholder="Paste remote SDP here..." class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-ink outline-none focus:border-emerald-500"></textarea>
+          <button id="btn-apply-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors">Connect via SDP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT: THREE.JS VOXEL ENGINE, MESHER & NETCODE     -->
+  <!-- ======================================================= -->
+  <script>
+    // ==========================================
+    // 1. VOXEL TYPES & TEXTURE ATLAS
+    // ==========================================
+    const WORLD_SIZE_X = 64;
+    const WORLD_SIZE_Z = 64;
+    const WORLD_SIZE_Y = 32;
+    const CHUNK_SIZE = 16; // 16x16x32 chunks (4x4 = 16 chunks)
+
+    const BLOCKS = {
+      AIR: 0,
+      GRASS: 1,
+      DIRT: 2,
+      STONE: 3,
+      COBBLESTONE: 4,
+      OAK_LOG: 5,
+      LEAVES: 6,
+      PLANKS: 7,
+      SAND: 8,
+      BRICK: 9,
+      GLASS: 10,
+      GLOWSTONE: 11,
+      DIAMOND_ORE: 12,
+      GOLD_ORE: 13,
+      TNT: 14,
+      WATER: 15
+    };
+
+    // Block Face Atlas Tile Mapping [Right(+X), Left(-X), Top(+Y), Bottom(-Y), Front(+Z), Back(-Z)]
+    // Atlas is 4x4 grid of 16 tiles (0 to 15)
+    const BLOCK_FACES = {
+      1: [1, 1, 0, 2, 1, 1],   // Grass (Side=1, Top=0, Bottom=2)
+      2: [2, 2, 2, 2, 2, 2],   // Dirt
+      3: [3, 3, 3, 3, 3, 3],   // Stone
+      4: [4, 4, 4, 4, 4, 4],   // Cobble
+      5: [5, 5, 6, 6, 5, 5],   // Oak Log (Side=5, Top/Bottom=6)
+      6: [7, 7, 7, 7, 7, 7],   // Leaves
+      7: [8, 8, 8, 8, 8, 8],   // Planks
+      8: [9, 9, 9, 9, 9, 9],   // Sand
+      9: [10, 10, 10, 10, 10, 10], // Brick
+      10: [11, 11, 11, 11, 11, 11], // Glass
+      11: [12, 12, 12, 12, 12, 12], // Glowstone
+      12: [13, 13, 13, 13, 13, 13], // Diamond Ore
+      13: [14, 14, 14, 14, 14, 14], // Gold Ore
+      14: [15, 15, 2, 2, 15, 15],  // TNT
+      15: [15, 15, 15, 15, 15, 15] // Water
+    };
+
+    let textureAtlas = null;
+
+    function createProceduralTextureAtlas() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const ts = 64; // Tile size 64x64
+
+      function drawTile(tileIdx, drawFn) {
+        const tx = (tileIdx % 4) * ts;
+        const ty = Math.floor(tileIdx / 4) * ts;
+        ctx.save();
+        ctx.translate(tx, ty);
+        drawFn(ctx, ts);
+        ctx.restore();
+      }
+
+      // 0: Grass Top
+      drawTile(0, (c, s) => {
+        c.fillStyle = '#4ade80';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 40; i++) {
+          c.fillStyle = Math.random() > 0.5 ? '#22c55e' : '#16a34a';
+          c.fillRect(Math.random() * (s - 8), Math.random() * (s - 8), 6, 6);
+        }
+      });
+
+      // 1: Grass Side
+      drawTile(1, (c, s) => {
+        c.fillStyle = '#78350f';
+        c.fillRect(0, 0, s, s);
+        c.fillStyle = '#4ade80';
+        c.fillRect(0, 0, s, 18);
+        for (let i = 0; i < 8; i++) {
+          c.fillRect(i * 8, 16, 6, 8 + (i % 2) * 6);
+        }
+      });
+
+      // 2: Dirt
+      drawTile(2, (c, s) => {
+        c.fillStyle = '#78350f';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 30; i++) {
+          c.fillStyle = Math.random() > 0.5 ? '#92400e' : '#5b210b';
+          c.fillRect(Math.random() * (s - 6), Math.random() * (s - 6), 6, 6);
+        }
+      });
+
+      // 3: Stone
+      drawTile(3, (c, s) => {
+        c.fillStyle = '#64748b';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 35; i++) {
+          c.fillStyle = Math.random() > 0.5 ? '#475569' : '#334155';
+          c.fillRect(Math.random() * (s - 8), Math.random() * (s - 8), 8, 8);
+        }
+      });
+
+      // 4: Cobblestone
+      drawTile(4, (c, s) => {
+        c.fillStyle = '#475569';
+        c.fillRect(0, 0, s, s);
+        c.strokeStyle = '#1e293b';
+        c.lineWidth = 3;
+        c.strokeRect(4, 4, 24, 24);
+        c.strokeRect(32, 4, 28, 24);
+        c.strokeRect(4, 32, 28, 28);
+        c.strokeRect(36, 32, 24, 28);
+      });
+
+      // 5: Oak Log Side
+      drawTile(5, (c, s) => {
+        c.fillStyle = '#5c3a21';
+        c.fillRect(0, 0, s, s);
+        c.fillStyle = '#3e2415';
+        for (let i = 0; i < 6; i++) {
+          c.fillRect(i * 11, 0, 4, s);
+        }
+      });
+
+      // 6: Oak Log Top
+      drawTile(6, (c, s) => {
+        c.fillStyle = '#b48a60';
+        c.fillRect(0, 0, s, s);
+        c.strokeStyle = '#5c3a21';
+        c.lineWidth = 5;
+        c.strokeRect(10, 10, s - 20, s - 20);
+        c.strokeRect(22, 22, s - 44, s - 44);
+      });
+
+      // 7: Leaves
+      drawTile(7, (c, s) => {
+        c.fillStyle = '#15803d';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 30; i++) {
+          c.fillStyle = Math.random() > 0.5 ? '#166534' : '#22c55e';
+          c.fillRect(Math.random() * (s - 10), Math.random() * (s - 10), 8, 8);
+        }
+      });
+
+      // 8: Planks
+      drawTile(8, (c, s) => {
+        c.fillStyle = '#b48a60';
+        c.fillRect(0, 0, s, s);
+        c.strokeStyle = '#7c5332';
+        c.lineWidth = 3;
+        c.strokeRect(0, 0, s, 20);
+        c.strokeRect(0, 22, s, 20);
+        c.strokeRect(0, 44, s, 20);
+      });
+
+      // 9: Sand
+      drawTile(9, (c, s) => {
+        c.fillStyle = '#fde047';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 40; i++) {
+          c.fillStyle = Math.random() > 0.5 ? '#eab308' : '#fef08a';
+          c.fillRect(Math.random() * (s - 4), Math.random() * (s - 4), 4, 4);
+        }
+      });
+
+      // 10: Brick
+      drawTile(10, (c, s) => {
+        c.fillStyle = '#991b1b';
+        c.fillRect(0, 0, s, s);
+        c.strokeStyle = '#cbd5e1';
+        c.lineWidth = 3;
+        c.strokeRect(0, 0, s, 16);
+        c.strokeRect(0, 16, s, 16);
+        c.strokeRect(0, 32, s, 16);
+        c.strokeRect(0, 48, s, 16);
+      });
+
+      // 11: Glass
+      drawTile(11, (c, s) => {
+        c.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        c.fillRect(0, 0, s, s);
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 3;
+        c.strokeRect(2, 2, s - 4, s - 4);
+        c.beginPath();
+        c.moveTo(8, 8); c.lineTo(24, 24);
+        c.stroke();
+      });
+
+      // 12: Glowstone
+      drawTile(12, (c, s) => {
+        c.fillStyle = '#fef08a';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 25; i++) {
+          c.fillStyle = '#ca8a04';
+          c.fillRect(Math.random() * (s - 12), Math.random() * (s - 12), 10, 10);
+        }
+      });
+
+      // 13: Diamond Ore
+      drawTile(13, (c, s) => {
+        c.fillStyle = '#64748b';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 6; i++) {
+          c.fillStyle = '#06b6d4';
+          c.fillRect(10 + (i % 3) * 18, 12 + Math.floor(i / 3) * 22, 10, 10);
+        }
+      });
+
+      // 14: Gold Ore
+      drawTile(14, (c, s) => {
+        c.fillStyle = '#64748b';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 6; i++) {
+          c.fillStyle = '#fbbf24';
+          c.fillRect(10 + (i % 3) * 18, 12 + Math.floor(i / 3) * 22, 10, 10);
+        }
+      });
+
+      // 15: Water / TNT
+      drawTile(15, (c, s) => {
+        c.fillStyle = '#0284c7';
+        c.fillRect(0, 0, s, s);
+        for (let i = 0; i < 20; i++) {
+          c.fillStyle = '#38bdf8';
+          c.fillRect(Math.random() * (s - 12), Math.random() * (s - 12), 12, 4);
+        }
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      return tex;
+    }
+
+    // ==========================================
+    // 2. SEEDED FRACTAL NOISE & WORLD GENERATOR
+    // ==========================================
+    class SeededNoise {
+      constructor(seed = 1337) {
+        this.seed = Number(seed) || 1337;
+      }
+      noise(x, y) {
+        const n = Math.sin(x * 12.9898 + y * 78.233 + this.seed) * 43758.5453;
+        return n - Math.floor(n);
+      }
+      smoothNoise(x, y) {
+        const i = Math.floor(x);
+        const j = Math.floor(y);
+        const fx = x - i;
+        const fy = y - j;
+        const sx = fx * fx * (3 - 2 * fx);
+        const sy = fy * fy * (3 - 2 * fy);
+
+        const n00 = this.noise(i, j);
+        const n10 = this.noise(i + 1, j);
+        const n01 = this.noise(i, j + 1);
+        const n11 = this.noise(i + 1, j + 1);
+
+        const nx0 = n00 * (1 - sx) + n10 * sx;
+        const nx1 = n01 * (1 - sx) + n11 * sx;
+        return nx0 * (1 - sy) + nx1 * sy;
+      }
+      fractal(x, y, octaves = 3) {
+        let val = 0, freq = 1, amp = 1, maxAmp = 0;
+        for (let o = 0; o < octaves; o++) {
+          val += this.smoothNoise(x * freq, y * freq) * amp;
+          maxAmp += amp;
+          freq *= 2.0;
+          amp *= 0.5;
+        }
+        return val / maxAmp;
+      }
+    }
+
+    class VoxelWorld {
+      constructor(sizeX = 64, sizeY = 32, sizeZ = 64) {
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+        this.sizeZ = sizeZ;
+        this.voxels = new Uint8Array(sizeX * sizeY * sizeZ);
+        this.chunkSize = CHUNK_SIZE;
+        this.chunks = new Map(); // "cx,cz" -> THREE.Mesh
+        this.diffLog = []; // [{x, y, z, type}]
+      }
+
+      getIndex(x, y, z) {
+        if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY || z < 0 || z >= this.sizeZ) {
+          return -1;
+        }
+        return y * (this.sizeX * this.sizeZ) + z * this.sizeX + x;
+      }
+
+      getBlock(x, y, z) {
+        const idx = this.getIndex(x, y, z);
+        if (idx === -1) return BLOCKS.AIR;
+        return this.voxels[idx];
+      }
+
+      setBlock(x, y, z, type, logDiff = true) {
+        const idx = this.getIndex(x, y, z);
+        if (idx === -1) return;
+        this.voxels[idx] = type;
+
+        if (logDiff) {
+          this.diffLog.push({ x, y, z, type });
+        }
+
+        // Rebuild affected chunk
+        const cx = Math.floor(x / this.chunkSize);
+        const cz = Math.floor(z / this.chunkSize);
+        this.rebuildChunk(cx, cz);
+
+        // Rebuild neighbor chunks if on boundary
+        if (x % this.chunkSize === 0 && cx > 0) this.rebuildChunk(cx - 1, cz);
+        if (x % this.chunkSize === this.chunkSize - 1 && cx < (this.sizeX / this.chunkSize) - 1) this.rebuildChunk(cx + 1, cz);
+        if (z % this.chunkSize === 0 && cz > 0) this.rebuildChunk(cx, cz - 1);
+        if (z % this.chunkSize === this.chunkSize - 1 && cz < (this.sizeZ / this.chunkSize) - 1) this.rebuildChunk(cx, cz + 1);
+      }
+
+      generateTerrain(seed = 1337, biome = 'temperate') {
+        const noise = new SeededNoise(seed);
+        this.voxels.fill(0);
+        this.diffLog = [];
+
+        const waterLevel = 7;
+
+        for (let x = 0; x < this.sizeX; x++) {
+          for (let z = 0; z < this.sizeZ; z++) {
+            // Heightmap calculation
+            let h = 0;
+            if (biome === 'mountains') {
+              h = Math.floor(8 + Math.pow(noise.fractal(x * 0.04, z * 0.04), 1.6) * 18);
+            } else if (biome === 'desert') {
+              h = Math.floor(7 + noise.fractal(x * 0.03, z * 0.03) * 9);
+            } else {
+              h = Math.floor(8 + noise.fractal(x * 0.035, z * 0.035) * 12);
+            }
+
+            for (let y = 0; y < this.sizeY; y++) {
+              const idx = this.getIndex(x, y, z);
+
+              if (y === 0) {
+                this.voxels[idx] = BLOCKS.STONE; // Bedrock
+              } else if (y < h - 3) {
+                // Underground Rock with Ores
+                const oreNoise = noise.noise(x * 3.1 + y * 2.3, z * 2.7);
+                if (y < 6 && oreNoise > 0.88) this.voxels[idx] = BLOCKS.DIAMOND_ORE;
+                else if (y < 12 && oreNoise > 0.82) this.voxels[idx] = BLOCKS.GOLD_ORE;
+                else this.voxels[idx] = BLOCKS.STONE;
+              } else if (y < h) {
+                this.voxels[idx] = (biome === 'desert') ? BLOCKS.SAND : BLOCKS.DIRT;
+              } else if (y === h) {
+                if (biome === 'desert') this.voxels[idx] = BLOCKS.SAND;
+                else if (h <= waterLevel + 1) this.voxels[idx] = BLOCKS.SAND;
+                else this.voxels[idx] = BLOCKS.GRASS;
+              } else if (y <= waterLevel && y > h) {
+                this.voxels[idx] = BLOCKS.WATER;
+              }
+            }
+
+            // Trees in temperate biome
+            if (biome === 'temperate' && h > waterLevel + 1 && x > 4 && x < this.sizeX - 4 && z > 4 && z < this.sizeZ - 4) {
+              const treeNoise = noise.noise(x * 7.7, z * 7.7);
+              if (treeNoise > 0.88) {
+                this.growTree(x, h + 1, z);
+              }
+            }
+          }
+        }
+      }
+
+      growTree(tx, ty, tz) {
+        const treeH = 4 + Math.floor(Math.random() * 2);
+        for (let y = 0; y < treeH; y++) {
+          const idx = this.getIndex(tx, ty + y, tz);
+          if (idx !== -1) this.voxels[idx] = BLOCKS.OAK_LOG;
+        }
+
+        // Leaves canopy
+        for (let lx = -2; lx <= 2; lx++) {
+          for (let lz = -2; lz <= 2; lz++) {
+            for (let ly = treeH - 2; ly <= treeH + 1; ly++) {
+              if (Math.abs(lx) === 2 && Math.abs(lz) === 2 && (ly === treeH + 1 || Math.random() > 0.4)) continue;
+              const idx = this.getIndex(tx + lx, ty + ly, tz + lz);
+              if (idx !== -1 && this.voxels[idx] === BLOCKS.AIR) {
+                this.voxels[idx] = BLOCKS.LEAVES;
+              }
+            }
+          }
+        }
+      }
+
+      buildAllChunks(scene) {
+        // Clear previous meshes
+        this.chunks.forEach(mesh => scene.remove(mesh));
+        this.chunks.clear();
+
+        const chunksX = this.sizeX / this.chunkSize;
+        const chunksZ = this.sizeZ / this.chunkSize;
+
+        for (let cx = 0; cx < chunksX; cx++) {
+          for (let cz = 0; cz < chunksZ; cz++) {
+            this.rebuildChunk(cx, cz, scene);
+          }
+        }
+      }
+
+      rebuildChunk(cx, cz, sceneRef = null) {
+        const activeScene = sceneRef || (window.voxelScene);
+        if (!activeScene) return;
+
+        const key = `${cx},${cz}`;
+        const prevMesh = this.chunks.get(key);
+        if (prevMesh) activeScene.remove(prevMesh);
+
+        const minX = cx * this.chunkSize;
+        const maxX = minX + this.chunkSize;
+        const minZ = cz * this.chunkSize;
+        const maxZ = minZ + this.chunkSize;
+
+        const positions = [];
+        const normals = [];
+        const uvs = [];
+        const indices = [];
+        let vertexCount = 0;
+
+        const faces = [
+          { dir: [1, 0, 0], norm: [1, 0, 0], corners: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]], faceIdx: 0 },
+          { dir: [-1, 0, 0], norm: [-1, 0, 0], corners: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]], faceIdx: 1 },
+          { dir: [0, 1, 0], norm: [0, 1, 0], corners: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], faceIdx: 2 },
+          { dir: [0, -1, 0], norm: [0, -1, 0], corners: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], faceIdx: 3 },
+          { dir: [0, 0, 1], norm: [0, 0, 1], corners: [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], faceIdx: 4 },
+          { dir: [0, 0, -1], norm: [0, 0, -1], corners: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]], faceIdx: 5 }
+        ];
+
+        for (let x = minX; x < maxX; x++) {
+          for (let z = minZ; z < maxZ; z++) {
+            for (let y = 0; y < this.sizeY; y++) {
+              const block = this.getBlock(x, y, z);
+              if (block === BLOCKS.AIR) continue;
+
+              const faceMap = BLOCK_FACES[block] || [0, 0, 0, 0, 0, 0];
+
+              for (const f of faces) {
+                const nx = x + f.dir[0];
+                const ny = y + f.dir[1];
+                const nz = z + f.dir[2];
+                const neighbor = this.getBlock(nx, ny, nz);
+
+                // Cull face if neighbor is opaque solid block
+                if (neighbor !== BLOCKS.AIR && neighbor !== BLOCKS.GLASS && neighbor !== BLOCKS.WATER) continue;
+                if (block === BLOCKS.WATER && neighbor === BLOCKS.WATER) continue;
+
+                // Add 4 vertices
+                for (const c of f.corners) {
+                  positions.push(x + c[0], y + c[1], z + c[2]);
+                  normals.push(f.norm[0], f.norm[1], f.norm[2]);
+                }
+
+                // UV calculation in 4x4 atlas
+                const tile = faceMap[f.faceIdx];
+                const tileU = (tile % 4) * 0.25;
+                const tileV = 1.0 - (Math.floor(tile / 4) + 1) * 0.25;
+                const pad = 0.002;
+
+                uvs.push(
+                  tileU + pad, tileV + pad,
+                  tileU + pad, tileV + 0.25 - pad,
+                  tileU + 0.25 - pad, tileV + 0.25 - pad,
+                  tileU + 0.25 - pad, tileV + pad
+                );
+
+                indices.push(
+                  vertexCount, vertexCount + 1, vertexCount + 2,
+                  vertexCount, vertexCount + 2, vertexCount + 3
+                );
+                vertexCount += 4;
+              }
+            }
+          }
+        }
+
+        if (positions.length === 0) return;
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geo.setIndex(indices);
+
+        const mat = new THREE.MeshStandardMaterial({
+          map: textureAtlas,
+          roughness: 0.75,
+          metalness: 0.1,
+          alphaTest: 0.1
+        });
+
+        const mesh = new THREE.Mesh(geo, mat);
+        activeScene.add(mesh);
+        this.chunks.set(key, mesh);
+      }
+    }
+
+    // ==========================================
+    // 3. SYNTHESIZED AUDIO ENGINE
+    // ==========================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = localStorage.getItem('voxel-sound-muted') === 'true';
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playBreak() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+      }
+      playPlace() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, t);
+        osc.frequency.exponentialRampToValueAtTime(80, t + 0.08);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.08);
+      }
+      playPop() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523, 659, 784, 1046].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.35, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.4);
+        });
+      }
+    }
+    const sound = new SoundEngine();
+
+    // ==========================================
+    // 4. ACHIEVEMENTS & PROFILE MANAGEMENT
+    // ==========================================
+    const ACHIEVEMENTS_DATA = [
+      { id: 'first_break', name: 'Punching Wood', desc: 'Break your first voxel block', icon: '🪵' },
+      { id: 'first_place', name: 'Master Builder', desc: 'Place your first block in the world', icon: '🧱' },
+      { id: 'diamond_miner', name: 'Diamonds!', desc: 'Mine a rare Diamond Ore block', icon: '💎' },
+      { id: 'builder_50', name: 'Architect', desc: 'Place 50 blocks in a single session', icon: '🏛️' },
+      { id: 'coop_builder', name: 'Co-op Synergy', desc: 'Connect and build with a peer over WebRTC', icon: '🌐' },
+      { id: 'sky_climber', name: 'Roof of the World', desc: 'Reach height Y=30 at the top of the world', icon: '🧗' },
+      { id: 'glowstone_illuminator', name: 'Let There Be Light', desc: 'Place a Glowstone block', icon: '✨' },
+      { id: 'flight_mode', name: 'Creative Flight', desc: 'Fly in the sky using creative mode', icon: '🕊️' },
+      { id: 'world_saver', name: 'World Historian', desc: 'Save your voxel world to browser memory', icon: '💾' },
+      { id: 'miner_100', name: 'Excavation Legend', desc: 'Mine 100 blocks total', icon: '⛏️' },
+      { id: 'tnt_crafter', name: 'Demolitionist', desc: 'Place a TNT block in the sandbox', icon: '💣' },
+      { id: 'veteran_builder', name: 'Voxel Architect Icon', desc: 'Spend 10 minutes building in the sandbox', icon: '🎖️' }
+    ];
+
+    class ProfileManager {
+      constructor() {
+        this.data = JSON.parse(localStorage.getItem('arcade-voxel-profile')) || {
+          name: 'Crafter ' + Math.floor(100 + Math.random() * 900),
+          blocksMined: 0,
+          blocksPlaced: 0,
+          savedWorlds: 0,
+          unlockedAchievements: []
+        };
+        this.save();
+      }
+      save() {
+        localStorage.setItem('arcade-voxel-profile', JSON.stringify(this.data));
+        this.updateUI();
+      }
+      unlockAchievement(id) {
+        if (!this.data.unlockedAchievements.includes(id)) {
+          this.data.unlockedAchievements.push(id);
+          const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+          if (ach) {
+            showGlobalAlert(`🏆 Trophy Unlocked: ${ach.name}!`, ach.icon);
+          }
+          this.save();
+        }
+      }
+      updateUI() {
+        const countEl = document.getElementById('unlocked-badge-count');
+        if (countEl) countEl.textContent = `${this.data.unlockedAchievements.length}/${ACHIEVEMENTS_DATA.length}`;
+      }
+    }
+    const profile = new ProfileManager();
+
+    // ==========================================
+    // 5. 3D STEVE AVATAR FACTORY FOR OPPONENT
+    // ==========================================
+    function create3DSteveAvatar() {
+      const group = new THREE.Group();
+
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.8 });
+      const shirtMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.7 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.7 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+
+      // Head
+      const headGroup = new THREE.Group();
+      const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), skinMat);
+      headMesh.position.y = 1.5;
+      headGroup.add(headMesh);
+
+      // Hair
+      const hair = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.62), hairMat);
+      hair.position.set(0, 1.72, 0);
+      headGroup.add(hair);
+
+      group.add(headGroup);
+
+      // Torso
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.75, 0.3), shirtMat);
+      torso.position.y = 0.9;
+      group.add(torso);
+
+      // Left & Right Arms
+      const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, 0.24), shirtMat);
+      leftArm.position.set(-0.45, 0.9, 0);
+      group.add(leftArm);
+
+      const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, 0.24), shirtMat);
+      rightArm.position.set(0.45, 0.9, 0);
+      group.add(rightArm);
+
+      // Left & Right Legs
+      const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.75, 0.26), pantsMat);
+      leftLeg.position.set(-0.16, 0.38, 0);
+      group.add(leftLeg);
+
+      const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.75, 0.26), pantsMat);
+      rightLeg.position.set(0.16, 0.38, 0);
+      group.add(rightLeg);
+
+      return {
+        mesh: group,
+        head: headGroup,
+        leftArm: leftArm,
+        rightArm: rightArm,
+        leftLeg: leftLeg,
+        rightLeg: rightLeg,
+        animTime: 0
+      };
+    }
+
+    // ==========================================
+    // 6. MAIN THREE.JS 3D VOXEL ENGINE SETUP
+    // ==========================================
+    let voxelScene = null;
+    let voxelCamera = null;
+    let voxelRenderer = null;
+    let world = null;
+
+    let targetBoxMesh = null; // Wireframe block highlight
+    let opponentAvatar = null;
+
+    let currentSeed = 1337;
+    let currentBiome = 'temperate';
+    let activeSlot = 1;
+    let selectedBlockType = BLOCKS.GRASS;
+
+    let isPointerLocked = false;
+    let isFlightMode = false;
+
+    const player = {
+      pos: new THREE.Vector3(32, 22, 32),
+      vel: new THREE.Vector3(),
+      yaw: 0,
+      pitch: 0,
+      onGround: false
+    };
+
+    const keys = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false,
+      jump: false,
+      sneak: false
+    };
+
+    // WebRTC Network
+    let peer = null;
+    let connReliable = null;
+    let connUnreliable = null;
+    let myPeerId = null;
+    let opponentState = { x: 32, y: 22, z: 32, yaw: 0, pitch: 0, moving: false };
+    let lastNetworkBroadcast = 0;
+
+    function initVoxelEngine() {
+      const container = document.getElementById('threejs-container');
+      textureAtlas = createProceduralTextureAtlas();
+
+      voxelScene = new THREE.Scene();
+      window.voxelScene = voxelScene;
+
+      voxelCamera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 1000);
+
+      voxelRenderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      voxelRenderer.setSize(container.clientWidth, container.clientHeight);
+      voxelRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(voxelRenderer.domElement);
+
+      // Sky & Lighting
+      voxelScene.background = new THREE.Color(0x7dd3fc); // Daylight Sky Blue
+      voxelScene.fog = new THREE.FogExp2(0x7dd3fc, 0.012);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
+      voxelScene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
+      sunLight.position.set(60, 100, 40);
+      voxelScene.add(sunLight);
+
+      // Wireframe Box for Targeted Block Highlight
+      const boxGeo = new THREE.BoxGeometry(1.004, 1.004, 1.004);
+      const wireMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, wireframeLinewidth: 2 });
+      targetBoxMesh = new THREE.Mesh(boxGeo, wireMat);
+      targetBoxMesh.visible = false;
+      voxelScene.add(targetBoxMesh);
+
+      // Create Opponent 3D Steve Avatar
+      opponentAvatar = create3DSteveAvatar();
+      opponentAvatar.mesh.visible = false;
+      voxelScene.add(opponentAvatar.mesh);
+
+      // Build World
+      world = new VoxelWorld(WORLD_SIZE_X, WORLD_SIZE_Y, WORLD_SIZE_Z);
+      world.generateTerrain(currentSeed, currentBiome);
+      world.buildAllChunks(voxelScene);
+
+      // Setup Player Start
+      player.pos.set(32, 24, 32);
+
+      initPointerLock(container);
+      initMouseInteraction(container);
+      window.addEventListener('resize', onWindowResize);
+
+      requestAnimationFrame(renderVoxelLoop);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('threejs-container');
+      if (!voxelRenderer || !voxelCamera || !container) return;
+      if (container.clientWidth > 0 && container.clientHeight > 0) {
+        voxelCamera.aspect = container.clientWidth / container.clientHeight;
+        voxelCamera.updateProjectionMatrix();
+        voxelRenderer.setSize(container.clientWidth, container.clientHeight);
+      }
+    }
+
+    // ==========================================
+    // 7. POINTER LOCK & FIRST-PERSON LOOK
+    // ==========================================
+    function initPointerLock(container) {
+      const overlay = document.getElementById('pointer-lock-overlay');
+
+      overlay.addEventListener('click', () => {
+        container.requestPointerLock();
+      });
+
+      document.addEventListener('pointerlockchange', () => {
+        isPointerLocked = (document.pointerLockElement === container);
+        if (isPointerLocked) {
+          overlay.classList.add('hidden');
+        } else {
+          overlay.classList.remove('hidden');
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isPointerLocked) return;
+        const sensitivity = 0.0022;
+        player.yaw -= e.movementX * sensitivity;
+        player.pitch -= e.movementY * sensitivity;
+        player.pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, player.pitch));
+      });
+    }
+
+    // ==========================================
+    // 8. 3D DDA FAST VOXEL RAYCASTER & ACTIONS
+    // ==========================================
+    const BLOCK_NAMES = {
+      1: { name: 'Grass Block', icon: '🌱' },
+      2: { name: 'Dirt Block', icon: '🟫' },
+      3: { name: 'Stone Block', icon: '🪨' },
+      4: { name: 'Cobblestone', icon: '🧱' },
+      5: { name: 'Oak Log', icon: '🪵' },
+      6: { name: 'Oak Leaves', icon: '🍃' },
+      7: { name: 'Wood Planks', icon: '📦' },
+      8: { name: 'Sand', icon: '🏖️' },
+      9: { name: 'Brick', icon: '🧱' },
+      10: { name: 'Glass', icon: '🪟' },
+      11: { name: 'Glowstone', icon: '✨' },
+      12: { name: 'Diamond Ore', icon: '💎' },
+      13: { name: 'Gold Ore', icon: '🪙' },
+      14: { name: 'TNT', icon: '💣' },
+      15: { name: 'Water', icon: '💧' }
+    };
+
+    let currentInteractionMode = 'place'; // 'place' or 'break'
+
+    function raycastVoxel(origin, dir, maxDist = 7.5) {
+      let x = Math.floor(origin.x);
+      let y = Math.floor(origin.y);
+      let z = Math.floor(origin.z);
+
+      const stepX = dir.x > 0 ? 1 : -1;
+      const stepY = dir.y > 0 ? 1 : -1;
+      const stepZ = dir.z > 0 ? 1 : -1;
+
+      const tDeltaX = dir.x !== 0 ? Math.abs(1 / dir.x) : Infinity;
+      const tDeltaY = dir.y !== 0 ? Math.abs(1 / dir.y) : Infinity;
+      const tDeltaZ = dir.z !== 0 ? Math.abs(1 / dir.z) : Infinity;
+
+      let tMaxX = dir.x > 0 ? (x + 1 - origin.x) * tDeltaX : (origin.x - x) * tDeltaX;
+      let tMaxY = dir.y > 0 ? (y + 1 - origin.y) * tDeltaY : (origin.y - y) * tDeltaY;
+      let tMaxZ = dir.z > 0 ? (z + 1 - origin.z) * tDeltaZ : (origin.z - z) * tDeltaZ;
+
+      let dist = 0;
+      let normal = { x: 0, y: 0, z: 0 };
+
+      while (dist < maxDist) {
+        const block = world.getBlock(x, y, z);
+        if (block !== BLOCKS.AIR && block !== BLOCKS.WATER) {
+          return { hit: true, x, y, z, normal, block };
+        }
+
+        if (tMaxX < tMaxY) {
+          if (tMaxX < tMaxZ) {
+            dist = tMaxX;
+            tMaxX += tDeltaX;
+            x += stepX;
+            normal = { x: -stepX, y: 0, z: 0 };
+          } else {
+            dist = tMaxZ;
+            tMaxZ += tDeltaZ;
+            z += stepZ;
+            normal = { x: 0, y: 0, z: -stepZ };
+          }
+        } else {
+          if (tMaxY < tMaxZ) {
+            dist = tMaxY;
+            tMaxY += tDeltaY;
+            y += stepY;
+            normal = { x: 0, y: -stepY, z: 0 };
+          } else {
+            dist = tMaxZ;
+            tMaxZ += tDeltaZ;
+            z += stepZ;
+            normal = { x: 0, y: 0, z: -stepZ };
+          }
+        }
+      }
+      return { hit: false };
+    }
+
+    function performBreakBlock() {
+      if (!world) return;
+      triggerArmSwing();
+
+      const eyePos = new THREE.Vector3(player.pos.x, player.pos.y + 1.6, player.pos.z);
+      const lookDir = new THREE.Vector3(
+        -Math.sin(player.yaw) * Math.cos(player.pitch),
+        Math.sin(player.pitch),
+        -Math.cos(player.yaw) * Math.cos(player.pitch)
+      ).normalize();
+
+      const hit = raycastVoxel(eyePos, lookDir, 7.5);
+      if (hit.hit) {
+        world.setBlock(hit.x, hit.y, hit.z, BLOCKS.AIR, true);
+        sound.playBreak();
+        profile.data.blocksMined++;
+        profile.unlockAchievement('first_break');
+        if (hit.block === BLOCKS.DIAMOND_ORE) profile.unlockAchievement('diamond_miner');
+        if (profile.data.blocksMined >= 100) profile.unlockAchievement('miner_100');
+        profile.save();
+
+        if (connReliable && connReliable.open) {
+          connReliable.send({ type: 'block_diff', x: hit.x, y: hit.y, z: hit.z, blockType: BLOCKS.AIR });
+        }
+      }
+    }
+
+    function performPlaceBlock(blockType = selectedBlockType) {
+      if (!world) return;
+      triggerArmSwing();
+
+      const eyePos = new THREE.Vector3(player.pos.x, player.pos.y + 1.6, player.pos.z);
+      const lookDir = new THREE.Vector3(
+        -Math.sin(player.yaw) * Math.cos(player.pitch),
+        Math.sin(player.pitch),
+        -Math.cos(player.yaw) * Math.cos(player.pitch)
+      ).normalize();
+
+      const hit = raycastVoxel(eyePos, lookDir, 7.5);
+      if (hit.hit) {
+        const px = hit.x + hit.normal.x;
+        const py = hit.y + hit.normal.y;
+        const pz = hit.z + hit.normal.z;
+
+        // Bounded world check
+        if (px < 0 || px >= WORLD_SIZE_X || py < 0 || py >= WORLD_SIZE_Y || pz < 0 || pz >= WORLD_SIZE_Z) return;
+
+        // Player bounding box collision avoidance
+        const pMinX = player.pos.x - 0.35, pMaxX = player.pos.x + 0.35;
+        const pMinY = player.pos.y, pMaxY = player.pos.y + 1.8;
+        const pMinZ = player.pos.z - 0.35, pMaxZ = player.pos.z + 0.35;
+
+        const insidePlayer = (px >= Math.floor(pMinX) && px <= Math.floor(pMaxX) &&
+                              py >= Math.floor(pMinY) && py <= Math.floor(pMaxY) &&
+                              pz >= Math.floor(pMinZ) && pz <= Math.floor(pMaxZ));
+
+        if (!insidePlayer) {
+          world.setBlock(px, py, pz, blockType, true);
+          sound.playPlace();
+          profile.data.blocksPlaced++;
+          profile.unlockAchievement('first_place');
+          if (blockType === BLOCKS.GLOWSTONE) profile.unlockAchievement('glowstone_illuminator');
+          if (blockType === BLOCKS.TNT) profile.unlockAchievement('tnt_crafter');
+          if (profile.data.blocksPlaced >= 50) profile.unlockAchievement('builder_50');
+          profile.save();
+
+          if (connReliable && connReliable.open) {
+            connReliable.send({ type: 'block_diff', x: px, y: py, z: pz, blockType: blockType });
+          }
+        }
+      }
+    }
+
+    function triggerArmSwing() {
+      const hand = document.getElementById('fp-hand-container');
+      if (hand) {
+        hand.classList.remove('animate-arm-swing');
+        void hand.offsetWidth;
+        hand.classList.add('animate-arm-swing');
+      }
+    }
+
+    function drawFirstPersonHandItem(icon = '🌱') {
+      const canvas = document.getElementById('fp-hand-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      // Arm
+      ctx.fillStyle = '#c68642';
+      ctx.beginPath();
+      ctx.roundRect(48, 40, 70, 85, 12);
+      ctx.fill();
+
+      // Cyan shirt sleeve
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.roundRect(48, 92, 70, 48, [0, 0, 12, 12]);
+      ctx.fill();
+
+      // Held block icon
+      ctx.font = '38px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(icon, 78, 42);
+      ctx.restore();
+    }
+
+    function initMouseInteraction(container) {
+      // Place vs Break Mode Buttons
+      const btnPlace = document.getElementById('btn-mode-place');
+      const btnBreak = document.getElementById('btn-mode-break');
+
+      if (btnPlace && btnBreak) {
+        btnPlace.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentInteractionMode = 'place';
+          btnPlace.className = 'px-2.5 py-1 rounded-lg bg-emerald-500 text-black font-bold text-xs flex items-center gap-1 shadow-sm transition-all';
+          btnBreak.className = 'px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink font-bold text-xs flex items-center gap-1 transition-all';
+          showGlobalAlert('Place Mode: Click anywhere to place selected block', '🧱');
+        });
+
+        btnBreak.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentInteractionMode = 'break';
+          btnBreak.className = 'px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all';
+          btnPlace.className = 'px-2.5 py-1 rounded-lg text-theme-muted hover:text-theme-ink font-bold text-xs flex items-center gap-1 transition-all';
+          showGlobalAlert('Break Mode: Click on any block to mine it', '⛏️');
+        });
+      }
+
+      // Touch Buttons
+      const touchBreak = document.getElementById('touch-btn-break');
+      if (touchBreak) {
+        touchBreak.addEventListener('touchstart', (e) => { e.preventDefault(); performBreakBlock(); });
+        touchBreak.addEventListener('click', (e) => { e.preventDefault(); performBreakBlock(); });
+      }
+
+      const touchPlace = document.getElementById('touch-btn-place');
+      if (touchPlace) {
+        touchPlace.addEventListener('touchstart', (e) => { e.preventDefault(); performPlaceBlock(); });
+        touchPlace.addEventListener('click', (e) => { e.preventDefault(); performPlaceBlock(); });
+      }
+
+      // Touch D-Pad
+      const bindTouchKey = (btnId, keyName) => {
+        const el = document.getElementById(btnId);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+      };
+      bindTouchKey('touch-move-up', 'forward');
+      bindTouchKey('touch-move-down', 'backward');
+      bindTouchKey('touch-move-left', 'left');
+      bindTouchKey('touch-move-right', 'right');
+      bindTouchKey('touch-btn-jump', 'jump');
+
+      // Direct Mouse Clicks
+      container.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          // Left Click
+          if (currentInteractionMode === 'break') {
+            performBreakBlock();
+          } else {
+            performPlaceBlock();
+          }
+        } else if (e.button === 2) {
+          // Right Click always places block
+          performPlaceBlock();
+        }
+      });
+
+      container.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+
+    // ==========================================
+    // 9. FIRST-PERSON PHYSICS & COLLISION
+    // ==========================================
+    function updatePlayerPhysics(dt) {
+      // 1. Direction vectors
+      const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)).normalize();
+      const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw)).normalize();
+
+      const moveDir = new THREE.Vector3();
+      if (keys.forward) moveDir.add(forward);
+      if (keys.backward) moveDir.sub(forward);
+      if (keys.right) moveDir.add(right);
+      if (keys.left) moveDir.sub(right);
+      if (moveDir.lengthSq() > 0) moveDir.normalize();
+
+      const speed = isFlightMode ? 14 : 5.8;
+
+      player.vel.x = moveDir.x * speed;
+      player.vel.z = moveDir.z * speed;
+
+      // 2. Vertical motion / Gravity
+      if (isFlightMode) {
+        if (keys.jump) player.vel.y = 8;
+        else if (keys.sneak) player.vel.y = -8;
+        else player.vel.y = 0;
+      } else {
+        if (keys.jump && player.onGround) {
+          player.vel.y = 8.5;
+          player.onGround = false;
+        }
+        player.vel.y -= 22 * dt; // Gravity
+        player.vel.y = Math.max(-25, player.vel.y);
+      }
+
+      // 3. AABB Collision Box vs Voxel Grid
+      const playerRadius = 0.3;
+      const playerHeight = 1.8;
+
+      // Move X
+      player.pos.x += player.vel.x * dt;
+      if (!isFlightMode) resolveCollision(player, 'x', playerRadius, playerHeight);
+
+      // Move Z
+      player.pos.z += player.vel.z * dt;
+      if (!isFlightMode) resolveCollision(player, 'z', playerRadius, playerHeight);
+
+      // Move Y
+      player.pos.y += player.vel.y * dt;
+      if (!isFlightMode) {
+        player.onGround = false;
+        resolveCollision(player, 'y', playerRadius, playerHeight);
+      }
+
+      // Bounded world clamping
+      player.pos.x = Math.max(1, Math.min(WORLD_SIZE_X - 1, player.pos.x));
+      player.pos.z = Math.max(1, Math.min(WORLD_SIZE_Z - 1, player.pos.z));
+      player.pos.y = Math.max(1, Math.min(WORLD_SIZE_Y + 5, player.pos.y));
+
+      if (player.pos.y >= 29) profile.unlockAchievement('sky_climber');
+    }
+
+    function resolveCollision(p, axis, radius, height) {
+      const minX = Math.floor(p.pos.x - radius);
+      const maxX = Math.floor(p.pos.x + radius);
+      const minY = Math.floor(p.pos.y);
+      const maxY = Math.floor(p.pos.y + height);
+      const minZ = Math.floor(p.pos.z - radius);
+      const maxZ = Math.floor(p.pos.z + radius);
+
+      for (let x = minX; x <= maxX; x++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          for (let y = minY; y <= maxY; y++) {
+            const block = world.getBlock(x, y, z);
+            if (block === BLOCKS.AIR || block === BLOCKS.WATER) continue;
+
+            if (axis === 'x') {
+              if (p.vel.x > 0) p.pos.x = x - radius - 0.001;
+              else if (p.vel.x < 0) p.pos.x = x + 1 + radius + 0.001;
+              p.vel.x = 0;
+            } else if (axis === 'z') {
+              if (p.vel.z > 0) p.pos.z = z - radius - 0.001;
+              else if (p.vel.z < 0) p.pos.z = z + 1 + radius + 0.001;
+              p.vel.z = 0;
+            } else if (axis === 'y') {
+              if (p.vel.y < 0) {
+                p.pos.y = y + 1;
+                p.vel.y = 0;
+                p.onGround = true;
+              } else if (p.vel.y > 0) {
+                p.pos.y = y - height - 0.001;
+                p.vel.y = 0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // ==========================================
+    // 10. RENDER LOOP
+    // ==========================================
+    let lastRenderTime = performance.now();
+
+    function renderVoxelLoop(timestamp) {
+      const dt = Math.min(0.1, (timestamp - lastRenderTime) / 1000);
+      lastRenderTime = timestamp;
+
+      // Update Player Physics
+      updatePlayerPhysics(dt);
+
+      // Update Camera Transform
+      if (voxelCamera) {
+        voxelCamera.position.set(player.pos.x, player.pos.y + 1.6, player.pos.z);
+        const lookDir = new THREE.Vector3(
+          -Math.sin(player.yaw) * Math.cos(player.pitch),
+          Math.sin(player.pitch),
+          -Math.cos(player.yaw) * Math.cos(player.pitch)
+        );
+        voxelCamera.lookAt(voxelCamera.position.clone().add(lookDir));
+
+        // Update Targeted Block Highlight
+        const eyePos = voxelCamera.position;
+        const hit = raycastVoxel(eyePos, lookDir.clone().normalize(), 6.5);
+        if (hit.hit) {
+          targetBoxMesh.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5);
+          targetBoxMesh.visible = true;
+        } else {
+          targetBoxMesh.visible = false;
+        }
+      }
+
+      // Interpolate Opponent Steve Avatar
+      if (opponentAvatar && opponentAvatar.mesh.visible) {
+        opponentAvatar.mesh.position.lerp(new THREE.Vector3(opponentState.x, opponentState.y, opponentState.z), 0.25);
+        opponentAvatar.mesh.rotation.y = opponentState.yaw;
+        opponentAvatar.head.rotation.x = opponentState.pitch;
+
+        if (opponentState.moving) {
+          opponentAvatar.animTime += dt * 8;
+          opponentAvatar.leftLeg.rotation.x = Math.sin(opponentAvatar.animTime) * 0.6;
+          opponentAvatar.rightLeg.rotation.x = -Math.sin(opponentAvatar.animTime) * 0.6;
+          opponentAvatar.leftArm.rotation.x = -Math.sin(opponentAvatar.animTime) * 0.6;
+          opponentAvatar.rightArm.rotation.x = Math.sin(opponentAvatar.animTime) * 0.6;
+        } else {
+          opponentAvatar.leftLeg.rotation.x = 0;
+          opponentAvatar.rightLeg.rotation.x = 0;
+          opponentAvatar.leftArm.rotation.x = 0;
+          opponentAvatar.rightArm.rotation.x = 0;
+        }
+      }
+
+      // Render Scene
+      if (voxelRenderer && voxelScene && voxelCamera) {
+        voxelRenderer.render(voxelScene, voxelCamera);
+      }
+
+      // Update HUD
+      document.getElementById('hud-pos-text').textContent = `X: ${Math.round(player.pos.x)}, Y: ${Math.round(player.pos.y)}, Z: ${Math.round(player.pos.z)}`;
+
+      // 30Hz Unreliable Position Broadcast over WebRTC
+      if (connUnreliable && connUnreliable.open) {
+        const now = Date.now();
+        if (now - lastNetworkBroadcast > 32) {
+          lastNetworkBroadcast = now;
+          const moving = keys.forward || keys.backward || keys.left || keys.right;
+          connUnreliable.send({
+            x: Math.round(player.pos.x * 100) / 100,
+            y: Math.round(player.pos.y * 100) / 100,
+            z: Math.round(player.pos.z * 100) / 100,
+            yaw: Math.round(player.yaw * 100) / 100,
+            pitch: Math.round(player.pitch * 100) / 100,
+            moving: moving
+          });
+        }
+      }
+
+      requestAnimationFrame(renderVoxelLoop);
+    }
+
+    // ==========================================
+    // 11. WEBRTC SEED & DIFF NETCODE
+    // ==========================================
+    function initPeer(customId = null) {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+
+      peer = new Peer(customId || undefined, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      peer.on('open', (id) => {
+        myPeerId = id;
+        updateP2PStatus('connected', 'World Ready');
+      });
+
+      peer.on('connection', (c) => {
+        if (c.label === 'unreliable') {
+          connUnreliable = c;
+          connUnreliable.on('data', (d) => {
+            opponentState = d;
+            if (opponentAvatar) opponentAvatar.mesh.visible = true;
+          });
+        } else {
+          connReliable = c;
+          setupReliableEvents();
+        }
+      });
+
+      peer.on('error', (err) => {
+        showGlobalAlert(`Network: ${err.type || 'Connection error'}`, '⚠️');
+      });
+    }
+
+    function setupReliableEvents() {
+      connReliable.on('open', () => {
+        updateP2PStatus('live', 'Co-op Connected');
+        profile.unlockAchievement('coop_builder');
+        showGlobalAlert('Builder connected! Synchronizing voxel world...', '🧱');
+
+        if (opponentAvatar) opponentAvatar.mesh.visible = true;
+
+        if (gameMode === 'p2p_host') {
+          // Send World Seed & Diff Log to Joining Client
+          connReliable.send({
+            type: 'init_world',
+            seed: currentSeed,
+            biome: currentBiome,
+            diffs: world.diffLog
+          });
+          launchVoxelWorld();
+        }
+      });
+
+      connReliable.on('data', (data) => {
+        handleReliableMessage(data);
+      });
+
+      connReliable.on('close', () => {
+        updateP2PStatus('disconnected', 'Partner Left');
+        if (opponentAvatar) opponentAvatar.mesh.visible = false;
+        showGlobalAlert('Partner disconnected from world.', '⚠️');
+      });
+    }
+
+    function handleReliableMessage(data) {
+      if (!data || !data.type) return;
+
+      switch (data.type) {
+        case 'init_world':
+          currentSeed = data.seed;
+          currentBiome = data.biome;
+          world.generateTerrain(currentSeed, currentBiome);
+
+          // Replay diff log from host
+          if (data.diffs && Array.isArray(data.diffs)) {
+            data.diffs.forEach(d => {
+              world.voxels[world.getIndex(d.x, d.y, d.z)] = d.type;
+            });
+          }
+          world.buildAllChunks(voxelScene);
+          launchVoxelWorld();
+          break;
+
+        case 'block_diff':
+          world.setBlock(data.x, data.y, data.z, data.blockType, false);
+          sound.playPop();
+          break;
+
+        case 'chat':
+          showGlobalAlert(`${data.sender}: ${data.text}`, '💬');
+          break;
+
+        case 'taunt':
+          spawnFloatingTaunt(data.emoji);
+          break;
+      }
+    }
+
+    function updateP2PStatus(state, text) {
+      const dot = document.getElementById('header-status-dot');
+      const textEl = document.getElementById('header-status-text');
+      if (textEl) textEl.textContent = text;
+      if (dot) {
+        if (state === 'live') dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        else if (state === 'connected') dot.className = 'w-2 h-2 rounded-full bg-cyan-400';
+        else dot.className = 'w-2 h-2 rounded-full bg-stone-400';
+      }
+    }
+
+    function launchVoxelWorld() {
+      showView('arena');
+      if (world && voxelScene) {
+        world.buildAllChunks(voxelScene);
+      }
+      setTimeout(onWindowResize, 60);
+    }
+
+    // ==========================================
+    // 12. LOBBY NAVIGATION & KEYBOARD BINDINGS
+    // ==========================================
+    let gameMode = 'lobby';
+
+    function showView(viewId) {
+      document.getElementById('view-lobby').classList.add('hidden');
+      document.getElementById('view-waiting').classList.add('hidden');
+      document.getElementById('view-arena').classList.add('hidden');
+
+      if (viewId === 'lobby') document.getElementById('view-lobby').classList.remove('hidden');
+      if (viewId === 'waiting') document.getElementById('view-waiting').classList.remove('hidden');
+      if (viewId === 'arena') document.getElementById('view-arena').classList.remove('hidden');
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      if (['KeyW', 'ArrowUp'].includes(e.code)) keys.forward = true;
+      if (['KeyS', 'ArrowDown'].includes(e.code)) keys.backward = true;
+      if (['KeyA', 'ArrowLeft'].includes(e.code)) keys.left = true;
+      if (['KeyD', 'ArrowRight'].includes(e.code)) keys.right = true;
+      if (e.code === 'Space') keys.jump = true;
+      if (['ShiftLeft', 'ShiftRight'].includes(e.code)) keys.sneak = true;
+
+      // Slot keys 1-9
+      if (e.code.startsWith('Digit') && e.code !== 'Digit0') {
+        const slot = parseInt(e.code.replace('Digit', ''));
+        setActiveSlot(slot);
+      }
+
+      // Flight toggle
+      if (e.code === 'KeyF') {
+        isFlightMode = !isFlightMode;
+        profile.unlockAchievement('flight_mode');
+        document.getElementById('flight-mode-label').textContent = isFlightMode ? 'Flight' : 'Walk';
+        document.getElementById('hud-mode-pill').textContent = isFlightMode ? 'FLIGHT' : 'CREATIVE';
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'ArrowUp'].includes(e.code)) keys.forward = false;
+      if (['KeyS', 'ArrowDown'].includes(e.code)) keys.backward = false;
+      if (['KeyA', 'ArrowLeft'].includes(e.code)) keys.left = false;
+      if (['KeyD', 'ArrowRight'].includes(e.code)) keys.right = false;
+      if (e.code === 'Space') keys.jump = false;
+      if (['ShiftLeft', 'ShiftRight'].includes(e.code)) keys.sneak = false;
+    });
+
+    // Mouse wheel slot scroll
+    window.addEventListener('wheel', (e) => {
+      if (!isPointerLocked) return;
+      let nextSlot = activeSlot + (e.deltaY > 0 ? 1 : -1);
+      if (nextSlot > 9) nextSlot = 1;
+      if (nextSlot < 1) nextSlot = 9;
+      setActiveSlot(nextSlot);
+    });
+
+    function setActiveSlot(slot) {
+      activeSlot = slot;
+      document.querySelectorAll('.hotbar-slot').forEach(el => {
+        const s = parseInt(el.dataset.slot);
+        if (s === slot) {
+          el.classList.add('active-slot');
+          selectedBlockType = parseInt(el.dataset.block);
+        } else {
+          el.classList.remove('active-slot');
+        }
+      });
+
+      const info = BLOCK_NAMES[selectedBlockType] || { name: 'Block', icon: '🧱' };
+      const iconEl = document.getElementById('held-item-icon');
+      const nameEl = document.getElementById('held-item-name');
+      if (iconEl) iconEl.textContent = info.icon;
+      if (nameEl) nameEl.textContent = info.name;
+
+      drawFirstPersonHandItem(info.icon);
+    }
+
+    document.querySelectorAll('.hotbar-slot').forEach(slotEl => {
+      slotEl.addEventListener('click', () => {
+        const s = parseInt(slotEl.dataset.slot);
+        setActiveSlot(s);
+      });
+    });
+
+    // Flight mode button toggle
+    document.getElementById('btn-toggle-flight').addEventListener('click', () => {
+      isFlightMode = !isFlightMode;
+      profile.unlockAchievement('flight_mode');
+      document.getElementById('flight-mode-label').textContent = isFlightMode ? 'Flight' : 'Walk';
+      document.getElementById('hud-mode-pill').textContent = isFlightMode ? 'FLIGHT' : 'CREATIVE';
+    });
+
+    // Biome buttons
+    document.querySelectorAll('.biome-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.biome-btn').forEach(b => {
+          b.className = 'biome-btn p-3 rounded-2xl border border-theme-line bg-theme-surface-alt hover:border-emerald-500/40 text-left transition-all';
+        });
+        btn.className = 'biome-btn active-biome p-3 rounded-2xl border border-emerald-500 bg-emerald-500/15 text-left transition-all';
+        currentBiome = btn.dataset.biome;
+      });
+    });
+
+    document.getElementById('btn-random-seed').addEventListener('click', () => {
+      const r = Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('input-world-seed').value = r;
+      currentSeed = r;
+    });
+
+    // Host Room
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+      gameMode = 'p2p_host';
+      currentSeed = parseInt(document.getElementById('input-world-seed').value) || 1337;
+
+      const roomCode = 'VOXEL-' + Math.floor(1000 + Math.random() * 9000);
+      initPeer(`ARCADE-${roomCode}`);
+
+      document.getElementById('display-room-code').textContent = roomCode;
+      const directUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+      document.getElementById('display-room-link').value = directUrl;
+
+      const shareMsg = encodeURIComponent(`Join my 3D Voxel Sandbox on ArcadeLab! Room Code: ${roomCode}\n${directUrl}`);
+      document.getElementById('share-whatsapp').href = `https://api.whatsapp.com/send?text=${shareMsg}`;
+      document.getElementById('share-telegram').href = `https://t.me/share/url?url=${encodeURIComponent(directUrl)}&text=${encodeURIComponent('Join my Voxel World!')}`;
+      document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${shareMsg}`;
+
+      const qrWrapper = document.getElementById('qr-code-canvas-wrapper');
+      qrWrapper.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrWrapper, {
+          text: directUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      showView('waiting');
+    });
+
+    // Join Room
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      const codeInput = document.getElementById('input-join-code').value.trim().toUpperCase();
+      if (!codeInput) {
+        showGlobalAlert('Please enter a valid room code', '⚠️');
+        return;
+      }
+      const peerTargetId = codeInput.startsWith('ARCADE-') ? codeInput : `ARCADE-${codeInput}`;
+      gameMode = 'p2p_join';
+
+      initPeer();
+      peer.on('open', () => {
+        connReliable = peer.connect(peerTargetId, { reliable: true, label: 'reliable' });
+        setupReliableEvents();
+
+        connUnreliable = peer.connect(peerTargetId, { reliable: false, label: 'unreliable' });
+        connUnreliable.on('data', (d) => {
+          opponentState = d;
+          if (opponentAvatar) opponentAvatar.mesh.visible = true;
+        });
+      });
+    });
+
+    // Solo Mode
+    document.getElementById('btn-start-solo').addEventListener('click', () => {
+      gameMode = 'solo';
+      currentSeed = parseInt(document.getElementById('input-world-seed').value) || 1337;
+      world.generateTerrain(currentSeed, currentBiome);
+      launchVoxelWorld();
+    });
+
+    // Save World
+    document.getElementById('btn-save-world').addEventListener('click', () => {
+      const saveObject = {
+        seed: currentSeed,
+        biome: currentBiome,
+        diffs: world.diffLog,
+        savedAt: Date.now()
+      };
+      localStorage.setItem('arcade-voxel-saved-world', JSON.stringify(saveObject));
+      profile.unlockAchievement('world_saver');
+      sound.playVictory();
+      showGlobalAlert('Voxel World saved successfully to browser storage!', '💾');
+    });
+
+    // Leave World
+    document.getElementById('btn-leave-world').addEventListener('click', () => {
+      if (confirm('Leave voxel world and return to menu?')) {
+        if (peer) {
+          try { peer.destroy(); } catch (e) {}
+        }
+        showView('lobby');
+      }
+    });
+
+    // Cancel Waiting
+    document.getElementById('btn-cancel-waiting').addEventListener('click', () => {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+      showView('lobby');
+    });
+
+    // Modals
+    const modalRules = document.getElementById('modal-rules');
+    document.getElementById('btn-rules').addEventListener('click', () => modalRules.classList.remove('hidden'));
+    document.getElementById('btn-close-rules').addEventListener('click', () => modalRules.classList.add('hidden'));
+
+    const modalTrophies = document.getElementById('modal-trophies');
+    document.getElementById('btn-open-trophies').addEventListener('click', () => {
+      renderTrophiesModal();
+      modalTrophies.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-trophies').addEventListener('click', () => modalTrophies.classList.add('hidden'));
+
+    function renderTrophiesModal() {
+      const container = document.getElementById('achievements-list-container');
+      container.innerHTML = '';
+      ACHIEVEMENTS_DATA.forEach(ach => {
+        const isUnlocked = profile.data.unlockedAchievements.includes(ach.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border ${isUnlocked ? 'bg-amber-500/10 border-amber-500/30' : 'bg-theme-surface-alt border-theme-line/60 opacity-60'} flex items-center gap-3`;
+        card.innerHTML = `
+          <span class="text-2xl p-2 rounded-xl ${isUnlocked ? 'bg-amber-500/20' : 'bg-theme-surface'}">${ach.icon}</span>
+          <div>
+            <h4 class="font-display font-bold text-xs ${isUnlocked ? 'text-amber-400' : 'text-theme-ink'}">${ach.name}</h4>
+            <p class="text-[10px] text-theme-muted">${ach.desc}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    const modalManualSdp = document.getElementById('modal-manual-sdp');
+    document.getElementById('btn-open-manual-signaling').addEventListener('click', () => {
+      modalManualSdp.classList.remove('hidden');
+      initPeer();
+    });
+    document.getElementById('btn-close-manual-sdp').addEventListener('click', () => modalManualSdp.classList.add('hidden'));
+
+    // QR Code Toggle
+    document.getElementById('btn-toggle-qr').addEventListener('click', () => {
+      const container = document.getElementById('qr-container');
+      const arrow = document.getElementById('qr-arrow');
+      const isHidden = container.classList.toggle('hidden');
+      arrow.textContent = isHidden ? '▼' : '▲';
+    });
+
+    // Copy Code / Link
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+      const code = document.getElementById('display-room-code').textContent.trim();
+      navigator.clipboard.writeText(code);
+      document.getElementById('copy-code-icon').textContent = '✓';
+      setTimeout(() => document.getElementById('copy-code-icon').textContent = '📋', 1500);
+      showGlobalAlert('Room code copied!', '📋');
+    });
+
+    document.getElementById('btn-copy-link').addEventListener('click', () => {
+      const link = document.getElementById('display-room-link').value;
+      navigator.clipboard.writeText(link);
+      showGlobalAlert('Direct link copied!', '📋');
+    });
+
+    // Dark/Light Theme Toggle
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      themeIcon.textContent = isDark ? '🌙' : '☀️';
+      localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('theme-mode') === 'light') {
+      document.documentElement.classList.remove('dark');
+      themeIcon.textContent = '☀️';
+    }
+
+    // Sound Toggle
+    const btnSoundToggle = document.getElementById('btn-sound-toggle');
+    const soundIcon = document.getElementById('sound-icon');
+    btnSoundToggle.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      localStorage.setItem('voxel-sound-muted', sound.muted ? 'true' : 'false');
+      soundIcon.textContent = sound.muted ? '🔇' : '🔊';
+    });
+    if (sound.muted) soundIcon.textContent = '🔇';
+
+    // Global Alert Notice
+    function showGlobalAlert(msg, icon = '⚠️') {
+      const banner = document.getElementById('global-alert-banner');
+      const msgEl = document.getElementById('alert-message');
+      const iconEl = document.getElementById('alert-icon');
+      msgEl.textContent = msg;
+      iconEl.textContent = icon;
+      banner.className = 'px-3 py-2 text-center text-xs font-medium border-b bg-emerald-500/15 border-emerald-500/30 text-emerald-300 transition-all duration-300 block';
+      setTimeout(() => {
+        banner.className = 'hidden';
+      }, 5000);
+    }
+    document.getElementById('btn-alert-close').addEventListener('click', () => {
+      document.getElementById('global-alert-banner').className = 'hidden';
+    });
+
+    // Chat & Taunts
+    document.getElementById('arena-chat-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('arena-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      showGlobalAlert(`You: ${text}`, '💬');
+      if (connReliable && connReliable.open) {
+        connReliable.send({ type: 'chat', text, sender: profile.data.name });
+      }
+    });
+
+    document.querySelectorAll('.btn-taunt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const emoji = btn.dataset.emoji;
+        spawnFloatingTaunt(emoji);
+        if (connReliable && connReliable.open) {
+          connReliable.send({ type: 'taunt', emoji });
+        }
+      });
+    });
+
+    function spawnFloatingTaunt(emoji) {
+      const overlay = document.getElementById('taunts-overlay');
+      const span = document.createElement('span');
+      span.className = 'floating-emoji';
+      span.textContent = emoji;
+      span.style.left = `${20 + Math.random() * 60}%`;
+      span.style.top = `${60 + Math.random() * 20}%`;
+      overlay.appendChild(span);
+      setTimeout(() => span.remove(), 2300);
+    }
+
+    // ==========================================
+    // INITIALIZATION ON LOAD
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initVoxelEngine();
+      setActiveSlot(1);
+
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        document.getElementById('input-join-code').value = roomParam;
+        showGlobalAlert(`Auto-joining voxel room ${roomParam}...`, '🔗');
+        document.getElementById('btn-join-room').click();
+      }
+    });
+  </script>
+</body>
+</html>

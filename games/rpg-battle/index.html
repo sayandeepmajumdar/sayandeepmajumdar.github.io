@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Online RPG Battle — ArcadeLab</title>
+  <meta name="description" content="ArcadeLab: Real-time, two-player Online Turn-Based RPG Battle powered by WebRTC peer-to-peer networking. Features 6 hero classes, animated combat VFX, elemental type advantages, tactical AI bot, and JRPG battle presentation." />
+  <meta name="keywords" content="Online RPG Battle, WebRTC RPG, JRPG Battle, Turn-Based RPG, Browser RPG, Frontend RPG, ArcadeLab, P2P Duel, RPG Arena" />
+
+  <!-- OpenGraph Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Online RPG Battle — Real-Time WebRTC P2P JRPG Arena" />
+  <meta property="og:description" content="Duel friends in turn-based JRPG combat with zero servers! 6 hero classes, animated spells, crits, floating damage numbers, and tactical AI." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/rpg-battle/" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            fantasy: ['"Cinzel"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              'surface-card': 'var(--color-surface-card)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              gold: '#fbbf24',
+              fire: '#f97316',
+              ice: '#38bdf8',
+              thunder: '#eab308',
+              holy: '#fef08a',
+              shadow: '#a855f7',
+            }
+          },
+          boxShadow: {
+            'glow-fire': '0 0 35px -5px rgba(249, 115, 22, 0.65)',
+            'glow-ice': '0 0 35px -5px rgba(56, 189, 248, 0.65)',
+            'glow-thunder': '0 0 35px -5px rgba(234, 179, 8, 0.65)',
+            'glow-holy': '0 0 35px -5px rgba(254, 240, 138, 0.65)',
+            'glow-shadow': '0 0 35px -5px rgba(168, 85, 247, 0.65)',
+            'glow-gold': '0 0 30px -5px rgba(251, 191, 36, 0.6)',
+            'rpg-card': '0 15px 35px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12)',
+          },
+          animation: {
+            'pop-in': 'popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'float-up': 'floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            'hero-breathe': 'heroBreathe 3s infinite alternate ease-in-out',
+            'lunge-attack': 'lungeAttack 0.45s ease-in-out',
+            'hit-shake': 'hitShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97)',
+            'screen-rumble': 'screenRumble 0.5s ease-in-out',
+            'pulse-glow': 'pulseGlow 2s infinite alternate ease-in-out',
+          },
+          keyframes: {
+            popIn: {
+              '0%': { transform: 'scale(0.3) translateY(10px)', opacity: '0' },
+              '70%': { transform: 'scale(1.08) translateY(-2px)', opacity: '1' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7)', opacity: '1' },
+              '80%': { opacity: '0.9' },
+              '100%': { transform: 'translateY(-140px) scale(1.2)', opacity: '0' },
+            },
+            heroBreathe: {
+              '0%': { transform: 'translateY(0) scale(1)' },
+              '100%': { transform: 'translateY(-6px) scale(1.02)' },
+            },
+            lungeAttack: {
+              '0%': { transform: 'translateX(0)' },
+              '40%': { transform: 'translateX(120px) scale(1.08)' },
+              '60%': { transform: 'translateX(120px) scale(1.08)' },
+              '100%': { transform: 'translateX(0)' },
+            },
+            hitShake: {
+              '10%, 90%': { transform: 'translate3d(-4px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(6px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(6px, 0, 0)' },
+            },
+            screenRumble: {
+              '0%, 100%': { transform: 'translate(0, 0)' },
+              '20%': { transform: 'translate(-6px, 4px)' },
+              '40%': { transform: 'translate(6px, -4px)' },
+              '60%': { transform: 'translate(-4px, 2px)' },
+              '80%': { transform: 'translate(4px, -2px)' },
+            },
+            pulseGlow: {
+              '0%': { filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.4))' },
+              '100%': { filter: 'drop-shadow(0 0 25px rgba(251, 191, 36, 0.9))' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <!-- PeerJS for WebRTC Signaling & P2P DataChannels -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Match Victory -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- QRCode.js for Mobile QR Code scan -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #f5f6fc;
+      --color-surface: #ffffff;
+      --color-surface-alt: #edf1f8;
+      --color-surface-card: #ffffff;
+      --color-ink: #0b1120;
+      --color-muted: #5f6c86;
+      --color-line: #dbe3f0;
+      --color-accent: #f59e0b;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #07090e;
+      --color-surface: #0e121b;
+      --color-surface-alt: #151a27;
+      --color-surface-card: #1b2132;
+      --color-ink: #f5f7fc;
+      --color-muted: #8c97ad;
+      --color-line: #222a3e;
+      --color-accent: #fbbf24;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient RPG Canvas Background */
+    .bg-rpg-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(251, 191, 36, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(251, 191, 36, 0.03) 1px, transparent 1px);
+    }
+    html.dark .bg-rpg-grid {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.12), transparent 70%),
+        linear-gradient(to right, rgba(251, 191, 36, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(251, 191, 36, 0.05) 1px, transparent 1px);
+    }
+
+    /* 3D RPG Hologram Card */
+    .rpg-card {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .rpg-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 70%
+      );
+      transform: rotate(35deg) translateY(-100%);
+      transition: transform 0.65s ease;
+      pointer-events: none;
+    }
+    .rpg-card:hover::after {
+      transform: rotate(35deg) translateY(100%);
+    }
+    .rpg-card:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* JRPG BATTLE STAGE CANVAS & LAYERS */
+    .battle-stage-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 380px;
+      height: 48vh;
+      max-height: 520px;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 20px 50px -10px rgba(0,0,0,0.7), inset 0 0 0 1px var(--color-line);
+      background-color: #0c0f17;
+    }
+
+    /* Arena Environment Themes */
+    .arena-env-volcano {
+      background: radial-gradient(circle at 50% 100%, #7f1d1d 0%, #450a0a 40%, #0c0a09 100%);
+    }
+    .arena-env-temple {
+      background: radial-gradient(circle at 50% 100%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+    }
+    .arena-env-cyber {
+      background: radial-gradient(circle at 50% 100%, #083344 0%, #172554 50%, #09090b 100%);
+    }
+    .arena-env-forest {
+      background: radial-gradient(circle at 50% 100%, #064e3b 0%, #022c22 50%, #050b08 100%);
+    }
+    .arena-env-storm {
+      background: radial-gradient(circle at 50% 100%, #312e81 0%, #1e1b4b 50%, #09090b 100%);
+    }
+
+    /* Pedestal Base */
+    .hero-pedestal {
+      position: absolute;
+      width: 130px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.35) 0%, rgba(251, 191, 36, 0) 70%);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+      transform: scaleY(0.45);
+      pointer-events: none;
+    }
+
+    /* Hero Sprites Containers */
+    .hero-character-box {
+      position: absolute;
+      width: 140px;
+      height: 180px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      transition: transform 0.25s ease;
+      filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
+    }
+    @media (min-width: 640px) {
+      .hero-character-box { width: 170px; height: 220px; }
+      .hero-pedestal { width: 160px; height: 50px; }
+    }
+
+    /* Combat Floating Damage Numbers */
+    .combat-text {
+      position: absolute;
+      font-family: 'Cinzel', 'Outfit', serif;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 80;
+      animation: combatFloat 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.9));
+      user-select: none;
+    }
+    @keyframes combatFloat {
+      0% { transform: translateY(0) scale(0.6); opacity: 0; }
+      20% { transform: translateY(-30px) scale(1.3); opacity: 1; }
+      70% { transform: translateY(-60px) scale(1.1); opacity: 0.95; }
+      100% { transform: translateY(-90px) scale(0.9); opacity: 0; }
+    }
+
+    /* Slash / Spell Overlay Layer */
+    .spell-vfx-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* HP Ghost Depletion Bar */
+    .hp-bar-fill {
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hp-bar-ghost {
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+    }
+
+    /* JRPG Command Deck Styling */
+    .rpg-cmd-btn {
+      position: relative;
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      border-radius: 1rem;
+      padding: 0.75rem 1rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      text-align: left;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .rpg-cmd-btn:hover:not(:disabled) {
+      border-color: #fbbf24;
+      background: var(--color-surface-alt);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -6px rgba(251, 191, 36, 0.35);
+    }
+    .rpg-cmd-btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .rpg-cmd-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Floating Taunts Overlay */
+    .floating-emoji {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      animation: floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      z-index: 90;
+      font-size: 2.25rem;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8));
+    }
+
+    /* Custom scrollbars */
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-400 bg-rpg-grid relative">
+
+  <!-- Floating Reaction Emojis Canvas / Overlay Layer -->
+  <div id="taunts-overlay" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 sm:h-16 border-b border-theme-line bg-theme-surface/90 backdrop-blur-lg px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <a href="/games/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity" title="Back to ArcadeLab">
+        <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-glow-fire">
+          ⚔️
+        </span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1">
+            <span class="font-fantasy font-black text-sm sm:text-lg tracking-wide leading-none bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
+              ArcadeLab
+            </span>
+            <span class="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] sm:text-[9px] font-mono font-black uppercase">RPG DUEL</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted tracking-wider uppercase font-semibold hidden xs:inline">Turn-Based JRPG Arena</span>
+        </div>
+      </a>
+
+      <!-- Direct P2P Status Pill -->
+      <div id="header-status-pill" class="hidden lg:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-xs font-mono">
+        <span id="header-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="header-status-text" class="text-theme-muted font-medium">Lobby Idle</span>
+        <span id="header-ping-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">--ms</span>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Active Room Code Badge -->
+      <div id="room-code-badge" class="hidden items-center gap-1 px-2 sm:px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-xs font-bold cursor-pointer hover:bg-amber-500/20 transition-colors" title="Click to copy Room Code">
+        <span class="hidden sm:inline">Room:</span>
+        <span id="room-code-badge-text">------</span>
+        <span class="text-[10px] opacity-70">📋</span>
+      </div>
+
+      <!-- Arena Environment Theme Dropdown -->
+      <select id="select-arena-env" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-semibold rounded-xl px-2 py-1.5 outline-none cursor-pointer hidden sm:inline-block" title="Battlefield Environment">
+        <option value="volcano" selected>🌋 Volcanic Caldera</option>
+        <option value="temple">🏛️ Astral Temple</option>
+        <option value="cyber">⚡ Cyber Rooftop</option>
+        <option value="forest">🌲 Enchanted Forest</option>
+        <option value="storm">⛈️ Storm Peak</option>
+      </select>
+
+      <!-- Trophy Hall Button -->
+      <button id="btn-open-trophies" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display font-bold text-xs flex items-center gap-1 transition-all" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Rules / Trust Model Modal Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Rules & Combat Mechanics">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher (Dark / Light) -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Alert Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: HERO SELECT & LOBBY                -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-4xl mx-auto w-full space-y-5 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-500/20 text-amber-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>WebRTC P2P • 6 Hero Classes • Tactical AI Engine</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black font-fantasy tracking-wide text-theme-ink">
+          Online <span class="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">RPG Battle</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-lg mx-auto leading-relaxed">
+          Step into the arena for real-time 1v1 turn-based combat! Select your champion, unleash elemental magic, trigger critical strikes, and outplay your rival.
+        </p>
+      </div>
+
+      <!-- HERO CLASS CAROUSEL / SELECTION GRID -->
+      <div class="w-full space-y-2">
+        <div class="flex items-center justify-between px-1">
+          <h3 class="font-display font-black text-sm uppercase tracking-wider text-theme-ink flex items-center gap-2">
+            <span>🛡️ Choose Your Champion</span>
+          </h3>
+          <span class="text-[11px] font-mono text-amber-400 font-bold" id="selected-class-title">Pyromancer (Flame Sage)</span>
+        </div>
+
+        <div id="class-select-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 w-full">
+          <!-- 6 Hero Class Selection Cards generated dynamically -->
+        </div>
+      </div>
+
+      <!-- SELECTED HERO STATS & ABILITY PREVIEW CARD -->
+      <div id="hero-preview-card" class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-rpg-card relative overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          
+          <!-- Left: Hero Animated Avatar & Identity -->
+          <div class="md:col-span-4 flex items-center gap-3 sm:gap-4 border-b md:border-b-0 md:border-r border-theme-line pb-3 md:pb-0 md:pr-4">
+            <div id="preview-hero-avatar" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-3xl sm:text-4xl shadow-glow-fire shrink-0 animate-hero-breathe select-none">
+              🔥
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <h3 id="preview-hero-name" class="font-fantasy font-black text-lg sm:text-xl text-theme-ink truncate">Pyromancer</h3>
+                <span id="preview-hero-element" class="px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono text-[10px] font-bold uppercase">
+                  🔥 Fire
+                </span>
+              </div>
+              <p id="preview-hero-role" class="text-xs text-theme-muted mt-0.5">High Burst Magic & Burn DoTs</p>
+              
+              <!-- Core Stats Radar/Bars -->
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-[10px] font-mono">
+                <div class="flex items-center justify-between"><span class="text-theme-muted">HP:</span><strong id="stat-hp-val" class="text-emerald-400">280</strong></div>
+                <div class="flex items-center justify-between"><span class="text-theme-muted">MP:</span><strong id="stat-mp-val" class="text-cyan-400">120</strong></div>
+                <div class="flex items-center justify-between"><span class="text-theme-muted">ATK:</span><strong id="stat-atk-val" class="text-rose-400">52</strong></div>
+                <div class="flex items-center justify-between"><span class="text-theme-muted">DEF:</span><strong id="stat-def-val" class="text-amber-400">24</strong></div>
+                <div class="flex items-center justify-between"><span class="text-theme-muted">SPD:</span><strong id="stat-spd-val" class="text-sky-400">42</strong></div>
+                <div class="flex items-center justify-between"><span class="text-theme-muted">CRIT:</span><strong id="stat-crit-val" class="text-yellow-400">15%</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Hero Abilities Showcase -->
+          <div class="md:col-span-8 space-y-2">
+            <h4 class="text-xs font-mono uppercase font-bold text-theme-muted">Signature Battle Abilities:</h4>
+            <div id="preview-abilities-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <!-- Abilities populated by JS -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MATCHMAKING ACTION BUTTONS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        
+        <!-- CARD 1: Host Online Room -->
+        <div class="bg-theme-surface hover:border-amber-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group rpg-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-gold">
+              ⚡
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Host Online Duel</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Create an encrypted room. Share a room code or direct 1-click invite link with a rival adventurer.
+            </p>
+          </div>
+
+          <button id="btn-create-room" type="button" class="mt-4 sm:mt-6 w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-fantasy font-black text-sm shadow-glow-fire transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Summon Opponent</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- CARD 2: Join Existing Room -->
+        <div class="bg-theme-surface hover:border-rose-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group rpg-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-fire">
+              🔗
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Join Existing Arena</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Enter the room code from your opponent to step directly onto the battlefield.
+            </p>
+          </div>
+
+          <div class="mt-3 sm:mt-4 space-y-2">
+            <input id="input-join-code" type="text" placeholder="e.g. RPG-7429" class="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line text-sm font-mono uppercase tracking-widest text-theme-ink placeholder:text-theme-muted placeholder:normal-case placeholder:tracking-normal focus:border-rose-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="w-full py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-rose-600 hover:text-white border border-theme-line text-theme-ink font-fantasy font-black text-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+              <span>Enter Arena</span>
+              <span>⚔️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY MODES -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        <!-- AI Bot -->
+        <button id="btn-start-ai" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-emerald-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group rpg-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Play vs Tactical AI</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">3 smart difficulty levels</p>
+          </div>
+        </button>
+
+        <!-- Pass & Play -->
+        <button id="btn-pass-play" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-cyan-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group rpg-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            👥
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Pass & Play</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Local 2-player on 1 device</p>
+          </div>
+        </button>
+
+        <!-- Manual SDP Relay -->
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-purple-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group rpg-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Manual SDP</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Air-gapped text exchange</p>
+          </div>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-amber-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-amber-500/30 animate-pulse"></div>
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-fire">
+          🔮
+        </div>
+      </div>
+
+      <h2 class="text-xl sm:text-3xl font-fantasy font-black text-theme-ink">Summoning Opponent...</h2>
+      <p class="text-xs text-theme-muted mt-1 max-w-sm px-2">
+        Share the code or scan the QR code. The duel begins automatically once Player 2 steps into the circle!
+      </p>
+
+      <!-- Room Code Box -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 my-4 sm:my-5 space-y-3 sm:space-y-4 shadow-rpg-card text-left">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Room Code</label>
+          <div class="flex items-center gap-2">
+            <div id="display-room-code" class="flex-1 px-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl sm:text-2xl tracking-widest text-amber-400 text-center select-all">
+              ------
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors shrink-0 flex items-center gap-1 active:scale-95" title="Copy Code">
+              <span>Copy</span>
+              <span id="copy-code-icon">📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Direct Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input id="display-room-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted select-all outline-none truncate" />
+            <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors active:scale-95">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Share Links -->
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+          <span class="text-theme-muted font-medium text-[11px]">Share via:</span>
+          <div class="flex items-center gap-1.5">
+            <a id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px] hover:bg-emerald-500/20 transition-colors">WhatsApp</a>
+            <a id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-semibold text-[11px] hover:bg-sky-500/20 transition-colors">Telegram</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-semibold text-[11px] hover:bg-amber-500/20 transition-colors">X</a>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="pt-2 border-t border-theme-line flex flex-col items-center">
+          <button id="btn-toggle-qr" type="button" class="text-xs text-amber-400 hover:underline font-semibold flex items-center gap-1">
+            <span>📱 Show QR Code for Mobile</span>
+            <span id="qr-arrow">▼</span>
+          </button>
+          <div id="qr-container" class="hidden mt-2.5 p-3 bg-white rounded-xl shadow-lg border border-theme-line flex flex-col items-center">
+            <div id="qr-code-canvas-wrapper" class="w-36 h-36 flex items-center justify-center"></div>
+            <span class="text-[9px] text-stone-700 font-mono mt-1 font-semibold">Scan with camera to join</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="text-xs text-theme-muted hover:text-rose-400 font-semibold transition-colors">
+        ✕ Cancel Summon & Return to Sanctuary
+      </button>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: ARENA BATTLE SCREEN (LIVE COMBAT)  -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col gap-3 sm:gap-4 w-full">
+      
+      <!-- TOP STATUS & ROUND HEADER -->
+      <div class="flex items-center justify-between px-2 text-xs font-mono">
+        <div class="flex items-center gap-2">
+          <span id="arena-round-pill" class="px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-theme-muted font-bold">
+            ROUND 1
+          </span>
+          <span id="arena-mode-badge" class="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
+            WebRTC P2P
+          </span>
+        </div>
+
+        <div id="arena-turn-banner" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-sm">
+          <span id="turn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="turn-text">Your Turn to Act</span>
+        </div>
+      </div>
+
+      <!-- MAIN JRPG BATTLE STAGE (LAYERED ENVIRONMENT + CHARACTERS + VFX) -->
+      <div id="battle-stage" class="battle-stage-wrapper arena-env-volcano relative select-none">
+        
+        <!-- Ambient Background Particle Canvas -->
+        <canvas id="ambient-particle-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
+
+        <!-- Spell & Slash VFX Animation Layer -->
+        <div id="vfx-overlay" class="spell-vfx-overlay"></div>
+
+        <!-- Floating Combat Damage Text Container -->
+        <div id="combat-text-layer" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+
+        <!-- ========================================== -->
+        <!-- OPPONENT FIGHTER (TOP-RIGHT / ENEMY)       -->
+        <!-- ========================================== -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-8 z-30 max-w-[220px] sm:max-w-[260px] w-full">
+          <!-- Opponent HUD Card -->
+          <div id="opponent-hud" class="bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span id="opponent-class-icon" class="text-sm">🔥</span>
+                <h4 id="opponent-name-display" class="font-fantasy font-black text-xs sm:text-sm text-white truncate">Opponent</h4>
+              </div>
+              <span id="opponent-element-badge" class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 uppercase">FIRE</span>
+            </div>
+
+            <!-- Opponent HP Bar (Dual Layer with Ghost) -->
+            <div class="space-y-0.5">
+              <div class="flex items-center justify-between text-[10px] font-mono text-stone-300 font-bold">
+                <span>HP</span>
+                <span id="opponent-hp-text">280 / 280</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-stone-800/80 overflow-hidden border border-white/10 relative">
+                <div id="opponent-hp-ghost" class="hp-bar-ghost absolute inset-y-0 left-0 bg-amber-400/70 rounded-full" style="width: 100%"></div>
+                <div id="opponent-hp-fill" class="hp-bar-fill relative h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Opponent MP Bar -->
+            <div class="space-y-0.5">
+              <div class="flex items-center justify-between text-[9px] font-mono text-stone-400 font-bold">
+                <span>MP</span>
+                <span id="opponent-mp-text">120 / 120</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-stone-800 overflow-hidden border border-white/5">
+                <div id="opponent-mp-fill" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full transition-all duration-300" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Opponent Status Effects Badges Tray -->
+            <div id="opponent-status-tray" class="flex items-center gap-1 flex-wrap min-h-[16px] pt-0.5"></div>
+          </div>
+        </div>
+
+        <!-- Opponent Pedestal & Animated Sprite -->
+        <div id="opponent-stage-anchor" class="absolute top-[28%] sm:top-[22%] right-[16%] sm:right-[20%] z-20 flex flex-col items-center">
+          <div class="hero-pedestal bottom-2"></div>
+          <div id="opponent-character-sprite" class="hero-character-box animate-hero-breathe">
+            <!-- Rendered SVG Character -->
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PLAYER FIGHTER (BOTTOM-LEFT / ALLY)        -->
+        <!-- ========================================== -->
+        <div id="player-stage-anchor" class="absolute bottom-[6%] sm:bottom-[8%] left-[10%] sm:left-[14%] z-20 flex flex-col items-center">
+          <div class="hero-pedestal bottom-2"></div>
+          <div id="player-character-sprite" class="hero-character-box animate-hero-breathe">
+            <!-- Rendered SVG Character -->
+          </div>
+        </div>
+
+        <div class="absolute bottom-4 left-4 sm:bottom-6 sm:left-8 z-30 max-w-[220px] sm:max-w-[260px] w-full">
+          <!-- Player HUD Card -->
+          <div id="player-hud" class="bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-2.5 sm:p-3 shadow-xl space-y-1.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span id="player-class-icon" class="text-sm">🔥</span>
+                <h4 id="player-name-display" class="font-fantasy font-black text-xs sm:text-sm text-white truncate">You</h4>
+              </div>
+              <span id="player-element-badge" class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 uppercase">FIRE</span>
+            </div>
+
+            <!-- Player HP Bar (Dual Layer with Ghost) -->
+            <div class="space-y-0.5">
+              <div class="flex items-center justify-between text-[10px] font-mono text-stone-300 font-bold">
+                <span>HP</span>
+                <span id="player-hp-text">280 / 280</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-stone-800/80 overflow-hidden border border-white/10 relative">
+                <div id="player-hp-ghost" class="hp-bar-ghost absolute inset-y-0 left-0 bg-amber-400/70 rounded-full" style="width: 100%"></div>
+                <div id="player-hp-fill" class="hp-bar-fill relative h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Player MP Bar -->
+            <div class="space-y-0.5">
+              <div class="flex items-center justify-between text-[9px] font-mono text-stone-400 font-bold">
+                <span>MP</span>
+                <span id="player-mp-text">120 / 120</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-stone-800 overflow-hidden border border-white/5">
+                <div id="player-mp-fill" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 rounded-full transition-all duration-300" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- Player Status Effects Badges Tray -->
+            <div id="player-status-tray" class="flex items-center gap-1 flex-wrap min-h-[16px] pt-0.5"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- BOTTOM COMMAND DECK & COMBAT CHRONICLE     -->
+      <!-- ========================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        
+        <!-- LEFT: RPG ACTION COMMAND MENU (8 cols) -->
+        <div class="lg:col-span-7 xl:col-span-8 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-rpg-card flex flex-col justify-between min-h-[220px]">
+          
+          <!-- Submenu Header Title / Back Button -->
+          <div class="flex items-center justify-between border-b border-theme-line pb-2 mb-2">
+            <div class="flex items-center gap-2">
+              <button id="btn-menu-back" type="button" class="hidden text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-theme-surface-alt hover:bg-theme-line text-theme-muted hover:text-theme-ink transition-colors">
+                ← Back
+              </button>
+              <h4 id="cmd-menu-title" class="font-display font-black text-xs sm:text-sm text-theme-ink uppercase tracking-wider">
+                ⚔️ Choose Action
+              </h4>
+            </div>
+
+            <span id="active-action-cost" class="text-[11px] font-mono text-theme-muted font-bold">
+              Select move or skill
+            </span>
+          </div>
+
+          <!-- DYNAMIC ACTION MENU CONTAINER -->
+          <div id="action-menu-container" class="grid grid-cols-2 gap-2 sm:gap-2.5 flex-1 items-center">
+            
+            <!-- MAIN COMMANDS (Attack, Skills, Defend, Items) -->
+            <button id="btn-cmd-attack" type="button" class="rpg-cmd-btn group">
+              <div>
+                <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">⚔️ Physical Attack</span>
+                <span class="text-[10px] text-theme-muted font-mono font-normal">Basic strike • 0 MP • Builds +10 MP</span>
+              </div>
+              <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+            </button>
+
+            <button id="btn-cmd-skills" type="button" class="rpg-cmd-btn group">
+              <div>
+                <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">✨ Special Skills</span>
+                <span class="text-[10px] text-theme-muted font-mono font-normal">Class magic & elemental spells</span>
+              </div>
+              <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+            </button>
+
+            <button id="btn-cmd-defend" type="button" class="rpg-cmd-btn group">
+              <div>
+                <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">🛡️ Guard & Defend</span>
+                <span class="text-[10px] text-theme-muted font-mono font-normal">50% DMG reduction • +20 MP</span>
+              </div>
+              <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+            </button>
+
+            <button id="btn-cmd-items" type="button" class="rpg-cmd-btn group">
+              <div>
+                <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">🎒 Item Pouch</span>
+                <span class="text-[10px] text-theme-muted font-mono font-normal">Potions, elixirs & buff herbs</span>
+              </div>
+              <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+            </button>
+
+          </div>
+
+          <!-- Bottom Taunts & Surrender Bar -->
+          <div class="flex items-center justify-between border-t border-theme-line pt-2 mt-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-mono text-theme-muted font-bold">Taunt:</span>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="⚔️">⚔️</button>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🔥">🔥</button>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="💀">💀</button>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🛡️">🛡️</button>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🧙">🧙</button>
+              <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="👏">👏</button>
+            </div>
+
+            <button id="btn-forfeit" type="button" class="text-[11px] font-mono font-bold text-theme-muted hover:text-rose-400 transition-colors">
+              🏳️ Flee Battle
+            </button>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: LIVE COMBAT CHRONICLE & CHAT (4 cols) -->
+        <div class="lg:col-span-5 xl:col-span-4 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-rpg-card flex flex-col h-[220px]">
+          
+          <div class="flex items-center justify-between border-b border-theme-line pb-1.5 mb-1.5">
+            <div class="flex items-center gap-2">
+              <button id="tab-btn-log" type="button" class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-amber-500 text-black transition-all">
+                📜 Combat Log
+              </button>
+              <button id="tab-btn-chat" type="button" class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt transition-all relative">
+                💬 Chat
+                <span id="chat-unread-dot" class="hidden absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-rose-500"></span>
+              </button>
+            </div>
+            <span class="text-[9px] font-mono text-theme-muted">Turn Events</span>
+          </div>
+
+          <!-- TAB 1: COMBAT CHRONICLE -->
+          <div id="tab-content-log" class="flex-1 overflow-y-auto custom-scroll text-xs font-mono space-y-1 p-1">
+            <div class="text-theme-muted text-[11px] italic text-center py-4">
+              ⚔️ Battle commenced! Select an action to strike.
+            </div>
+          </div>
+
+          <!-- TAB 2: IN-GAME CHAT -->
+          <div id="tab-content-chat" class="hidden flex-1 flex flex-col min-h-0">
+            <div id="chat-messages-container" class="flex-1 overflow-y-auto custom-scroll space-y-1.5 p-1 text-xs">
+              <div class="text-center text-theme-muted py-4 text-[11px] italic">
+                P2P data channel chat ready.
+              </div>
+            </div>
+            <form id="chat-input-form" class="mt-1 flex items-center gap-1.5 pt-1.5 border-t border-theme-line">
+              <input id="chat-input" type="text" placeholder="Type a message..." maxlength="100" class="flex-1 px-2.5 py-1 rounded-xl bg-theme-surface-alt border border-theme-line text-xs text-theme-ink placeholder:text-theme-muted focus:border-amber-500 outline-none" />
+              <button type="submit" class="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors shrink-0">
+                Send
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: VICTORY & DEFEAT RESULTS SCREEN     -->
+  <!-- ========================================== -->
+  <div id="modal-game-over" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-4 sm:space-y-5 animate-pop-in">
+      <div id="game-over-icon" class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-3xl sm:text-4xl mx-auto shadow-glow-fire">
+        🏆
+      </div>
+
+      <div class="space-y-1">
+        <h2 id="game-over-title" class="font-fantasy font-black text-2xl sm:text-3xl text-theme-ink">Victory!</h2>
+        <p id="game-over-subtitle" class="text-xs sm:text-sm text-theme-muted font-mono">Opponent's HP fell to 0</p>
+      </div>
+
+      <!-- Match Statistics Summary -->
+      <div class="grid grid-cols-3 gap-2 py-2 px-3 rounded-2xl bg-theme-surface-alt border border-theme-line text-center text-xs font-mono">
+        <div>
+          <span class="text-[10px] text-theme-muted block uppercase">Damage</span>
+          <strong id="summary-dmg-dealt" class="text-rose-400 font-bold">280</strong>
+        </div>
+        <div>
+          <span class="text-[10px] text-theme-muted block uppercase">Turns</span>
+          <strong id="summary-turn-count" class="text-amber-400 font-bold">6</strong>
+        </div>
+        <div>
+          <span class="text-[10px] text-theme-muted block uppercase">Rating</span>
+          <strong id="summary-elo-change" class="text-emerald-400 font-bold">+20 ELO</strong>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2 pt-2">
+        <button id="btn-rematch" type="button" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-fantasy font-black text-sm shadow-glow-fire transition-all active:scale-95">
+          🔄 Request Rematch
+        </button>
+        <button id="btn-exit-to-lobby" type="button" class="py-3 px-4 rounded-2xl bg-theme-surface-alt hover:bg-theme-line border border-theme-line text-theme-ink font-display font-bold text-sm transition-all active:scale-95">
+          🚪 Sanctuary Lobby
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <div>
+          <h3 class="font-fantasy font-black text-lg text-theme-ink">Trophy Hall</h3>
+          <p class="text-[11px] text-theme-muted font-mono">Unlock badges across your gladiatorial career</p>
+        </div>
+        <button id="btn-close-trophies" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div id="achievements-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- 12 Achievements loaded by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & COMBAT MECHANICS MODAL      -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="font-fantasy font-black text-lg text-theme-ink">Combat Rules & Elemental Affinities</h3>
+        <button id="btn-close-rules" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-theme-muted leading-relaxed">
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1">🔥 Elemental Advantage Wheel (1.5x Multiplier)</h4>
+          <div class="grid grid-cols-2 gap-2 text-[11px] font-mono mt-2">
+            <div>🔥 <strong>Fire</strong> > ❄️ Ice (1.5x)</div>
+            <div>❄️ <strong>Ice</strong> > 🔥 Fire (1.5x)</div>
+            <div>⚡ <strong>Lightning</strong> > ❄️ Ice / Metal (1.5x)</div>
+            <div>☀️ <strong>Holy</strong> > 🌑 Shadow (1.5x)</div>
+            <div>🌑 <strong>Shadow</strong> > ☀️ Holy (1.5x)</div>
+            <div>⚔️ <strong>Physical</strong> = Balanced Neutral</div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1">🛡️ Combat Actions & Defense</h4>
+          <ul class="list-disc pl-4 space-y-1 mt-1">
+            <li><strong>Guard / Defend</strong>: Reduces all incoming damage by 50% for 1 turn and restores 20 MP.</li>
+            <li><strong>Critical Hits</strong>: Dealt based on hero CRIT chance for 1.75x bonus damage.</li>
+            <li><strong>Status Effects</strong>: Burn and Poison deal ticking damage each turn; Stun/Shock skips opponent's turn.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MANUAL SDP RELAY (AIR-GAPPED)       -->
+  <!-- ========================================== -->
+  <div id="modal-manual-sdp" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-3 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-2">
+        <h3 class="font-fantasy font-black text-lg text-theme-ink">Manual WebRTC SDP Relay</h3>
+        <button id="btn-close-manual-sdp" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-theme-muted">
+        Connect across restricted networks by exchanging raw SDP offer/answer text strings.
+      </p>
+
+      <div class="space-y-2">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Local SDP Offer / Answer</label>
+          <textarea id="manual-local-sdp" readonly rows="3" class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-muted select-all outline-none"></textarea>
+          <button id="btn-copy-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-xs font-bold transition-colors">Copy Local SDP</button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Remote SDP (Paste from Opponent)</label>
+          <textarea id="manual-remote-sdp" rows="3" placeholder="Paste remote SDP here..." class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-ink outline-none focus:border-amber-500"></textarea>
+          <button id="btn-apply-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors">Connect via SDP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT: HERO CLASSES, COMBAT ENGINE, P2P & VFX      -->
+  <!-- ======================================================= -->
+  <script>
+    // ==========================================
+    // 1. HERO CLASSES & ABILITIES DEFINITIONS
+    // ==========================================
+    const HERO_CLASSES = {
+      pyromancer: {
+        id: 'pyromancer',
+        name: 'Pyromancer',
+        title: 'Flame Sage',
+        element: 'fire',
+        elementIcon: '🔥',
+        role: 'High Burst Magic & Burn DoTs',
+        avatarEmoji: '🔥',
+        maxHp: 280,
+        maxMp: 120,
+        atk: 52,
+        def: 24,
+        spd: 42,
+        crit: 0.15,
+        color: '#f97316',
+        skills: [
+          { id: 'inferno', name: 'Inferno Surge', cost: 35, power: 65, type: 'magic', element: 'fire', icon: '🔥', desc: 'Blasts enemy with fire. 75% chance to Burn for 3 turns (18 dmg/turn).' },
+          { id: 'barrier', name: 'Flame Barrier', cost: 25, power: 0, type: 'buff', element: 'fire', icon: '🛡️', desc: 'Conjures a blazing shield absorbing 55 damage.' },
+          { id: 'phoenix', name: 'Phoenix Flare', cost: 60, power: 95, type: 'ultimate', element: 'fire', icon: '🦅', desc: 'Devastating fiery blast. Heals caster for 30% of damage dealt.' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="pyroGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff7a00"/><stop offset="100%" stop-color="#b91c1c" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#pyroGlow)" opacity="0.6"/><path d="M 50 20 C 40 40, 20 60, 30 100 C 45 110, 55 110, 70 100 C 80 60, 60 40, 50 20 Z" fill="#ea580c"/><path d="M 50 30 C 44 45, 32 60, 38 90 C 48 98, 52 98, 62 90 C 68 60, 56 45, 50 30 Z" fill="#f97316"/><circle cx="50" cy="35" r="12" fill="#fed7aa"/><circle cx="46" cy="34" r="2.5" fill="#ea580c"/><circle cx="54" cy="34" r="2.5" fill="#ea580c"/><path d="M 35 25 Q 50 5 65 25 L 50 12 Z" fill="#c2410c"/><path d="M 75 30 L 82 110" stroke="#78350f" stroke-width="4" stroke-linecap="round"/><circle cx="75" cy="28" r="8" fill="#facc15" filter="drop-shadow(0 0 6px #f97316)"/></svg>`
+      },
+      paladin: {
+        id: 'paladin',
+        name: 'Sun Paladin',
+        title: 'Holy Knight',
+        element: 'holy',
+        elementIcon: '☀️',
+        role: 'Massive Defense, Shields & Smite',
+        avatarEmoji: '🛡️',
+        maxHp: 360,
+        maxMp: 90,
+        atk: 44,
+        def: 38,
+        spd: 30,
+        crit: 0.10,
+        color: '#fbbf24',
+        skills: [
+          { id: 'smite', name: 'Radiant Smite', cost: 30, power: 58, type: 'magic', element: 'holy', icon: '☀️', desc: 'Strikes with holy light. 1.5x damage against Shadow enemies.' },
+          { id: 'aegis', name: 'Holy Aegis', cost: 20, power: 0, type: 'buff', element: 'holy', icon: '✨', desc: 'Boosts DEF by 50% for 3 turns + heals 35 HP immediately.' },
+          { id: 'judgment', name: 'Judgment Blade', cost: 50, power: 85, type: 'ultimate', element: 'holy', icon: '👑', desc: 'Executes holy judgment. Deals +50% bonus DMG if enemy HP < 40%.' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="holyGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fef08a"/><stop offset="100%" stop-color="#eab308" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#holyGlow)" opacity="0.6"/><ellipse cx="50" cy="20" rx="18" ry="4" fill="none" stroke="#facc15" stroke-width="2.5"/><path d="M 35 45 L 65 45 L 70 105 L 30 105 Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5"/><path d="M 40 45 L 60 45 L 50 85 Z" fill="#facc15"/><circle cx="50" cy="35" r="14" fill="#94a3b8"/><path d="M 42 35 L 58 35 M 50 27 L 50 43" stroke="#facc15" stroke-width="2"/><path d="M 22 55 Q 15 75 22 95 Q 30 75 22 55 Z" fill="#f59e0b" stroke="#d97706" stroke-width="2"/><path d="M 78 30 L 85 105" stroke="#94a3b8" stroke-width="4"/><path d="M 72 45 L 91 45" stroke="#facc15" stroke-width="3"/></svg>`
+      },
+      assassin: {
+        id: 'assassin',
+        name: 'Shadow Rogue',
+        title: 'Nightblade',
+        element: 'shadow',
+        elementIcon: '🌑',
+        role: 'High Speed, Deadly Crits & Poison',
+        avatarEmoji: '🗡️',
+        maxHp: 260,
+        maxMp: 100,
+        atk: 58,
+        def: 20,
+        spd: 55,
+        crit: 0.30,
+        color: '#a855f7',
+        skills: [
+          { id: 'poison_blade', name: 'Poison Dagger', cost: 25, power: 48, type: 'physical', element: 'shadow', icon: '🧪', desc: 'Strikes with venom. Inflicts Deadly Poison for 3 turns (22 dmg/turn).' },
+          { id: 'shadow_veil', name: 'Shadow Veil', cost: 30, power: 0, type: 'buff', element: 'shadow', icon: '🌑', desc: 'Cloaks in shadows. Grants +40% CRIT rate and 50% dodge chance.' },
+          { id: 'assassinate', name: 'Assassinate', cost: 55, power: 100, type: 'ultimate', element: 'shadow', icon: '💀', desc: 'Lethal strike from the darkness with 2.2x Critical Hit multiplier.' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="shadowGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#581c87" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#shadowGlow)" opacity="0.6"/><path d="M 32 40 C 20 60, 25 100, 30 110 C 50 115, 60 115, 70 110 C 75 100, 80 60, 68 40 Z" fill="#1e1b4b"/><path d="M 36 28 C 30 40, 70 40, 64 28 C 60 16, 40 16, 36 28 Z" fill="#312e81"/><circle cx="45" cy="32" r="2.5" fill="#a855f7" filter="drop-shadow(0 0 4px #c084fc)"/><circle cx="55" cy="32" r="2.5" fill="#a855f7" filter="drop-shadow(0 0 4px #c084fc)"/><path d="M 20 60 L 15 95" stroke="#94a3b8" stroke-width="3"/><path d="M 80 60 L 85 95" stroke="#94a3b8" stroke-width="3"/><path d="M 15 60 L 25 60 M 75 60 L 85 60" stroke="#a855f7" stroke-width="2"/></svg>`
+      },
+      stormcaller: {
+        id: 'stormcaller',
+        name: 'Stormcaller',
+        title: 'Lightning Sorcerer',
+        element: 'thunder',
+        elementIcon: '⚡',
+        role: 'Elemental Burst & Stun Control',
+        avatarEmoji: '⚡',
+        maxHp: 270,
+        maxMp: 130,
+        atk: 50,
+        def: 22,
+        spd: 48,
+        crit: 0.20,
+        color: '#eab308',
+        skills: [
+          { id: 'chain_lightning', name: 'Chain Lightning', cost: 30, power: 60, type: 'magic', element: 'thunder', icon: '⚡', desc: 'Arcs electricity. 40% chance to Shock/Stun enemy for 1 turn.' },
+          { id: 'static_surge', name: 'Static Surge', cost: 20, power: 0, type: 'buff', element: 'thunder', icon: '🔋', desc: 'Overcharges aura. +35% ATK for 3 turns + refunds 15 MP.' },
+          { id: 'tempest', name: 'Tempest Thunder', cost: 60, power: 92, type: 'ultimate', element: 'thunder', icon: '⛈️', desc: 'Summons violent thunderstorm piercing 35% of enemy Defense.' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="thunderGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fef08a"/><stop offset="100%" stop-color="#ca8a04" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#thunderGlow)" opacity="0.6"/><path d="M 40 40 L 60 40 L 72 105 L 28 105 Z" fill="#1e1b4b"/><path d="M 45 45 L 55 45 L 50 100 Z" fill="#facc15"/><circle cx="50" cy="30" r="12" fill="#fed7aa"/><path d="M 35 25 Q 50 10 65 25 L 50 15 Z" fill="#3b82f6"/><path d="M 75 35 L 85 20 L 78 50 L 90 40 L 75 80" stroke="#facc15" stroke-width="2.5" fill="none" filter="drop-shadow(0 0 5px #eab308)"/><circle cx="25" cy="55" r="6" fill="#67e8f9" filter="drop-shadow(0 0 6px #38bdf8)"/><circle cx="75" cy="55" r="6" fill="#67e8f9" filter="drop-shadow(0 0 6px #38bdf8)"/></svg>`
+      },
+      frost: {
+        id: 'frost',
+        name: 'Frost Mystic',
+        title: 'Glacial Sage',
+        element: 'ice',
+        elementIcon: '❄️',
+        role: 'Slowing Debuffs, Ice Shields & Freeze',
+        avatarEmoji: '❄️',
+        maxHp: 310,
+        maxMp: 110,
+        atk: 46,
+        def: 32,
+        spd: 36,
+        crit: 0.12,
+        color: '#38bdf8',
+        skills: [
+          { id: 'frostbite', name: 'Frostbite', cost: 30, power: 54, type: 'magic', element: 'ice', icon: '❄️', desc: 'Chills the target, inflicting Slow (-30% SPD & -20% ATK) for 2 turns.' },
+          { id: 'glacial_wall', name: 'Glacial Wall', cost: 25, power: 0, type: 'buff', element: 'ice', icon: '🧊', desc: 'Erects an icy barricade absorbing 65 damage.' },
+          { id: 'absolute_zero', name: 'Absolute Zero', cost: 55, power: 88, type: 'ultimate', element: 'ice', icon: '💎', desc: 'Deep freeze strike. Deals 1.5x damage against Fire enemies.' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="iceGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#bae6fd"/><stop offset="100%" stop-color="#0284c7" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#iceGlow)" opacity="0.6"/><path d="M 38 40 L 62 40 L 70 105 L 30 105 Z" fill="#0369a1"/><path d="M 45 42 L 55 42 L 50 95 Z" fill="#7dd3fc"/><circle cx="50" cy="30" r="12" fill="#e0f2fe"/><path d="M 40 18 L 50 8 L 60 18 L 50 25 Z" fill="#38bdf8" filter="drop-shadow(0 0 4px #bae6fd)"/><path d="M 75 25 L 82 110" stroke="#bae6fd" stroke-width="3.5"/><polygon points="75,20 80,10 85,20 80,30" fill="#e0f2fe" filter="drop-shadow(0 0 6px #38bdf8)"/></svg>`
+      },
+      berserker: {
+        id: 'berserker',
+        name: 'Iron Berserker',
+        title: 'Blood Warrior',
+        element: 'physical',
+        elementIcon: '🩸',
+        role: 'Enormous HP & Raw Attack Power',
+        avatarEmoji: '🪓',
+        maxHp: 380,
+        maxMp: 80,
+        atk: 60,
+        def: 22,
+        spd: 34,
+        crit: 0.18,
+        color: '#ef4444',
+        skills: [
+          { id: 'blood_rage', name: 'Blood Rage', cost: 15, power: 0, type: 'buff', element: 'physical', icon: '🩸', desc: 'Sacrifices 20 HP to gain +50% ATK for 3 turns.' },
+          { id: 'skull_crusher', name: 'Skull Crusher', cost: 30, power: 70, type: 'physical', element: 'physical', icon: '💥', desc: 'Heavy blunt strike. Lowers opponent DEF by 30% for 2 turns.' },
+          { id: 'rampage', name: 'Rampage', cost: 50, power: 95, type: 'ultimate', element: 'physical', icon: '🪓', desc: 'Furious assault with Lifesteal (heals for 35% of damage dealt).' }
+        ],
+        svg: `<svg viewBox="0 0 100 130" class="w-full h-full"><defs><radialGradient id="berserkGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#991b1b" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="65" r="45" fill="url(#berserkGlow)" opacity="0.6"/><path d="M 30 45 L 70 45 L 75 105 L 25 105 Z" fill="#450a0a" stroke="#7f1d1d" stroke-width="2"/><circle cx="50" cy="32" r="14" fill="#78350f"/><path d="M 32 25 Q 20 10 25 5 Q 35 15 38 25 Z" fill="#e2e8f0"/><path d="M 68 25 Q 80 10 75 5 Q 65 15 62 25 Z" fill="#e2e8f0"/><path d="M 40 32 L 60 32" stroke="#ef4444" stroke-width="3"/><path d="M 75 30 L 88 110" stroke="#78350f" stroke-width="4"/><path d="M 65 35 Q 85 20 95 35 Q 85 50 65 35 Z" fill="#94a3b8" stroke="#475569" stroke-width="2"/></svg>`
+      }
+    };
+
+    // Shared Item Bag Definitions
+    const BATTLE_ITEMS = [
+      { id: 'potion_hp', name: 'Health Elixir', icon: '🧪', desc: 'Restores 100 HP instantly.', healHp: 100, healMp: 0 },
+      { id: 'potion_mp', name: 'Mana Nectar', icon: '💧', desc: 'Restores 60 MP instantly.', healHp: 0, healMp: 60 },
+      { id: 'cleanse', name: 'Miracle Salve', icon: '✨', desc: 'Removes all debuffs + heals 40 HP.', healHp: 40, healMp: 0, cleanse: true },
+      { id: 'dragon_root', name: 'Dragon Root', icon: '🌿', desc: 'Grants +40% ATK for 2 turns.', buffAtk: 0.40, turns: 2 }
+    ];
+
+    // ==========================================
+    // 2. SYNTHESIZED WEB AUDIO SOUND FX ENGINE
+    // ==========================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = localStorage.getItem('rpg-sound-muted') === 'true';
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playSlash() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(80, t + 0.14);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.14);
+      }
+      playFire() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.25);
+        gain.gain.setValueAtTime(0.45, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      }
+      playThunder() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [880, 440, 120].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, t + i * 0.05);
+          gain.gain.setValueAtTime(0.3, t + i * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.05 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.05);
+          osc.stop(t + i * 0.05 + 0.2);
+        });
+      }
+      playIce() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [700, 950, 1200].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t + i * 0.04);
+          gain.gain.setValueAtTime(0.2, t + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.04);
+          osc.stop(t + i * 0.04 + 0.18);
+        });
+      }
+      playHoly() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.06);
+          gain.gain.setValueAtTime(0.25, t + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.06);
+          osc.stop(t + i * 0.06 + 0.35);
+        });
+      }
+      playCrit() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Heavy bass crunch
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(380, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.3);
+        gain.gain.setValueAtTime(0.5, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      }
+      playShield() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, t);
+        osc.frequency.exponentialRampToValueAtTime(440, t + 0.2);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      }
+      playHeal() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [440, 554, 659].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t + i * 0.08);
+          gain.gain.setValueAtTime(0.25, t + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.08);
+          osc.stop(t + i * 0.08 + 0.3);
+        });
+      }
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523, 659, 784, 1046].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.35, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.5);
+        });
+      }
+      playDefeat() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [380, 340, 300, 220].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t + i * 0.15);
+          gain.gain.setValueAtTime(0.3, t + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.15);
+          osc.stop(t + i * 0.15 + 0.4);
+        });
+      }
+    }
+    const sound = new SoundEngine();
+
+    // ==========================================
+    // 3. ACHIEVEMENTS & PROFILE PROGRESSION
+    // ==========================================
+    const ACHIEVEMENTS_DATA = [
+      { id: 'first_blood', name: 'First Blood', desc: 'Win your first online or AI RPG battle', icon: '⚔️' },
+      { id: 'pyromaniac', name: 'Pyromaniac', desc: 'Win a match with Pyromancer using Inferno Surge', icon: '🔥' },
+      { id: 'divine_protector', name: 'Divine Fortress', desc: 'Win without dropping below 50% HP as Paladin', icon: '🛡️' },
+      { id: 'silent_death', name: 'Critical Assassin', desc: 'Land 2 or more Critical Hits in one battle', icon: '🗡️' },
+      { id: 'tempest_shock', name: 'Chain Voltage', desc: 'Stun/Shock an opponent with Stormcaller', icon: '⚡' },
+      { id: 'absolute_zero', name: 'Deep Freeze', desc: 'Defeat a Fire enemy using Frost Mystic', icon: '❄️' },
+      { id: 'bloodlust', name: 'Rampage Warrior', desc: 'Win a battle with less than 30 HP remaining', icon: '🩸' },
+      { id: 'alchemist', name: 'Battle Alchemist', desc: 'Use 2 or more items in a single match', icon: '🧪' },
+      { id: 'p2p_gladiator', name: 'WebRTC Gladiator', desc: 'Defeat a human opponent over WebRTC P2P', icon: '🌐' },
+      { id: 'archmage_slayer', name: 'Archmage Slayer', desc: 'Defeat the Boss difficulty AI bot', icon: '👑' },
+      { id: 'flawless_duel', name: 'Flawless Guard', desc: 'Successfully defend against 3 heavy attacks', icon: '✨' },
+      { id: 'veteran_warrior', name: 'Arena Veteran', desc: 'Complete 10 total RPG battles', icon: '🎖️' }
+    ];
+
+    class ProfileManager {
+      constructor() {
+        this.data = JSON.parse(localStorage.getItem('arcade-rpg-profile')) || {
+          name: 'Hero ' + Math.floor(100 + Math.random() * 900),
+          avatar: '⚔️',
+          selectedClass: 'pyromancer',
+          elo: 1200,
+          wins: 0,
+          losses: 0,
+          streak: 0,
+          xp: 20,
+          level: 1,
+          totalBattles: 0,
+          unlockedAchievements: []
+        };
+        this.save();
+      }
+      save() {
+        localStorage.setItem('arcade-rpg-profile', JSON.stringify(this.data));
+        this.updateUI();
+      }
+      addXP(amount) {
+        this.data.xp += amount;
+        const req = this.data.level * 100;
+        if (this.data.xp >= req) {
+          this.data.xp -= req;
+          this.data.level++;
+          showGlobalAlert(`🎉 Level Up! You reached Battle Rank ${this.data.level}!`, '🏆');
+        }
+        this.save();
+      }
+      unlockAchievement(id) {
+        if (!this.data.unlockedAchievements.includes(id)) {
+          this.data.unlockedAchievements.push(id);
+          const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+          if (ach) {
+            showGlobalAlert(`🏆 Achievement Unlocked: ${ach.name}!`, ach.icon);
+            this.addXP(60);
+          }
+          this.save();
+        }
+      }
+      updateUI() {
+        const trophyCountEl = document.getElementById('unlocked-badge-count');
+        if (trophyCountEl) trophyCountEl.textContent = `${this.data.unlockedAchievements.length}/${ACHIEVEMENTS_DATA.length}`;
+      }
+    }
+    const profile = new ProfileManager();
+
+    // ==========================================
+    // 4. COMBAT STATE & GAME CONTROLLER
+    // ==========================================
+    let gameMode = 'lobby'; // 'lobby', 'p2p_host', 'p2p_join', 'ai', 'pass_play'
+    let myHeroClass = 'pyromancer';
+    let opponentHeroClass = 'paladin';
+
+    // Battle instance fighters
+    let playerFighter = null;
+    let opponentFighter = null;
+    let turnCount = 1;
+    let isPlayerTurn = true;
+    let isProcessingAction = false;
+    let aiDifficulty = 'medium'; // 'easy', 'medium', 'boss'
+    let itemsUsedThisMatch = 0;
+    let matchDamageDealt = 0;
+    let criticalHitsLanded = 0;
+    let successfulDefends = 0;
+
+    // P2P WebRTC variables
+    let peer = null;
+    let conn = null;
+    let myPeerId = null;
+    let pingInterval = null;
+
+    // Elements
+    const viewLobby = document.getElementById('view-lobby');
+    const viewWaiting = document.getElementById('view-waiting');
+    const viewArena = document.getElementById('view-arena');
+    const combatLogEl = document.getElementById('tab-content-log');
+
+    // Create a Fighter object instance
+    function createFighter(heroKey, isPlayer = true, name = 'Fighter') {
+      const proto = HERO_CLASSES[heroKey] || HERO_CLASSES.pyromancer;
+      return {
+        id: proto.id,
+        name: name,
+        proto: proto,
+        isPlayer: isPlayer,
+        maxHp: proto.maxHp,
+        hp: proto.maxHp,
+        maxMp: proto.maxMp,
+        mp: proto.maxMp,
+        atk: proto.atk,
+        def: proto.def,
+        spd: proto.spd,
+        crit: proto.crit,
+        element: proto.element,
+        isDefending: false,
+        shieldHp: 0,
+        statusEffects: [], // { type: 'burn'|'poison'|'stun'|'atk_buff'|'def_buff', turns: 2, value: 18 }
+        usedItems: new Set()
+      };
+    }
+
+    // ==========================================
+    // 5. HERO SELECTION & PREVIEW UI
+    // ==========================================
+    function renderHeroSelectionGrid() {
+      const grid = document.getElementById('class-select-grid');
+      grid.innerHTML = '';
+
+      Object.values(HERO_CLASSES).forEach(hero => {
+        const isSelected = (hero.id === myHeroClass);
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${isSelected ? 'border-amber-500 bg-amber-500/15 shadow-glow-gold' : 'border-theme-line bg-theme-surface hover:border-amber-500/40'}`;
+        
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">${hero.avatarEmoji}</span>
+            <span class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-black/20 text-theme-muted uppercase">${hero.element}</span>
+          </div>
+          <div class="mt-2">
+            <h4 class="font-fantasy font-bold text-xs text-theme-ink truncate">${hero.name}</h4>
+            <span class="text-[10px] text-theme-muted font-mono block">HP: ${hero.maxHp} | ATK: ${hero.atk}</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          myHeroClass = hero.id;
+          renderHeroSelectionGrid();
+          updateHeroPreviewUI(hero.id);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    function updateHeroPreviewUI(heroKey) {
+      const hero = HERO_CLASSES[heroKey];
+      if (!hero) return;
+
+      document.getElementById('selected-class-title').textContent = `${hero.name} (${hero.title})`;
+      document.getElementById('preview-hero-name').textContent = hero.name;
+      document.getElementById('preview-hero-avatar').innerHTML = hero.avatarEmoji;
+      document.getElementById('preview-hero-role').textContent = hero.role;
+      document.getElementById('preview-hero-element').textContent = `${hero.elementIcon} ${hero.element}`;
+
+      document.getElementById('stat-hp-val').textContent = hero.maxHp;
+      document.getElementById('stat-mp-val').textContent = hero.maxMp;
+      document.getElementById('stat-atk-val').textContent = hero.atk;
+      document.getElementById('stat-def-val').textContent = hero.def;
+      document.getElementById('stat-spd-val').textContent = hero.spd;
+      document.getElementById('stat-crit-val').textContent = `${Math.round(hero.crit * 100)}%`;
+
+      // Render preview abilities
+      const abilGrid = document.getElementById('preview-abilities-grid');
+      abilGrid.innerHTML = '';
+
+      // Standard Attack preview
+      const basicCard = document.createElement('div');
+      basicCard.className = 'p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60';
+      basicCard.innerHTML = `<strong class="text-amber-400 font-bold">⚔️ Basic Attack (0 MP):</strong> Strike for physical damage. Builds +10 MP on hit.`;
+      abilGrid.appendChild(basicCard);
+
+      // Skills
+      hero.skills.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'p-2 rounded-xl bg-theme-surface-alt border border-theme-line/60';
+        card.innerHTML = `<strong class="text-amber-400 font-bold">${s.icon} ${s.name} (${s.cost} MP):</strong> ${s.desc}`;
+        abilGrid.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // 6. ARENA INITIALIZATION & RENDERING
+    // ==========================================
+    function startBattle() {
+      turnCount = 1;
+      itemsUsedThisMatch = 0;
+      matchDamageDealt = 0;
+      criticalHitsLanded = 0;
+      successfulDefends = 0;
+      isProcessingAction = false;
+
+      playerFighter = createFighter(myHeroClass, true, profile.data.name);
+      opponentFighter = createFighter(opponentHeroClass, false, (gameMode === 'ai' ? `Tactical AI (${aiDifficulty.toUpperCase()})` : 'Rival Player'));
+
+      // Speed check for first turn
+      isPlayerTurn = (playerFighter.spd >= opponentFighter.spd);
+
+      // Render Stage Sprites
+      renderStageSprites();
+      updateHUDs();
+      renderActionMenu();
+
+      // Clear combat log
+      combatLogEl.innerHTML = `<div class="text-amber-400 font-bold text-[11px] py-1 border-b border-theme-line">⚔️ Combat started! ${isPlayerTurn ? 'You have initiative (higher speed)!' : 'Opponent struck first with higher speed!'}</div>`;
+
+      showView('arena');
+
+      // If AI goes first
+      if (!isPlayerTurn && gameMode === 'ai') {
+        setTimeout(executeAITurn, 900);
+      }
+    }
+
+    function renderStageSprites() {
+      const pSprite = document.getElementById('player-character-sprite');
+      const oSprite = document.getElementById('opponent-character-sprite');
+
+      pSprite.innerHTML = playerFighter.proto.svg;
+      oSprite.innerHTML = opponentFighter.proto.svg;
+
+      // Flip opponent sprite horizontally so they face the player
+      oSprite.style.transform = 'scaleX(-1)';
+    }
+
+    function updateHUDs() {
+      // Player HUD
+      document.getElementById('player-name-display').textContent = playerFighter.name;
+      document.getElementById('player-class-icon').textContent = playerFighter.proto.avatarEmoji;
+      document.getElementById('player-element-badge').textContent = playerFighter.proto.element;
+      document.getElementById('player-hp-text').textContent = `${Math.max(0, playerFighter.hp)} / ${playerFighter.maxHp}`;
+      document.getElementById('player-mp-text').textContent = `${playerFighter.mp} / ${playerFighter.maxMp}`;
+
+      const pRatio = Math.max(0, playerFighter.hp / playerFighter.maxHp);
+      document.getElementById('player-hp-fill').style.width = `${pRatio * 100}%`;
+      document.getElementById('player-hp-ghost').style.width = `${pRatio * 100}%`;
+      document.getElementById('player-mp-fill').style.width = `${(playerFighter.mp / playerFighter.maxMp) * 100}%`;
+
+      // Opponent HUD
+      document.getElementById('opponent-name-display').textContent = opponentFighter.name;
+      document.getElementById('opponent-class-icon').textContent = opponentFighter.proto.avatarEmoji;
+      document.getElementById('opponent-element-badge').textContent = opponentFighter.proto.element;
+      document.getElementById('opponent-hp-text').textContent = `${Math.max(0, opponentFighter.hp)} / ${opponentFighter.maxHp}`;
+      document.getElementById('opponent-mp-text').textContent = `${opponentFighter.mp} / ${opponentFighter.maxMp}`;
+
+      const oRatio = Math.max(0, opponentFighter.hp / opponentFighter.maxHp);
+      document.getElementById('opponent-hp-fill').style.width = `${oRatio * 100}%`;
+      document.getElementById('opponent-hp-ghost').style.width = `${oRatio * 100}%`;
+      document.getElementById('opponent-mp-fill').style.width = `${(opponentFighter.mp / opponentFighter.maxMp) * 100}%`;
+
+      // Render Status Badges
+      renderStatusTray('player-status-tray', playerFighter);
+      renderStatusTray('opponent-status-tray', opponentFighter);
+
+      // Turn Banner
+      const turnText = document.getElementById('turn-text');
+      const turnDot = document.getElementById('turn-dot');
+      if (isPlayerTurn) {
+        turnText.textContent = 'Your Turn to Act';
+        turnDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+      } else {
+        turnText.textContent = `${opponentFighter.name}'s Turn`;
+        turnDot.className = 'w-2 h-2 rounded-full bg-stone-400';
+      }
+      document.getElementById('arena-round-pill').textContent = `ROUND ${turnCount}`;
+    }
+
+    function renderStatusTray(trayId, fighter) {
+      const tray = document.getElementById(trayId);
+      tray.innerHTML = '';
+
+      if (fighter.isDefending) {
+        tray.innerHTML += `<span class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-mono font-bold">🛡️ Guard</span>`;
+      }
+      if (fighter.shieldHp > 0) {
+        tray.innerHTML += `<span class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-mono font-bold">✨ Shield (${fighter.shieldHp})</span>`;
+      }
+
+      fighter.statusEffects.forEach(eff => {
+        let icon = '🔥';
+        let bg = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+        if (eff.type === 'poison') { icon = '🧪'; bg = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; }
+        if (eff.type === 'stun') { icon = '⚡'; bg = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; }
+        if (eff.type === 'atk_buff') { icon = '⚔️'; bg = 'bg-rose-500/20 text-rose-300 border-rose-500/40'; }
+        if (eff.type === 'def_buff') { icon = '🛡️'; bg = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; }
+        
+        tray.innerHTML += `<span class="px-1.5 py-0.2 rounded ${bg} border text-[9px] font-mono font-bold">${icon} ${eff.type.toUpperCase()} [${eff.turns}]</span>`;
+      });
+    }
+
+    // ==========================================
+    // 7. ACTION EXECUTION & COMBAT MATHEMATICS
+    // ==========================================
+    function getElementalMultiplier(attackerElem, defenderElem) {
+      if (attackerElem === 'fire' && defenderElem === 'ice') return 1.5;
+      if (attackerElem === 'ice' && defenderElem === 'fire') return 1.5;
+      if (attackerElem === 'thunder' && (defenderElem === 'ice' || defenderElem === 'water')) return 1.5;
+      if (attackerElem === 'holy' && defenderElem === 'shadow') return 1.5;
+      if (attackerElem === 'shadow' && defenderElem === 'holy') return 1.5;
+      return 1.0;
+    }
+
+    async function executePlayerAction(actionType, skillIndex = 0, itemId = null) {
+      if (!isPlayerTurn || isProcessingAction) return;
+      isProcessingAction = true;
+
+      // 1. Process action locally
+      const actionResult = calculateTurnAction(playerFighter, opponentFighter, actionType, skillIndex, itemId);
+      await playCombatAnimationAndApply(playerFighter, opponentFighter, actionResult);
+
+      // 2. Broadcast action over WebRTC if in P2P mode
+      if (conn && conn.open && (gameMode === 'p2p_host' || gameMode === 'p2p_join')) {
+        conn.send({
+          type: 'combat_action',
+          actionType: actionType,
+          skillIndex: skillIndex,
+          itemId: itemId,
+          result: actionResult
+        });
+      }
+
+      // 3. Check for battle victory / defeat
+      if (checkBattleOver()) return;
+
+      // 4. Pass turn to opponent
+      isPlayerTurn = false;
+      updateHUDs();
+
+      // If AI mode, trigger AI response after brief delay
+      if (gameMode === 'ai') {
+        setTimeout(executeAITurn, 800);
+      } else if (gameMode === 'pass_play') {
+        // In pass & play, swap turns locally
+        isPlayerTurn = true;
+        isProcessingAction = false;
+        renderActionMenu();
+      }
+    }
+
+    function calculateTurnAction(attacker, defender, actionType, skillIndex = 0, itemId = null) {
+      const res = {
+        actionType: actionType,
+        attackerName: attacker.name,
+        damage: 0,
+        heal: 0,
+        isCrit: false,
+        isBlocked: defender.isDefending,
+        elemMultiplier: 1.0,
+        statusApplied: null,
+        skillName: '',
+        logMsg: ''
+      };
+
+      // Reset defending flag on attacker's turn
+      attacker.isDefending = false;
+
+      // Calculate ATK multipliers from buffs
+      let effectiveAtk = attacker.atk;
+      attacker.statusEffects.forEach(eff => {
+        if (eff.type === 'atk_buff') effectiveAtk *= (1 + eff.value);
+      });
+
+      let effectiveDef = defender.def;
+      defender.statusEffects.forEach(eff => {
+        if (eff.type === 'def_buff') effectiveDef *= (1 + eff.value);
+      });
+
+      if (actionType === 'attack') {
+        res.skillName = 'Physical Strike';
+        attacker.mp = Math.min(attacker.maxMp, attacker.mp + 10);
+
+        const isCrit = Math.random() < attacker.crit;
+        res.isCrit = isCrit;
+        const critMult = isCrit ? 1.75 : 1.0;
+        const defMult = defender.isDefending ? 0.5 : 1.0;
+        const variance = 0.92 + Math.random() * 0.16;
+
+        let baseDmg = ((effectiveAtk * 40) / (effectiveDef * 1.35)) * critMult * defMult * variance;
+        res.damage = Math.max(8, Math.round(baseDmg));
+        res.logMsg = `${attacker.name} strikes with weapon for ${res.damage} damage!`;
+
+      } else if (actionType === 'skill') {
+        const skill = attacker.proto.skills[skillIndex];
+        res.skillName = skill.name;
+        attacker.mp = Math.max(0, attacker.mp - skill.cost);
+
+        if (skill.type === 'buff') {
+          if (skill.id === 'barrier' || skill.id === 'glacial_wall') {
+            attacker.shieldHp = (skill.id === 'barrier' ? 55 : 65);
+            res.logMsg = `${attacker.name} created an impenetrable barrier!`;
+          } else if (skill.id === 'aegis') {
+            attacker.statusEffects.push({ type: 'def_buff', turns: 3, value: 0.5 });
+            attacker.hp = Math.min(attacker.maxHp, attacker.hp + 35);
+            res.heal = 35;
+            res.logMsg = `${attacker.name} summoned Holy Aegis (+50% DEF & +35 HP)!`;
+          } else if (skill.id === 'shadow_veil') {
+            attacker.statusEffects.push({ type: 'atk_buff', turns: 2, value: 0.4 });
+            res.logMsg = `${attacker.name} slipped into Shadow Veil (+40% ATK)!`;
+          } else if (skill.id === 'static_surge') {
+            attacker.statusEffects.push({ type: 'atk_buff', turns: 3, value: 0.35 });
+            attacker.mp = Math.min(attacker.maxMp, attacker.mp + 15);
+            res.logMsg = `${attacker.name} surges with static electricity (+35% ATK)!`;
+          } else if (skill.id === 'blood_rage') {
+            attacker.hp = Math.max(1, attacker.hp - 20);
+            attacker.statusEffects.push({ type: 'atk_buff', turns: 3, value: 0.5 });
+            res.logMsg = `${attacker.name} triggered Blood Rage (+50% ATK)!`;
+          }
+        } else {
+          // Damaging spell
+          const isCrit = Math.random() < attacker.crit;
+          res.isCrit = isCrit;
+          const critMult = isCrit ? 1.75 : 1.0;
+          const defMult = defender.isDefending ? 0.5 : 1.0;
+          const elemMult = getElementalMultiplier(skill.element, defender.element);
+          res.elemMultiplier = elemMult;
+          const variance = 0.92 + Math.random() * 0.16;
+
+          let baseDmg = ((effectiveAtk * skill.power) / (effectiveDef * 1.35)) * critMult * defMult * elemMult * variance;
+          res.damage = Math.max(12, Math.round(baseDmg));
+
+          // Skill specific bonuses
+          if (skill.id === 'inferno' && Math.random() < 0.75) {
+            defender.statusEffects.push({ type: 'burn', turns: 3, value: 18 });
+            res.statusApplied = 'Burn';
+          } else if (skill.id === 'poison_blade') {
+            defender.statusEffects.push({ type: 'poison', turns: 3, value: 22 });
+            res.statusApplied = 'Poison';
+          } else if (skill.id === 'chain_lightning' && Math.random() < 0.40) {
+            defender.statusEffects.push({ type: 'stun', turns: 1, value: 0 });
+            res.statusApplied = 'Stun';
+          } else if (skill.id === 'phoenix' || skill.id === 'rampage') {
+            const lifesteal = Math.round(res.damage * 0.35);
+            attacker.hp = Math.min(attacker.maxHp, attacker.hp + lifesteal);
+            res.heal = lifesteal;
+          }
+
+          res.logMsg = `${attacker.name} unleashed ${skill.name} dealing ${res.damage} damage!`;
+        }
+
+      } else if (actionType === 'defend') {
+        attacker.isDefending = true;
+        attacker.mp = Math.min(attacker.maxMp, attacker.mp + 20);
+        res.logMsg = `${attacker.name} assumed a defensive guard stance (+20 MP)!`;
+
+      } else if (actionType === 'item') {
+        const item = BATTLE_ITEMS.find(i => i.id === itemId);
+        if (item) {
+          attacker.usedItems.add(item.id);
+          if (item.healHp > 0) {
+            attacker.hp = Math.min(attacker.maxHp, attacker.hp + item.healHp);
+            res.heal = item.healHp;
+          }
+          if (item.healMp > 0) {
+            attacker.mp = Math.min(attacker.maxMp, attacker.mp + item.healMp);
+          }
+          if (item.cleanse) {
+            attacker.statusEffects = attacker.statusEffects.filter(e => e.type === 'atk_buff' || e.type === 'def_buff');
+          }
+          if (item.buffAtk) {
+            attacker.statusEffects.push({ type: 'atk_buff', turns: item.turns, value: item.buffAtk });
+          }
+          res.logMsg = `${attacker.name} used ${item.name}!`;
+        }
+      }
+
+      return res;
+    }
+
+    async function playCombatAnimationAndApply(attacker, defender, result) {
+      const stage = document.getElementById('battle-stage');
+      const attackerSprite = attacker.isPlayer ? document.getElementById('player-character-sprite') : document.getElementById('opponent-character-sprite');
+      const defenderSprite = defender.isPlayer ? document.getElementById('player-character-sprite') : document.getElementById('opponent-character-sprite');
+      const targetAnchor = defender.isPlayer ? document.getElementById('player-stage-anchor') : document.getElementById('opponent-stage-anchor');
+
+      // 1. Attacker Animation
+      if (result.actionType === 'attack') {
+        sound.playSlash();
+        attackerSprite.classList.add('animate-lunge-attack');
+        setTimeout(() => attackerSprite.classList.remove('animate-lunge-attack'), 450);
+      } else if (result.actionType === 'skill') {
+        if (result.damage > 0) {
+          if (attacker.proto.element === 'fire') sound.playFire();
+          else if (attacker.proto.element === 'thunder') sound.playThunder();
+          else if (attacker.proto.element === 'ice') sound.playIce();
+          else sound.playHoly();
+        } else {
+          sound.playShield();
+        }
+      } else if (result.actionType === 'defend') {
+        sound.playShield();
+      } else if (result.actionType === 'item') {
+        sound.playHeal();
+      }
+
+      // 2. Apply Damage & Target Reaction
+      if (result.damage > 0) {
+        if (defender.shieldHp > 0) {
+          const absorbed = Math.min(defender.shieldHp, result.damage);
+          defender.shieldHp -= absorbed;
+          result.damage -= absorbed;
+        }
+
+        defender.hp = Math.max(0, defender.hp - result.damage);
+        matchDamageDealt += result.damage;
+
+        // Defender hit shake & red flash
+        defenderSprite.classList.add('animate-hit-shake');
+        setTimeout(() => defenderSprite.classList.remove('animate-hit-shake'), 400);
+
+        if (result.isCrit) {
+          sound.playCrit();
+          stage.classList.add('animate-screen-rumble');
+          setTimeout(() => stage.classList.remove('animate-screen-rumble'), 500);
+          criticalHitsLanded++;
+          if (criticalHitsLanded >= 2) profile.unlockAchievement('silent_death');
+        }
+
+        // Spawn combat floating text
+        spawnCombatText(targetAnchor, result.damage, result.isCrit, result.elemMultiplier > 1.0);
+      }
+
+      if (result.heal > 0) {
+        const anchor = attacker.isPlayer ? document.getElementById('player-stage-anchor') : document.getElementById('opponent-stage-anchor');
+        spawnHealText(anchor, result.heal);
+      }
+
+      // Append log entry
+      appendCombatLog(result.logMsg, result.isCrit);
+
+      updateHUDs();
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    function spawnCombatText(anchorEl, amount, isCrit, isSuperEffective) {
+      const layer = document.getElementById('combat-text-layer');
+      const rect = anchorEl.getBoundingClientRect();
+      const stageRect = document.getElementById('battle-stage').getBoundingClientRect();
+
+      const span = document.createElement('div');
+      span.className = `combat-text ${isCrit ? 'text-amber-400 text-2xl sm:text-3xl' : 'text-white text-lg sm:text-xl'}`;
+      span.style.left = `${(rect.left - stageRect.left) + rect.width / 2}px`;
+      span.style.top = `${(rect.top - stageRect.top) + 20}px`;
+
+      let banner = '';
+      if (isCrit) banner = '<span class="block text-[11px] font-mono text-amber-300 font-bold tracking-widest">CRITICAL!</span>';
+      if (isSuperEffective) banner += '<span class="block text-[10px] font-mono text-orange-400 font-bold">1.5x EFFECTIVE</span>';
+
+      span.innerHTML = `${banner}-${amount}`;
+      layer.appendChild(span);
+      setTimeout(() => span.remove(), 1200);
+    }
+
+    function spawnHealText(anchorEl, amount) {
+      const layer = document.getElementById('combat-text-layer');
+      const rect = anchorEl.getBoundingClientRect();
+      const stageRect = document.getElementById('battle-stage').getBoundingClientRect();
+
+      const span = document.createElement('div');
+      span.className = 'combat-text text-emerald-400 text-xl font-bold';
+      span.style.left = `${(rect.left - stageRect.left) + rect.width / 2}px`;
+      span.style.top = `${(rect.top - stageRect.top) + 20}px`;
+      span.textContent = `+${amount} HP`;
+      layer.appendChild(span);
+      setTimeout(() => span.remove(), 1200);
+    }
+
+    function appendCombatLog(msg, isCrit = false) {
+      const div = document.createElement('div');
+      div.className = `py-1 px-1.5 rounded text-[11px] font-mono ${isCrit ? 'bg-amber-500/15 text-amber-300 font-bold' : 'text-theme-ink'}`;
+      div.innerHTML = `<span>${escapeHtml(msg)}</span>`;
+      combatLogEl.appendChild(div);
+      combatLogEl.scrollTop = combatLogEl.scrollHeight;
+    }
+
+    // ==========================================
+    // 8. STATUS EFFECT TICKS & TURN MANAGEMENT
+    // ==========================================
+    async function processEndOfTurnStatus(fighter) {
+      const remaining = [];
+      for (const eff of fighter.statusEffects) {
+        if (eff.type === 'burn' || eff.type === 'poison') {
+          fighter.hp = Math.max(0, fighter.hp - eff.value);
+          sound.playFire();
+          appendCombatLog(`${fighter.name} took ${eff.value} ${eff.type.toUpperCase()} damage!`);
+          updateHUDs();
+          await new Promise(r => setTimeout(r, 400));
+        }
+        eff.turns--;
+        if (eff.turns > 0) remaining.push(eff);
+      }
+      fighter.statusEffects = remaining;
+    }
+
+    // Check if Battle is Finished
+    function checkBattleOver() {
+      if (opponentFighter.hp <= 0) {
+        handleVictory();
+        return true;
+      }
+      if (playerFighter.hp <= 0) {
+        handleDefeat();
+        return true;
+      }
+      return false;
+    }
+
+    function handleVictory() {
+      sound.playVictory();
+      profile.data.wins++;
+      profile.data.streak++;
+      profile.data.totalBattles++;
+      profile.data.elo += 20;
+      profile.addXP(50);
+      profile.unlockAchievement('first_blood');
+
+      if (gameMode === 'ai' && aiDifficulty === 'boss') profile.unlockAchievement('archmage_slayer');
+      if (gameMode === 'p2p_host' || gameMode === 'p2p_join') profile.unlockAchievement('p2p_gladiator');
+      if (myHeroClass === 'pyromancer') profile.unlockAchievement('pyromaniac');
+      if (myHeroClass === 'paladin' && playerFighter.hp >= playerFighter.maxHp * 0.5) profile.unlockAchievement('divine_protector');
+      if (myHeroClass === 'berserker' && playerFighter.hp < 30) profile.unlockAchievement('bloodlust');
+      if (profile.data.totalBattles >= 10) profile.unlockAchievement('veteran_warrior');
+
+      profile.save();
+
+      document.getElementById('game-over-title').textContent = 'Glorious Victory!';
+      document.getElementById('game-over-subtitle').textContent = `${opponentFighter.name} was vanquished!`;
+      document.getElementById('summary-dmg-dealt').textContent = matchDamageDealt;
+      document.getElementById('summary-turn-count').textContent = turnCount;
+      document.getElementById('summary-elo-change').textContent = '+20 ELO';
+      document.getElementById('summary-elo-change').className = 'text-emerald-400 font-bold';
+
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      document.getElementById('modal-game-over').classList.remove('hidden');
+    }
+
+    function handleDefeat() {
+      sound.playDefeat();
+      profile.data.losses++;
+      profile.data.streak = 0;
+      profile.data.totalBattles++;
+      profile.data.elo = Math.max(800, profile.data.elo - 15);
+      profile.addXP(15);
+      profile.save();
+
+      document.getElementById('game-over-title').textContent = 'Defeat in Battle';
+      document.getElementById('game-over-subtitle').textContent = 'Your champion succumbed to fatal wounds';
+      document.getElementById('summary-dmg-dealt').textContent = matchDamageDealt;
+      document.getElementById('summary-turn-count').textContent = turnCount;
+      document.getElementById('summary-elo-change').textContent = '-15 ELO';
+      document.getElementById('summary-elo-change').className = 'text-rose-400 font-bold';
+
+      document.getElementById('modal-game-over').classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 9. AI DECISION ENGINE
+    // ==========================================
+    async function executeAITurn() {
+      if (checkBattleOver()) return;
+
+      // Status ticks
+      await processEndOfTurnStatus(opponentFighter);
+      if (checkBattleOver()) return;
+
+      // Check if stunned
+      const isStunned = opponentFighter.statusEffects.some(e => e.type === 'stun');
+      if (isStunned) {
+        appendCombatLog(`${opponentFighter.name} is Stunned and could not move!`);
+        opponentFighter.statusEffects = opponentFighter.statusEffects.filter(e => e.type !== 'stun');
+        isPlayerTurn = true;
+        isProcessingAction = false;
+        turnCount++;
+        updateHUDs();
+        renderActionMenu();
+        return;
+      }
+
+      // AI Decision Tree
+      let actionType = 'attack';
+      let skillIndex = 0;
+      let itemId = null;
+
+      // 1. Heal if low HP and item/skill available
+      if (opponentFighter.hp < opponentFighter.maxHp * 0.35 && !opponentFighter.usedItems.has('potion_hp')) {
+        actionType = 'item';
+        itemId = 'potion_hp';
+      } else {
+        // 2. Evaluate skills
+        const affordableSkills = opponentFighter.proto.skills
+          .map((s, idx) => ({ ...s, idx }))
+          .filter(s => s.cost <= opponentFighter.mp);
+
+        if (affordableSkills.length > 0) {
+          // Prioritize ultimate or high power
+          affordableSkills.sort((a, b) => b.power - a.power);
+          actionType = 'skill';
+          skillIndex = affordableSkills[0].idx;
+        } else {
+          actionType = 'attack';
+        }
+      }
+
+      const aiResult = calculateTurnAction(opponentFighter, playerFighter, actionType, skillIndex, itemId);
+      await playCombatAnimationAndApply(opponentFighter, playerFighter, aiResult);
+
+      if (checkBattleOver()) return;
+
+      // Process Player Status ticks
+      await processEndOfTurnStatus(playerFighter);
+      if (checkBattleOver()) return;
+
+      isPlayerTurn = true;
+      isProcessingAction = false;
+      turnCount++;
+      updateHUDs();
+      renderActionMenu();
+    }
+
+    // ==========================================
+    // 10. ACTION MENU RENDERING & SUBMENUS
+    // ==========================================
+    const cmdMenuTitle = document.getElementById('cmd-menu-title');
+    const btnMenuBack = document.getElementById('btn-menu-back');
+    const actionMenuContainer = document.getElementById('action-menu-container');
+
+    function renderActionMenu() {
+      cmdMenuTitle.textContent = '⚔️ Choose Action';
+      btnMenuBack.classList.add('hidden');
+      actionMenuContainer.className = 'grid grid-cols-2 gap-2 sm:gap-2.5 flex-1 items-center';
+
+      actionMenuContainer.innerHTML = `
+        <button id="btn-cmd-attack" type="button" class="rpg-cmd-btn group">
+          <div>
+            <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">⚔️ Physical Strike</span>
+            <span class="text-[10px] text-theme-muted font-mono font-normal">Basic strike • 0 MP • +10 MP</span>
+          </div>
+          <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+        </button>
+
+        <button id="btn-cmd-skills" type="button" class="rpg-cmd-btn group">
+          <div>
+            <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">✨ Special Skills</span>
+            <span class="text-[10px] text-theme-muted font-mono font-normal">Class magic & elemental spells</span>
+          </div>
+          <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+        </button>
+
+        <button id="btn-cmd-defend" type="button" class="rpg-cmd-btn group">
+          <div>
+            <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">🛡️ Guard & Defend</span>
+            <span class="text-[10px] text-theme-muted font-mono font-normal">50% DMG reduction • +20 MP</span>
+          </div>
+          <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+        </button>
+
+        <button id="btn-cmd-items" type="button" class="rpg-cmd-btn group">
+          <div>
+            <span class="block font-fantasy font-black text-sm text-theme-ink group-hover:text-amber-400">🎒 Item Pouch</span>
+            <span class="text-[10px] text-theme-muted font-mono font-normal">Potions, elixirs & buff herbs</span>
+          </div>
+          <span class="text-xs opacity-0 group-hover:opacity-100 transition-opacity">👉</span>
+        </button>
+      `;
+
+      document.getElementById('btn-cmd-attack').addEventListener('click', () => executePlayerAction('attack'));
+      document.getElementById('btn-cmd-skills').addEventListener('click', showSkillsSubmenu);
+      document.getElementById('btn-cmd-defend').addEventListener('click', () => executePlayerAction('defend'));
+      document.getElementById('btn-cmd-items').addEventListener('click', showItemsSubmenu);
+    }
+
+    function showSkillsSubmenu() {
+      cmdMenuTitle.textContent = '✨ Cast Special Skill';
+      btnMenuBack.classList.remove('hidden');
+      actionMenuContainer.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1 items-center';
+      actionMenuContainer.innerHTML = '';
+
+      playerFighter.proto.skills.forEach((skill, idx) => {
+        const canAfford = (playerFighter.mp >= skill.cost);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = !canAfford;
+        btn.className = 'rpg-cmd-btn group';
+        btn.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-fantasy font-bold text-xs text-theme-ink group-hover:text-amber-400">${skill.icon} ${skill.name}</span>
+              <span class="text-[10px] font-mono font-bold ${canAfford ? 'text-cyan-400' : 'text-rose-400'}">${skill.cost} MP</span>
+            </div>
+            <p class="text-[9px] text-theme-muted mt-0.5 line-clamp-2">${skill.desc}</p>
+          </div>
+        `;
+        btn.addEventListener('click', () => executePlayerAction('skill', idx));
+        actionMenuContainer.appendChild(btn);
+      });
+    }
+
+    function showItemsSubmenu() {
+      cmdMenuTitle.textContent = '🎒 Use Battle Item';
+      btnMenuBack.classList.remove('hidden');
+      actionMenuContainer.className = 'grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1 items-center';
+      actionMenuContainer.innerHTML = '';
+
+      BATTLE_ITEMS.forEach(item => {
+        const isUsed = playerFighter.usedItems.has(item.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = isUsed;
+        btn.className = 'rpg-cmd-btn group';
+        btn.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-fantasy font-bold text-xs text-theme-ink group-hover:text-amber-400">${item.icon} ${item.name}</span>
+              <span class="text-[9px] font-mono ${isUsed ? 'text-rose-400' : 'text-emerald-400'}">${isUsed ? 'Used' : '1x'}</span>
+            </div>
+            <p class="text-[9px] text-theme-muted mt-0.5">${item.desc}</p>
+          </div>
+        `;
+        btn.addEventListener('click', () => executePlayerAction('item', 0, item.id));
+        actionMenuContainer.appendChild(btn);
+      });
+    }
+
+    btnMenuBack.addEventListener('click', renderActionMenu);
+
+    // ==========================================
+    // 11. WEBRTC P2P NETWORKING (PEERJS)
+    // ==========================================
+    function initPeer(customId = null) {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+
+      peer = new Peer(customId || undefined, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      peer.on('open', (id) => {
+        myPeerId = id;
+        updateP2PStatus('connected', 'Signaling Ready');
+      });
+
+      peer.on('connection', (c) => {
+        conn = c;
+        setupDataChannelEvents();
+      });
+
+      peer.on('error', (err) => {
+        showGlobalAlert(`Network: ${err.type || 'Connection error'}`, '⚠️');
+      });
+    }
+
+    function setupDataChannelEvents() {
+      conn.on('open', () => {
+        updateP2PStatus('live', 'P2P Connected');
+        showGlobalAlert('Rival connected! RPG Battle commencing...', '⚔️');
+
+        if (gameMode === 'p2p_host') {
+          conn.send({
+            type: 'init_match',
+            hostClass: myHeroClass,
+            hostName: profile.data.name
+          });
+        } else {
+          conn.send({
+            type: 'joiner_hero',
+            joinerClass: myHeroClass,
+            joinerName: profile.data.name
+          });
+        }
+      });
+
+      conn.on('data', (data) => {
+        handleP2PMessage(data);
+      });
+
+      conn.on('close', () => {
+        updateP2PStatus('disconnected', 'Opponent Fled');
+        showGlobalAlert('Opponent disconnected from battle.', '⚠️');
+      });
+    }
+
+    function handleP2PMessage(data) {
+      if (!data || !data.type) return;
+
+      switch (data.type) {
+        case 'init_match':
+          opponentHeroClass = data.hostClass;
+          startBattle();
+          break;
+
+        case 'joiner_hero':
+          opponentHeroClass = data.joinerClass;
+          startBattle();
+          break;
+
+        case 'combat_action':
+          // Opponent performed action -> apply cleanly
+          playCombatAnimationAndApply(opponentFighter, playerFighter, data.result).then(() => {
+            if (!checkBattleOver()) {
+              isPlayerTurn = true;
+              isProcessingAction = false;
+              turnCount++;
+              updateHUDs();
+              renderActionMenu();
+            }
+          });
+          break;
+
+        case 'chat':
+          receiveChatMessage(data.sender, data.text);
+          break;
+
+        case 'taunt':
+          spawnFloatingTaunt(data.emoji);
+          break;
+
+        case 'rematch':
+          startBattle();
+          showGlobalAlert('Rematch accepted!', '⚔️');
+          break;
+      }
+    }
+
+    function updateP2PStatus(state, text) {
+      const dot = document.getElementById('header-status-dot');
+      const textEl = document.getElementById('header-status-text');
+      if (textEl) textEl.textContent = text;
+      if (dot) {
+        if (state === 'live') dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        else if (state === 'connected') dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        else dot.className = 'w-2 h-2 rounded-full bg-stone-400';
+      }
+    }
+
+    // ==========================================
+    // 12. CHAT & TAUNTS
+    // ==========================================
+    const chatInputForm = document.getElementById('chat-input-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessagesContainer = document.getElementById('chat-messages-container');
+    const tabBtnLog = document.getElementById('tab-btn-log');
+    const tabBtnChat = document.getElementById('tab-btn-chat');
+    const tabContentLog = document.getElementById('tab-content-log');
+    const tabContentChat = document.getElementById('tab-content-chat');
+    const chatUnreadDot = document.getElementById('chat-unread-dot');
+
+    tabBtnLog.addEventListener('click', () => {
+      tabBtnLog.className = 'px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-amber-500 text-black transition-all';
+      tabBtnChat.className = 'px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt transition-all relative';
+      tabContentLog.classList.remove('hidden');
+      tabContentChat.classList.add('hidden');
+    });
+
+    tabBtnChat.addEventListener('click', () => {
+      tabBtnChat.className = 'px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-amber-500 text-black transition-all relative';
+      tabBtnLog.className = 'px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt transition-all';
+      tabContentChat.classList.remove('hidden');
+      tabContentLog.classList.add('hidden');
+      chatUnreadDot.classList.add('hidden');
+    });
+
+    chatInputForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatInput.value = '';
+
+      appendChatMessage(profile.data.name, text, true);
+
+      if (conn && conn.open) {
+        conn.send({ type: 'chat', text, sender: profile.data.name });
+      }
+    });
+
+    function receiveChatMessage(sender, text) {
+      appendChatMessage(sender, text, false);
+      if (tabContentChat.classList.contains('hidden')) {
+        chatUnreadDot.classList.remove('hidden');
+      }
+    }
+
+    function appendChatMessage(sender, text, isMe) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `p-2 rounded-xl text-xs max-w-[85%] ${isMe ? 'ml-auto bg-amber-500 text-black font-bold' : 'mr-auto bg-theme-surface-alt border border-theme-line text-theme-ink'}`;
+      msgDiv.innerHTML = `<span class="block text-[9px] opacity-75 font-mono">${sender}</span><span>${escapeHtml(text)}</span>`;
+      chatMessagesContainer.appendChild(msgDiv);
+      chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    // Taunts
+    document.querySelectorAll('.btn-taunt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const emoji = btn.dataset.emoji;
+        spawnFloatingTaunt(emoji);
+        if (conn && conn.open) {
+          conn.send({ type: 'taunt', emoji });
+        }
+      });
+    });
+
+    function spawnFloatingTaunt(emoji) {
+      const overlay = document.getElementById('taunts-overlay');
+      const span = document.createElement('span');
+      span.className = 'floating-emoji';
+      span.textContent = emoji;
+      span.style.left = `${20 + Math.random() * 60}%`;
+      span.style.top = `${60 + Math.random() * 20}%`;
+      overlay.appendChild(span);
+      setTimeout(() => span.remove(), 2300);
+    }
+
+    // Global Alert Notice
+    function showGlobalAlert(msg, icon = '⚠️') {
+      const banner = document.getElementById('global-alert-banner');
+      const msgEl = document.getElementById('alert-message');
+      const iconEl = document.getElementById('alert-icon');
+      msgEl.textContent = msg;
+      iconEl.textContent = icon;
+      banner.className = 'px-3 py-2 text-center text-xs font-medium border-b bg-amber-500/15 border-amber-500/30 text-amber-300 transition-all duration-300 block';
+      setTimeout(() => {
+        banner.className = 'hidden';
+      }, 5000);
+    }
+    document.getElementById('btn-alert-close').addEventListener('click', () => {
+      document.getElementById('global-alert-banner').className = 'hidden';
+    });
+
+    // ==========================================
+    // 13. SCREEN FLOWS & LOBBY EVENTS
+    // ==========================================
+    function showView(viewId) {
+      viewLobby.classList.add('hidden');
+      viewWaiting.classList.add('hidden');
+      viewArena.classList.add('hidden');
+
+      if (viewId === 'lobby') viewLobby.classList.remove('hidden');
+      if (viewId === 'waiting') viewWaiting.classList.remove('hidden');
+      if (viewId === 'arena') viewArena.classList.remove('hidden');
+    }
+
+    // Host Game
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+      gameMode = 'p2p_host';
+      const roomCode = 'RPG-' + Math.floor(1000 + Math.random() * 9000);
+      initPeer(`ARCADE-${roomCode}`);
+
+      document.getElementById('display-room-code').textContent = roomCode;
+      const directUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+      document.getElementById('display-room-link').value = directUrl;
+
+      // Update social share buttons
+      const shareMsg = encodeURIComponent(`Challenge me in an Online RPG Battle on ArcadeLab! Room Code: ${roomCode}\n${directUrl}`);
+      document.getElementById('share-whatsapp').href = `https://api.whatsapp.com/send?text=${shareMsg}`;
+      document.getElementById('share-telegram').href = `https://t.me/share/url?url=${encodeURIComponent(directUrl)}&text=${encodeURIComponent('Join my RPG Duel!')}`;
+      document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${shareMsg}`;
+
+      // Generate QR Code
+      const qrWrapper = document.getElementById('qr-code-canvas-wrapper');
+      qrWrapper.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrWrapper, {
+          text: directUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      showView('waiting');
+    });
+
+    // Join Game
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      const codeInput = document.getElementById('input-join-code').value.trim().toUpperCase();
+      if (!codeInput) {
+        showGlobalAlert('Please enter a valid room code', '⚠️');
+        return;
+      }
+      const peerTargetId = codeInput.startsWith('ARCADE-') ? codeInput : `ARCADE-${codeInput}`;
+      gameMode = 'p2p_join';
+
+      initPeer();
+      peer.on('open', () => {
+        conn = peer.connect(peerTargetId, { reliable: true });
+        setupDataChannelEvents();
+      });
+    });
+
+    // Cancel Waiting
+    document.getElementById('btn-cancel-waiting').addEventListener('click', () => {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+      showView('lobby');
+    });
+
+    // Play vs AI
+    document.getElementById('btn-start-ai').addEventListener('click', () => {
+      gameMode = 'ai';
+      // Pick random opponent class different from player
+      const classes = Object.keys(HERO_CLASSES).filter(k => k !== myHeroClass);
+      opponentHeroClass = classes[Math.floor(Math.random() * classes.length)];
+      startBattle();
+    });
+
+    // Pass & Play
+    document.getElementById('btn-pass-play').addEventListener('click', () => {
+      gameMode = 'pass_play';
+      const classes = Object.keys(HERO_CLASSES).filter(k => k !== myHeroClass);
+      opponentHeroClass = classes[Math.floor(Math.random() * classes.length)];
+      startBattle();
+    });
+
+    // Forfeit / Flee
+    document.getElementById('btn-forfeit').addEventListener('click', () => {
+      if (confirm('Flee the battle and forfeit the match?')) {
+        handleDefeat();
+      }
+    });
+
+    // Rematch & Exit
+    document.getElementById('btn-rematch').addEventListener('click', () => {
+      document.getElementById('modal-game-over').classList.add('hidden');
+      if (gameMode === 'p2p_host' || gameMode === 'p2p_join') {
+        if (conn && conn.open) {
+          conn.send({ type: 'rematch' });
+        }
+      }
+      startBattle();
+    });
+
+    document.getElementById('btn-exit-to-lobby').addEventListener('click', () => {
+      document.getElementById('modal-game-over').classList.add('hidden');
+      if (conn) {
+        try { conn.close(); } catch (e) {}
+      }
+      showView('lobby');
+    });
+
+    // QR Code Toggle
+    document.getElementById('btn-toggle-qr').addEventListener('click', () => {
+      const container = document.getElementById('qr-container');
+      const arrow = document.getElementById('qr-arrow');
+      const isHidden = container.classList.toggle('hidden');
+      arrow.textContent = isHidden ? '▼' : '▲';
+    });
+
+    // Copy Code / Link
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+      const code = document.getElementById('display-room-code').textContent.trim();
+      navigator.clipboard.writeText(code);
+      document.getElementById('copy-code-icon').textContent = '✓';
+      setTimeout(() => document.getElementById('copy-code-icon').textContent = '📋', 1500);
+      showGlobalAlert('Room code copied!', '📋');
+    });
+
+    document.getElementById('btn-copy-link').addEventListener('click', () => {
+      const link = document.getElementById('display-room-link').value;
+      navigator.clipboard.writeText(link);
+      showGlobalAlert('Direct link copied!', '📋');
+    });
+
+    // Arena Environment Switcher
+    document.getElementById('select-arena-env').addEventListener('change', (e) => {
+      const stage = document.getElementById('battle-stage');
+      stage.className = `battle-stage-wrapper arena-env-${e.target.value} relative select-none`;
+    });
+
+    // Dark/Light Theme Toggle
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      themeIcon.textContent = isDark ? '🌙' : '☀️';
+      localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('theme-mode') === 'light') {
+      document.documentElement.classList.remove('dark');
+      themeIcon.textContent = '☀️';
+    }
+
+    // Sound Toggle
+    const btnSoundToggle = document.getElementById('btn-sound-toggle');
+    const soundIcon = document.getElementById('sound-icon');
+    btnSoundToggle.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      localStorage.setItem('rpg-sound-muted', sound.muted ? 'true' : 'false');
+      soundIcon.textContent = sound.muted ? '🔇' : '🔊';
+    });
+    if (sound.muted) soundIcon.textContent = '🔇';
+
+    // Modals: Rules, Trophies, Manual SDP
+    const modalRules = document.getElementById('modal-rules');
+    document.getElementById('btn-rules').addEventListener('click', () => modalRules.classList.remove('hidden'));
+    document.getElementById('btn-close-rules').addEventListener('click', () => modalRules.classList.add('hidden'));
+
+    const modalTrophies = document.getElementById('modal-trophies');
+    document.getElementById('btn-open-trophies').addEventListener('click', () => {
+      renderTrophiesModal();
+      modalTrophies.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-trophies').addEventListener('click', () => modalTrophies.classList.add('hidden'));
+
+    function renderTrophiesModal() {
+      const container = document.getElementById('achievements-list-container');
+      container.innerHTML = '';
+      ACHIEVEMENTS_DATA.forEach(ach => {
+        const isUnlocked = profile.data.unlockedAchievements.includes(ach.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border ${isUnlocked ? 'bg-amber-500/10 border-amber-500/30' : 'bg-theme-surface-alt border-theme-line/60 opacity-60'} flex items-center gap-3`;
+        card.innerHTML = `
+          <span class="text-2xl p-2 rounded-xl ${isUnlocked ? 'bg-amber-500/20' : 'bg-theme-surface'}">${ach.icon}</span>
+          <div>
+            <h4 class="font-fantasy font-bold text-xs ${isUnlocked ? 'text-amber-400' : 'text-theme-ink'}">${ach.name}</h4>
+            <p class="text-[10px] text-theme-muted">${ach.desc}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    const modalManualSdp = document.getElementById('modal-manual-sdp');
+    document.getElementById('btn-open-manual-signaling').addEventListener('click', () => {
+      modalManualSdp.classList.remove('hidden');
+      initPeer();
+    });
+    document.getElementById('btn-close-manual-sdp').addEventListener('click', () => modalManualSdp.classList.add('hidden'));
+
+    // ==========================================
+    // 14. AMBIENT BATTLE CANVAS PARTICLES
+    // ==========================================
+    const particleCanvas = document.getElementById('ambient-particle-canvas');
+    const pCtx = particleCanvas.getContext('2d');
+    let particles = [];
+
+    function resizeParticleCanvas() {
+      particleCanvas.width = particleCanvas.offsetWidth;
+      particleCanvas.height = particleCanvas.offsetHeight;
+    }
+    window.addEventListener('resize', resizeParticleCanvas);
+
+    function initParticles() {
+      resizeParticleCanvas();
+      particles = [];
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: Math.random() * particleCanvas.width,
+          y: Math.random() * particleCanvas.height,
+          radius: 1 + Math.random() * 2.5,
+          speedY: -0.3 - Math.random() * 0.8,
+          speedX: (Math.random() - 0.5) * 0.4,
+          alpha: 0.2 + Math.random() * 0.6,
+          color: Math.random() > 0.5 ? '#f59e0b' : '#ef4444'
+        });
+      }
+    }
+
+    function animateParticles() {
+      pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+      particles.forEach(p => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+        if (p.y < 0) {
+          p.y = particleCanvas.height + 5;
+          p.x = Math.random() * particleCanvas.width;
+        }
+        pCtx.beginPath();
+        pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        pCtx.fillStyle = p.color;
+        pCtx.globalAlpha = p.alpha;
+        pCtx.shadowBlur = 8;
+        pCtx.shadowColor = p.color;
+        pCtx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+
+    // ==========================================
+    // INITIALIZATION ON LOAD
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHeroSelectionGrid();
+      updateHeroPreviewUI(myHeroClass);
+      initParticles();
+      animateParticles();
+
+      // Check URL parameters for direct room join
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        document.getElementById('input-join-code').value = roomParam;
+        showGlobalAlert(`Auto-joining room ${roomParam}...`, '🔗');
+        document.getElementById('btn-join-room').click();
+      }
+    });
+  </script>
+</body>
+</html>

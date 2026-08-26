@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Online Snake Arena — ArcadeLab</title>
+  <meta name="description" content="ArcadeLab: Real-time, two-player Online Snake battle powered by WebRTC peer-to-peer lockstep networking. Features Clash and Rush modes, deterministic food PRNG, 60FPS smooth interpolation, A* AI bot, and customizable skins." />
+  <meta name="keywords" content="Online Snake, WebRTC Snake, P2P Snake, Multiplayer Snake, 2 Player Snake, Lockstep Snake, Browser Snake, ArcadeLab" />
+
+  <!-- OpenGraph Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Online Snake Arena — Real-Time WebRTC P2P Duel" />
+  <meta property="og:description" content="Battle friends in real-time Snake arena combat with zero servers! Lockstep tick sync, Clash & Rush modes, power-up food, and smart AI." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/games/snake/" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              'surface-card': 'var(--color-surface-card)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              snake1: '#10b981',
+              snake2: '#ec4899',
+              gold: '#fbbf24',
+              cyan: '#06b6d4',
+            }
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 30px -5px rgba(16, 185, 129, 0.6)',
+            'glow-pink': '0 0 30px -5px rgba(236, 72, 153, 0.6)',
+            'glow-gold': '0 0 30px -5px rgba(251, 191, 36, 0.6)',
+            'glow-cyan': '0 0 30px -5px rgba(6, 182, 212, 0.6)',
+            'snake-card': '0 15px 35px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+          },
+          animation: {
+            'pop-in': 'popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            'float-up': 'floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            'pulse-glow': 'pulseGlow 1.5s infinite alternate ease-in-out',
+          },
+          keyframes: {
+            popIn: {
+              '0%': { transform: 'scale(0.3) translateY(10px)', opacity: '0' },
+              '70%': { transform: 'scale(1.08) translateY(-2px)', opacity: '1' },
+              '100%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.7)', opacity: '1' },
+              '80%': { opacity: '0.9' },
+              '100%': { transform: 'translateY(-140px) scale(1.2)', opacity: '0' },
+            },
+            pulseGlow: {
+              '0%': { filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))' },
+              '100%': { filter: 'drop-shadow(0 0 22px rgba(16, 185, 129, 0.9))' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External Libraries -->
+  <!-- PeerJS for WebRTC Signaling & P2P DataChannels -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Canvas Confetti for Match Victory -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- QRCode.js for Mobile QR Code scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #f4f6fb;
+      --color-surface: #ffffff;
+      --color-surface-alt: #edf1f8;
+      --color-surface-card: #ffffff;
+      --color-ink: #090e1a;
+      --color-muted: #5e6b82;
+      --color-line: #dbe2ef;
+      --color-accent: #10b981;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #07090e;
+      --color-surface: #0e121b;
+      --color-surface-alt: #151a26;
+      --color-surface-card: #1b2131;
+      --color-ink: #f4f6fb;
+      --color-muted: #8b95a8;
+      --color-line: #222a3d;
+      --color-accent: #34d399;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient Cyber Snake Grid */
+    .bg-snake-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(16, 185, 129, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+    }
+    html.dark .bg-snake-grid {
+      background-image: 
+        radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.12), transparent 70%),
+        linear-gradient(to right, rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+    }
+
+    /* 3D Holographic Card */
+    .snake-card {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .snake-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.08) 45%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 70%
+      );
+      transform: rotate(35deg) translateY(-100%);
+      transition: transform 0.65s ease;
+      pointer-events: none;
+    }
+    .snake-card:hover::after {
+      transform: rotate(35deg) translateY(100%);
+    }
+    .snake-card:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* 2D CANVAS STAGE */
+    .snake-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 30 / 22;
+      max-height: 560px;
+      min-height: 340px;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      background-color: #0b0e14;
+      box-shadow: 0 20px 50px -10px rgba(0,0,0,0.7), inset 0 0 0 1px var(--color-line);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Floating Taunts Overlay */
+    .floating-emoji {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      animation: floatUp 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      z-index: 90;
+      font-size: 2.25rem;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.8));
+    }
+
+    /* Custom Touch Controls */
+    .touch-dpad-btn {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .touch-dpad-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Custom scrollbars */
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-400 bg-snake-grid relative">
+
+  <!-- Floating Reaction Emojis Canvas / Overlay Layer -->
+  <div id="taunts-overlay" class="fixed inset-0 pointer-events-none z-50 overflow-hidden"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 sm:h-16 border-b border-theme-line bg-theme-surface/90 backdrop-blur-lg px-3 sm:px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <a href="/games/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity" title="Back to ArcadeLab">
+        <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-600 to-pink-500 flex items-center justify-center text-white font-black text-base sm:text-xl shadow-glow-emerald">
+          🐍
+        </span>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1">
+            <span class="font-display font-black text-sm sm:text-lg tracking-tight leading-none bg-gradient-to-r from-emerald-400 via-teal-400 to-pink-400 bg-clip-text text-transparent">
+              ArcadeLab
+            </span>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] sm:text-[9px] font-mono font-black uppercase">SNAKE ARENA</span>
+          </div>
+          <span class="text-[9px] sm:text-[10px] font-mono text-theme-muted tracking-wider uppercase font-semibold hidden xs:inline">Lockstep P2P Duel</span>
+        </div>
+      </a>
+
+      <!-- Direct P2P Status Pill -->
+      <div id="header-status-pill" class="hidden lg:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-xs font-mono">
+        <span id="header-status-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+        <span id="header-status-text" class="text-theme-muted font-medium">Lobby Idle</span>
+        <span id="header-ping-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">--ms</span>
+      </div>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-1 sm:gap-2">
+      <!-- Active Room Code Badge -->
+      <div id="room-code-badge" class="hidden items-center gap-1 px-2 sm:px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors" title="Click to copy Room Code">
+        <span class="hidden sm:inline">Room:</span>
+        <span id="room-code-badge-text">------</span>
+        <span class="text-[10px] opacity-70">📋</span>
+      </div>
+
+      <!-- Trophy Hall Button -->
+      <button id="btn-open-trophies" type="button" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display font-bold text-xs flex items-center gap-1 transition-all" title="Trophy Hall & Achievements">
+        <span>🏆</span>
+        <span id="unlocked-badge-count" class="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[9px] sm:text-[10px] font-black">0/12</span>
+      </button>
+
+      <!-- Rules / Mode Info Button -->
+      <button id="btn-rules" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Rules & Clash Mechanics">
+        <span class="text-xs sm:text-sm font-bold">ℹ️</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button id="btn-sound-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Sound FX">
+        <span id="sound-icon" class="text-xs sm:text-sm">🔊</span>
+      </button>
+
+      <!-- Theme Switcher (Dark / Light) -->
+      <button id="btn-theme-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Dark / Light Mode">
+        <span id="theme-icon" class="text-xs sm:text-sm">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Alert Banner -->
+  <div id="global-alert-banner" class="hidden px-3 py-2 text-center text-xs font-medium border-b transition-all duration-300">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <span id="alert-icon">⚠️</span>
+      <span id="alert-message" class="truncate">Notice message</span>
+      <button id="btn-alert-close" class="ml-1 text-xs font-bold opacity-70 hover:opacity-100">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOBBY & CUSTOMIZATION SCREEN       -->
+    <!-- ========================================== -->
+    <section id="view-lobby" class="flex flex-col items-center justify-center py-2 sm:py-6 max-w-4xl mx-auto w-full space-y-5 sm:space-y-6">
+      
+      <!-- HERO BANNER -->
+      <div class="text-center space-y-1.5 sm:space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-pink-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>WebRTC P2P • Lockstep Simultaneous Ticks • Seeded PRNG</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-black font-display tracking-tight text-theme-ink">
+          Online <span class="bg-gradient-to-r from-emerald-400 via-teal-400 to-pink-400 bg-clip-text text-transparent">Snake Arena</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted max-w-lg mx-auto leading-relaxed">
+          Duel in real-time Snake combat! Out-maneuver your rival in Battle Clash, race for golden apples in Apple Rush, or challenge the A* pathfinding bot.
+        </p>
+      </div>
+
+      <!-- SKIN, THEME & MODE SELECTION -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
+        
+        <!-- LEFT: SNAKE SKIN SELECTOR (6 cols) -->
+        <div class="lg:col-span-6 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-snake-card space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-display font-black text-sm uppercase tracking-wider text-theme-ink flex items-center gap-2">
+              <span>🐍 Select Snake Skin</span>
+            </h3>
+            <span id="selected-skin-badge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CYBER VIPER</span>
+          </div>
+
+          <div id="skin-select-grid" class="grid grid-cols-2 gap-2">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Arena Theme Selector -->
+          <div class="pt-2 border-t border-theme-line flex items-center justify-between">
+            <span class="text-xs font-mono text-theme-muted font-bold">Arena Grid Theme:</span>
+            <select id="select-arena-theme" class="bg-theme-surface-alt border border-theme-line text-theme-ink text-xs font-bold rounded-xl px-2 py-1 outline-none cursor-pointer">
+              <option value="cyber" selected>⚡ Cyber Matrix</option>
+              <option value="forest">🌲 Emerald Forest</option>
+              <option value="solar">☀️ Solar Flare</option>
+              <option value="ocean">🌊 Deep Ocean</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- RIGHT: MATCH RULES & MODE CONFIG (6 cols) -->
+        <div class="lg:col-span-6 bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-snake-card space-y-3 flex flex-col justify-between">
+          <div class="space-y-3">
+            <h3 class="font-display font-black text-sm uppercase tracking-wider text-theme-ink flex items-center gap-2">
+              <span>⚔️ Duel Mode & Rules</span>
+            </h3>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="mode-btn-clash" type="button" class="p-3 rounded-2xl border text-left transition-all border-emerald-500 bg-emerald-500/15 shadow-glow-emerald">
+                <span class="text-xs font-display font-black text-theme-ink block">⚔️ Clash Duel</span>
+                <span class="text-[10px] text-theme-muted font-mono leading-tight block mt-0.5">Cross-snake collisions. Last snake alive wins round.</span>
+              </button>
+
+              <button id="mode-btn-rush" type="button" class="p-3 rounded-2xl border text-left transition-all border-theme-line bg-theme-surface-alt hover:border-pink-500/40">
+                <span class="text-xs font-display font-black text-theme-ink block">🍎 Apple Rush</span>
+                <span class="text-[10px] text-theme-muted font-mono leading-tight block mt-0.5">Ghost mode (no collision). First to 200 pts or 60s.</span>
+              </button>
+            </div>
+
+            <!-- Match Options -->
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div class="flex items-center justify-between p-2 rounded-xl bg-theme-surface-alt border border-theme-line">
+                <span class="text-theme-muted text-[11px]">Match Format:</span>
+                <select id="select-rounds-count" class="bg-transparent text-theme-ink font-bold outline-none cursor-pointer text-xs">
+                  <option value="3" selected>Best of 3</option>
+                  <option value="5">Best of 5</option>
+                  <option value="1">Single Round</option>
+                </select>
+              </div>
+
+              <div class="flex items-center justify-between p-2 rounded-xl bg-theme-surface-alt border border-theme-line">
+                <span class="text-theme-muted text-[11px]">Outer Walls:</span>
+                <select id="select-walls-rule" class="bg-transparent text-theme-ink font-bold outline-none cursor-pointer text-xs">
+                  <option value="hard" selected>🧱 Hard Walls</option>
+                  <option value="portal">🌀 Wrap Portals</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-[11px] font-mono text-theme-muted">
+            <strong class="text-emerald-400">⚡ Lockstep Sync:</strong> Both clients advance on identical 140ms ticks with seeded food PRNG for zero packet desync.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MATCHMAKING ACTION BUTTONS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+        
+        <!-- CARD 1: Host Online Room -->
+        <div class="bg-theme-surface hover:border-emerald-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group snake-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-emerald">
+              ⚡
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Host Online Duel</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Create an encrypted room. Share a room code or direct 1-click link with a rival snake.
+            </p>
+          </div>
+
+          <button id="btn-create-room" type="button" class="mt-4 sm:mt-6 w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-pink-600 hover:from-emerald-500 hover:to-pink-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all flex items-center justify-center gap-2 active:scale-95">
+            <span>Open Arena Lobby</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- CARD 2: Join Existing Room -->
+        <div class="bg-theme-surface hover:border-pink-500/60 border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between transition-all duration-300 shadow-sm relative overflow-hidden group snake-card">
+          <div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center text-xl sm:text-2xl mb-2.5 shadow-glow-pink">
+              🔗
+            </div>
+            <h3 class="font-display font-black text-lg sm:text-xl text-theme-ink">Join Existing Arena</h3>
+            <p class="text-xs text-theme-muted mt-1 leading-relaxed">
+              Enter the room code from your opponent to slither into the battle grid.
+            </p>
+          </div>
+
+          <div class="mt-3 sm:mt-4 space-y-2">
+            <input id="input-join-code" type="text" placeholder="e.g. SNAKE-3819" class="w-full px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line text-sm font-mono uppercase tracking-widest text-theme-ink placeholder:text-theme-muted placeholder:normal-case placeholder:tracking-normal focus:border-pink-500 outline-none transition-colors" />
+            <button id="btn-join-room" type="button" class="w-full py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-pink-600 hover:text-white border border-theme-line text-theme-ink font-display font-black text-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+              <span>Enter Arena</span>
+              <span>🐍</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY MODES -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+        <!-- AI Bot -->
+        <button id="btn-start-ai" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-emerald-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group snake-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Play vs A* AI Bot</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Smart pathfinding AI</p>
+          </div>
+        </button>
+
+        <!-- Classic Solo Mode -->
+        <button id="btn-solo-classic" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-amber-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group snake-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            🍎
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Solo Classic Snake</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Classic high-score chase</p>
+          </div>
+        </button>
+
+        <!-- Manual SDP Relay -->
+        <button id="btn-open-manual-signaling" type="button" class="p-3.5 sm:p-4 rounded-2xl bg-theme-surface hover:border-purple-500/60 border border-theme-line text-left flex items-center gap-3 transition-all group snake-card active:scale-95">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+            📡
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <span class="font-display font-bold text-xs sm:text-sm text-theme-ink">Manual SDP</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-theme-muted mt-0.5">Air-gapped text exchange</p>
+          </div>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: WAITING ROOM / SHARE SCREEN        -->
+    <!-- ========================================== -->
+    <section id="view-waiting" class="hidden flex-col items-center justify-center py-4 sm:py-6 max-w-lg mx-auto w-full text-center">
+      
+      <div class="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-4 sm:mb-5">
+        <div class="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping opacity-75"></div>
+        <div class="absolute inset-2 rounded-full bg-emerald-500/30 animate-pulse"></div>
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-pink-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-emerald">
+          🐍
+        </div>
+      </div>
+
+      <h2 class="text-xl sm:text-3xl font-display font-black text-theme-ink">Waiting for Rival Snake...</h2>
+      <p class="text-xs text-theme-muted mt-1 max-w-sm px-2">
+        Share the room code or QR code. The synchronized countdown begins once Player 2 joins!
+      </p>
+
+      <!-- Room Code Box -->
+      <div class="w-full bg-theme-surface border border-theme-line rounded-2xl sm:rounded-3xl p-4 sm:p-5 my-4 sm:my-5 space-y-3 sm:space-y-4 shadow-snake-card text-left">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Room Code</label>
+          <div class="flex items-center gap-2">
+            <div id="display-room-code" class="flex-1 px-3 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono font-black text-xl sm:text-2xl tracking-widest text-emerald-400 text-center select-all">
+              ------
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1 active:scale-95" title="Copy Code">
+              <span>Copy</span>
+              <span id="copy-code-icon">📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Direct Invite Link</label>
+          <div class="flex items-center gap-2">
+            <input id="display-room-link" type="text" readonly class="flex-1 px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-muted select-all outline-none truncate" />
+            <button id="btn-copy-link" type="button" class="px-3 py-2 rounded-xl sm:rounded-2xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line text-theme-ink text-xs font-bold shrink-0 transition-colors active:scale-95">
+              Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Share Links -->
+        <div class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+          <span class="text-theme-muted font-medium text-[11px]">Share via:</span>
+          <div class="flex items-center gap-1.5">
+            <a id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px] hover:bg-emerald-500/20 transition-colors">WhatsApp</a>
+            <a id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-semibold text-[11px] hover:bg-sky-500/20 transition-colors">Telegram</a>
+            <a id="share-twitter" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-semibold text-[11px] hover:bg-emerald-500/20 transition-colors">X</a>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="pt-2 border-t border-theme-line flex flex-col items-center">
+          <button id="btn-toggle-qr" type="button" class="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1">
+            <span>📱 Show QR Code for Mobile</span>
+            <span id="qr-arrow">▼</span>
+          </button>
+          <div id="qr-container" class="hidden mt-2.5 p-3 bg-white rounded-xl shadow-lg border border-theme-line flex flex-col items-center">
+            <div id="qr-code-canvas-wrapper" class="w-36 h-36 flex items-center justify-center"></div>
+            <span class="text-[9px] text-stone-700 font-mono mt-1 font-semibold">Scan with camera to join</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-cancel-waiting" type="button" class="text-xs text-theme-muted hover:text-rose-400 font-semibold transition-colors">
+        ✕ Return to Lobby
+      </button>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: ARENA 2D SNAKE BATTLE SCREEN       -->
+    <!-- ========================================== -->
+    <section id="view-arena" class="hidden flex-col gap-3 w-full">
+      
+      <!-- TOP MATCH HUD BAR -->
+      <div class="flex items-center justify-between px-2 text-xs font-mono">
+        
+        <!-- Player 1 HUD (Green / You) -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span id="p1-name-display" class="truncate max-w-[100px] sm:max-w-[140px]">You</span>
+            <span id="p1-score-display" class="font-black text-sm ml-1 text-white">0</span>
+          </div>
+          <!-- P1 Crown / Round Points -->
+          <div id="p1-crowns-tray" class="flex items-center gap-0.5 text-amber-400">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Center Match / Countdown Banner -->
+        <div class="flex items-center gap-2">
+          <span id="round-indicator-badge" class="px-2.5 py-0.5 rounded-full bg-theme-surface-alt border border-theme-line text-theme-muted font-bold text-[11px]">
+            ROUND 1
+          </span>
+          <div id="countdown-banner" class="hidden items-center gap-1 px-3 py-0.5 rounded-full bg-amber-500 text-black font-black text-xs shadow-glow-gold">
+            <span id="countdown-text">3</span>
+          </div>
+        </div>
+
+        <!-- Player 2 HUD (Pink / Opponent) -->
+        <div class="flex items-center gap-2">
+          <div id="p2-crowns-tray" class="flex items-center gap-0.5 text-amber-400">
+            <!-- Populated by JS -->
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-pink-500/15 border border-pink-500/30 text-pink-400 font-bold">
+            <span id="p2-score-display" class="font-black text-sm mr-1 text-white">0</span>
+            <span id="p2-name-display" class="truncate max-w-[100px] sm:max-w-[140px]">Rival</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-pink-400"></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MAIN CANVAS ARENA -->
+      <div class="snake-canvas-wrapper relative select-none">
+        
+        <canvas id="snake-canvas" class="w-full h-full block"></canvas>
+
+        <!-- ON-SCREEN MOBILE TOUCH D-PAD OVERLAY -->
+        <div id="mobile-dpad" class="sm:hidden absolute inset-0 z-20 pointer-events-none flex items-end justify-between p-3">
+          <div class="w-32 h-32 relative pointer-events-auto">
+            <button id="dpad-up" class="touch-dpad-btn absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold flex items-center justify-center active:bg-emerald-500">▲</button>
+            <button id="dpad-down" class="touch-dpad-btn absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold flex items-center justify-center active:bg-emerald-500">▼</button>
+            <button id="dpad-left" class="touch-dpad-btn absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold flex items-center justify-center active:bg-emerald-500">◀</button>
+            <button id="dpad-right" class="touch-dpad-btn absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-black/60 backdrop-blur border border-white/20 text-white font-bold flex items-center justify-center active:bg-emerald-500">▶</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM CHAT & CONTROLS FOOTER -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        
+        <!-- Live Chat & Quick Taunts (8 cols) -->
+        <div class="md:col-span-8 bg-theme-surface border border-theme-line rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] font-mono text-theme-muted font-bold">Taunt:</span>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🐍">🐍</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🍎">🍎</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🔥">🔥</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="⚡">⚡</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="🏆">🏆</button>
+            <button type="button" class="btn-taunt p-1 hover:scale-125 transition-transform text-sm" data-emoji="💀">💀</button>
+          </div>
+
+          <form id="arena-chat-form" class="flex items-center gap-1 flex-1 max-w-xs">
+            <input id="arena-chat-input" type="text" placeholder="Type message..." maxlength="80" class="w-full px-2.5 py-1 rounded-xl bg-theme-surface-alt border border-theme-line text-xs text-theme-ink outline-none focus:border-emerald-500" />
+            <button type="submit" class="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors">Send</button>
+          </form>
+        </div>
+
+        <!-- Actions / Forfeit (4 cols) -->
+        <div class="md:col-span-4 flex items-center justify-end gap-2">
+          <button id="btn-restart-round" type="button" class="px-3 py-2 rounded-xl bg-theme-surface-alt hover:bg-theme-line border border-theme-line text-xs font-mono font-bold text-theme-ink transition-colors">
+            🔄 Restart
+          </button>
+          <button id="btn-forfeit-match" type="button" class="px-3 py-2 rounded-xl bg-theme-surface-alt hover:bg-rose-500/10 border border-theme-line hover:border-rose-500/40 text-xs font-mono font-bold text-rose-400 transition-colors">
+            🏳️ Leave Match
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MATCH OVER / RESULTS SCREEN         -->
+  <!-- ========================================== -->
+  <div id="modal-match-over" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-4 sm:space-y-5 animate-pop-in">
+      <div id="match-over-icon" class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 via-teal-600 to-pink-600 flex items-center justify-center text-3xl sm:text-4xl mx-auto shadow-glow-emerald">
+        🏆
+      </div>
+
+      <div class="space-y-1">
+        <h2 id="match-over-title" class="font-display font-black text-2xl sm:text-3xl text-theme-ink">Match Victory!</h2>
+        <p id="match-over-subtitle" class="text-xs sm:text-sm text-theme-muted font-mono">You won the Clash Duel</p>
+      </div>
+
+      <!-- Match Score Summary -->
+      <div class="grid grid-cols-2 gap-2 py-2.5 px-4 rounded-2xl bg-theme-surface-alt border border-theme-line text-center text-xs font-mono">
+        <div>
+          <span class="text-[10px] text-theme-muted block uppercase">Your Score</span>
+          <strong id="summary-p1-score" class="text-emerald-400 font-bold text-base">140</strong>
+        </div>
+        <div>
+          <span class="text-[10px] text-theme-muted block uppercase">Opponent Score</span>
+          <strong id="summary-p2-score" class="text-pink-400 font-bold text-base">90</strong>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2 pt-2">
+        <button id="btn-rematch-match" type="button" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-pink-600 hover:from-emerald-500 hover:to-pink-500 text-white font-display font-black text-sm shadow-glow-emerald transition-all active:scale-95">
+          🔄 Request Rematch
+        </button>
+        <button id="btn-exit-to-lobby" type="button" class="py-3 px-4 rounded-2xl bg-theme-surface-alt hover:bg-theme-line border border-theme-line text-theme-ink font-display font-bold text-sm transition-all active:scale-95">
+          🚪 Exit to Lobby
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TROPHY HALL & ACHIEVEMENTS          -->
+  <!-- ========================================== -->
+  <div id="modal-trophies" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <div>
+          <h3 class="font-display font-black text-lg text-theme-ink">Snake Trophy Hall</h3>
+          <p class="text-[11px] text-theme-muted font-mono">Unlock badges across your gladiatorial career</p>
+        </div>
+        <button id="btn-close-trophies" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div id="achievements-list-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- 12 Achievements loaded by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: RULES & MECHANICS MODAL             -->
+  <!-- ========================================== -->
+  <div id="modal-rules" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-3">
+        <h3 class="font-display font-black text-lg text-theme-ink">Snake Arena Rules & Modes</h3>
+        <button id="btn-close-rules" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-theme-muted leading-relaxed">
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1">⚔️ Clash Duel vs 🍎 Apple Rush</h4>
+          <ul class="list-disc pl-4 space-y-1 mt-1 font-mono text-[11px]">
+            <li><strong>Clash Duel</strong>: Hitting outer walls, self-body, or opponent body eliminates your snake. Survivor earns the round point!</li>
+            <li><strong>Apple Rush</strong>: Non-contact ghost mode. Race to eat the most apples and reach 200 points first.</li>
+            <li><strong>Lockstep Ticks</strong>: Simulation advances identically every 140ms with synchronized PRNG food.</li>
+          </ul>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+          <h4 class="font-display font-bold text-theme-ink mb-1">🌟 Food & Power-Ups</h4>
+          <div class="grid grid-cols-2 gap-2 font-mono text-[11px] mt-1">
+            <div>🍎 <strong>Red Apple</strong>: +10 pts, +1 segment</div>
+            <div>⭐ <strong>Golden Apple</strong>: +25 pts, +2 segments</div>
+            <div>⚡ <strong>Speed Berry</strong>: +20 pts, speed boost</div>
+            <div>🧪 <strong>Shrink Potion</strong>: Trims 2 segments</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MANUAL SDP RELAY (AIR-GAPPED)       -->
+  <!-- ========================================== -->
+  <div id="modal-manual-sdp" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-theme-surface border border-theme-line rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-3 animate-pop-in max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-theme-line pb-2">
+        <h3 class="font-display font-black text-lg text-theme-ink">Manual WebRTC SDP Relay</h3>
+        <button id="btn-close-manual-sdp" class="text-theme-muted hover:text-theme-ink text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-theme-muted">
+        Connect across restricted networks by exchanging raw SDP offer/answer text strings.
+      </p>
+
+      <div class="space-y-2">
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Local SDP Offer / Answer</label>
+          <textarea id="manual-local-sdp" readonly rows="3" class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-muted select-all outline-none"></textarea>
+          <button id="btn-copy-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors">Copy Local SDP</button>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono text-theme-muted uppercase font-bold mb-1">Remote SDP (Paste from Opponent)</label>
+          <textarea id="manual-remote-sdp" rows="3" placeholder="Paste remote SDP here..." class="w-full p-2 text-[10px] font-mono bg-theme-surface-alt border border-theme-line rounded-xl text-theme-ink outline-none focus:border-emerald-500"></textarea>
+          <button id="btn-apply-manual-sdp" type="button" class="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-colors">Connect via SDP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT: LOCKSTEP SIMULATION, NETCODE & RENDERING    -->
+  <!-- ======================================================= -->
+  <script>
+    // ==========================================
+    // 1. CONFIGURATION & PRNG SEED GENERATOR
+    // ==========================================
+    const COLS = 30;
+    const ROWS = 22;
+    const TICK_INTERVAL = 140; // 140ms lockstep tick
+
+    // PRNG Mulberry32 Generator
+    function createPRNG(seed) {
+      let s = seed >>> 0;
+      return function() {
+        s = (s + 0x6D2B79F5) | 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // Snake Skins
+    const SNAKE_SKINS = {
+      cyber_viper: { id: 'cyber_viper', name: 'Cyber Viper', headCol: '#10b981', bodyCol: '#059669', eyeCol: '#6ee7b7' },
+      venom_cobra: { id: 'venom_cobra', name: 'Venom Cobra', headCol: '#84cc16', bodyCol: '#65a30d', eyeCol: '#bef264' },
+      crimson_dragon: { id: 'crimson_dragon', name: 'Crimson Dragon', headCol: '#ef4444', bodyCol: '#b91c1c', eyeCol: '#fef08a' },
+      amethyst_serpent: { id: 'amethyst_serpent', name: 'Amethyst Serpent', headCol: '#ec4899', bodyCol: '#be185d', eyeCol: '#f472b6' }
+    };
+
+    // Arena Themes
+    const ARENA_THEMES = {
+      cyber: { bg: '#070a12', grid: 'rgba(6, 182, 212, 0.08)', wall: '#0891b2' },
+      forest: { bg: '#06130b', grid: 'rgba(16, 185, 129, 0.08)', wall: '#059669' },
+      solar: { bg: '#140808', grid: 'rgba(245, 158, 11, 0.08)', wall: '#d97706' },
+      ocean: { bg: '#05101a', grid: 'rgba(14, 165, 233, 0.08)', wall: '#0284c7' }
+    };
+
+    // ==========================================
+    // 2. SYNTHESIZED WEB AUDIO ENGINE
+    // ==========================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = localStorage.getItem('snake-sound-muted') === 'true';
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playEat() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.1);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
+      playGold() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [587, 880, 1174].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t + i * 0.06);
+          gain.gain.setValueAtTime(0.25, t + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.06);
+          osc.stop(t + i * 0.06 + 0.25);
+        });
+      }
+      playCrash() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(260, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      }
+      playCountdown(isHigh = false) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isHigh ? 880 : 440, t);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + (isHigh ? 0.35 : 0.15));
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + (isHigh ? 0.35 : 0.15));
+      }
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [523, 659, 784, 1046].forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t + i * 0.12);
+          gain.gain.setValueAtTime(0.35, t + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t + i * 0.12);
+          osc.stop(t + i * 0.12 + 0.5);
+        });
+      }
+    }
+    const sound = new SoundEngine();
+
+    // ==========================================
+    // 3. ACHIEVEMENTS & PROFILE MANAGEMENT
+    // ==========================================
+    const ACHIEVEMENTS_DATA = [
+      { id: 'first_bite', name: 'First Nibble', desc: 'Eat your first apple in Snake Arena', icon: '🍎' },
+      { id: 'golden_feast', name: 'Midas Feast', desc: 'Eat a Golden Apple in multiplayer', icon: '⭐' },
+      { id: 'clash_decimator', name: 'Arena Victor', desc: 'Win a Clash Duel match', icon: '⚔️' },
+      { id: 'p2p_champion', name: 'WebRTC Serpent', desc: 'Defeat a friend online over P2P', icon: '🌐' },
+      { id: 'rush_master', name: 'Apple Rusher', desc: 'Score 200+ points in Apple Rush mode', icon: '⚡' },
+      { id: 'clean_round', name: 'Untouchable', desc: 'Win a round without taking any damage', icon: '✨' },
+      { id: 'long_tail', name: 'Gigantic Serpent', desc: 'Grow a snake over 25 segments long', icon: '🐍' },
+      { id: 'ai_slayer', name: 'Algorithm Tamer', desc: 'Defeat the A* AI Snake bot', icon: '🤖' },
+      { id: 'shrink_tactic', name: 'Diet Plan', desc: 'Drink a Shrink Potion to escape a trap', icon: '🧪' },
+      { id: 'best_of_5', name: 'Endurance King', desc: 'Win a 5-round marathon duel', icon: '👑' },
+      { id: 'portal_jumper', name: 'Dimension Walker', desc: 'Wrap through outer portals 5 times in 1 round', icon: '🌀' },
+      { id: 'snake_grandmaster', name: 'Grandmaster Serpent', desc: 'Complete 10 total Snake matches', icon: '🎖️' }
+    ];
+
+    class ProfileManager {
+      constructor() {
+        this.data = JSON.parse(localStorage.getItem('arcade-snake-profile')) || {
+          name: 'Snake ' + Math.floor(100 + Math.random() * 900),
+          skin: 'cyber_viper',
+          theme: 'cyber',
+          mode: 'clash',
+          roundsToWin: 2, // Best of 3
+          wallsRule: 'hard',
+          elo: 1200,
+          wins: 0,
+          losses: 0,
+          totalMatches: 0,
+          unlockedAchievements: []
+        };
+        this.save();
+      }
+      save() {
+        localStorage.setItem('arcade-snake-profile', JSON.stringify(this.data));
+        this.updateUI();
+      }
+      unlockAchievement(id) {
+        if (!this.data.unlockedAchievements.includes(id)) {
+          this.data.unlockedAchievements.push(id);
+          const ach = ACHIEVEMENTS_DATA.find(a => a.id === id);
+          if (ach) {
+            showGlobalAlert(`🏆 Trophy Unlocked: ${ach.name}!`, ach.icon);
+          }
+          this.save();
+        }
+      }
+      updateUI() {
+        const countEl = document.getElementById('unlocked-badge-count');
+        if (countEl) countEl.textContent = `${this.data.unlockedAchievements.length}/${ACHIEVEMENTS_DATA.length}`;
+      }
+    }
+    const profile = new ProfileManager();
+
+    // ==========================================
+    // 4. GAME STATE & LOCKSTEP SIMULATOR
+    // ==========================================
+    let gameMode = 'lobby'; // 'lobby', 'p2p_host', 'p2p_join', 'ai', 'solo_classic'
+    let arenaMode = 'clash'; // 'clash', 'rush'
+    let roundsNeeded = 2;
+    let currentRound = 1;
+    let p1RoundsWon = 0;
+    let p2RoundsWon = 0;
+
+    // Canvas
+    const canvas = document.getElementById('snake-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Simulation Tick Data
+    let currentTick = 0;
+    let lastTickTime = 0;
+    let tickTimer = null;
+    let isRunning = false;
+    let isCountdown = false;
+    let randomFunc = null;
+    let matchSeed = 12345;
+
+    // Snake 1 (Player 1 / Left)
+    let snake1 = {
+      body: [],
+      prevBody: [],
+      dir: 'RIGHT',
+      nextDir: 'RIGHT',
+      score: 0,
+      alive: true,
+      grow: 0
+    };
+
+    // Snake 2 (Player 2 / Right or AI)
+    let snake2 = {
+      body: [],
+      prevBody: [],
+      dir: 'LEFT',
+      nextDir: 'LEFT',
+      score: 0,
+      alive: true,
+      grow: 0
+    };
+
+    // Food item { x, y, type: 'apple'|'gold'|'speed'|'shrink', spawnTick }
+    let foods = [];
+
+    // PeerJS Networking
+    let peer = null;
+    let conn = null;
+    let myPeerId = null;
+
+    // Direction input queues for lockstep sync
+    let p1InputQueue = {}; // { tick: 'UP' }
+    let p2InputQueue = {}; // { tick: 'DOWN' }
+
+    // ==========================================
+    // 5. DETERMINISTIC TICK SIMULATION STEP
+    // ==========================================
+    function stepLockstepTick() {
+      if (!isRunning) return;
+
+      currentTick++;
+
+      // 1. Resolve Direction Inputs
+      const dir1 = p1InputQueue[currentTick] || snake1.nextDir || snake1.dir;
+      const dir2 = p2InputQueue[currentTick] || snake2.nextDir || snake2.dir;
+
+      // Apply Direction (Anti-180° validation)
+      if (isValidDirChange(snake1.dir, dir1)) snake1.dir = dir1;
+      if (isValidDirChange(snake2.dir, dir2)) snake2.dir = dir2;
+
+      // Copy previous body for 60FPS sub-cell interpolation
+      snake1.prevBody = snake1.body.map(seg => ({ ...seg }));
+      snake2.prevBody = snake2.body.map(seg => ({ ...seg }));
+
+      // 2. Compute Next Head Positions
+      const h1 = { ...snake1.body[0] };
+      const h2 = { ...snake2.body[0] };
+
+      movePointInDir(h1, snake1.dir);
+      movePointInDir(h2, snake2.dir);
+
+      // Wrap Portals or Hard Wall check
+      const hardWalls = (profile.data.wallsRule === 'hard');
+      if (!hardWalls) {
+        h1.x = (h1.x + COLS) % COLS;
+        h1.y = (h1.y + ROWS) % ROWS;
+        h2.x = (h2.x + COLS) % COLS;
+        h2.y = (h2.y + ROWS) % ROWS;
+      }
+
+      // 3. Advance Bodies
+      snake1.body.unshift(h1);
+      if (snake1.grow > 0) {
+        snake1.grow--;
+      } else {
+        snake1.body.pop();
+      }
+
+      if (gameMode !== 'solo_classic') {
+        snake2.body.unshift(h2);
+        if (snake2.grow > 0) {
+          snake2.grow--;
+        } else {
+          snake2.body.pop();
+        }
+      }
+
+      // 4. Food Collisions & Consumption
+      checkFoodConsumption(snake1, h1, 1);
+      if (gameMode !== 'solo_classic') {
+        checkFoodConsumption(snake2, h2, 2);
+      }
+
+      // Spawn food if empty
+      if (foods.length === 0) {
+        spawnFoodItem();
+      }
+
+      // 5. Collision Checks (Clash vs Rush Mode)
+      if (hardWalls) {
+        if (h1.x < 0 || h1.x >= COLS || h1.y < 0 || h1.y >= ROWS) snake1.alive = false;
+        if (gameMode !== 'solo_classic' && (h2.x < 0 || h2.x >= COLS || h2.y < 0 || h2.y >= ROWS)) snake2.alive = false;
+      }
+
+      // Self-collision
+      for (let i = 1; i < snake1.body.length; i++) {
+        if (h1.x === snake1.body[i].x && h1.y === snake1.body[i].y) snake1.alive = false;
+      }
+      if (gameMode !== 'solo_classic') {
+        for (let i = 1; i < snake2.body.length; i++) {
+          if (h2.x === snake2.body[i].x && h2.y === snake2.body[i].y) snake2.alive = false;
+        }
+      }
+
+      // Cross-Snake Collisions (Only in Clash Mode)
+      if (arenaMode === 'clash' && gameMode !== 'solo_classic') {
+        // Head-to-Head Crash
+        if (h1.x === h2.x && h1.y === h2.y) {
+          snake1.alive = false;
+          snake2.alive = false;
+        }
+        // Snake 1 hit Snake 2 body
+        for (let i = 0; i < snake2.body.length; i++) {
+          if (h1.x === snake2.body[i].x && h1.y === snake2.body[i].y) snake1.alive = false;
+        }
+        // Snake 2 hit Snake 1 body
+        for (let i = 0; i < snake1.body.length; i++) {
+          if (h2.x === snake1.body[i].x && h2.y === snake1.body[i].y) snake2.alive = false;
+        }
+      }
+
+      // 6. Check Round End Conditions
+      if (!snake1.alive || (gameMode !== 'solo_classic' && !snake2.alive)) {
+        handleRoundEnd();
+      } else if (arenaMode === 'rush' && (snake1.score >= 200 || snake2.score >= 200)) {
+        handleRoundEnd();
+      }
+
+      // If AI Mode, compute next AI direction for next tick
+      if (gameMode === 'ai') {
+        computeAIDirection();
+      }
+
+      lastTickTime = performance.now();
+      updateHUD();
+    }
+
+    function movePointInDir(pt, dir) {
+      if (dir === 'UP') pt.y--;
+      if (dir === 'DOWN') pt.y++;
+      if (dir === 'LEFT') pt.x--;
+      if (dir === 'RIGHT') pt.x++;
+    }
+
+    function isValidDirChange(cur, next) {
+      if (cur === 'UP' && next === 'DOWN') return false;
+      if (cur === 'DOWN' && next === 'UP') return false;
+      if (cur === 'LEFT' && next === 'RIGHT') return false;
+      if (cur === 'RIGHT' && next === 'LEFT') return false;
+      return true;
+    }
+
+    function checkFoodConsumption(snake, head, playerNum) {
+      foods = foods.filter(f => {
+        if (head.x === f.x && head.y === f.y) {
+          if (f.type === 'gold') {
+            snake.score += 25;
+            snake.grow += 2;
+            sound.playGold();
+            profile.unlockAchievement('golden_feast');
+          } else if (f.type === 'shrink') {
+            snake.score += 15;
+            if (snake.body.length > 3) snake.body.pop();
+            sound.playEat();
+            profile.unlockAchievement('shrink_tactic');
+          } else {
+            snake.score += 10;
+            snake.grow += 1;
+            sound.playEat();
+          }
+
+          if (playerNum === 1) profile.unlockAchievement('first_bite');
+          if (snake.body.length >= 25) profile.unlockAchievement('long_tail');
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function spawnFoodItem() {
+      if (!randomFunc) randomFunc = createPRNG(matchSeed);
+
+      let x, y, occupied;
+      let attempts = 0;
+      do {
+        x = Math.floor(randomFunc() * COLS);
+        y = Math.floor(randomFunc() * ROWS);
+        occupied = snake1.body.some(b => b.x === x && b.y === y) ||
+                   snake2.body.some(b => b.x === x && b.y === y);
+        attempts++;
+      } while (occupied && attempts < 50);
+
+      // Determine food rarity
+      const roll = randomFunc();
+      let type = 'apple';
+      if (roll < 0.15) type = 'gold';
+      else if (roll < 0.25) type = 'shrink';
+
+      foods.push({ x, y, type });
+    }
+
+    // ==========================================
+    // 6. A* PATHFINDING AI SNAKE BOT
+    // ==========================================
+    function computeAIDirection() {
+      if (!snake2.alive || foods.length === 0) return;
+
+      const head = snake2.body[0];
+      const targetFood = foods[0];
+
+      // Simple Manhattan distance + collision obstacle avoidance
+      const dirs = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+      let bestDir = snake2.dir;
+      let minScore = Infinity;
+
+      dirs.forEach(d => {
+        if (!isValidDirChange(snake2.dir, d)) return;
+
+        const next = { x: head.x, y: head.y };
+        movePointInDir(next, d);
+
+        // Check if next causes collision
+        const hardWalls = (profile.data.wallsRule === 'hard');
+        if (hardWalls && (next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS)) return;
+
+        next.x = (next.x + COLS) % COLS;
+        next.y = (next.y + ROWS) % ROWS;
+
+        // Check self and opponent bodies
+        const hitSelf = snake2.body.some(b => b.x === next.x && b.y === next.y);
+        const hitOpponent = (arenaMode === 'clash') && snake1.body.some(b => b.x === next.x && b.y === next.y);
+
+        if (hitSelf || hitOpponent) return;
+
+        // Distance to food
+        const dist = Math.abs(next.x - targetFood.x) + Math.abs(next.y - targetFood.y);
+        if (dist < minScore) {
+          minScore = dist;
+          bestDir = d;
+        }
+      });
+
+      snake2.nextDir = bestDir;
+      p2InputQueue[currentTick + 1] = bestDir;
+    }
+
+    // ==========================================
+    // 7. 60FPS CANVAS 2D SUB-CELL INTERPOLATION
+    // ==========================================
+    function renderCanvas(timestamp) {
+      // Adjust internal resolution to match wrapper
+      if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const cellW = cw / COLS;
+      const cellH = ch / ROWS;
+
+      const theme = ARENA_THEMES[profile.data.theme] || ARENA_THEMES.cyber;
+      const skin1 = SNAKE_SKINS[profile.data.skin] || SNAKE_SKINS.cyber_viper;
+      const skin2 = SNAKE_SKINS.amethyst_serpent;
+
+      // 1. Clear & Background Grid
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, cw, ch);
+
+      // Grid Lines
+      ctx.strokeStyle = theme.grid;
+      ctx.lineWidth = 1;
+      for (let c = 0; c <= COLS; c++) {
+        ctx.beginPath();
+        ctx.moveTo(c * cellW, 0);
+        ctx.lineTo(c * cellW, ch);
+        ctx.stroke();
+      }
+      for (let r = 0; r <= ROWS; r++) {
+        ctx.beginPath();
+        ctx.moveTo(0, r * cellH);
+        ctx.lineTo(cw, r * cellH);
+        ctx.stroke();
+      }
+
+      // Outer Arena Border
+      ctx.strokeStyle = theme.wall;
+      ctx.lineWidth = (profile.data.wallsRule === 'hard') ? 4 : 1.5;
+      if (profile.data.wallsRule !== 'hard') ctx.setLineDash([8, 8]);
+      ctx.strokeRect(2, 2, cw - 4, ch - 4);
+      ctx.setLineDash([]);
+
+      // Calculate Sub-cell Interpolation Fraction (0.0 to 1.0)
+      const now = performance.now();
+      const alpha = Math.min(1.0, (now - lastTickTime) / TICK_INTERVAL);
+
+      // 2. Draw Food Items
+      foods.forEach(f => {
+        const fx = f.x * cellW + cellW / 2;
+        const fy = f.y * cellH + cellH / 2;
+        const pulse = 1 + Math.sin(now * 0.008) * 0.12;
+
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.scale(pulse, pulse);
+
+        if (f.type === 'gold') {
+          ctx.fillStyle = '#fbbf24';
+          ctx.shadowColor = '#facc15';
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.arc(0, 0, cellW * 0.42, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (f.type === 'shrink') {
+          ctx.fillStyle = '#c084fc';
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(0, 0, cellW * 0.38, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#ef4444';
+          ctx.shadowColor = '#f87171';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(0, 0, cellW * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // 3. Draw Snake 2 (Opponent / Right)
+      if (gameMode !== 'solo_classic') {
+        drawInterpolatedSnake(ctx, snake2, skin2, cellW, cellH, alpha);
+      }
+
+      // 4. Draw Snake 1 (Player 1 / Left)
+      drawInterpolatedSnake(ctx, snake1, skin1, cellW, cellH, alpha);
+
+      requestAnimationFrame(renderCanvas);
+    }
+    requestAnimationFrame(renderCanvas);
+
+    function drawInterpolatedSnake(ctx, snake, skin, cellW, cellH, alpha) {
+      if (!snake.body || snake.body.length === 0) return;
+
+      const body = snake.body;
+      const prev = snake.prevBody.length === body.length ? snake.prevBody : body;
+
+      // Draw Body Segments (from tail to neck)
+      for (let i = body.length - 1; i >= 1; i--) {
+        const curSeg = body[i];
+        const prevSeg = prev[i] || curSeg;
+
+        const ix = prevSeg.x + (curSeg.x - prevSeg.x) * alpha;
+        const iy = prevSeg.y + (curSeg.y - prevSeg.y) * alpha;
+
+        const px = ix * cellW;
+        const py = iy * cellH;
+
+        ctx.fillStyle = skin.bodyCol;
+        ctx.beginPath();
+        ctx.roundRect(px + 2, py + 2, cellW - 4, cellH - 4, 6);
+        ctx.fill();
+      }
+
+      // Draw Head
+      const head = body[0];
+      const prevHead = prev[0] || head;
+      const hx = (prevHead.x + (head.x - prevHead.x) * alpha) * cellW;
+      const hy = (prevHead.y + (head.y - prevHead.y) * alpha) * cellH;
+
+      ctx.save();
+      ctx.fillStyle = skin.headCol;
+      ctx.shadowColor = skin.headCol;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.roundRect(hx + 1.5, hy + 1.5, cellW - 3, cellH - 3, 8);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = skin.eyeCol;
+      const cx = hx + cellW / 2;
+      const cy = hy + cellH / 2;
+      ctx.beginPath();
+      if (snake.dir === 'RIGHT') {
+        ctx.arc(cx + 4, cy - 3, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + 4, cy + 3, 2.5, 0, Math.PI * 2);
+      } else if (snake.dir === 'LEFT') {
+        ctx.arc(cx - 4, cy - 3, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx - 4, cy + 3, 2.5, 0, Math.PI * 2);
+      } else if (snake.dir === 'UP') {
+        ctx.arc(cx - 3, cy - 4, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + 3, cy - 4, 2.5, 0, Math.PI * 2);
+      } else {
+        ctx.arc(cx - 3, cy + 4, 2.5, 0, Math.PI * 2);
+        ctx.arc(cx + 3, cy + 4, 2.5, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // ==========================================
+    // 8. ROUND & MATCH MANAGEMENT
+    // ==========================================
+    function startMatch() {
+      currentRound = 1;
+      p1RoundsWon = 0;
+      p2RoundsWon = 0;
+      roundsNeeded = profile.data.roundsToWin;
+      arenaMode = profile.data.mode;
+
+      document.getElementById('p1-name-display').textContent = profile.data.name;
+      document.getElementById('p2-name-display').textContent = (gameMode === 'ai' ? 'A* AI Bot' : (gameMode === 'solo_classic' ? 'Solo' : 'Rival Snake'));
+
+      startRound();
+    }
+
+    function startRound() {
+      isRunning = false;
+      isCountdown = true;
+      currentTick = 0;
+      foods = [];
+      p1InputQueue = {};
+      p2InputQueue = {};
+
+      if (tickTimer) clearInterval(tickTimer);
+
+      // Initialize Snake 1 (Left side)
+      snake1 = {
+        body: [{ x: 5, y: 11 }, { x: 4, y: 11 }, { x: 3, y: 11 }],
+        prevBody: [{ x: 5, y: 11 }, { x: 4, y: 11 }, { x: 3, y: 11 }],
+        dir: 'RIGHT',
+        nextDir: 'RIGHT',
+        score: 0,
+        alive: true,
+        grow: 0
+      };
+
+      // Initialize Snake 2 (Right side)
+      snake2 = {
+        body: [{ x: 24, y: 11 }, { x: 25, y: 11 }, { x: 26, y: 11 }],
+        prevBody: [{ x: 24, y: 11 }, { x: 25, y: 11 }, { x: 26, y: 11 }],
+        dir: 'LEFT',
+        nextDir: 'LEFT',
+        score: 0,
+        alive: true,
+        grow: 0
+      };
+
+      matchSeed = Math.floor(Math.random() * 999999);
+      randomFunc = createPRNG(matchSeed);
+      spawnFoodItem();
+
+      showView('arena');
+      updateHUD();
+      runCountdownSequence();
+    }
+
+    function runCountdownSequence() {
+      const banner = document.getElementById('countdown-banner');
+      const text = document.getElementById('countdown-text');
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+
+      let count = 3;
+      text.textContent = count;
+      sound.playCountdown(false);
+
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          text.textContent = count;
+          sound.playCountdown(false);
+        } else {
+          clearInterval(interval);
+          text.textContent = 'GO!';
+          sound.playCountdown(true);
+          setTimeout(() => {
+            banner.classList.add('hidden');
+            banner.classList.remove('flex');
+            isCountdown = false;
+            isRunning = true;
+            lastTickTime = performance.now();
+            tickTimer = setInterval(stepLockstepTick, TICK_INTERVAL);
+          }, 600);
+        }
+      }, 900);
+    }
+
+    function handleRoundEnd() {
+      isRunning = false;
+      if (tickTimer) clearInterval(tickTimer);
+      sound.playCrash();
+
+      let roundWinner = null;
+      if (arenaMode === 'clash') {
+        if (snake1.alive && !snake2.alive) roundWinner = 1;
+        else if (!snake1.alive && snake2.alive) roundWinner = 2;
+        else roundWinner = (snake1.score >= snake2.score ? 1 : 2); // Draw tie-break
+      } else {
+        roundWinner = (snake1.score >= snake2.score ? 1 : 2);
+      }
+
+      if (roundWinner === 1) p1RoundsWon++;
+      else p2RoundsWon++;
+
+      updateHUD();
+
+      // Check Match Winner
+      if (p1RoundsWon >= roundsNeeded || p2RoundsWon >= roundsNeeded || gameMode === 'solo_classic') {
+        setTimeout(handleMatchOver, 800);
+      } else {
+        currentRound++;
+        showGlobalAlert(`Round complete! ${roundWinner === 1 ? 'You' : 'Opponent'} took the round.`, '👑');
+        setTimeout(startRound, 2000);
+      }
+    }
+
+    function handleMatchOver() {
+      sound.playVictory();
+      profile.data.totalMatches++;
+
+      const isWinner = (p1RoundsWon >= p2RoundsWon);
+      if (isWinner) {
+        profile.data.wins++;
+        profile.data.elo += 20;
+        profile.unlockAchievement('clash_decimator');
+        if (gameMode === 'ai') profile.unlockAchievement('ai_slayer');
+        if (gameMode === 'p2p_host' || gameMode === 'p2p_join') profile.unlockAchievement('p2p_champion');
+        if (profile.data.roundsToWin === 3) profile.unlockAchievement('best_of_5');
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      } else {
+        profile.data.losses++;
+        profile.data.elo = Math.max(800, profile.data.elo - 10);
+      }
+      profile.save();
+
+      document.getElementById('match-over-title').textContent = isWinner ? 'Match Victory!' : 'Match Defeat';
+      document.getElementById('summary-p1-score').textContent = snake1.score;
+      document.getElementById('summary-p2-score').textContent = snake2.score;
+      document.getElementById('modal-match-over').classList.remove('hidden');
+    }
+
+    function updateHUD() {
+      document.getElementById('p1-score-display').textContent = snake1.score;
+      document.getElementById('p2-score-display').textContent = snake2.score;
+      document.getElementById('round-indicator-badge').textContent = `ROUND ${currentRound}`;
+
+      // Update Crown Trays
+      const p1Tray = document.getElementById('p1-crowns-tray');
+      const p2Tray = document.getElementById('p2-crowns-tray');
+      p1Tray.innerHTML = '';
+      p2Tray.innerHTML = '';
+
+      for (let i = 0; i < p1RoundsWon; i++) p1Tray.innerHTML += '👑';
+      for (let i = 0; i < p2RoundsWon; i++) p2Tray.innerHTML += '👑';
+    }
+
+    // ==========================================
+    // 9. WEBRTC P2P NETWORKING (LOCKSTEP)
+    // ==========================================
+    function initPeer(customId = null) {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+
+      peer = new Peer(customId || undefined, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
+
+      peer.on('open', (id) => {
+        myPeerId = id;
+        updateP2PStatus('connected', 'Arena Online');
+      });
+
+      peer.on('connection', (c) => {
+        conn = c;
+        setupDataChannelEvents();
+      });
+
+      peer.on('error', (err) => {
+        showGlobalAlert(`Network: ${err.type || 'Connection issue'}`, '⚠️');
+      });
+    }
+
+    function setupDataChannelEvents() {
+      conn.on('open', () => {
+        updateP2PStatus('live', 'P2P Connected');
+        showGlobalAlert('Rival connected! Preparing arena...', '🐍');
+
+        if (gameMode === 'p2p_host') {
+          conn.send({
+            type: 'init_match',
+            skin: profile.data.skin,
+            theme: profile.data.theme,
+            mode: profile.data.mode,
+            rounds: profile.data.roundsToWin,
+            walls: profile.data.wallsRule
+          });
+          startMatch();
+        } else {
+          conn.send({
+            type: 'joiner_ready',
+            skin: profile.data.skin
+          });
+        }
+      });
+
+      conn.on('data', (data) => {
+        handleP2PMessage(data);
+      });
+
+      conn.on('close', () => {
+        updateP2PStatus('disconnected', 'Rival Left');
+        showGlobalAlert('Rival disconnected from match.', '⚠️');
+      });
+    }
+
+    function handleP2PMessage(data) {
+      if (!data || !data.type) return;
+
+      switch (data.type) {
+        case 'init_match':
+          profile.data.theme = data.theme;
+          profile.data.mode = data.mode;
+          profile.data.roundsToWin = data.rounds;
+          profile.data.wallsRule = data.walls;
+          startMatch();
+          break;
+
+        case 'input':
+          // Opponent sent direction input for specific tick
+          if (gameMode === 'p2p_host') {
+            p2InputQueue[data.tick] = data.dir;
+            snake2.nextDir = data.dir;
+          } else {
+            p1InputQueue[data.tick] = data.dir;
+            snake1.nextDir = data.dir;
+          }
+          break;
+
+        case 'chat':
+          showGlobalAlert(`${data.sender}: ${data.text}`, '💬');
+          break;
+
+        case 'taunt':
+          spawnFloatingTaunt(data.emoji);
+          break;
+
+        case 'rematch':
+          startMatch();
+          showGlobalAlert('Rematch accepted!', '🐍');
+          break;
+      }
+    }
+
+    function updateP2PStatus(state, text) {
+      const dot = document.getElementById('header-status-dot');
+      const textEl = document.getElementById('header-status-text');
+      if (textEl) textEl.textContent = text;
+      if (dot) {
+        if (state === 'live') dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
+        else if (state === 'connected') dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        else dot.className = 'w-2 h-2 rounded-full bg-stone-400';
+      }
+    }
+
+    // ==========================================
+    // 10. INPUT LISTENERS (KEYBOARD & TOUCH)
+    // ==========================================
+    function handlePlayerDirectionInput(dir) {
+      if (!isRunning) return;
+
+      const targetSnake = (gameMode === 'p2p_join') ? snake2 : snake1;
+      if (!isValidDirChange(targetSnake.dir, dir)) return;
+
+      targetSnake.nextDir = dir;
+
+      if (conn && conn.open) {
+        conn.send({
+          type: 'input',
+          tick: currentTick + 1,
+          dir: dir
+        });
+      } else {
+        if (gameMode === 'p2p_join') p2InputQueue[currentTick + 1] = dir;
+        else p1InputQueue[currentTick + 1] = dir;
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'KeyW'].includes(e.code)) handlePlayerDirectionInput('UP');
+      if (['ArrowDown', 'KeyS'].includes(e.code)) handlePlayerDirectionInput('DOWN');
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) handlePlayerDirectionInput('LEFT');
+      if (['ArrowRight', 'KeyD'].includes(e.code)) handlePlayerDirectionInput('RIGHT');
+    });
+
+    // Touch D-Pad bindings
+    document.getElementById('dpad-up').addEventListener('click', () => handlePlayerDirectionInput('UP'));
+    document.getElementById('dpad-down').addEventListener('click', () => handlePlayerDirectionInput('DOWN'));
+    document.getElementById('dpad-left').addEventListener('click', () => handlePlayerDirectionInput('LEFT'));
+    document.getElementById('dpad-right').addEventListener('click', () => handlePlayerDirectionInput('RIGHT'));
+
+    // Swipe Gestures
+    let touchStartX = 0, touchStartY = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    canvas.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) handlePlayerDirectionInput('RIGHT');
+        else if (dx < -30) handlePlayerDirectionInput('LEFT');
+      } else {
+        if (dy > 30) handlePlayerDirectionInput('DOWN');
+        else if (dy < -30) handlePlayerDirectionInput('UP');
+      }
+    });
+
+    // ==========================================
+    // 11. LOBBY NAVIGATION & MODALS
+    // ==========================================
+    function showView(viewId) {
+      document.getElementById('view-lobby').classList.add('hidden');
+      document.getElementById('view-waiting').classList.add('hidden');
+      document.getElementById('view-arena').classList.add('hidden');
+
+      if (viewId === 'lobby') document.getElementById('view-lobby').classList.remove('hidden');
+      if (viewId === 'waiting') document.getElementById('view-waiting').classList.remove('hidden');
+      if (viewId === 'arena') document.getElementById('view-arena').classList.remove('hidden');
+    }
+
+    function renderSkinSelectionGrid() {
+      const grid = document.getElementById('skin-select-grid');
+      grid.innerHTML = '';
+
+      Object.values(SNAKE_SKINS).forEach(s => {
+        const isSelected = (s.id === profile.data.skin);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2.5 rounded-xl border text-left flex items-center gap-2.5 transition-all ${isSelected ? 'border-emerald-500 bg-emerald-500/15 shadow-glow-emerald' : 'border-theme-line bg-theme-surface-alt hover:border-emerald-500/40'}`;
+        btn.innerHTML = `
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black text-white" style="background-color: ${s.headCol}">🐍</div>
+          <div>
+            <h4 class="font-display font-bold text-xs text-theme-ink">${s.name}</h4>
+          </div>
+        `;
+        btn.addEventListener('click', () => {
+          profile.data.skin = s.id;
+          profile.save();
+          renderSkinSelectionGrid();
+          document.getElementById('selected-skin-badge').textContent = s.name.toUpperCase();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // Host Room
+    document.getElementById('btn-create-room').addEventListener('click', () => {
+      gameMode = 'p2p_host';
+      const roomCode = 'SNAKE-' + Math.floor(1000 + Math.random() * 9000);
+      initPeer(`ARCADE-${roomCode}`);
+
+      document.getElementById('display-room-code').textContent = roomCode;
+      const directUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+      document.getElementById('display-room-link').value = directUrl;
+
+      // Update social share buttons
+      const shareMsg = encodeURIComponent(`Challenge me to a Snake Arena duel on ArcadeLab! Room Code: ${roomCode}\n${directUrl}`);
+      document.getElementById('share-whatsapp').href = `https://api.whatsapp.com/send?text=${shareMsg}`;
+      document.getElementById('share-telegram').href = `https://t.me/share/url?url=${encodeURIComponent(directUrl)}&text=${encodeURIComponent('Join my Snake match!')}`;
+      document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${shareMsg}`;
+
+      // Generate QR Code
+      const qrWrapper = document.getElementById('qr-code-canvas-wrapper');
+      qrWrapper.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrWrapper, {
+          text: directUrl,
+          width: 140,
+          height: 140,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      showView('waiting');
+    });
+
+    // Join Room
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+      const codeInput = document.getElementById('input-join-code').value.trim().toUpperCase();
+      if (!codeInput) {
+        showGlobalAlert('Please enter a valid room code', '⚠️');
+        return;
+      }
+      const peerTargetId = codeInput.startsWith('ARCADE-') ? codeInput : `ARCADE-${codeInput}`;
+      gameMode = 'p2p_join';
+
+      initPeer();
+      peer.on('open', () => {
+        conn = peer.connect(peerTargetId, { reliable: true });
+        setupDataChannelEvents();
+      });
+    });
+
+    // AI Mode
+    document.getElementById('btn-start-ai').addEventListener('click', () => {
+      gameMode = 'ai';
+      startMatch();
+    });
+
+    // Solo Classic
+    document.getElementById('btn-solo-classic').addEventListener('click', () => {
+      gameMode = 'solo_classic';
+      startMatch();
+    });
+
+    // Rematch & Exit
+    document.getElementById('btn-rematch-match').addEventListener('click', () => {
+      document.getElementById('modal-match-over').classList.add('hidden');
+      if (conn && conn.open) {
+        conn.send({ type: 'rematch' });
+      }
+      startMatch();
+    });
+
+    document.getElementById('btn-exit-to-lobby').addEventListener('click', () => {
+      document.getElementById('modal-match-over').classList.add('hidden');
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+      showView('lobby');
+    });
+
+    // Mode Buttons (Clash vs Rush)
+    const btnClash = document.getElementById('mode-btn-clash');
+    const btnRush = document.getElementById('mode-btn-rush');
+    btnClash.addEventListener('click', () => {
+      profile.data.mode = 'clash';
+      btnClash.className = 'p-3 rounded-2xl border text-left transition-all border-emerald-500 bg-emerald-500/15 shadow-glow-emerald';
+      btnRush.className = 'p-3 rounded-2xl border text-left transition-all border-theme-line bg-theme-surface-alt hover:border-pink-500/40';
+      profile.save();
+    });
+    btnRush.addEventListener('click', () => {
+      profile.data.mode = 'rush';
+      btnRush.className = 'p-3 rounded-2xl border text-left transition-all border-pink-500 bg-pink-500/15 shadow-glow-pink';
+      btnClash.className = 'p-3 rounded-2xl border text-left transition-all border-theme-line bg-theme-surface-alt hover:border-emerald-500/40';
+      profile.save();
+    });
+
+    document.getElementById('select-arena-theme').addEventListener('change', (e) => {
+      profile.data.theme = e.target.value;
+      profile.save();
+    });
+    document.getElementById('select-rounds-count').addEventListener('change', (e) => {
+      profile.data.roundsToWin = Math.ceil(Number(e.target.value) / 2);
+      profile.save();
+    });
+    document.getElementById('select-walls-rule').addEventListener('change', (e) => {
+      profile.data.wallsRule = e.target.value;
+      profile.save();
+    });
+
+    // QR & Copy
+    document.getElementById('btn-toggle-qr').addEventListener('click', () => {
+      const container = document.getElementById('qr-container');
+      const arrow = document.getElementById('qr-arrow');
+      const isHidden = container.classList.toggle('hidden');
+      arrow.textContent = isHidden ? '▼' : '▲';
+    });
+
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+      const code = document.getElementById('display-room-code').textContent.trim();
+      navigator.clipboard.writeText(code);
+      document.getElementById('copy-code-icon').textContent = '✓';
+      setTimeout(() => document.getElementById('copy-code-icon').textContent = '📋', 1500);
+      showGlobalAlert('Room code copied!', '📋');
+    });
+
+    document.getElementById('btn-copy-link').addEventListener('click', () => {
+      const link = document.getElementById('display-room-link').value;
+      navigator.clipboard.writeText(link);
+      showGlobalAlert('Direct link copied!', '📋');
+    });
+
+    document.getElementById('btn-cancel-waiting').addEventListener('click', () => {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+      }
+      showView('lobby');
+    });
+
+    document.getElementById('btn-restart-round').addEventListener('click', startRound);
+    document.getElementById('btn-forfeit-match').addEventListener('click', () => {
+      if (confirm('Leave current Snake match?')) {
+        isRunning = false;
+        if (tickTimer) clearInterval(tickTimer);
+        showView('lobby');
+      }
+    });
+
+    // Dark/Light Theme Toggle
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      themeIcon.textContent = isDark ? '🌙' : '☀️';
+      localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+    });
+    if (localStorage.getItem('theme-mode') === 'light') {
+      document.documentElement.classList.remove('dark');
+      themeIcon.textContent = '☀️';
+    }
+
+    // Sound Toggle
+    const btnSoundToggle = document.getElementById('btn-sound-toggle');
+    const soundIcon = document.getElementById('sound-icon');
+    btnSoundToggle.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      localStorage.setItem('snake-sound-muted', sound.muted ? 'true' : 'false');
+      soundIcon.textContent = sound.muted ? '🔇' : '🔊';
+    });
+    if (sound.muted) soundIcon.textContent = '🔇';
+
+    // Modals
+    const modalRules = document.getElementById('modal-rules');
+    document.getElementById('btn-rules').addEventListener('click', () => modalRules.classList.remove('hidden'));
+    document.getElementById('btn-close-rules').addEventListener('click', () => modalRules.classList.add('hidden'));
+
+    const modalTrophies = document.getElementById('modal-trophies');
+    document.getElementById('btn-open-trophies').addEventListener('click', () => {
+      renderTrophiesModal();
+      modalTrophies.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-trophies').addEventListener('click', () => modalTrophies.classList.add('hidden'));
+
+    function renderTrophiesModal() {
+      const container = document.getElementById('achievements-list-container');
+      container.innerHTML = '';
+      ACHIEVEMENTS_DATA.forEach(ach => {
+        const isUnlocked = profile.data.unlockedAchievements.includes(ach.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border ${isUnlocked ? 'bg-amber-500/10 border-amber-500/30' : 'bg-theme-surface-alt border-theme-line/60 opacity-60'} flex items-center gap-3`;
+        card.innerHTML = `
+          <span class="text-2xl p-2 rounded-xl ${isUnlocked ? 'bg-amber-500/20' : 'bg-theme-surface'}">${ach.icon}</span>
+          <div>
+            <h4 class="font-display font-bold text-xs ${isUnlocked ? 'text-amber-400' : 'text-theme-ink'}">${ach.name}</h4>
+            <p class="text-[10px] text-theme-muted">${ach.desc}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    const modalManualSdp = document.getElementById('modal-manual-sdp');
+    document.getElementById('btn-open-manual-signaling').addEventListener('click', () => {
+      modalManualSdp.classList.remove('hidden');
+      initPeer();
+    });
+    document.getElementById('btn-close-manual-sdp').addEventListener('click', () => modalManualSdp.classList.add('hidden'));
+
+    // Global Alert Notice
+    function showGlobalAlert(msg, icon = '⚠️') {
+      const banner = document.getElementById('global-alert-banner');
+      const msgEl = document.getElementById('alert-message');
+      const iconEl = document.getElementById('alert-icon');
+      msgEl.textContent = msg;
+      iconEl.textContent = icon;
+      banner.className = 'px-3 py-2 text-center text-xs font-medium border-b bg-emerald-500/15 border-emerald-500/30 text-emerald-300 transition-all duration-300 block';
+      setTimeout(() => {
+        banner.className = 'hidden';
+      }, 5000);
+    }
+    document.getElementById('btn-alert-close').addEventListener('click', () => {
+      document.getElementById('global-alert-banner').className = 'hidden';
+    });
+
+    // Chat & Taunts
+    document.getElementById('arena-chat-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('arena-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      showGlobalAlert(`You: ${text}`, '💬');
+      if (conn && conn.open) {
+        conn.send({ type: 'chat', text, sender: profile.data.name });
+      }
+    });
+
+    document.querySelectorAll('.btn-taunt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const emoji = btn.dataset.emoji;
+        spawnFloatingTaunt(emoji);
+        if (conn && conn.open) {
+          conn.send({ type: 'taunt', emoji });
+        }
+      });
+    });
+
+    function spawnFloatingTaunt(emoji) {
+      const overlay = document.getElementById('taunts-overlay');
+      const span = document.createElement('span');
+      span.className = 'floating-emoji';
+      span.textContent = emoji;
+      span.style.left = `${20 + Math.random() * 60}%`;
+      span.style.top = `${60 + Math.random() * 20}%`;
+      overlay.appendChild(span);
+      setTimeout(() => span.remove(), 2300);
+    }
+
+    // ==========================================
+    // INITIALIZATION ON LOAD
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSkinSelectionGrid();
+
+      // Check URL parameters for direct room join
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        document.getElementById('input-join-code').value = roomParam;
+        showGlobalAlert(`Auto-joining room ${roomParam}...`, '🔗');
+        document.getElementById('btn-join-room').click();
+      }
+    });
+  </script>
+</body>
+</html>
