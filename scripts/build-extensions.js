@@ -142,18 +142,27 @@ async function processHtmlForManifestV3(distPath, vendorFilesMap) {
 
   fs.writeFileSync(path.join(vendorDir, 'safe-storage.js'), safeStorageCode, 'utf8');
 
-  // Find all tool folders containing index.html
-  const entries = fs.readdirSync(distPath, { withFileTypes: true });
+  // Find all tool HTML files to process
+  const htmlFilesToProcess = [];
 
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name === '_vendor' || entry.name === 'assets' || entry.name === 'icons') {
-      continue;
+  const toolsDist = path.join(distPath, 'tools');
+  if (fs.existsSync(toolsDist)) {
+    const toolEntries = fs.readdirSync(toolsDist, { withFileTypes: true });
+    for (const entry of toolEntries) {
+      if (entry.isDirectory()) {
+        const htmlPath = path.join(toolsDist, entry.name, 'index.html');
+        if (fs.existsSync(htmlPath)) htmlFilesToProcess.push(htmlPath);
+      }
     }
+  }
 
-    const htmlPath = path.join(distPath, entry.name, 'index.html');
-    if (!fs.existsSync(htmlPath)) continue;
+  const mathlifyHtml = path.join(distPath, 'mathlify', 'index.html');
+  if (fs.existsSync(mathlifyHtml)) htmlFilesToProcess.push(mathlifyHtml);
 
+  for (const htmlPath of htmlFilesToProcess) {
     let html = fs.readFileSync(htmlPath, 'utf8');
+    const toolDir = path.dirname(htmlPath);
+    const vendorRel = path.relative(toolDir, vendorDir).replace(/\\/g, '/');
 
     // 1. Download & Replace Remote CDN scripts
     const remoteScriptRegex = /<script\s+[^>]*src=["'](https?:\/\/[^"']+)["'][^>]*>\s*<\/script>/gi;
@@ -173,7 +182,7 @@ async function processHtmlForManifestV3(distPath, vendorFilesMap) {
 
       if (vendorInfo) {
         fs.writeFileSync(path.join(vendorDir, vendorInfo.fileName), vendorInfo.content, 'utf8');
-        const localTag = `<script src="../_vendor/${vendorInfo.fileName}"></script>`;
+        const localTag = `<script src="${vendorRel}/${vendorInfo.fileName}"></script>`;
         html = html.replace(fullTag, localTag);
       }
     }
@@ -199,12 +208,12 @@ async function processHtmlForManifestV3(distPath, vendorFilesMap) {
 
       if (vendorInfo) {
         fs.writeFileSync(path.join(vendorDir, vendorInfo.fileName), vendorInfo.content, 'utf8');
-        const localTag = fullTag.replace(url, `../_vendor/${vendorInfo.fileName}`);
+        const localTag = fullTag.replace(url, `${vendorRel}/${vendorInfo.fileName}`);
         html = html.replace(fullTag, localTag);
       }
     }
 
-    // 2. Extract Inline <script> tags to external .js files
+    // 3. Extract Inline <script> tags to external .js files
     let scriptCounter = 0;
     const inlineScriptRegex = /<script(?![^>]*\bsrc=)(?![^>]*\btype=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi;
 
@@ -213,17 +222,17 @@ async function processHtmlForManifestV3(distPath, vendorFilesMap) {
 
       scriptCounter++;
       const scriptFileName = `tool-script-${scriptCounter}.js`;
-      const scriptFilePath = path.join(distPath, entry.name, scriptFileName);
+      const scriptFilePath = path.join(toolDir, scriptFileName);
 
       fs.writeFileSync(scriptFilePath, scriptBody, 'utf8');
       return `<script src="./${scriptFileName}"></script>`;
     });
 
-    // 3. Inject safe-storage shim into <head>
+    // 4. Inject safe-storage shim into <head>
     if (html.includes('<head>')) {
-      html = html.replace('<head>', '<head>\n  <script src="../_vendor/safe-storage.js"></script>');
+      html = html.replace('<head>', `<head>\n  <script src="${vendorRel}/safe-storage.js"></script>`);
     } else {
-      html = `<script src="../_vendor/safe-storage.js"></script>\n` + html;
+      html = `<script src="${vendorRel}/safe-storage.js"></script>\n` + html;
     }
 
     fs.writeFileSync(htmlPath, html, 'utf8');
@@ -269,32 +278,50 @@ async function main() {
   copyDirRecursive(iconsSrc, path.join(DIST_CHROME, 'icons'));
   copyDirRecursive(iconsSrc, path.join(DIST_FIREFOX, 'icons'));
 
-  // 6. Copy Manifests
-  console.log('⚙️ Step 5: Applying browser manifests...');
-  fs.copyFileSync(
-    path.join(ROOT_DIR, 'extension', 'manifest.chrome.json'),
-    path.join(DIST_CHROME, 'manifest.json')
-  );
-  fs.copyFileSync(
-    path.join(ROOT_DIR, 'extension', 'manifest.firefox.json'),
-    path.join(DIST_FIREFOX, 'manifest.json')
-  );
+  // 6. Copy Manifests with dynamic version
+  console.log('⚙️ Step 5: Applying browser manifests with dynamic version...');
+  let commitCount = '0';
+  try {
+    commitCount = execSync('git rev-list --count HEAD', { cwd: ROOT_DIR, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch (e) {
+    commitCount = '1';
+  }
+  const appVersion = `2.0.${commitCount}`;
+  console.log(`   ✓ Extension version set to v${appVersion}`);
+
+  const chromeManifest = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'extension', 'manifest.chrome.json'), 'utf8'));
+  chromeManifest.version = appVersion;
+  fs.writeFileSync(path.join(DIST_CHROME, 'manifest.json'), JSON.stringify(chromeManifest, null, 2));
+
+  const firefoxManifest = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'extension', 'manifest.firefox.json'), 'utf8'));
+  firefoxManifest.version = appVersion;
+  fs.writeFileSync(path.join(DIST_FIREFOX, 'manifest.json'), JSON.stringify(firefoxManifest, null, 2));
 
   // 7. Copy all tool sandboxes and common site assets
-  console.log('🛠️ Step 6: Bundling all 40+ client-side tool suites...');
-  const rootEntries = fs.readdirSync(ROOT_DIR, { withFileTypes: true });
-  let toolCount = 0;
+  console.log('🛠️ Step 6: Bundling all client-side tool suites and assets...');
+  
+  // Copy tools/ directory
+  const toolsSrc = path.join(ROOT_DIR, 'tools');
+  copyDirRecursive(toolsSrc, path.join(DIST_CHROME, 'tools'));
+  copyDirRecursive(toolsSrc, path.join(DIST_FIREFOX, 'tools'));
 
-  for (const entry of rootEntries) {
-    if (entry.isDirectory() && !EXCLUDE_DIRS.has(entry.name)) {
-      const toolSrc = path.join(ROOT_DIR, entry.name);
-      copyDirRecursive(toolSrc, path.join(DIST_CHROME, entry.name));
-      copyDirRecursive(toolSrc, path.join(DIST_FIREFOX, entry.name));
-      if (entry.name !== 'assets') {
-        toolCount++;
-      }
-    }
+  // Copy mathlify/ directory
+  const mathlifySrc = path.join(ROOT_DIR, 'mathlify');
+  if (fs.existsSync(mathlifySrc)) {
+    copyDirRecursive(mathlifySrc, path.join(DIST_CHROME, 'mathlify'));
+    copyDirRecursive(mathlifySrc, path.join(DIST_FIREFOX, 'mathlify'));
   }
+
+  // Copy shared assets/ directory
+  const assetsSrc = path.join(ROOT_DIR, 'assets');
+  if (fs.existsSync(assetsSrc)) {
+    copyDirRecursive(assetsSrc, path.join(DIST_CHROME, 'assets'));
+    copyDirRecursive(assetsSrc, path.join(DIST_FIREFOX, 'assets'));
+  }
+
+  const toolCount = fs.readdirSync(toolsSrc, { withFileTypes: true }).filter(e => e.isDirectory()).length + (fs.existsSync(mathlifySrc) ? 1 : 0);
   console.log(`   ✓ Copied ${toolCount} tool sandboxes & shared assets`);
 
   // 8. Transform tool HTML files for Manifest V3 (externalize inline scripts, vendor CDN assets)

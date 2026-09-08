@@ -65,17 +65,18 @@ export function isExtensionEnvironment(): boolean {
 }
 
 export function getToolUrl(slug: string): string {
+  const prefix = slug === 'mathlify' ? '' : 'tools/';
   if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
     try {
-      return chrome.runtime.getURL(`${slug}/index.html`);
+      return chrome.runtime.getURL(`${prefix}${slug}/index.html`);
     } catch (e) {}
   }
   if (typeof (window as any).browser !== 'undefined' && (window as any).browser?.runtime?.getURL) {
     try {
-      return (window as any).browser.runtime.getURL(`${slug}/index.html`);
+      return (window as any).browser.runtime.getURL(`${prefix}${slug}/index.html`);
     } catch (e) {}
   }
-  return `/${slug}/index.html`;
+  return `/${prefix}${slug}/index.html`;
 }
 
 export function getShareableToolUrl(category: string, slug: string): string {

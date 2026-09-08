@@ -58,7 +58,7 @@ export const Header: React.FC = () => {
             >
               <ToolzyLogo size="md" showIcon={true} />
               <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded-full bg-surface-alt border border-line text-muted hidden md:inline-block">
-                {isExt ? 'Extension' : 'v2.0'}
+                {isExt ? `Ext v${__APP_VERSION__}` : `v${__APP_VERSION__}`}
               </span>
             </Link>
           </div>
