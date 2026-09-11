@@ -6,6 +6,7 @@ const LEGACY_MAP = {
   '#/scientific-calculator': 'tools/scientific-calculator.html',
   '#/bmi-calculator':        'tools/bmi-calculator.html',
   '#/age-calculator':        'tools/age-calculator.html',
+  '#/time-calculator':       'tools/time-calculator.html',
   '#/mortgage-calculator':   'tools/mortgage-calculator.html',
   '#/percentage-calculator': 'tools/percentage-calculator.html',
   '#/amortization-calculator': 'tools/amortization-calculator.html',

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Interactive Neural Network Visualizer — Browser-Based Machine Learning | sayandeep.dev</title>
+  <meta name="description" content="An interactive, 100% client-side Neural Network visualizer and Machine Learning playground. Draw shapes or digits on canvas, train the network live, and watch synaptic weights and activations adapt in real time." />
+  <meta name="keywords" content="neural network visualizer, machine learning playground, client side ml, brain.js, deep learning visualizer, canvas neural net, javascript neural network, backpropagation visualization" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/tools/neural-network-visualizer/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Interactive Neural Network Visualizer | sayandeep.dev" />
+  <meta property="og:description" content="Draw shapes, train an in-browser neural network, and visualize live synaptic weights, activations, and loss curves in 60 FPS." />
+  <meta property="og:url" content="https://sayandeepmajumdar.github.io/tools/neural-network-visualizer/" />
+
+  <!-- Schema.org Application Metadata -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Interactive Neural Network Visualizer",
+    "url": "https://sayandeepmajumdar.github.io/tools/neural-network-visualizer/",
+    "description": "An interactive, browser-based Machine Learning playground to draw shapes, train a multi-layer perceptron in real time, and visualize live synaptic weights and activations.",
+    "applicationCategory": "EducationalApplication, DeveloperApplication",
+    "operatingSystem": "All",
+    "author": {
+      "@type": "Person",
+      "name": "Sayandeep Majumdar"
+    }
+  }
+  </script>
+
+  <!-- External Library CDNs (Brain.js for client-side ML ecosystem compatibility) -->
+  <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.24/dist/browser.js"></script>
+
+  <!-- Cyber Theme Stylesheet -->
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Top Cyber Navigation Header -->
+    <header class="cyber-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo-glow">🧠</div>
+        <div class="brand-title">
+          <span>NeuralNet Studio</span>
+          <span class="badge-tag">CLIENT-SIDE ML</span>
+        </div>
+      </div>
+
+      <div class="header-tools">
+        <div class="status-pill" id="training-status-pill">
+          <span class="status-dot" id="training-status-dot"></span>
+          <span id="training-status-text">Idle / Ready</span>
+        </div>
+
+        <button class="btn btn-sm" id="btn-info-modal" title="View Architecture & Math Details">
+          ℹ️ Architecture Info
+        </button>
+
+        <a href="../" class="nav-link">← Tools</a>
+      </div>
+    </header>
+
+    <!-- Mobile View Switcher Tabs -->
+    <div class="mobile-view-tabs" role="tablist">
+      <button class="mobile-tab-btn active" data-tab="controls" role="tab">
+        ✏️ Drawing &amp; Controls
+      </button>
+      <button class="mobile-tab-btn" data-tab="visualizer" role="tab">
+        ⚡ Neural Network
+      </button>
+    </div>
+
+    <!-- Main Split Studio Workspace -->
+    <main class="main-workspace">
+
+      <!-- LEFT COLUMN: Canvas, Dataset Collection & Training Controls -->
+      <section class="column-left active-mobile" id="col-controls">
+
+        <!-- CARD 1: DRAWING & SENSOR INPUT CANVAS -->
+        <div class="cyber-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="icon">✏️</span> Drawing Input Canvas
+            </h2>
+            <div class="card-actions">
+              <button class="btn btn-sm" id="btn-toggle-grid" title="Toggle 10x10 Downsampling Grid">
+                📐 Grid
+              </button>
+              <button class="btn btn-sm btn-danger" id="btn-clear-canvas" title="Clear Drawing Canvas">
+                🗑️ Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="canvas-stage-wrapper">
+              <!-- Interactive 280x280 Drawing Viewport -->
+              <div class="canvas-viewport-container" id="canvas-container">
+                <canvas id="drawing-canvas"></canvas>
+                <div class="grid-overlay" id="grid-overlay"></div>
+              </div>
+
+              <!-- Brush Size Toolbar -->
+              <div class="canvas-controls-bar">
+                <div class="brush-sizes" role="group" aria-label="Brush Sizes">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); margin-right: 0.2rem;">Brush:</span>
+                  <button class="brush-btn" data-size="14" title="Fine Brush (14px)">
+                    <span class="dot-sm"></span>
+                  </button>
+                  <button class="brush-btn active" data-size="22" title="Medium Brush (22px)">
+                    <span class="dot-md"></span>
+                  </button>
+                  <button class="brush-btn" data-size="32" title="Thick Brush (32px)">
+                    <span class="dot-lg"></span>
+                  </button>
+                </div>
+
+                <!-- Downsampled 10x10 Sensor Preview -->
+                <div class="sensor-preview-row" style="flex: 1; max-width: 170px; padding: 0.25rem 0.5rem;">
+                  <div class="sensor-info">
+                    <span class="sensor-title">10×10 Grid</span>
+                    <span class="sensor-desc">100 Inputs</span>
+                  </div>
+                  <div class="mini-grid-container" title="Downsampled & Centered 10x10 Sensor Input">
+                    <canvas id="mini-preview-canvas"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dataset Collection Buttons -->
+              <div class="label-collection-section" style="width: 100%;">
+                <div class="section-caption">
+                  <span>Assign Drawing to Training Dataset</span>
+                  <span style="font-size: 0.7rem; color: var(--text-faint);">Click to record sample</span>
+                </div>
+
+                <div class="label-buttons-grid">
+                  <button class="label-btn" id="btn-label-circle" title="Record current drawing as Circle">
+                    <span class="shape-glyph">⭕</span>
+                    <span class="shape-name">Circle</span>
+                    <span class="sample-counter" id="count-circle">0</span>
+                  </button>
+                  <button class="label-btn" id="btn-label-square" title="Record current drawing as Square">
+                    <span class="shape-glyph">⏹️</span>
+                    <span class="shape-name">Square</span>
+                    <span class="sample-counter" id="count-square">0</span>
+                  </button>
+                  <button class="label-btn" id="btn-label-triangle" title="Record current drawing as Triangle">
+                    <span class="shape-glyph">🔺</span>
+                    <span class="shape-name">Triangle</span>
+                    <span class="sample-counter" id="count-triangle">0</span>
+                  </button>
+                </div>
+
+                <!-- Dataset Manager Bar & Presets -->
+                <div class="dataset-quick-bar">
+                  <button class="btn btn-sm btn-purple" id="btn-load-presets" title="Load 45 pre-made shapes dataset">
+                    ⚡ Load Presets (45)
+                  </button>
+                  <button class="btn btn-sm btn-danger" id="btn-clear-dataset" title="Delete all training samples">
+                    Clear Data
+                  </button>
+                </div>
+
+                <!-- Recent Samples Thumbnail Strip -->
+                <div class="samples-strip" id="samples-strip" title="Recent Samples (Click thumbnail to delete)">
+                  <!-- Dynamically populated thumbnails -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: TRAINING CONTROLS & REAL-TIME LOSS GRAPH -->
+        <div class="cyber-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="icon">⚙️</span> Training Controls &amp; Metrics
+            </h2>
+            <div class="card-actions">
+              <button class="btn btn-sm" id="btn-reset-weights" title="Randomize all synaptic weights">
+                🔄 Reset Model
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="training-controls-grid">
+
+              <!-- Hyperparameter Sliders -->
+              <div class="control-group">
+                <div class="control-label-row">
+                  <span>Target Iterations / Epochs</span>
+                  <span class="control-val" id="val-epochs">200</span>
+                </div>
+                <input type="range" class="cyber-range" id="slider-epochs" min="20" max="600" step="20" value="200" />
+              </div>
+
+              <div class="control-group">
+                <div class="control-label-row">
+                  <span>Learning Rate (&eta;)</span>
+                  <span class="control-val" id="val-lr">0.040</span>
+                </div>
+                <input type="range" class="cyber-range" id="slider-lr" min="0.005" max="0.10" step="0.005" value="0.040" />
+              </div>
+
+              <!-- Hidden Layer Architecture Pills -->
+              <div class="control-group">
+                <div class="control-label-row">
+                  <span>Hidden Layer Dimension</span>
+                  <span class="control-val">Neurons</span>
+                </div>
+                <div class="arch-pills">
+                  <div class="arch-pill" data-hidden="8">8 Nodes</div>
+                  <div class="arch-pill active" data-hidden="12">12 Nodes</div>
+                  <div class="arch-pill" data-hidden="16">16 Nodes</div>
+                </div>
+              </div>
+
+              <!-- Start / Pause & Step Buttons -->
+              <div class="training-actions-row">
+                <button class="btn btn-primary" id="btn-train-toggle">
+                  ▶ Start Training
+                </button>
+                <button class="btn" id="btn-train-step" title="Train 1 epoch to watch gradual synaptic updates">
+                  ⏭ Step 1
+                </button>
+              </div>
+
+              <!-- Live Training Metrics -->
+              <div class="metrics-dashboard">
+                <div class="metric-item">
+                  <span class="metric-lbl">Epoch</span>
+                  <span class="metric-num epoch" id="metric-epoch">0</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-lbl">Loss (Cross-Entropy)</span>
+                  <span class="metric-num loss" id="metric-loss">0.0000</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-lbl">Train Accuracy</span>
+                  <span class="metric-num acc" id="metric-acc">0%</span>
+                </div>
+              </div>
+
+              <!-- Real-Time Loss Curve Canvas Chart -->
+              <div class="chart-container">
+                <canvas id="loss-chart-canvas"></canvas>
+                <span class="chart-watermark">LOSS CURVE</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: INFERENCE / TEST PREDICTION MODE -->
+        <div class="cyber-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="icon">🎯</span> Model Inference &amp; Predictions
+            </h2>
+            <div class="card-actions">
+              <label class="live-toggle-label" title="Automatically evaluate canvas drawing on stroke finish">
+                <input type="checkbox" id="toggle-live-predict" checked style="display: none;" />
+                <span class="toggle-switch"></span>
+                <span>Live Predict</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="inference-section">
+              <button class="btn btn-success" id="btn-predict" style="width: 100%;">
+                ⚡ Run Prediction / Test Current Drawing
+              </button>
+
+              <!-- Dynamic Neon Probability Bars -->
+              <div class="prob-bars-list" id="probability-bars">
+                <!-- Circle -->
+                <div class="prob-bar-item" data-class="Circle">
+                  <div class="prob-bar-top">
+                    <span class="prob-class-name">
+                      <span>⭕ Circle</span>
+                      <span class="winner-badge">WINNER</span>
+                    </span>
+                    <span class="prob-percentage">0.0%</span>
+                  </div>
+                  <div class="prob-track">
+                    <div class="prob-fill"></div>
+                  </div>
+                </div>
+
+                <!-- Square -->
+                <div class="prob-bar-item" data-class="Square">
+                  <div class="prob-bar-top">
+                    <span class="prob-class-name">
+                      <span>⏹️ Square</span>
+                      <span class="winner-badge">WINNER</span>
+                    </span>
+                    <span class="prob-percentage">0.0%</span>
+                  </div>
+                  <div class="prob-track">
+                    <div class="prob-fill"></div>
+                  </div>
+                </div>
+
+                <!-- Triangle -->
+                <div class="prob-bar-item" data-class="Triangle">
+                  <div class="prob-bar-top">
+                    <span class="prob-class-name">
+                      <span>🔺 Triangle</span>
+                      <span class="winner-badge">WINNER</span>
+                    </span>
+                    <span class="prob-percentage">0.0%</span>
+                  </div>
+                  <div class="prob-track">
+                    <div class="prob-fill"></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT COLUMN: LIVE NEURAL NETWORK ARCHITECTURE VISUALIZER -->
+      <section class="column-right" id="col-visualizer">
+        <div class="cyber-card visualizer-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="icon">⚡</span> Neural Network Synaptic Graph
+            </h2>
+            <div class="card-actions">
+              <span style="font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; color: var(--neon-cyan);">
+                60 FPS LIVE WEIGHTS
+              </span>
+            </div>
+          </div>
+
+          <!-- Color Code Legend -->
+          <div class="viz-legend-bar">
+            <div class="legend-items">
+              <div class="legend-item">
+                <span class="legend-dot pos"></span>
+                <span>Positive Weight (W &gt; 0)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot neg"></span>
+                <span>Negative Weight (W &lt; 0)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot act"></span>
+                <span>Active Neuron (a &gt; 0.5)</span>
+              </div>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-faint);">
+              Thickness = |Weight| &bull; Hover node to inspect
+            </div>
+          </div>
+
+          <!-- Real-Time Graph Canvas Viewport -->
+          <div class="viz-canvas-wrapper" id="viz-wrapper">
+            <canvas id="network-canvas"></canvas>
+
+            <!-- Floating Inspector Tooltip -->
+            <div class="node-tooltip" id="node-tooltip"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ARCHITECTURE INFO MODAL DIALOG -->
+    <div class="cyber-modal-backdrop" id="info-modal" role="dialog" aria-modal="true">
+      <div class="cyber-modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">🧠 Neural Network Architecture &amp; Mathematics</h3>
+          <button class="btn btn-sm btn-danger" id="btn-close-modal">✕ Close</button>
+        </div>
+        <div class="modal-body">
+          <p>
+            This 100% client-side playground demonstrates how artificial neural networks process visual patterns directly inside web browsers without any servers or paid APIs.
+          </p>
+
+          <h4>1. Input Feature Extraction Pipeline</h4>
+          <p>
+            When you draw on the 280&times;280 canvas, the application detects the stroke's bounding box, centers the shape with uniform padding to ensure translational invariance, and downsamples the image into a <code>10×10</code> sensory matrix (<strong>100 continuous normalized float values</strong> between <code>0.0</code> and <code>1.0</code>).
+          </p>
+
+          <h4>2. Network Architecture</h4>
+          <ul>
+            <li><strong>Input Layer:</strong> 100 sensory input nodes.</li>
+            <li><strong>Hidden Layer:</strong> 8 to 16 configurable neurons with <strong>Sigmoid</strong> activation: <code>&sigma;(z) = 1 / (1 + e<sup>-z</sup>)</code>.</li>
+            <li><strong>Output Layer:</strong> 3 classification nodes with <strong>Softmax</strong> normalization to compute true multi-class probability distributions.</li>
+          </ul>
+
+          <h4>3. Learning &amp; Synaptic Weight Updates</h4>
+          <p>
+            During training, the network computes <strong>Cross-Entropy Loss</strong>. Backpropagation calculates analytical gradients with respect to each weight and bias:
+          </p>
+          <p style="text-align: center; margin: 0.5rem 0;">
+            <code>&Delta;W = &beta; &bull; &Delta;W + &eta; &bull; (&delta; &times; a<sup>T</sup>)</code>
+          </p>
+          <p>
+            Momentum (<code>&beta; = 0.85</code>) accelerates gradient descent and prevents oscillations.
+          </p>
+
+          <h4>4. Live Synapse Color Coding</h4>
+          <p>
+            - <strong style="color: var(--neon-cyan);">Cyan Lines:</strong> Positive synaptic weights (excitatory connections).<br />
+            - <strong style="color: var(--neon-pink);">Pink Lines:</strong> Negative synaptic weights (inhibitory connections).<br />
+            - <strong>Line Thickness &amp; Opacity:</strong> Proportional to the absolute magnitude <code>|W<sub>ij</sub>|</code>.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="document.getElementById('info-modal').classList.remove('active');">
+            Got it! Let's Experiment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Interactive Toast -->
+    <div class="cyber-toast" id="cyber-toast"></div>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script src="./app.js"></script>
+</body>
+</html>

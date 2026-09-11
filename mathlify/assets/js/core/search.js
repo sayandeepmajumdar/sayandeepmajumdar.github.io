@@ -39,6 +39,13 @@ const CALCULATORS = [
     url: 'tools/age-calculator.html'
   },
   {
+    name: 'Time Calculator',
+    description: 'Add or subtract time, date arithmetic & duration breakdown',
+    tags: ['time', 'duration', 'add time', 'subtract time', 'hours', 'minutes', 'seconds', 'days', 'clock', 'date time', 'calculator net'],
+    icon: '⏱️',
+    url: 'tools/time-calculator.html'
+  },
+  {
     name: 'Scientific Calculator',
     description: 'Advanced functions: sin, cos, log, √ and more',
     tags: ['sin', 'cos', 'tan', 'log', 'square root', 'advanced', 'science', 'trig'],

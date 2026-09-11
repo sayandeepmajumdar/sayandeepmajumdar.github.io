@@ -281,6 +281,31 @@ export const TOOLS: Tool[] = [
     localProcessing: true,
     badge: 'Encoding',
   },
+  {
+    id: 'neural-network-visualizer',
+    name: 'Neural Network Visualizer & ML Studio',
+    slug: 'neural-network-visualizer',
+    description: 'Interactive client-side machine learning playground. Draw shapes or digits on canvas, train an MLP in real time, and visualize live synaptic weights, activations, and loss curves.',
+    category: 'developer',
+    secondaryCategories: ['design', 'productivity'],
+    icon: 'Brain',
+    tags: [
+      'neural network',
+      'neural network visualizer',
+      'machine learning',
+      'deep learning',
+      'brain.js',
+      'ai playground',
+      'synaptic weights',
+      'backpropagation',
+      'canvas ml',
+      'loss curve',
+      'ai',
+    ],
+    popular: true,
+    localProcessing: true,
+    badge: 'Client-Side ML',
+  },
 
   // --- SECURITY & PRIVACY CATEGORY ---
   {

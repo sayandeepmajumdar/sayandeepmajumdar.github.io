@@ -88,6 +88,7 @@ function buildHomepage() {
                   <span class="card__icon">📐</span>
                   <div class="card__title">Math</div>
                   <div class="card__links">
+                    <a class="card__link" href="tools/time-calculator.html">Time Calculator</a>
                     <a class="card__link" href="tools/scientific-calculator.html">Scientific Calculator</a>
                     <a class="card__link" href="tools/percentage-calculator.html">Percentage Calculator</a>
                     <a class="card__link" href="tools/exponent-calculator.html">Exponent Calculator</a>
@@ -169,6 +170,7 @@ async function loadCalcPage(hash) {
   // Dynamic import map
   const calcMap = {
     '#/scientific-calculator': () => import('./calculators/scientific.js'),
+    '#/time-calculator': () => import('./calculators/time.js'),
     '#/bmi-calculator': () => import('./calculators/bmi.js'),
     '#/age-calculator': () => import('./calculators/age.js'),
     '#/percentage-calculator': () => import('./calculators/percentage.js'),
