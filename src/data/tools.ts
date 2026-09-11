@@ -996,6 +996,32 @@ export const TOOLS: Tool[] = [
     localProcessing: true,
     badge: 'Compound Growth',
   },
+  {
+    id: 'calorie-calculator',
+    name: 'Calorie & Macro Calculator — Indian (ICMR-NIN) & Global',
+    slug: 'calorie-calculator',
+    description: 'Calculate daily calories (TDEE, BMR) and macros with dual Indian (ICMR-NIN 2020 RDA & Asian-Indian BMI) and Global (Mifflin-St Jeor / WHO) standards, 70+ food plate builder, snack burn estimator, and 12-week weight forecast.',
+    category: 'productivity',
+    secondaryCategories: ['finance'],
+    icon: 'Flame',
+    tags: [
+      'calorie calculator',
+      'indian calorie calculator',
+      'bmr calculator',
+      'tdee calculator',
+      'icmr nin rda',
+      'macro calculator',
+      'asian bmi',
+      'diet planner',
+      'nutrition',
+      'weight loss calculator',
+      'meal plate builder',
+      'indian food calories',
+    ],
+    popular: true,
+    localProcessing: true,
+    badge: 'ICMR & Global',
+  },
 ];
 
 export const TOOLS_BY_ID = new Map<string, Tool>(

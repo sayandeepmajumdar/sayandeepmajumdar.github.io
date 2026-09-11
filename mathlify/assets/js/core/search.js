@@ -32,6 +32,13 @@ const CALCULATORS = [
     url: 'tools/bmi-calculator.html'
   },
   {
+    name: 'Calorie & Macro Calculator',
+    description: 'BMR, TDEE, ICMR-NIN & Global standards with meal plate builder',
+    tags: ['calorie', 'calories', 'macro', 'bmr', 'tdee', 'diet', 'nutrition', 'weight loss', 'food', 'indian food', 'fitness', 'health'],
+    icon: '🔥',
+    url: 'tools/calorie-calculator.html'
+  },
+  {
     name: 'Age Calculator',
     description: 'Calculate exact age in years, months and days',
     tags: ['age', 'birthday', 'dob', 'birth', 'years', 'months'],
@@ -177,6 +184,69 @@ const CALCULATORS = [
     tags: ['round', 'rounding', 'decimals', 'significant figures', 'sig figs'],
     icon: '🎯',
     url: 'tools/round-calculator.html'
+  },
+  {
+    name: 'Triangle Calculator',
+    description: 'Solve SSS, SAS, ASA, area (Heron\'s), angles & inradius',
+    tags: ['triangle', 'heron', 'angles', 'sss', 'sas', 'asa', 'geometry', 'inradius', 'circumradius'],
+    icon: '📐',
+    url: 'tools/triangle-calculator.html'
+  },
+  {
+    name: 'Volume Calculator',
+    description: 'Sphere, cylinder, cone, box, cube, pyramid & liquid units',
+    tags: ['volume', 'sphere', 'cylinder', 'cone', 'cube', 'prism', 'pyramid', 'capacity', 'litres', 'gallons', 'geometry'],
+    icon: '🧊',
+    url: 'tools/volume-calculator.html'
+  },
+  {
+    name: 'Slope Calculator',
+    description: 'Slope m, angle, grade %, perpendicular & line equations',
+    tags: ['slope', 'line', 'gradient', 'rise over run', 'angle', 'grade', 'linear equation', 'perpendicular', 'geometry'],
+    icon: '📈',
+    url: 'tools/slope-calculator.html'
+  },
+  {
+    name: 'Area Calculator',
+    description: '2D shapes: rectangle, circle, triangle, trapezoid, ellipse',
+    tags: ['area', 'perimeter', 'square meters', 'acres', 'hectares', 'rectangle', 'circle', 'trapezoid', 'ellipse', 'geometry'],
+    icon: '🟩',
+    url: 'tools/area-calculator.html'
+  },
+  {
+    name: 'Distance Calculator',
+    description: '2D, 3D Euclidean and Geographic (Haversine) distance',
+    tags: ['distance', 'euclidean', 'haversine', 'coordinates', '2d', '3d', 'midpoint', 'gps', 'lat lon', 'geometry'],
+    icon: '📏',
+    url: 'tools/distance-calculator.html'
+  },
+  {
+    name: 'Circle Calculator',
+    description: 'Solve radius, diameter, circumference, area & sector',
+    tags: ['circle', 'radius', 'diameter', 'circumference', 'area', 'arc length', 'sector', 'pi', 'geometry'],
+    icon: '⚪',
+    url: 'tools/circle-calculator.html'
+  },
+  {
+    name: 'Surface Area Calculator',
+    description: 'Total & lateral surface area of 3D solids',
+    tags: ['surface area', 'sphere', 'cylinder', 'cone', 'prism', 'capsule', 'lateral area', 'geometry'],
+    icon: '📦',
+    url: 'tools/surface-area-calculator.html'
+  },
+  {
+    name: 'Pythagorean Theorem Calculator',
+    description: 'Solve a² + b² = c² with exact radicals & integer triples',
+    tags: ['pythagorean', 'hypotenuse', 'a2 b2 c2', 'triples', 'radicals', 'right triangle', 'geometry'],
+    icon: '📐',
+    url: 'tools/pythagorean-calculator.html'
+  },
+  {
+    name: 'Right Triangle Calculator',
+    description: 'Sides, angles, trig ratios (sin, cos, tan) & area',
+    tags: ['right triangle', 'trigonometry', 'sin', 'cos', 'tan', 'hypotenuse', 'legs', 'angles', 'geometry'],
+    icon: '📐',
+    url: 'tools/right-triangle-calculator.html'
   }
 ];
 

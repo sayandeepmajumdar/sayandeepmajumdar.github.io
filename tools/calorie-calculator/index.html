@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie & Macro Calculator — Indian (ICMR-NIN) & Global (Mifflin/WHO) Studio — Toolzy</title>
+  <meta name="description" content="Calculate BMR, TDEE, and macronutrient targets with dual Indian (ICMR-NIN 2020 RDA & Asian-Indian BMI) and Global (Mifflin-St Jeor / WHO) standards. Includes interactive meal plate builder with 70+ foods, snack burn estimator, and 12-week weight forecast. 100% client-side." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            },
+            saffron: {
+              50: '#fff9eb',
+              100: '#ffefc6',
+              500: '#ff9933',
+              600: '#e67300',
+              700: '#b85400',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #ff9933;
+      --color-accent-hover: #e67300;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #ff9933;
+      --color-accent-hover: #ffa84d;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    @media print {
+      header, .no-print, #tab-nav {
+        display: none !important;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .print-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        break-inside: avoid;
+      }
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-orange-500/20 selection:text-orange-600">
+
+  <!-- Top App Header -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white font-black text-base shadow-sm">
+          🔥
+        </span>
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight hidden sm:inline">Calorie & Macro Studio</span>
+          <span class="text-[10px] text-theme-muted font-mono -mt-1 hidden sm:inline">Indian (ICMR) & Global</span>
+        </div>
+      </a>
+
+      <!-- Dual Standard Selector Badge -->
+      <div class="flex items-center gap-1 pl-2 border-l border-theme-line">
+        <button id="btn-toggle-standard" type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-theme-surface-alt border border-theme-line hover:border-orange-500 text-xs font-semibold text-theme-ink transition-all" title="Toggle between Indian & Global Standards">
+          <span id="standard-flag">🇮🇳</span>
+          <span id="standard-label">Indian Standard (ICMR)</span>
+          <span class="text-[10px] text-theme-muted">⇄</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Unit Mode Switcher -->
+      <div class="flex items-center bg-theme-surface-alt rounded-lg p-0.5 border border-theme-line text-xs font-semibold">
+        <button id="btn-unit-metric" class="px-2 py-0.5 rounded bg-orange-600 text-white shadow-xs">Metric (kg, cm)</button>
+        <button id="btn-unit-imperial" class="px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink">Imperial (lbs, ft)</button>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Printable Report -->
+      <button id="btn-print-plan" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex" title="Print or Save PDF Plan">
+        <span>🖨️</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden md:inline-flex items-center gap-1">
+        <span>Toolbox Hub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- Hero / Title Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-theme-surface border border-theme-line rounded-3xl p-6 shadow-xs relative overflow-hidden">
+      <div class="space-y-1.5 z-10 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase font-mono bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+          <span id="badge-current-standard">🇮🇳 ICMR-NIN 2020 RDA & Asian-Indian Cutoffs</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-theme-ink">
+          Calorie & Macro Calculator
+        </h1>
+        <p class="text-xs sm:text-sm text-theme-muted leading-relaxed">
+          Accurately calculate your Basal Metabolic Rate (BMR), Total Daily Energy Expenditure (TDEE), and custom macronutrients. Seamlessly calibrated for both Indian body composition (ICMR-NIN guidelines & Asian BMI) and international benchmarks.
+        </p>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex flex-wrap items-center gap-2 z-10 shrink-0">
+        <button id="btn-quick-sample-indian" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-theme-surface-alt border border-theme-line hover:border-orange-500 text-theme-ink transition-colors flex items-center gap-1">
+          <span>🇮🇳 Sample Indian Profile</span>
+        </button>
+        <button id="btn-quick-sample-global" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-theme-surface-alt border border-theme-line hover:border-orange-500 text-theme-ink transition-colors flex items-center gap-1">
+          <span>🌐 Sample Global Profile</span>
+        </button>
+      </div>
+
+      <!-- Decorative Background Accent -->
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+    </div>
+
+    <!-- Top Navigation Tabs -->
+    <div id="tab-nav" class="flex overflow-x-auto gap-1.5 p-1 rounded-2xl bg-theme-surface border border-theme-line shadow-xs text-xs font-bold scrollbar-thin">
+      <button id="tab-calc" class="tab-btn px-4 py-2.5 rounded-xl bg-orange-600 text-white shadow-2xs whitespace-nowrap transition-all flex items-center gap-1.5">
+        <span>🧮 Calculator & Macros</span>
+      </button>
+      <button id="tab-plate" class="tab-btn px-4 py-2.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt whitespace-nowrap transition-all flex items-center gap-1.5">
+        <span>🥗 Meal Plate Builder (70+ Foods)</span>
+      </button>
+      <button id="tab-burn" class="tab-btn px-4 py-2.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt whitespace-nowrap transition-all flex items-center gap-1.5">
+        <span>🔥 Snack & Cheat Burn Estimator</span>
+      </button>
+      <button id="tab-forecast" class="tab-btn px-4 py-2.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt whitespace-nowrap transition-all flex items-center gap-1.5">
+        <span>📈 12-Week Weight Forecast</span>
+      </button>
+      <button id="tab-guide" class="tab-btn px-4 py-2.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt whitespace-nowrap transition-all flex items-center gap-1.5">
+        <span>📚 Indian vs Global Guide</span>
+      </button>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: MAIN CALCULATOR & MACROS -->
+    <!-- ========================================================================= -->
+    <div id="view-calc" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Left Column: Inputs & Biometrics (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- Biometric Parameters Card -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-5 print-card">
+          <div class="flex items-center justify-between border-b border-theme-line pb-3">
+            <h2 class="text-xs sm:text-sm font-bold text-theme-ink uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <span>👤</span>
+              <span>Personal Biometrics</span>
+            </h2>
+            <button id="btn-reset-biometrics" class="text-[11px] text-theme-muted hover:text-orange-500 transition-colors">
+              ↺ Reset Defaults
+            </button>
+          </div>
+
+          <!-- Standard Active Notice Banner -->
+          <div id="standard-info-banner" class="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-xs text-theme-ink flex items-start gap-2.5">
+            <span class="text-base shrink-0">🇮🇳</span>
+            <div class="space-y-0.5">
+              <span class="font-bold text-orange-600 dark:text-orange-400 block text-[11px] uppercase tracking-wider font-mono">ICMR-NIN 2020 RDA Standard Active</span>
+              <p class="text-[11px] text-theme-muted leading-relaxed">
+                Using Asian-Indian specific BMI risk thresholds (Overweight ≥ 23, Obese ≥ 25) and ICMR physical activity reference multipliers.
+              </p>
+            </div>
+          </div>
+
+          <!-- Gender & Age -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-theme-ink block">Biological Sex</label>
+              <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-theme-surface-alt border border-theme-line">
+                <button type="button" id="gender-male" class="py-1.5 text-xs font-bold rounded-lg bg-orange-600 text-white transition-all">Male</button>
+                <button type="button" id="gender-female" class="py-1.5 text-xs font-bold rounded-lg text-theme-muted hover:text-theme-ink transition-all">Female</button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <label for="input-age" class="font-bold text-theme-ink">Age</label>
+                <span class="text-theme-muted font-mono text-[11px]">years</span>
+              </div>
+              <input
+                id="input-age"
+                type="number"
+                min="10"
+                max="120"
+                value="28"
+                class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500"
+              />
+            </div>
+          </div>
+
+          <!-- Height & Weight Inputs (Metric vs Imperial) -->
+          <div class="space-y-4">
+            
+            <!-- Metric Height & Weight -->
+            <div id="container-metric-inputs" class="grid grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                  <label for="input-height-cm" class="font-bold text-theme-ink">Height (cm)</label>
+                  <span id="label-height-ft" class="text-theme-muted font-mono text-[11px]">5' 9"</span>
+                </div>
+                <div class="relative flex items-center">
+                  <input
+                    id="input-height-cm"
+                    type="number"
+                    min="50"
+                    max="250"
+                    value="175"
+                    class="w-full pl-3 pr-10 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500"
+                  />
+                  <span class="absolute right-3 text-xs font-mono text-theme-muted">cm</span>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex justify-between text-xs">
+                  <label for="input-weight-kg" class="font-bold text-theme-ink">Weight (kg)</label>
+                  <span id="label-weight-lbs" class="text-theme-muted font-mono text-[11px]">154.3 lbs</span>
+                </div>
+                <div class="relative flex items-center">
+                  <input
+                    id="input-weight-kg"
+                    type="number"
+                    min="20"
+                    max="300"
+                    step="0.1"
+                    value="70"
+                    class="w-full pl-3 pr-10 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500"
+                  />
+                  <span class="absolute right-3 text-xs font-mono text-theme-muted">kg</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Imperial Height & Weight (Hidden by default) -->
+            <div id="container-imperial-inputs" class="hidden space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-theme-ink">Height (Feet & In)</label>
+                  <div class="grid grid-cols-2 gap-1.5">
+                    <div class="relative flex items-center">
+                      <input id="input-height-ft" type="number" min="2" max="8" value="5" class="w-full pl-2.5 pr-6 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500" />
+                      <span class="absolute right-2 text-xs font-mono text-theme-muted">ft</span>
+                    </div>
+                    <div class="relative flex items-center">
+                      <input id="input-height-in" type="number" min="0" max="11" value="9" class="w-full pl-2.5 pr-6 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500" />
+                      <span class="absolute right-2 text-xs font-mono text-theme-muted">in</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label for="input-weight-lbs" class="text-xs font-bold text-theme-ink">Weight (lbs)</label>
+                  <div class="relative flex items-center">
+                    <input id="input-weight-lbs" type="number" min="40" max="600" step="0.5" value="154.3" class="w-full pl-3 pr-10 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500" />
+                    <span class="absolute right-3 text-xs font-mono text-theme-muted">lbs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Body Fat % (Optional) -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <label for="input-body-fat" class="font-bold text-theme-ink flex items-center gap-1">
+                <span>Body Fat %</span>
+                <span class="text-[10px] font-normal text-theme-muted">(Optional for Katch-McArdle)</span>
+              </label>
+              <span id="label-lean-mass" class="text-theme-muted font-mono text-[11px]">Lean: ~57.4 kg</span>
+            </div>
+            <div class="relative flex items-center">
+              <input
+                id="input-body-fat"
+                type="number"
+                min="3"
+                max="60"
+                step="0.5"
+                placeholder="e.g. 18"
+                class="w-full pl-3 pr-10 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-sm font-bold text-theme-ink focus:outline-none focus:border-orange-500"
+              />
+              <span class="absolute right-3 text-xs font-mono text-theme-muted">%</span>
+            </div>
+          </div>
+
+          <!-- Physical Activity Level -->
+          <div class="space-y-1.5">
+            <label for="select-activity" class="text-xs font-bold text-theme-ink block">
+              Physical Activity Level
+            </label>
+            <select
+              id="select-activity"
+              class="w-full px-3 py-2.5 rounded-xl bg-theme-surface-alt border border-theme-line font-semibold text-xs text-theme-ink focus:outline-none focus:border-orange-500 cursor-pointer"
+            >
+              <option value="1.2">Sedentary (Desk job, little to no exercise) — 1.2x</option>
+              <option value="1.375" selected>Lightly Active (Light exercise / brisk walks 1-3 days/wk) — 1.375x</option>
+              <option value="1.55">Moderately Active (Active workouts 3-5 days/wk / Moderate work) — 1.55x</option>
+              <option value="1.725">Very Active (Heavy training 6-7 days/wk / Physical labor) — 1.725x</option>
+              <option value="1.9">Extremely Active (Athletes, 2x/day training, manual labor) — 1.9x</option>
+            </select>
+          </div>
+
+          <!-- BMR Calculation Formula Selector -->
+          <div class="space-y-1.5">
+            <label for="select-formula" class="text-xs font-bold text-theme-ink block flex items-center justify-between">
+              <span>BMR Calculation Formula</span>
+              <span class="text-[10px] text-theme-muted font-mono">Equation</span>
+            </label>
+            <select
+              id="select-formula"
+              class="w-full px-3 py-2 rounded-xl bg-theme-surface-alt border border-theme-line font-mono text-xs text-theme-ink focus:outline-none focus:border-orange-500 cursor-pointer"
+            >
+              <option value="mifflin" selected>Mifflin-St Jeor (Gold Standard Global / Clinically Validated)</option>
+              <option value="katch">Katch-McArdle (Best if Body Fat % is known)</option>
+              <option value="harris">Harris-Benedict (Revised 1984)</option>
+              <option value="who">WHO / FAO Equation</option>
+            </select>
+          </div>
+
+          <!-- Goal Objective Selector -->
+          <div class="space-y-2 pt-2 border-t border-theme-line">
+            <label class="text-xs font-bold text-theme-ink block">Primary Nutritional Goal</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500" data-goal="loss_mild" data-deficit="-250">
+                <span class="font-bold block text-theme-ink">Mild Loss</span>
+                <span class="text-[10px] text-theme-muted font-mono">-250 kcal/day (0.25kg/wk)</span>
+              </button>
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-orange-500 bg-orange-500/10 text-left transition-all" data-goal="loss_moderate" data-deficit="-500">
+                <span class="font-bold block text-orange-600 dark:text-orange-400">Fat Loss (Standard)</span>
+                <span class="text-[10px] text-theme-muted font-mono">-500 kcal/day (0.5kg/wk)</span>
+              </button>
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500" data-goal="maintain" data-deficit="0">
+                <span class="font-bold block text-theme-ink">Maintain Weight</span>
+                <span class="text-[10px] text-theme-muted font-mono">0 kcal (TDEE balance)</span>
+              </button>
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500" data-goal="loss_aggressive" data-deficit="-750">
+                <span class="font-bold block text-theme-ink">Intense Loss</span>
+                <span class="text-[10px] text-theme-muted font-mono">-750 kcal/day (0.75kg/wk)</span>
+              </button>
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500" data-goal="gain_mild" data-deficit="250">
+                <span class="font-bold block text-theme-ink">Clean Bulk</span>
+                <span class="text-[10px] text-theme-muted font-mono">+250 kcal/day (Muscle gain)</span>
+              </button>
+              <button type="button" class="btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500" data-goal="gain_moderate" data-deficit="500">
+                <span class="font-bold block text-theme-ink">Weight Gain</span>
+                <span class="text-[10px] text-theme-muted font-mono">+500 kcal/day (Bulking)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Calorie Deficit/Surplus Slider -->
+          <div class="space-y-1.5 pt-1">
+            <div class="flex justify-between text-xs">
+              <span class="font-bold text-theme-ink">Custom Calorie Adjustment</span>
+              <span id="label-custom-offset" class="font-mono text-orange-600 dark:text-orange-400 font-bold">-500 kcal</span>
+            </div>
+            <input
+              id="slider-calorie-offset"
+              type="range"
+              min="-1000"
+              max="1000"
+              step="50"
+              value="-500"
+              class="w-full accent-orange-600 cursor-pointer"
+            />
+            <div class="flex justify-between text-[10px] font-mono text-theme-muted">
+              <span>-1000 (Fast deficit)</span>
+              <span>0 (Maintenance)</span>
+              <span>+1000 (Aggressive surplus)</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- BMI & Health Risk Card (Asian vs WHO Dual Meter) -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-4 print-card">
+          <div class="flex items-center justify-between border-b border-theme-line pb-3">
+            <h3 class="text-xs sm:text-sm font-bold text-theme-ink uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <span>⚖️</span>
+              <span>Body Mass Index (BMI) & Health Risk</span>
+            </h3>
+            <span id="bmi-value-badge" class="px-2 py-0.5 rounded-md font-mono text-xs font-extrabold bg-emerald-500/10 text-emerald-600">22.9 BMI</span>
+          </div>
+
+          <!-- BMI Visual Meter Bar -->
+          <div class="space-y-2">
+            <div class="h-3 w-full rounded-full bg-theme-surface-alt flex overflow-hidden border border-theme-line relative">
+              <div class="h-full bg-sky-400" style="width: 25%" title="Underweight"></div>
+              <div class="h-full bg-emerald-500" style="width: 25%" title="Normal Healthy"></div>
+              <div class="h-full bg-amber-500" style="width: 25%" title="Overweight"></div>
+              <div class="h-full bg-rose-500" style="width: 25%" title="Obese"></div>
+              <div id="bmi-marker-pin" class="absolute top-0 bottom-0 w-1.5 bg-theme-ink shadow-md transform -translate-x-1/2 transition-all duration-300" style="left: 45%;"></div>
+            </div>
+
+            <!-- Dual Standard Cutoffs Comparison Grid -->
+            <div class="grid grid-cols-2 gap-3 pt-2 text-xs">
+              <div class="p-3 rounded-2xl bg-orange-500/5 border border-orange-500/20 space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 font-mono block">
+                  🇮🇳 Asian-Indian Cutoff (ICMR)
+                </span>
+                <p id="bmi-asian-status" class="font-bold text-theme-ink text-xs">Normal Weight</p>
+                <span class="text-[10px] text-theme-muted block font-mono">Normal: 18.5 – 22.9 | Overweight: ≥23.0</span>
+              </div>
+
+              <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-theme-muted font-mono block">
+                  🌐 Global Cutoff (WHO)
+                </span>
+                <p id="bmi-who-status" class="font-bold text-theme-ink text-xs">Normal Weight</p>
+                <span class="text-[10px] text-theme-muted block font-mono">Normal: 18.5 – 24.9 | Overweight: ≥25.0</span>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-theme-muted leading-relaxed">
+              💡 <strong>Why the difference?</strong> People of South Asian descent have higher body fat percentages and abdominal visceral adiposity at lower BMI levels, increasing diabetes and cardiovascular risk at a BMI of 23+.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Results, Macro Split & Charts (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- Results Hero Card -->
+        <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-md space-y-5 relative overflow-hidden print-card">
+          <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500"></div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-xs font-mono uppercase tracking-wider text-theme-muted font-bold block mb-1">
+                Target Daily Calorie Intake
+              </span>
+              <div class="flex items-baseline gap-2">
+                <span id="hero-target-calories" class="text-4xl sm:text-5xl font-black text-orange-600 dark:text-orange-400 tracking-tight font-mono">
+                  1,875
+                </span>
+                <span class="text-sm text-theme-muted font-semibold">kcal / day</span>
+              </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+              <button id="btn-copy-summary" type="button" class="px-3.5 py-2 rounded-xl bg-theme-surface-alt hover:bg-orange-500/10 hover:text-orange-600 border border-theme-line text-xs font-semibold text-theme-ink transition-all flex items-center gap-1.5">
+                <span>📋</span>
+                <span id="copy-text-btn">Copy Summary</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Metabolic Breakdown Numbers -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">Basal Metabolic Rate</span>
+              <strong id="metric-bmr" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">1,620 kcal</strong>
+              <span class="text-[9px] text-theme-muted">Resting burn</span>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">TDEE (Maintenance)</span>
+              <strong id="metric-tdee" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">2,375 kcal</strong>
+              <span class="text-[9px] text-theme-muted">With activity</span>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">Daily Deficit/Surplus</span>
+              <strong id="metric-delta" class="text-sm font-mono font-bold text-orange-600 dark:text-orange-400 mt-0.5 block">-500 kcal</strong>
+              <span class="text-[9px] text-theme-muted">Target pace</span>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-theme-surface-alt border border-theme-line">
+              <span class="text-[10px] font-mono text-theme-muted uppercase block">ICMR 2020 RDA Ref</span>
+              <strong id="metric-icmr-ref" class="text-sm font-mono font-bold text-theme-ink mt-0.5 block">2,110 kcal</strong>
+              <span class="text-[9px] text-theme-muted">Ref Indian adult</span>
+            </div>
+          </div>
+
+          <!-- Safe Floor Metabolic Warning -->
+          <div id="safety-warning-banner" class="hidden p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-start gap-2.5">
+            <span class="text-base shrink-0">⚠️</span>
+            <div class="space-y-0.5">
+              <span class="font-bold text-[11px] uppercase tracking-wider font-mono">Low Calorie Intake Warning</span>
+              <p id="safety-warning-text" class="text-[11px] leading-relaxed">
+                Your target intake is below safe nutritional limits. Prolonged severe deficits can cause muscle loss, fatigue, and metabolic slowing.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Macronutrient Distribution & Interactive Donut Chart -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-5 print-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-theme-line pb-3">
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-theme-ink uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <span>🥑</span>
+                <span>Macronutrient Target Split</span>
+              </h3>
+              <p class="text-[11px] text-theme-muted">Customized for Indian diets and global fitness goals</p>
+            </div>
+
+            <!-- Macro Diet Preset Dropdown -->
+            <select
+              id="select-macro-preset"
+              class="px-3 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line font-semibold text-xs text-theme-ink focus:outline-none focus:border-orange-500 cursor-pointer"
+            >
+              <option value="balanced">Balanced Global (50C / 20P / 30F)</option>
+              <option value="high_protein" selected>High-Protein Fitness (40C / 35P / 25F)</option>
+              <option value="indian_veg">Indian Traditional Vegetarian (60C / 15P / 25F)</option>
+              <option value="indian_fitness">Indian Optimized Fitness (45C / 30P / 25F)</option>
+              <option value="low_carb">Low-Carb / Ketogenic (10C / 25P / 65F)</option>
+              <option value="custom">Custom Sliders</option>
+            </select>
+          </div>
+
+          <!-- Macro Visual Layout: Donut Chart + Metric Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+            
+            <!-- Chart.js Donut Canvas (5 cols) -->
+            <div class="md:col-span-5 flex flex-col items-center justify-center relative">
+              <div class="w-44 h-44 relative">
+                <canvas id="chart-macro-donut"></canvas>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                  <span id="donut-center-cal" class="text-base font-extrabold font-mono text-theme-ink">1,875</span>
+                  <span class="text-[9px] font-mono text-theme-muted uppercase">kcal/day</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Macro Cards (7 cols) -->
+            <div class="md:col-span-7 space-y-3">
+              
+              <!-- Protein Card -->
+              <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-3 h-8 rounded-full bg-emerald-500"></div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <strong class="text-xs font-bold text-theme-ink">Protein</strong>
+                      <span id="badge-protein-ratio" class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">35%</span>
+                    </div>
+                    <span id="text-protein-gkg" class="text-[10px] text-theme-muted font-mono">2.3 g per kg bodyweight</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <strong id="metric-protein-g" class="text-base font-mono font-black text-theme-ink">164 g</strong>
+                  <span id="metric-protein-kcal" class="text-[10px] font-mono text-theme-muted block">656 kcal</span>
+                </div>
+              </div>
+
+              <!-- Carbohydrates Card -->
+              <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-3 h-8 rounded-full bg-amber-500"></div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <strong class="text-xs font-bold text-theme-ink">Carbohydrates</strong>
+                      <span id="badge-carbs-ratio" class="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded">40%</span>
+                    </div>
+                    <span class="text-[10px] text-theme-muted font-mono">Energy & glycogen</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <strong id="metric-carbs-g" class="text-base font-mono font-black text-theme-ink">188 g</strong>
+                  <span id="metric-carbs-kcal" class="text-[10px] font-mono text-theme-muted block">750 kcal</span>
+                </div>
+              </div>
+
+              <!-- Fats Card -->
+              <div class="p-3.5 rounded-2xl bg-theme-surface-alt border border-theme-line flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-3 h-8 rounded-full bg-sky-500"></div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <strong class="text-xs font-bold text-theme-ink">Fats</strong>
+                      <span id="badge-fats-ratio" class="text-[10px] font-mono text-sky-600 dark:text-sky-400 font-bold bg-sky-500/10 px-1.5 py-0.5 rounded">25%</span>
+                    </div>
+                    <span class="text-[10px] text-theme-muted font-mono">Hormones & cellular health</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <strong id="metric-fats-g" class="text-base font-mono font-black text-theme-ink">52 g</strong>
+                  <span id="metric-fats-kcal" class="text-[10px] font-mono text-theme-muted block">469 kcal</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Custom Sliders Section (Visible when custom preset selected) -->
+          <div id="container-custom-sliders" class="hidden p-4 rounded-2xl bg-theme-surface-alt/70 border border-theme-line space-y-3">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-theme-muted font-mono block">Custom Percentage Sliders (Must total 100%):</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-mono">
+                  <span>Protein</span>
+                  <span id="custom-val-p" class="font-bold text-emerald-500">35%</span>
+                </div>
+                <input id="slider-p" type="range" min="5" max="60" value="35" class="w-full accent-emerald-500" />
+              </div>
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-mono">
+                  <span>Carbs</span>
+                  <span id="custom-val-c" class="font-bold text-amber-500">40%</span>
+                </div>
+                <input id="slider-c" type="range" min="5" max="80" value="40" class="w-full accent-amber-500" />
+              </div>
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-mono">
+                  <span>Fats</span>
+                  <span id="custom-val-f" class="font-bold text-sky-500">25%</span>
+                </div>
+                <input id="slider-f" type="range" min="10" max="75" value="25" class="w-full accent-sky-500" />
+              </div>
+            </div>
+            <div class="text-right font-mono text-[11px]">
+              <span>Total: </span>
+              <span id="custom-slider-sum" class="font-bold text-emerald-500">100%</span>
+            </div>
+          </div>
+
+          <!-- Indian Diet Tip Callout -->
+          <div id="indian-diet-tip" class="p-3.5 rounded-2xl bg-orange-500/5 border border-orange-500/20 text-xs text-theme-muted space-y-1">
+            <span class="font-bold text-orange-600 dark:text-orange-400 block text-[11px] uppercase tracking-wider font-mono">
+              💡 Indian Diet Optimization Tip
+            </span>
+            <p class="text-[11px] leading-relaxed">
+              Standard Indian vegetarian meals often lean heavy on carbohydrates (Roti, Rice, Potatoes) with only 8–12% protein. To hit fitness protein targets without excess calories, integrate <strong>Paneer, Soya Chunks, Greek Curd (Hung Dahi), Sprouted Moong, and Whey Protein</strong>.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: MEAL PLATE BUILDER (70+ FOODS) -->
+    <!-- ========================================================================= -->
+    <div id="view-plate" class="hidden space-y-6">
+      
+      <!-- Plate Summary Card -->
+      <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme-line pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-theme-ink flex items-center gap-2">
+              <span>🥗 Daily Meal Plate & Food Tracker</span>
+            </h2>
+            <p class="text-xs text-theme-muted">
+              Add foods from our comprehensive Indian & Global database to match your calculated daily targets.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-clear-plate" class="px-3 py-1.5 rounded-xl bg-theme-surface-alt hover:bg-rose-500/10 hover:text-rose-500 border border-theme-line text-xs font-semibold transition-colors">
+              Clear Plate
+            </button>
+            <button id="btn-load-sample-plate" class="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition-colors">
+              + Load Sample Indian Day
+            </button>
+          </div>
+        </div>
+
+        <!-- Plate Live Budget Bar -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-theme-muted">Calorie Budget Progress:</span>
+            <span>
+              <strong id="plate-total-cal" class="text-orange-600 font-bold">0</strong>
+              <span class="text-theme-muted">/ <span id="plate-target-cal">1875</span> kcal</span>
+              <span id="plate-percent-cal" class="text-theme-muted font-normal">(0%)</span>
+            </span>
+          </div>
+
+          <div class="h-3 rounded-full bg-theme-surface-alt border border-theme-line overflow-hidden flex">
+            <div id="plate-progress-bar" class="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-300" style="width: 0%;"></div>
+          </div>
+
+          <!-- Cumulative Macro Split Pills -->
+          <div class="grid grid-cols-3 gap-2 pt-2 text-xs font-mono">
+            <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              <span class="text-[10px] uppercase block text-theme-muted">Protein Consumed</span>
+              <strong id="plate-total-p">0 g</strong> / <span id="plate-target-p">164 g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+              <span class="text-[10px] uppercase block text-theme-muted">Carbs Consumed</span>
+              <strong id="plate-total-c">0 g</strong> / <span id="plate-target-c">188 g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400">
+              <span class="text-[10px] uppercase block text-theme-muted">Fat Consumed</span>
+              <strong id="plate-total-f">0 g</strong> / <span id="plate-target-f">52 g</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Food Selector & Current Plate Split -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left: Food Database Browser (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="p-5 rounded-3xl bg-theme-surface border border-theme-line space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-theme-ink">
+                Food Library (Indian & Global)
+              </h3>
+              <div class="flex items-center gap-1.5">
+                <input
+                  id="search-food"
+                  type="text"
+                  placeholder="Search Roti, Dal, Paneer, Chicken, Oats..."
+                  class="px-3 py-1.5 rounded-xl bg-theme-surface-alt border border-theme-line text-xs text-theme-ink focus:outline-none focus:border-orange-500 w-full sm:w-64"
+                />
+              </div>
+            </div>
+
+            <!-- Food Category Filter Pills -->
+            <div class="flex flex-wrap gap-1.5 pt-1 text-[11px] font-semibold">
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-orange-600 text-white" data-cat="all">All</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="bread_rice">🫓 Breads & Rice</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="curry_dal">🍲 Dals & Sabzi</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="south_indian">🥞 South Indian</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="protein_dairy">🍗 Meat, Eggs & Dairy</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="snacks_drinks">☕ Snacks & Chai</button>
+              <button class="btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink" data-cat="global">🌐 Global Staples</button>
+            </div>
+
+            <!-- Food List Container -->
+            <div id="food-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Active Plate Items (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="p-5 rounded-3xl bg-theme-surface border border-theme-line space-y-3">
+            <div class="flex items-center justify-between border-b border-theme-line pb-2.5">
+              <h3 class="text-xs font-bold uppercase tracking-wider font-mono text-theme-ink">
+                My Plate Items (<span id="plate-item-count">0</span>)
+              </h3>
+              <span class="text-[11px] font-mono text-theme-muted">Tap × to remove</span>
+            </div>
+
+            <div id="plate-items-container" class="space-y-2 max-h-96 overflow-y-auto pr-1 scrollbar-thin">
+              <p class="text-xs text-theme-muted text-center py-8">
+                Your plate is currently empty. Click <strong>+ Add</strong> on foods to build your day!
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: SNACK & CHEAT BURN ESTIMATOR -->
+    <!-- ========================================================================= -->
+    <div id="view-burn" class="hidden space-y-6">
+      <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-theme-ink flex items-center gap-2">
+            <span>🔥 Indian Snack & Cheat Meal Burn Estimator</span>
+          </h2>
+          <p class="text-xs text-theme-muted mt-1">
+            Curious how much physical activity is required to burn off your favorite Indian treats or festival sweets? Select a snack to view exact walking, jogging, and cycling durations.
+          </p>
+        </div>
+
+        <!-- Snack Quick Selection Grid -->
+        <div id="snack-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Active Snack Burn Breakdown Card -->
+        <div id="active-snack-card" class="p-6 rounded-3xl bg-theme-surface-alt/70 border border-theme-line space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme-line pb-4">
+            <div>
+              <span class="text-xs font-mono text-theme-muted uppercase tracking-wider">Selected Treat</span>
+              <h3 id="burn-snack-name" class="text-xl font-bold text-theme-ink">1 Samosa (Standard 80g)</h3>
+              <p id="burn-snack-desc" class="text-xs text-theme-muted">Deep-fried pastry with spiced potato filling</p>
+            </div>
+            <div class="text-right">
+              <span id="burn-snack-calories" class="text-3xl font-black font-mono text-orange-600 dark:text-orange-400">262</span>
+              <span class="text-xs text-theme-muted block font-mono">total kcal</span>
+            </div>
+          </div>
+
+          <!-- Activity Burn Timelines -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="p-4 rounded-2xl bg-theme-surface border border-theme-line space-y-1">
+              <span class="text-lg">🚶</span>
+              <h4 class="text-xs font-bold text-theme-ink">Brisk Walking</h4>
+              <p class="text-[10px] text-theme-muted">5.0 km/h (moderate)</p>
+              <strong id="time-walk" class="text-base font-mono text-orange-600 block pt-1">52 mins</strong>
+              <span id="dist-walk" class="text-[10px] font-mono text-theme-muted block">~4.3 km</span>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-theme-surface border border-theme-line space-y-1">
+              <span class="text-lg">🏃</span>
+              <h4 class="text-xs font-bold text-theme-ink">Jogging / Running</h4>
+              <p class="text-[10px] text-theme-muted">8.5 km/h (aerobic)</p>
+              <strong id="time-run" class="text-base font-mono text-orange-600 block pt-1">26 mins</strong>
+              <span id="dist-run" class="text-[10px] font-mono text-theme-muted block">~3.7 km</span>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-theme-surface border border-theme-line space-y-1">
+              <span class="text-lg">🚴</span>
+              <h4 class="text-xs font-bold text-theme-ink">Outdoor Cycling</h4>
+              <p class="text-[10px] text-theme-muted">15 km/h (steady)</p>
+              <strong id="time-cycle" class="text-base font-mono text-orange-600 block pt-1">32 mins</strong>
+              <span id="dist-cycle" class="text-[10px] font-mono text-theme-muted block">~8.0 km</span>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-theme-surface border border-theme-line space-y-1">
+              <span class="text-lg">⚡</span>
+              <h4 class="text-xs font-bold text-theme-ink">Jump Rope / HIIT</h4>
+              <p class="text-[10px] text-theme-muted">High intensity</p>
+              <strong id="time-hiit" class="text-base font-mono text-orange-600 block pt-1">21 mins</strong>
+              <span class="text-[10px] font-mono text-theme-muted block">Vigorous</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-theme-muted">
+            💡 <em>Calculations based on an average adult weight of 70 kg. Burn rate increases with higher body weight.</em>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: 12-WEEK WEIGHT FORECAST -->
+    <!-- ========================================================================= -->
+    <div id="view-forecast" class="hidden space-y-6">
+      <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-theme-line pb-4">
+          <div>
+            <h2 class="text-lg font-bold text-theme-ink flex items-center gap-2">
+              <span>📈 12-Week Weight Projection Simulator</span>
+            </h2>
+            <p class="text-xs text-theme-muted">
+              Forecast your prospective weight trend based on current calorie deficit/surplus (1 kg fat ≈ 7,700 kcal).
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <span class="text-[10px] text-theme-muted font-mono uppercase block">Projected 12-Week Delta</span>
+              <strong id="forecast-delta-metric" class="text-base font-mono font-bold text-emerald-600">-6.0 kg (-13.2 lbs)</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forecast Chart -->
+        <div class="h-72 w-full relative">
+          <canvas id="chart-forecast-line"></canvas>
+        </div>
+
+        <!-- 12-Week Schedule Table -->
+        <div class="border border-theme-line rounded-2xl overflow-hidden bg-theme-surface">
+          <div class="max-h-64 overflow-y-auto scrollbar-thin">
+            <table class="w-full text-xs text-right">
+              <thead class="bg-theme-surface-alt text-theme-muted font-mono text-[10px] uppercase sticky top-0 border-b border-theme-line">
+                <tr>
+                  <th class="p-2.5 text-left">Week</th>
+                  <th class="p-2.5">Weekly Calorie Deficit</th>
+                  <th class="p-2.5">Projected Weight</th>
+                  <th class="p-2.5">Cumulative Change</th>
+                  <th class="p-2.5 text-center">BMI Track</th>
+                </tr>
+              </thead>
+              <tbody id="forecast-tbody" class="divide-y divide-theme-line font-mono text-xs">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: INDIAN VS GLOBAL REFERENCE GUIDE & FAQ -->
+    <!-- ========================================================================= -->
+    <div id="view-guide" class="hidden space-y-6">
+      <div class="p-6 sm:p-8 rounded-3xl bg-theme-surface border border-theme-line space-y-6">
+        <div>
+          <h2 class="text-xl font-extrabold text-theme-ink">
+            Understanding Indian (ICMR-NIN) vs Global Dietary Standards
+          </h2>
+          <p class="text-xs sm:text-sm text-theme-muted mt-1">
+            Why tailored formulas and Asian-Indian body composition guidelines matter for health, metabolic disease prevention, and fitness.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 leading-relaxed">
+          
+          <div class="p-5 rounded-2xl bg-theme-surface-alt/50 border border-theme-line space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🇮🇳</span>
+              <h3 class="text-sm font-bold text-theme-ink">The "Thin-Fat" Indian Phenotype</h3>
+            </div>
+            <p class="text-xs text-theme-muted">
+              Clinical studies from the Indian Council of Medical Research (ICMR) and the World Health Organization establish that South Asians have higher body fat percentages, higher visceral fat (belly fat surrounding internal organs), and lower skeletal muscle mass at the same body weight compared to Caucasians.
+            </p>
+            <p class="text-xs text-theme-muted">
+              Consequently, the WHO and the Health Ministry of India lowered the threshold for overweight to <strong>BMI ≥ 23 kg/m²</strong> (vs 25 globally) and obesity to <strong>BMI ≥ 25 kg/m²</strong> (vs 30 globally).
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-theme-surface-alt/50 border border-theme-line space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📊</span>
+              <h3 class="text-sm font-bold text-theme-ink">ICMR-NIN 2020 RDA Benchmarks</h3>
+            </div>
+            <p class="text-xs text-theme-muted">
+              The 2020 revision by the National Institute of Nutrition (NIN) updated reference Indian adults:
+            </p>
+            <ul class="text-xs text-theme-muted space-y-1 list-disc pl-4 font-mono text-[11px]">
+              <li><strong>Reference Indian Male:</strong> 65 kg, 177 cm. Energy: Sedentary ~2,110 kcal, Moderate ~2,710 kcal, Heavy ~3,470 kcal.</li>
+              <li><strong>Reference Indian Female:</strong> 55 kg, 162 cm. Energy: Sedentary ~1,660 kcal, Moderate ~2,130 kcal, Heavy ~2,720 kcal.</li>
+              <li><strong>Protein RDA:</strong> 0.83 g/kg/day (~54g for men, ~46g for women minimum baseline).</li>
+            </ul>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-theme-surface-alt/50 border border-theme-line space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🫓</span>
+              <h3 class="text-sm font-bold text-theme-ink">Solving the Indian Vegetarian Protein Puzzle</h3>
+            </div>
+            <p class="text-xs text-theme-muted">
+              A common misconception in India is that traditional lentils (dal) are purely a "protein food". In reality, 1 cup of cooked Dal contains about <strong>7–9g protein and 20–25g carbohydrates</strong>.
+            </p>
+            <p class="text-xs text-theme-muted">
+              For active individuals seeking lean body recomposition, pairing dal with high-density vegetarian proteins like <strong>Paneer, Soya Chunks (52% protein by dry weight), Greek Yogurt, and Sprouted Legumes</strong> or whey protein ensures macro targets are met without excess calories.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-theme-surface-alt/50 border border-theme-line space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🌐</span>
+              <h3 class="text-sm font-bold text-theme-ink">When to Use Global Standards</h3>
+            </div>
+            <p class="text-xs text-theme-muted">
+              The Mifflin-St Jeor equation remains the international gold standard recognized by the American Dietetic Association (ADA) and sports nutritionists worldwide for its clinical accuracy across diverse populations.
+            </p>
+            <p class="text-xs text-theme-muted">
+              Use Global Standard when comparing international fitness programs, tracking imperial measurements (lbs, feet), or following ketogenic / athletic macro profiles.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-theme-ink text-theme-bg text-xs font-semibold shadow-xl flex items-center gap-2">
+    <span id="toast-icon">✅</span>
+    <span id="toast-message">Plan copied to clipboard!</span>
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // FOOD DATABASE (70+ AUTHENTIC INDIAN & GLOBAL ITEMS)
+    // =========================================================================
+    const FOOD_DATABASE = [
+      // Indian Breads & Rice
+      { id: 'roti_plain', name: 'Roti / Chapati (Plain Wheat)', serving: '1 piece (35g)', cal: 85, p: 2.8, c: 17.5, f: 0.5, cat: 'bread_rice' },
+      { id: 'roti_ghee', name: 'Roti with Ghee (1 tsp)', serving: '1 piece (40g)', cal: 125, p: 2.8, c: 17.5, f: 5.0, cat: 'bread_rice' },
+      { id: 'paratha_plain', name: 'Plain Paratha (Pan Fried)', serving: '1 piece (60g)', cal: 180, p: 3.5, c: 24.0, f: 7.5, cat: 'bread_rice' },
+      { id: 'aloo_paratha', name: 'Aloo Paratha with Butter', serving: '1 piece (100g)', cal: 260, p: 5.0, c: 38.0, f: 10.0, cat: 'bread_rice' },
+      { id: 'puri', name: 'Puri (Deep Fried Wheat)', serving: '1 piece (30g)', cal: 110, p: 2.0, c: 12.0, f: 6.0, cat: 'bread_rice' },
+      { id: 'naan_butter', name: 'Butter Naan (Tandoor)', serving: '1 piece (110g)', cal: 310, p: 8.5, c: 45.0, f: 10.5, cat: 'bread_rice' },
+      { id: 'rice_basmati', name: 'Steamed Basmati Rice', serving: '1 bowl cooked (150g)', cal: 195, p: 4.0, c: 42.0, f: 0.6, cat: 'bread_rice' },
+      { id: 'rice_brown', name: 'Steamed Brown Rice', serving: '1 bowl cooked (150g)', cal: 170, p: 3.8, c: 35.0, f: 1.4, cat: 'bread_rice' },
+      { id: 'jeera_rice', name: 'Jeera Rice with Ghee', serving: '1 bowl cooked (150g)', cal: 230, p: 4.2, c: 41.0, f: 5.5, cat: 'bread_rice' },
+      { id: 'veg_biryani', name: 'Vegetable Biryani', serving: '1 plate (250g)', cal: 380, p: 7.5, c: 58.0, f: 12.5, cat: 'bread_rice' },
+      { id: 'chicken_biryani', name: 'Chicken Biryani with Raita', serving: '1 plate (300g)', cal: 520, p: 28.0, c: 62.0, f: 16.0, cat: 'bread_rice' },
+      { id: 'khichdi', name: 'Moong Dal Khichdi (Plain)', serving: '1 bowl (200g)', cal: 210, p: 7.5, c: 36.0, f: 3.5, cat: 'bread_rice' },
+
+      // Indian Dals & Sabzi
+      { id: 'dal_tadka', name: 'Yellow Dal Tadka (Toor Dal)', serving: '1 bowl (180g)', cal: 145, p: 7.5, c: 19.5, f: 4.0, cat: 'curry_dal' },
+      { id: 'moong_dal', name: 'Yellow Moong Dal (Light)', serving: '1 bowl (180g)', cal: 120, p: 8.0, c: 17.0, f: 2.0, cat: 'curry_dal' },
+      { id: 'dal_makhani', name: 'Dal Makhani (Black Lentils + Cream)', serving: '1 bowl (180g)', cal: 280, p: 9.0, c: 26.0, f: 15.0, cat: 'curry_dal' },
+      { id: 'chole_curry', name: 'Chole / Chickpea Masala', serving: '1 bowl (200g)', cal: 240, p: 10.5, c: 35.0, f: 6.5, cat: 'curry_dal' },
+      { id: 'rajma_masala', name: 'Rajma / Red Kidney Bean Curry', serving: '1 bowl (200g)', cal: 220, p: 9.5, c: 33.0, f: 5.0, cat: 'curry_dal' },
+      { id: 'paneer_butter_masala', name: 'Paneer Butter Masala', serving: '1 bowl (200g)', cal: 360, p: 14.0, c: 12.0, f: 28.0, cat: 'curry_dal' },
+      { id: 'palak_paneer', name: 'Palak Paneer', serving: '1 bowl (200g)', cal: 260, p: 15.0, c: 9.0, f: 18.0, cat: 'curry_dal' },
+      { id: 'paneer_bhurji', name: 'Paneer Bhurji (Scrambled)', serving: '1 bowl (150g)', cal: 275, p: 18.0, c: 6.0, f: 20.0, cat: 'curry_dal' },
+      { id: 'soya_chunks_curry', name: 'Soya Chunks Masala Curry', serving: '1 bowl (200g)', cal: 210, p: 24.0, c: 15.0, f: 5.0, cat: 'curry_dal' },
+      { id: 'mix_veg_sabzi', name: 'Mixed Vegetable Sabzi (Dry)', serving: '1 bowl (150g)', cal: 110, p: 3.0, c: 14.0, f: 4.5, cat: 'curry_dal' },
+      { id: 'bhindi_masala', name: 'Bhindi / Okra Masala', serving: '1 bowl (140g)', cal: 95, p: 2.5, c: 11.0, f: 4.5, cat: 'curry_dal' },
+      { id: 'aloo_gobi', name: 'Aloo Gobi Curry', serving: '1 bowl (180g)', cal: 155, p: 3.5, c: 22.0, f: 6.0, cat: 'curry_dal' },
+
+      // South Indian
+      { id: 'idli', name: 'Steamed Idli', serving: '2 pieces (90g)', cal: 130, p: 4.5, c: 26.0, f: 0.5, cat: 'south_indian' },
+      { id: 'plain_dosa', name: 'Plain Dosa', serving: '1 medium (80g)', cal: 140, p: 3.5, c: 23.0, f: 3.5, cat: 'south_indian' },
+      { id: 'masala_dosa', name: 'Masala Dosa with Potato Filling', serving: '1 piece (150g)', cal: 280, p: 6.0, c: 42.0, f: 9.5, cat: 'south_indian' },
+      { id: 'sambar', name: 'Vegetable Sambar', serving: '1 bowl (200g)', cal: 115, p: 5.0, c: 18.0, f: 2.5, cat: 'south_indian' },
+      { id: 'coconut_chutney', name: 'Coconut Chutney', serving: '2 tbsp (40g)', cal: 85, p: 1.0, c: 3.0, f: 7.8, cat: 'south_indian' },
+      { id: 'medu_vada', name: 'Medu Vada (Deep Fried)', serving: '1 piece (50g)', cal: 160, p: 4.0, c: 14.0, f: 9.5, cat: 'south_indian' },
+      { id: 'upma', name: 'Sooji Upma with Veggies', serving: '1 bowl (150g)', cal: 190, p: 4.5, c: 31.0, f: 5.5, cat: 'south_indian' },
+      { id: 'poha', name: 'Kanda Batata Poha', serving: '1 bowl (150g)', cal: 220, p: 4.0, c: 38.0, f: 6.0, cat: 'south_indian' },
+
+      // Meat, Eggs & Dairy
+      { id: 'egg_boiled', name: 'Whole Boiled Egg (Large)', serving: '1 egg (50g)', cal: 74, p: 6.3, c: 0.4, f: 5.0, cat: 'protein_dairy' },
+      { id: 'egg_white', name: 'Egg White (Boiled)', serving: '2 whites (66g)', cal: 34, p: 7.2, c: 0.4, f: 0.1, cat: 'protein_dairy' },
+      { id: 'egg_bhurji', name: 'Egg Bhurji (2 Eggs + Veggies)', serving: '1 bowl (150g)', cal: 210, p: 13.5, c: 4.5, f: 15.0, cat: 'protein_dairy' },
+      { id: 'chicken_curry', name: 'Indian Chicken Curry (Homestyle)', serving: '1 bowl (220g)', cal: 285, p: 26.0, c: 6.5, f: 16.5, cat: 'protein_dairy' },
+      { id: 'tandoori_chicken', name: 'Tandoori Chicken Breast', serving: '1 piece (150g)', cal: 220, p: 35.0, c: 3.0, f: 7.0, cat: 'protein_dairy' },
+      { id: 'chicken_tikka', name: 'Chicken Tikka (Dry Grill)', serving: '5 pieces (150g)', cal: 210, p: 32.0, c: 4.0, f: 6.5, cat: 'protein_dairy' },
+      { id: 'fish_curry', name: 'Rohu / Katla Fish Curry (Bengali)', serving: '1 bowl (200g)', cal: 230, p: 22.0, c: 5.0, f: 13.0, cat: 'protein_dairy' },
+      { id: 'paneer_raw', name: 'Raw Paneer (Cottage Cheese)', serving: '100g', cal: 265, p: 18.3, c: 3.5, f: 20.8, cat: 'protein_dairy' },
+      { id: 'curd_dahi', name: 'Plain Dahi / Curd (Whole Milk)', serving: '1 bowl (150g)', cal: 95, p: 5.0, c: 7.0, f: 5.2, cat: 'protein_dairy' },
+      { id: 'greek_yogurt_in', name: 'Greek Yogurt / Hung Dahi', serving: '150g', cal: 120, p: 13.5, c: 5.0, f: 3.5, cat: 'protein_dairy' },
+      { id: 'milk_toned', name: 'Toned Cow Milk (3% Fat)', serving: '1 glass (250ml)', cal: 145, p: 8.0, c: 12.5, f: 7.5, cat: 'protein_dairy' },
+      { id: 'chaas', name: 'Salted Chaas / Spiced Buttermilk', serving: '1 glass (250ml)', cal: 55, p: 3.0, c: 4.5, f: 2.0, cat: 'protein_dairy' },
+      { id: 'whey_protein', name: 'Whey Protein Isolate/Concentrate', serving: '1 scoop (30g)', cal: 120, p: 25.0, c: 2.0, f: 1.0, cat: 'protein_dairy' },
+
+      // Snacks, Chai & Sweets
+      { id: 'samosa', name: 'Punjabi Potato Samosa', serving: '1 piece (80g)', cal: 262, p: 4.2, c: 31.0, f: 13.5, cat: 'snacks_drinks' },
+      { id: 'gulab_jamun', name: 'Gulab Jamun with Syrup', serving: '2 pieces (90g)', cal: 310, p: 4.0, c: 50.0, f: 10.5, cat: 'snacks_drinks' },
+      { id: 'jalebi', name: 'Crispy Jalebi (Sugar Soaked)', serving: '3 pieces (75g)', cal: 290, p: 2.5, c: 56.0, f: 6.5, cat: 'snacks_drinks' },
+      { id: 'pani_puri', name: 'Pani Puri / Golgappa', serving: '6 pieces (1 plate)', cal: 190, p: 3.5, c: 32.0, f: 5.5, cat: 'snacks_drinks' },
+      { id: 'pav_bhaji', name: 'Pav Bhaji (2 Pavs + Bhaji + Butter)', serving: '1 plate (300g)', cal: 480, p: 9.5, c: 68.0, f: 18.5, cat: 'snacks_drinks' },
+      { id: 'masala_chai', name: 'Indian Masala Chai with Sugar & Milk', serving: '1 cup (150ml)', cal: 95, p: 3.0, c: 14.0, f: 3.2, cat: 'snacks_drinks' },
+      { id: 'green_tea', name: 'Green Tea (No Sugar)', serving: '1 cup (200ml)', cal: 2, p: 0.1, c: 0.2, f: 0.0, cat: 'snacks_drinks' },
+      { id: 'sweet_lassi', name: 'Sweet Punjabi Lassi', serving: '1 glass (300ml)', cal: 270, p: 8.0, c: 42.0, f: 7.5, cat: 'snacks_drinks' },
+
+      // Global Healthy Staples
+      { id: 'oats', name: 'Rolled Oats (Dry Raw)', serving: '50g', cal: 190, p: 6.5, c: 33.0, f: 3.5, cat: 'global' },
+      { id: 'chicken_breast_grilled', name: 'Grilled Chicken Breast (Lean)', serving: '150g', cal: 245, p: 46.0, c: 0.0, f: 5.2, cat: 'global' },
+      { id: 'salmon_grilled', name: 'Grilled Salmon Fillet', serving: '150g', cal: 310, p: 34.0, c: 0.0, f: 18.0, cat: 'global' },
+      { id: 'sweet_potato', name: 'Baked Sweet Potato', serving: '1 medium (150g)', cal: 135, p: 2.5, c: 31.0, f: 0.2, cat: 'global' },
+      { id: 'broccoli', name: 'Steamed Broccoli Florets', serving: '1 bowl (100g)', cal: 35, p: 2.8, c: 7.0, f: 0.4, cat: 'global' },
+      { id: 'spinach', name: 'Raw / Steamed Spinach', serving: '1 bowl (100g)', cal: 23, p: 2.9, c: 3.6, f: 0.4, cat: 'global' },
+      { id: 'olive_oil', name: 'Extra Virgin Olive Oil', serving: '1 tbsp (14ml)', cal: 120, p: 0.0, c: 0.0, f: 14.0, cat: 'global' },
+      { id: 'peanut_butter', name: 'Natural Peanut Butter', serving: '2 tbsp (32g)', cal: 190, p: 8.0, c: 7.0, f: 16.0, cat: 'global' },
+      { id: 'almonds', name: 'Raw California Almonds', serving: 'handful (28g / ~23 nuts)', cal: 164, p: 6.0, c: 6.0, f: 14.0, cat: 'global' },
+      { id: 'banana', name: 'Fresh Banana', serving: '1 medium (118g)', cal: 105, p: 1.3, c: 27.0, f: 0.3, cat: 'global' },
+      { id: 'apple', name: 'Fresh Apple with Skin', serving: '1 medium (182g)', cal: 95, p: 0.5, c: 25.0, f: 0.3, cat: 'global' }
+    ];
+
+    // Snack Burn Estimator Data
+    const SNACK_BURN_ITEMS = [
+      { id: 'samosa', name: '1 Samosa (80g)', cal: 262, desc: 'Deep-fried potato savory pastry', icon: '🥟' },
+      { id: 'gulab_jamun', name: '2 Gulab Jamuns (90g)', cal: 310, desc: 'Fried milk solid dumplings in sugar syrup', icon: '🍯' },
+      { id: 'jalebi', name: '3 Crispy Jalebis (75g)', cal: 290, desc: 'Fermented flour spiral in saffron syrup', icon: '🥨' },
+      { id: 'pani_puri', name: '1 Plate Pani Puri (6 pcs)', cal: 190, desc: 'Puffed puris with spiced mint water', icon: '🥙' },
+      { id: 'pav_bhaji', name: '1 Plate Pav Bhaji', cal: 480, desc: 'Buttery vegetable mash with 2 pav buns', icon: '🍲' },
+      { id: 'biryani_snack', name: '1 Plate Chicken Biryani', cal: 520, desc: 'Spiced aromatic basmati rice & chicken', icon: '🍗' },
+      { id: 'masala_chai', name: '1 Cup Sweet Chai', cal: 95, desc: 'Tea with whole milk & 2 tsp sugar', icon: '☕' },
+      { id: 'pizza_slice', name: '1 Slice Cheese Pizza', cal: 285, desc: 'Standard crust with mozzarella', icon: '🍕' },
+      { id: 'cola_can', name: '1 Can Soda / Cola (330ml)', cal: 140, desc: 'Carbonated beverage (35g sugar)', icon: '🥤' },
+      { id: 'sweet_lassi', name: '1 Glass Punjabi Sweet Lassi', cal: 270, desc: 'Full-fat yogurt blended with sugar', icon: '🥛' },
+      { id: 'kaju_katli', name: '2 Pcs Kaju Katli (30g)', cal: 120, desc: 'Cashew fudge confectionery with silver leaf', icon: '🍬' },
+      { id: 'french_fries', name: 'Medium French Fries', cal: 365, desc: 'Deep-fried salted potato fingers', icon: '🍟' }
+    ];
+
+    // =========================================================================
+    // APPLICATION STATE
+    // =========================================================================
+    const state = {
+      standard: 'indian', // 'indian' or 'global'
+      unit: 'metric', // 'metric' or 'imperial'
+      gender: 'male', // 'male' or 'female'
+      age: 28,
+      heightCm: 175,
+      weightKg: 70,
+      bodyFat: 18,
+      activity: 1.375,
+      formula: 'mifflin',
+      goal: 'loss_moderate',
+      calorieOffset: -500,
+      macroPreset: 'high_protein',
+      customMacros: { p: 35, c: 40, f: 25 },
+      
+      // Active calculated results
+      bmr: 1620,
+      tdee: 2227,
+      targetCalories: 1727,
+      bmi: 22.9,
+      
+      // Active plate
+      plate: [],
+      
+      // Active snack in burn estimator
+      activeSnack: SNACK_BURN_ITEMS[0]
+    };
+
+    // Chart Instances
+    let chartMacroDonut = null;
+    let chartForecastLine = null;
+
+    // =========================================================================
+    // CALCULATION LOGIC
+    // =========================================================================
+    function calculateBMR() {
+      const W = state.weightKg;
+      const H = state.heightCm;
+      const A = state.age;
+      const isMale = state.gender === 'male';
+
+      if (state.formula === 'katch' && state.bodyFat > 0) {
+        // Katch-McArdle: BMR = 370 + (21.6 * LBM)
+        const lbm = W * (1 - state.bodyFat / 100);
+        return 370 + (21.6 * lbm);
+      } else if (state.formula === 'harris') {
+        // Harris-Benedict (revised 1984)
+        if (isMale) {
+          return 88.362 + (13.397 * W) + (4.799 * H) - (5.677 * A);
+        } else {
+          return 447.593 + (9.247 * W) + (3.098 * H) - (4.330 * A);
+        }
+      } else if (state.formula === 'who') {
+        // WHO / FAO
+        if (A >= 18 && A < 30) {
+          return isMale ? 15.057 * W + 679 : 14.7 * W + 496;
+        } else if (A >= 30 && A < 60) {
+          return isMale ? 11.6 * W + 879 : 8.7 * W + 829;
+        } else {
+          return isMale ? 13.5 * W + 487 : 10.5 * W + 596;
+        }
+      } else {
+        // Mifflin-St Jeor (Default)
+        if (isMale) {
+          return (10 * W) + (6.25 * H) - (5 * A) + 5;
+        } else {
+          return (10 * W) + (6.25 * H) - (5 * A) - 161;
+        }
+      }
+    }
+
+    function calculateBMI() {
+      const hM = state.heightCm / 100;
+      if (hM <= 0) return 0;
+      return state.weightKg / (hM * hM);
+    }
+
+    function getMacroPercentages() {
+      if (state.macroPreset === 'balanced') return { c: 50, p: 20, f: 30 };
+      if (state.macroPreset === 'high_protein') return { c: 40, p: 35, f: 25 };
+      if (state.macroPreset === 'indian_veg') return { c: 60, p: 15, f: 25 };
+      if (state.macroPreset === 'indian_fitness') return { c: 45, p: 30, f: 25 };
+      if (state.macroPreset === 'low_carb') return { c: 10, p: 25, f: 65 };
+      return state.customMacros;
+    }
+
+    function updateAllCalculations() {
+      // 1. Calculate BMR & TDEE
+      state.bmr = Math.round(calculateBMR());
+      state.tdee = Math.round(state.bmr * state.activity);
+      state.targetCalories = Math.max(500, state.tdee + state.calorieOffset);
+
+      // 2. BMI
+      state.bmi = calculateBMI();
+
+      // 3. Render Hero & Numbers
+      document.getElementById('hero-target-calories').innerText = state.targetCalories.toLocaleString();
+      document.getElementById('metric-bmr').innerText = `${state.bmr.toLocaleString()} kcal`;
+      document.getElementById('metric-tdee').innerText = `${state.tdee.toLocaleString()} kcal`;
+      
+      const deltaText = state.calorieOffset > 0 ? `+${state.calorieOffset}` : `${state.calorieOffset}`;
+      document.getElementById('metric-delta').innerText = `${deltaText} kcal`;
+
+      // ICMR reference
+      const icmrBase = state.gender === 'male' ? 2110 : 1660;
+      document.getElementById('metric-icmr-ref').innerText = `~${icmrBase} kcal`;
+
+      // Safety floor check (1200 kcal for women, 1500 kcal for men)
+      const safetyFloor = state.gender === 'female' ? 1200 : 1500;
+      const warnBox = document.getElementById('safety-warning-banner');
+      const warnText = document.getElementById('safety-warning-text');
+      if (state.targetCalories < safetyFloor) {
+        warnBox.classList.remove('hidden');
+        warnText.innerText = `Your daily target of ${state.targetCalories} kcal is below the recognized metabolic floor of ${safetyFloor} kcal for ${state.gender === 'female' ? 'women' : 'men'}. Consider tapering your deficit to -250 to -500 kcal to preserve lean muscle and vital hormonal functions.`;
+      } else {
+        warnBox.classList.add('hidden');
+      }
+
+      // Lean mass calculation
+      if (state.bodyFat > 0) {
+        const leanKg = (state.weightKg * (1 - state.bodyFat / 100)).toFixed(1);
+        document.getElementById('label-lean-mass').innerText = `Lean: ~${leanKg} kg`;
+      } else {
+        document.getElementById('label-lean-mass').innerText = `Optional`;
+      }
+
+      // 4. Update BMI Status & Pin
+      updateBMIDisplay();
+
+      // 5. Update Macronutrients
+      updateMacroDisplay();
+
+      // 6. Update Plate Target Reference
+      document.getElementById('plate-target-cal').innerText = state.targetCalories;
+      renderPlateSummary();
+
+      // 7. Update Forecast Chart
+      renderForecast();
+
+      // 8. Update Snack Burn Estimator
+      renderSnackBurn();
+    }
+
+    function updateBMIDisplay() {
+      const bmi = state.bmi;
+      const badge = document.getElementById('bmi-value-badge');
+      badge.innerText = `${bmi.toFixed(1)} BMI`;
+
+      // Asian-Indian status (ICMR / WHO Asian: <18.5 Under, 18.5-22.9 Normal, 23-24.9 Over, >=25 Obese)
+      let asianText = '';
+      let asianColor = '';
+      if (bmi < 18.5) {
+        asianText = 'Underweight (< 18.5)';
+        asianColor = 'text-sky-500';
+      } else if (bmi <= 22.9) {
+        asianText = 'Normal & Healthy (18.5 – 22.9)';
+        asianColor = 'text-emerald-500';
+      } else if (bmi <= 24.9) {
+        asianText = 'Overweight — Increased Risk (23.0 – 24.9)';
+        asianColor = 'text-amber-500';
+      } else {
+        asianText = 'Obese — High Cardiometabolic Risk (≥ 25.0)';
+        asianColor = 'text-rose-500';
+      }
+      const asianStatusEl = document.getElementById('bmi-asian-status');
+      asianStatusEl.innerText = asianText;
+      asianStatusEl.className = `font-bold text-xs ${asianColor}`;
+
+      // WHO Global status (<18.5 Under, 18.5-24.9 Normal, 25-29.9 Over, >=30 Obese)
+      let whoText = '';
+      let whoColor = '';
+      if (bmi < 18.5) {
+        whoText = 'Underweight (< 18.5)';
+        whoColor = 'text-sky-500';
+      } else if (bmi <= 24.9) {
+        whoText = 'Normal Weight (18.5 – 24.9)';
+        whoColor = 'text-emerald-500';
+      } else if (bmi <= 29.9) {
+        whoText = 'Overweight (25.0 – 29.9)';
+        whoColor = 'text-amber-500';
+      } else {
+        whoText = 'Obese (≥ 30.0)';
+        whoColor = 'text-rose-500';
+      }
+      const whoStatusEl = document.getElementById('bmi-who-status');
+      whoStatusEl.innerText = whoText;
+      whoStatusEl.className = `font-bold text-xs ${whoColor}`;
+
+      // Move Pin Marker: clamp between 15 and 35 BMI mapped to 0% - 100%
+      const minBmi = 15;
+      const maxBmi = 35;
+      const clamped = Math.min(Math.max(bmi, minBmi), maxBmi);
+      const percent = ((clamped - minBmi) / (maxBmi - minBmi)) * 100;
+      document.getElementById('bmi-marker-pin').style.left = `${percent}%`;
+    }
+
+    function updateMacroDisplay() {
+      const macros = getMacroPercentages();
+      const totalCal = state.targetCalories;
+
+      const pCal = Math.round(totalCal * (macros.p / 100));
+      const cCal = Math.round(totalCal * (macros.c / 100));
+      const fCal = Math.round(totalCal * (macros.f / 100));
+
+      const pG = Math.round(pCal / 4);
+      const cG = Math.round(cCal / 4);
+      const fG = Math.round(fCal / 9);
+
+      // Render numbers
+      document.getElementById('metric-protein-g').innerText = `${pG} g`;
+      document.getElementById('metric-protein-kcal').innerText = `${pCal} kcal`;
+      document.getElementById('badge-protein-ratio').innerText = `${macros.p}%`;
+      const gPerKg = (pG / state.weightKg).toFixed(1);
+      document.getElementById('text-protein-gkg').innerText = `${gPerKg} g per kg bodyweight`;
+
+      document.getElementById('metric-carbs-g').innerText = `${cG} g`;
+      document.getElementById('metric-carbs-kcal').innerText = `${cCal} kcal`;
+      document.getElementById('badge-carbs-ratio').innerText = `${macros.c}%`;
+
+      document.getElementById('metric-fats-g').innerText = `${fG} g`;
+      document.getElementById('metric-fats-kcal').innerText = `${fCal} kcal`;
+      document.getElementById('badge-fats-ratio').innerText = `${macros.f}%`;
+
+      document.getElementById('donut-center-cal').innerText = totalCal.toLocaleString();
+
+      // Update plate targets
+      document.getElementById('plate-target-p').innerText = `${pG} g`;
+      document.getElementById('plate-target-c').innerText = `${cG} g`;
+      document.getElementById('plate-target-f').innerText = `${fG} g`;
+
+      // Render Donut Chart
+      renderMacroDonut(pG, cG, fG, pCal, cCal, fCal);
+    }
+
+    function renderMacroDonut(pG, cG, fG, pCal, cCal, fCal) {
+      const ctx = document.getElementById('chart-macro-donut').getContext('2d');
+      if (chartMacroDonut) {
+        chartMacroDonut.destroy();
+      }
+
+      chartMacroDonut = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Protein', 'Carbs', 'Fats'],
+          datasets: [{
+            data: [pCal, cCal, fCal],
+            backgroundColor: ['#10b981', '#f59e0b', '#0ea5e9'],
+            hoverBackgroundColor: ['#059669', '#d97706', '#0284c7'],
+            borderWidth: 0,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  const label = ctx.label || '';
+                  const val = ctx.raw || 0;
+                  const grams = label === 'Protein' ? pG : label === 'Carbs' ? cG : fG;
+                  return ` ${label}: ${grams}g (${val} kcal)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // PLATE BUILDER FUNCTIONS
+    // =========================================================================
+    function renderFoodList(categoryFilter = 'all', searchQuery = '') {
+      const container = document.getElementById('food-list-container');
+      container.innerHTML = '';
+
+      const query = searchQuery.trim().toLowerCase();
+      const filtered = FOOD_DATABASE.filter(f => {
+        const matchCat = categoryFilter === 'all' || f.cat === categoryFilter;
+        const matchQuery = query === '' || f.name.toLowerCase().includes(query);
+        return matchCat && matchQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-theme-muted text-center py-6">No foods matching "${searchQuery}".</p>`;
+        return;
+      }
+
+      filtered.forEach(food => {
+        const row = document.createElement('div');
+        row.className = 'p-2.5 rounded-xl bg-theme-surface-alt hover:bg-theme-surface border border-theme-line flex items-center justify-between transition-colors text-xs';
+        row.innerHTML = `
+          <div class="space-y-0.5">
+            <span class="font-bold text-theme-ink block">${food.name}</span>
+            <div class="flex items-center gap-2 text-[10px] text-theme-muted font-mono">
+              <span>${food.serving}</span>
+              <span>•</span>
+              <span class="font-bold text-orange-600 dark:text-orange-400">${food.cal} kcal</span>
+              <span>•</span>
+              <span class="text-emerald-600">P: ${food.p}g</span>
+              <span class="text-amber-600">C: ${food.c}g</span>
+              <span class="text-sky-600">F: ${food.f}g</span>
+            </div>
+          </div>
+          <button type="button" class="btn-add-food px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] transition-colors shrink-0" data-id="${food.id}">
+            + Add
+          </button>
+        `;
+
+        row.querySelector('.btn-add-food').addEventListener('click', () => {
+          addToPlate(food.id);
+        });
+
+        container.appendChild(row);
+      });
+    }
+
+    function addToPlate(foodId) {
+      const food = FOOD_DATABASE.find(f => f.id === foodId);
+      if (!food) return;
+
+      const existing = state.plate.find(item => item.id === foodId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        state.plate.push({
+          id: food.id,
+          name: food.name,
+          serving: food.serving,
+          cal: food.cal,
+          p: food.p,
+          c: food.c,
+          f: food.f,
+          qty: 1
+        });
+      }
+      renderPlateSummary();
+      showToast(`Added ${food.name} to your plate!`, '🥗');
+    }
+
+    function removeFromPlate(index) {
+      state.plate.splice(index, 1);
+      renderPlateSummary();
+    }
+
+    function changePlateQty(index, delta) {
+      if (state.plate[index]) {
+        state.plate[index].qty += delta;
+        if (state.plate[index].qty <= 0) {
+          state.plate.splice(index, 1);
+        }
+        renderPlateSummary();
+      }
+    }
+
+    function renderPlateSummary() {
+      const container = document.getElementById('plate-items-container');
+      const countBadge = document.getElementById('plate-item-count');
+      countBadge.innerText = state.plate.reduce((sum, item) => sum + item.qty, 0);
+
+      if (state.plate.length === 0) {
+        container.innerHTML = `
+          <p class="text-xs text-theme-muted text-center py-8">
+            Your plate is currently empty. Click <strong>+ Add</strong> on foods to build your day!
+          </p>
+        `;
+        document.getElementById('plate-total-cal').innerText = '0';
+        document.getElementById('plate-percent-cal').innerText = '(0%)';
+        document.getElementById('plate-progress-bar').style.width = '0%';
+        document.getElementById('plate-total-p').innerText = '0 g';
+        document.getElementById('plate-total-c').innerText = '0 g';
+        document.getElementById('plate-total-f').innerText = '0 g';
+        return;
+      }
+
+      container.innerHTML = '';
+      let totalCal = 0;
+      let totalP = 0;
+      let totalC = 0;
+      let totalF = 0;
+
+      state.plate.forEach((item, idx) => {
+        const itemCal = Math.round(item.cal * item.qty);
+        const itemP = Math.round(item.p * item.qty * 10) / 10;
+        const itemC = Math.round(item.c * item.qty * 10) / 10;
+        const itemF = Math.round(item.f * item.qty * 10) / 10;
+
+        totalCal += itemCal;
+        totalP += itemP;
+        totalC += itemC;
+        totalF += itemF;
+
+        const el = document.createElement('div');
+        el.className = 'p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line flex items-center justify-between text-xs';
+        el.innerHTML = `
+          <div class="space-y-0.5">
+            <span class="font-bold text-theme-ink block">${item.name}</span>
+            <div class="flex items-center gap-1.5 text-[10px] text-theme-muted font-mono">
+              <span class="text-orange-600 font-bold">${itemCal} kcal</span>
+              <span>•</span>
+              <span>P: ${itemP}g</span>
+              <span>C: ${itemC}g</span>
+              <span>F: ${itemF}g</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex items-center bg-theme-surface border border-theme-line rounded-lg font-mono text-xs">
+              <button class="btn-minus px-2 py-0.5 text-theme-muted hover:text-theme-ink font-bold">-</button>
+              <span class="px-2 font-bold text-theme-ink">${item.qty}</span>
+              <button class="btn-plus px-2 py-0.5 text-theme-muted hover:text-theme-ink font-bold">+</button>
+            </div>
+            <button class="btn-del text-theme-muted hover:text-rose-500 text-sm px-1" title="Remove">×</button>
+          </div>
+        `;
+
+        el.querySelector('.btn-minus').addEventListener('click', () => changePlateQty(idx, -1));
+        el.querySelector('.btn-plus').addEventListener('click', () => changePlateQty(idx, 1));
+        el.querySelector('.btn-del').addEventListener('click', () => removeFromPlate(idx));
+
+        container.appendChild(el);
+      });
+
+      // Update totals
+      totalP = Math.round(totalP);
+      totalC = Math.round(totalC);
+      totalF = Math.round(totalF);
+
+      document.getElementById('plate-total-cal').innerText = totalCal.toLocaleString();
+      document.getElementById('plate-total-p').innerText = `${totalP} g`;
+      document.getElementById('plate-total-c').innerText = `${totalC} g`;
+      document.getElementById('plate-total-f').innerText = `${totalF} g`;
+
+      const target = state.targetCalories;
+      const pct = Math.min(100, Math.round((totalCal / target) * 100));
+      document.getElementById('plate-percent-cal').innerText = `(${pct}%)`;
+      
+      const bar = document.getElementById('plate-progress-bar');
+      bar.style.width = `${pct}%`;
+      if (totalCal > target) {
+        bar.className = 'h-full bg-rose-500 transition-all duration-300';
+      } else {
+        bar.className = 'h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-300';
+      }
+    }
+
+    // =========================================================================
+    // SNACK BURN ESTIMATOR
+    // =========================================================================
+    function renderSnackGrid() {
+      const grid = document.getElementById('snack-grid');
+      grid.innerHTML = '';
+
+      SNACK_BURN_ITEMS.forEach(snack => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isSel = snack.id === state.activeSnack.id;
+        btn.className = `p-3 rounded-2xl border text-center transition-all ${
+          isSel
+            ? 'border-orange-500 bg-orange-500/10 shadow-xs'
+            : 'border-theme-line bg-theme-surface hover:border-orange-500/50'
+        }`;
+        btn.innerHTML = `
+          <span class="text-2xl block mb-1">${snack.icon}</span>
+          <strong class="text-xs text-theme-ink font-bold block truncate">${snack.name}</strong>
+          <span class="text-[10px] font-mono text-orange-600 font-semibold">${snack.cal} kcal</span>
+        `;
+        btn.addEventListener('click', () => {
+          state.activeSnack = snack;
+          renderSnackGrid();
+          renderSnackBurn();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderSnackBurn() {
+      const snack = state.activeSnack;
+      document.getElementById('burn-snack-name').innerText = snack.name;
+      document.getElementById('burn-snack-desc').innerText = snack.desc;
+      document.getElementById('burn-snack-calories').innerText = snack.cal;
+
+      // Burn calculation formulas based on body weight
+      // MET values: Walking (5 km/h) ~ 3.5 MET; Jogging (8.5 km/h) ~ 8.0 MET; Cycling (15 km/h) ~ 5.5 MET; Jump Rope / HIIT ~ 10.0 MET
+      // Cal/min = (MET * 3.5 * weightKg) / 200
+      const W = state.weightKg || 70;
+      
+      const calPerMinWalk = (3.5 * 3.5 * W) / 200;
+      const calPerMinRun = (8.0 * 3.5 * W) / 200;
+      const calPerMinCycle = (5.5 * 3.5 * W) / 200;
+      const calPerMinHiit = (10.0 * 3.5 * W) / 200;
+
+      const minsWalk = Math.ceil(snack.cal / calPerMinWalk);
+      const minsRun = Math.ceil(snack.cal / calPerMinRun);
+      const minsCycle = Math.ceil(snack.cal / calPerMinCycle);
+      const minsHiit = Math.ceil(snack.cal / calPerMinHiit);
+
+      document.getElementById('time-walk').innerText = `${minsWalk} mins`;
+      document.getElementById('dist-walk').innerText = `~${((minsWalk / 60) * 5).toFixed(1)} km`;
+
+      document.getElementById('time-run').innerText = `${minsRun} mins`;
+      document.getElementById('dist-run').innerText = `~${((minsRun / 60) * 8.5).toFixed(1)} km`;
+
+      document.getElementById('time-cycle').innerText = `${minsCycle} mins`;
+      document.getElementById('dist-cycle').innerText = `~${((minsCycle / 60) * 15).toFixed(1)} km`;
+
+      document.getElementById('time-hiit').innerText = `${minsHiit} mins`;
+    }
+
+    // =========================================================================
+    // 12-WEEK WEIGHT FORECAST
+    // =========================================================================
+    function renderForecast() {
+      const weeklyDeficit = state.calorieOffset * 7; // e.g. -500 * 7 = -3500 kcal/wk
+      // 1 kg of body fat = 7700 kcal (or 1 lb = 3500 kcal)
+      const weeklyKgDelta = weeklyDeficit / 7700; // e.g. -0.45 kg/week
+
+      const labels = ['Now (Wk 0)'];
+      const dataPoints = [Number(state.weightKg.toFixed(1))];
+      const tbody = document.getElementById('forecast-tbody');
+      tbody.innerHTML = '';
+
+      let currentWeight = state.weightKg;
+      const hM = state.heightCm / 100;
+
+      for (let w = 1; w <= 12; w++) {
+        currentWeight += weeklyKgDelta;
+        currentWeight = Math.max(30, currentWeight);
+        labels.push(`Wk ${w}`);
+        dataPoints.push(Number(currentWeight.toFixed(1)));
+
+        const curBmi = currentWeight / (hM * hM);
+        const deltaFromStart = currentWeight - state.weightKg;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-theme-surface-alt/60 transition-colors';
+        tr.innerHTML = `
+          <td class="p-2.5 text-left font-bold text-theme-ink">Week ${w}</td>
+          <td class="p-2.5 font-mono ${weeklyDeficit >= 0 ? 'text-amber-500' : 'text-emerald-500'}">
+            ${weeklyDeficit >= 0 ? '+' : ''}${weeklyDeficit.toLocaleString()} kcal
+          </td>
+          <td class="p-2.5 font-bold text-theme-ink font-mono">${currentWeight.toFixed(1)} kg</td>
+          <td class="p-2.5 font-mono font-bold ${deltaFromStart <= 0 ? 'text-emerald-500' : 'text-amber-500'}">
+            ${deltaFromStart >= 0 ? '+' : ''}${deltaFromStart.toFixed(1)} kg
+          </td>
+          <td class="p-2.5 text-center font-mono">
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${
+              curBmi <= 22.9 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
+            }">
+              ${curBmi.toFixed(1)}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      // Total 12-week delta
+      const totalDelta = (weeklyKgDelta * 12).toFixed(1);
+      const totalDeltaLbs = (totalDelta * 2.20462).toFixed(1);
+      const deltaEl = document.getElementById('forecast-delta-metric');
+      deltaEl.innerText = `${totalDelta >= 0 ? '+' : ''}${totalDelta} kg (${totalDeltaLbs >= 0 ? '+' : ''}${totalDeltaLbs} lbs)`;
+      deltaEl.className = `text-base font-mono font-bold ${totalDelta <= 0 ? 'text-emerald-600' : 'text-amber-600'}`;
+
+      // Render Line Chart
+      const ctx = document.getElementById('chart-forecast-line').getContext('2d');
+      if (chartForecastLine) {
+        chartForecastLine.destroy();
+      }
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+      const textColor = isDark ? '#a8a29e' : '#78716c';
+
+      chartForecastLine = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Projected Weight (kg)',
+            data: dataPoints,
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249, 115, 22, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.25,
+            pointBackgroundColor: '#ea580c',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  return ` ${ctx.raw} kg (${(ctx.raw * 2.20462).toFixed(1)} lbs)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor, font: { family: 'JetBrains Mono', size: 10 } }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: {
+                color: textColor,
+                font: { family: 'JetBrains Mono', size: 10 },
+                callback: function (val) {
+                  return `${val} kg`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // TOAST & CLIPBOARD HELPER
+    // =========================================================================
+    function showToast(message, icon = '✅') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = message;
+      document.getElementById('toast-icon').innerText = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+
+    function copyPlanSummary() {
+      const macros = getMacroPercentages();
+      const summary = `
+📊 Calorie & Macronutrient Blueprint (${state.standard === 'indian' ? 'Indian Standard - ICMR-NIN' : 'Global Standard - Mifflin'})
+────────────────────────────────────────
+• Sex / Age: ${state.gender.toUpperCase()} / ${state.age} yrs
+• Height / Weight: ${state.heightCm} cm / ${state.weightKg} kg (BMI: ${state.bmi.toFixed(1)})
+• BMR (Resting): ${state.bmr} kcal
+• TDEE (Maintenance): ${state.tdee} kcal
+• Target Daily Calories: ${state.targetCalories} kcal (Delta: ${state.calorieOffset} kcal)
+────────────────────────────────────────
+🎯 Macronutrient Breakdown:
+• Protein: ${Math.round(state.targetCalories * (macros.p / 100) / 4)}g (${macros.p}%)
+• Carbohydrates: ${Math.round(state.targetCalories * (macros.c / 100) / 4)}g (${macros.c}%)
+• Fats: ${Math.round(state.targetCalories * (macros.f / 100) / 9)}g (${macros.f}%)
+────────────────────────────────────────
+Calculated with Toolzy Calorie Studio (100% Client-Side)
+https://sayandeepmajumdar.github.io/tools/productivity/calorie-calculator
+      `.trim();
+
+      navigator.clipboard.writeText(summary).then(() => {
+        showToast('Plan summary copied to clipboard!', '📋');
+      }).catch(() => {
+        showToast('Failed to copy to clipboard', '❌');
+      });
+    }
+
+    // =========================================================================
+    // EVENT LISTENERS & INITIALIZATION
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Theme Switcher
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+        updateAllCalculations();
+      });
+
+      // 2. Dual Standard Switcher
+      const toggleStandardBtn = document.getElementById('btn-toggle-standard');
+      toggleStandardBtn.addEventListener('click', () => {
+        state.standard = state.standard === 'indian' ? 'global' : 'indian';
+        
+        if (state.standard === 'indian') {
+          document.getElementById('standard-flag').innerText = '🇮🇳';
+          document.getElementById('standard-label').innerText = 'Indian Standard (ICMR)';
+          document.getElementById('badge-current-standard').innerText = '🇮🇳 ICMR-NIN 2020 RDA & Asian-Indian Cutoffs';
+          document.getElementById('standard-info-banner').classList.remove('hidden');
+          document.getElementById('indian-diet-tip').classList.remove('hidden');
+          showToast('Switched to Indian Standards (ICMR-NIN)', '🇮🇳');
+        } else {
+          document.getElementById('standard-flag').innerText = '🌐';
+          document.getElementById('standard-label').innerText = 'Global Standard (Mifflin/WHO)';
+          document.getElementById('badge-current-standard').innerText = '🌐 Global Mifflin-St Jeor & WHO Cutoffs';
+          document.getElementById('standard-info-banner').classList.add('hidden');
+          document.getElementById('indian-diet-tip').classList.add('hidden');
+          showToast('Switched to Global Standards', '🌐');
+        }
+        updateAllCalculations();
+      });
+
+      // 3. Metric vs Imperial Units
+      const btnMetric = document.getElementById('btn-unit-metric');
+      const btnImperial = document.getElementById('btn-unit-imperial');
+      const cMetric = document.getElementById('container-metric-inputs');
+      const cImperial = document.getElementById('container-imperial-inputs');
+
+      btnMetric.addEventListener('click', () => {
+        state.unit = 'metric';
+        btnMetric.className = 'px-2 py-0.5 rounded bg-orange-600 text-white shadow-xs';
+        btnImperial.className = 'px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink';
+        cMetric.classList.remove('hidden');
+        cImperial.classList.add('hidden');
+      });
+
+      btnImperial.addEventListener('click', () => {
+        state.unit = 'imperial';
+        btnImperial.className = 'px-2 py-0.5 rounded bg-orange-600 text-white shadow-xs';
+        btnMetric.className = 'px-2 py-0.5 rounded text-theme-muted hover:text-theme-ink';
+        cMetric.classList.add('hidden');
+        cImperial.classList.remove('hidden');
+      });
+
+      // 4. Input Listeners: Metric
+      document.getElementById('input-height-cm').addEventListener('input', (e) => {
+        state.heightCm = parseFloat(e.target.value) || 170;
+        const totalIn = state.heightCm / 2.54;
+        const ft = Math.floor(totalIn / 12);
+        const inch = Math.round(totalIn % 12);
+        document.getElementById('label-height-ft').innerText = `${ft}' ${inch}"`;
+        document.getElementById('input-height-ft').value = ft;
+        document.getElementById('input-height-in').value = inch;
+        updateAllCalculations();
+      });
+
+      document.getElementById('input-weight-kg').addEventListener('input', (e) => {
+        state.weightKg = parseFloat(e.target.value) || 70;
+        const lbs = (state.weightKg * 2.20462).toFixed(1);
+        document.getElementById('label-weight-lbs').innerText = `${lbs} lbs`;
+        document.getElementById('input-weight-lbs').value = lbs;
+        updateAllCalculations();
+      });
+
+      // Imperial Inputs
+      const syncImperial = () => {
+        const ft = parseFloat(document.getElementById('input-height-ft').value) || 5;
+        const inch = parseFloat(document.getElementById('input-height-in').value) || 0;
+        state.heightCm = Math.round((ft * 12 + inch) * 2.54);
+        document.getElementById('input-height-cm').value = state.heightCm;
+
+        const lbs = parseFloat(document.getElementById('input-weight-lbs').value) || 150;
+        state.weightKg = parseFloat((lbs / 2.20462).toFixed(1));
+        document.getElementById('input-weight-kg').value = state.weightKg;
+        updateAllCalculations();
+      };
+      ['input-height-ft', 'input-height-in', 'input-weight-lbs'].forEach(id => {
+        document.getElementById(id).addEventListener('input', syncImperial);
+      });
+
+      // Age & Body Fat
+      document.getElementById('input-age').addEventListener('input', (e) => {
+        state.age = parseInt(e.target.value, 10) || 25;
+        updateAllCalculations();
+      });
+      document.getElementById('input-body-fat').addEventListener('input', (e) => {
+        state.bodyFat = parseFloat(e.target.value) || 0;
+        updateAllCalculations();
+      });
+
+      // Gender buttons
+      const btnMale = document.getElementById('gender-male');
+      const btnFemale = document.getElementById('gender-female');
+      btnMale.addEventListener('click', () => {
+        state.gender = 'male';
+        btnMale.className = 'py-1.5 text-xs font-bold rounded-lg bg-orange-600 text-white transition-all';
+        btnFemale.className = 'py-1.5 text-xs font-bold rounded-lg text-theme-muted hover:text-theme-ink transition-all';
+        updateAllCalculations();
+      });
+      btnFemale.addEventListener('click', () => {
+        state.gender = 'female';
+        btnFemale.className = 'py-1.5 text-xs font-bold rounded-lg bg-orange-600 text-white transition-all';
+        btnMale.className = 'py-1.5 text-xs font-bold rounded-lg text-theme-muted hover:text-theme-ink transition-all';
+        updateAllCalculations();
+      });
+
+      // Activity & Formula
+      document.getElementById('select-activity').addEventListener('change', (e) => {
+        state.activity = parseFloat(e.target.value);
+        updateAllCalculations();
+      });
+      document.getElementById('select-formula').addEventListener('change', (e) => {
+        state.formula = e.target.value;
+        updateAllCalculations();
+      });
+
+      // Goal buttons
+      document.querySelectorAll('.btn-goal').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.btn-goal').forEach(b => {
+            b.className = 'btn-goal p-2.5 rounded-xl border border-theme-line text-left transition-all bg-theme-surface-alt hover:border-orange-500';
+            b.querySelector('span:first-child').className = 'font-bold block text-theme-ink';
+          });
+          btn.className = 'btn-goal p-2.5 rounded-xl border border-orange-500 bg-orange-500/10 text-left transition-all';
+          btn.querySelector('span:first-child').className = 'font-bold block text-orange-600 dark:text-orange-400';
+
+          const deficit = parseInt(btn.dataset.deficit, 10);
+          state.calorieOffset = deficit;
+          document.getElementById('slider-calorie-offset').value = deficit;
+          document.getElementById('label-custom-offset').innerText = deficit > 0 ? `+${deficit} kcal` : `${deficit} kcal`;
+          updateAllCalculations();
+        });
+      });
+
+      // Calorie Offset Slider
+      document.getElementById('slider-calorie-offset').addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        state.calorieOffset = val;
+        document.getElementById('label-custom-offset').innerText = val > 0 ? `+${val} kcal` : `${val} kcal`;
+        updateAllCalculations();
+      });
+
+      // Macro Preset Selector
+      const macroSelect = document.getElementById('select-macro-preset');
+      const customSliderContainer = document.getElementById('container-custom-sliders');
+      macroSelect.addEventListener('change', (e) => {
+        state.macroPreset = e.target.value;
+        if (state.macroPreset === 'custom') {
+          customSliderContainer.classList.remove('hidden');
+        } else {
+          customSliderContainer.classList.add('hidden');
+        }
+        updateAllCalculations();
+      });
+
+      // Custom Sliders
+      function updateCustomSliders() {
+        const p = parseInt(document.getElementById('slider-p').value, 10);
+        const c = parseInt(document.getElementById('slider-c').value, 10);
+        const f = parseInt(document.getElementById('slider-f').value, 10);
+        state.customMacros = { p, c, f };
+        document.getElementById('custom-val-p').innerText = `${p}%`;
+        document.getElementById('custom-val-c').innerText = `${c}%`;
+        document.getElementById('custom-val-f').innerText = `${f}%`;
+        const sum = p + c + f;
+        const sumEl = document.getElementById('custom-slider-sum');
+        sumEl.innerText = `${sum}%`;
+        sumEl.className = sum === 100 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500';
+        updateAllCalculations();
+      }
+      ['slider-p', 'slider-c', 'slider-f'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateCustomSliders);
+      });
+
+      // Sample Profile Buttons
+      document.getElementById('btn-quick-sample-indian').addEventListener('click', () => {
+        state.standard = 'indian';
+        state.gender = 'male';
+        state.age = 30;
+        state.heightCm = 175;
+        state.weightKg = 72;
+        state.bodyFat = 20;
+        state.activity = 1.375;
+        state.macroPreset = 'indian_fitness';
+        state.calorieOffset = -500;
+
+        document.getElementById('input-age').value = 30;
+        document.getElementById('input-height-cm').value = 175;
+        document.getElementById('input-weight-kg').value = 72;
+        document.getElementById('input-body-fat').value = 20;
+        document.getElementById('select-activity').value = '1.375';
+        document.getElementById('select-macro-preset').value = 'indian_fitness';
+        document.getElementById('slider-calorie-offset').value = -500;
+        document.getElementById('standard-flag').innerText = '🇮🇳';
+        document.getElementById('standard-label').innerText = 'Indian Standard (ICMR)';
+        document.getElementById('badge-current-standard').innerText = '🇮🇳 ICMR-NIN 2020 RDA & Asian-Indian Cutoffs';
+        document.getElementById('standard-info-banner').classList.remove('hidden');
+        btnMale.click();
+        updateAllCalculations();
+        showToast('Loaded Indian reference profile (ICMR calibrated)', '🇮🇳');
+      });
+
+      document.getElementById('btn-quick-sample-global').addEventListener('click', () => {
+        state.standard = 'global';
+        state.gender = 'male';
+        state.age = 26;
+        state.heightCm = 180;
+        state.weightKg = 78;
+        state.bodyFat = 15;
+        state.activity = 1.55;
+        state.macroPreset = 'high_protein';
+        state.calorieOffset = -250;
+
+        document.getElementById('input-age').value = 26;
+        document.getElementById('input-height-cm').value = 180;
+        document.getElementById('input-weight-kg').value = 78;
+        document.getElementById('input-body-fat').value = 15;
+        document.getElementById('select-activity').value = '1.55';
+        document.getElementById('select-macro-preset').value = 'high_protein';
+        document.getElementById('slider-calorie-offset').value = -250;
+        document.getElementById('standard-flag').innerText = '🌐';
+        document.getElementById('standard-label').innerText = 'Global Standard (Mifflin/WHO)';
+        document.getElementById('badge-current-standard').innerText = '🌐 Global Mifflin-St Jeor & WHO Cutoffs';
+        document.getElementById('standard-info-banner').classList.add('hidden');
+        btnMale.click();
+        updateAllCalculations();
+        showToast('Loaded Global fitness profile', '🌐');
+      });
+
+      // Reset Defaults
+      document.getElementById('btn-reset-biometrics').addEventListener('click', () => {
+        state.age = 28;
+        state.heightCm = 175;
+        state.weightKg = 70;
+        state.bodyFat = 18;
+        state.activity = 1.375;
+        state.calorieOffset = -500;
+        document.getElementById('input-age').value = 28;
+        document.getElementById('input-height-cm').value = 175;
+        document.getElementById('input-weight-kg').value = 70;
+        document.getElementById('input-body-fat').value = 18;
+        document.getElementById('slider-calorie-offset').value = -500;
+        updateAllCalculations();
+        showToast('Biometrics reset to defaults', '↺');
+      });
+
+      // Tab Navigation
+      const tabs = [
+        { id: 'tab-calc', view: 'view-calc' },
+        { id: 'tab-plate', view: 'view-plate' },
+        { id: 'tab-burn', view: 'view-burn' },
+        { id: 'tab-forecast', view: 'view-forecast' },
+        { id: 'tab-guide', view: 'view-guide' }
+      ];
+
+      tabs.forEach(t => {
+        document.getElementById(t.id).addEventListener('click', () => {
+          tabs.forEach(other => {
+            const btn = document.getElementById(other.id);
+            const v = document.getElementById(other.view);
+            if (other.id === t.id) {
+              btn.className = 'tab-btn px-4 py-2.5 rounded-xl bg-orange-600 text-white shadow-2xs whitespace-nowrap transition-all flex items-center gap-1.5';
+              v.classList.remove('hidden');
+            } else {
+              btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt whitespace-nowrap transition-all flex items-center gap-1.5';
+              v.classList.add('hidden');
+            }
+          });
+          if (t.id === 'tab-forecast' && chartForecastLine) {
+            chartForecastLine.resize();
+          }
+        });
+      });
+
+      // Copy Summary & Print
+      document.getElementById('btn-copy-summary').addEventListener('click', copyPlanSummary);
+      document.getElementById('btn-print-plan').addEventListener('click', () => window.print());
+
+      // Plate Builder Actions
+      renderFoodList('all');
+      document.querySelectorAll('.btn-food-cat').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.btn-food-cat').forEach(b => {
+            b.className = 'btn-food-cat px-2.5 py-1 rounded-lg bg-theme-surface-alt text-theme-muted hover:text-theme-ink';
+          });
+          btn.className = 'btn-food-cat px-2.5 py-1 rounded-lg bg-orange-600 text-white';
+          renderFoodList(btn.dataset.cat, document.getElementById('search-food').value);
+        });
+      });
+
+      document.getElementById('search-food').addEventListener('input', (e) => {
+        const activeCat = document.querySelector('.btn-food-cat.bg-orange-600')?.dataset.cat || 'all';
+        renderFoodList(activeCat, e.target.value);
+      });
+
+      document.getElementById('btn-clear-plate').addEventListener('click', () => {
+        state.plate = [];
+        renderPlateSummary();
+        showToast('Plate cleared', '🧹');
+      });
+
+      document.getElementById('btn-load-sample-plate').addEventListener('click', () => {
+        state.plate = [
+          { id: 'oats', name: 'Rolled Oats (Dry Raw)', serving: '50g', cal: 190, p: 6.5, c: 33.0, f: 3.5, qty: 1 },
+          { id: 'milk_toned', name: 'Toned Cow Milk (3% Fat)', serving: '1 glass (250ml)', cal: 145, p: 8.0, c: 12.5, f: 7.5, qty: 1 },
+          { id: 'roti_plain', name: 'Roti / Chapati (Plain Wheat)', serving: '1 piece (35g)', cal: 85, p: 2.8, c: 17.5, f: 0.5, qty: 3 },
+          { id: 'dal_tadka', name: 'Yellow Dal Tadka (Toor Dal)', serving: '1 bowl (180g)', cal: 145, p: 7.5, c: 19.5, f: 4.0, qty: 1 },
+          { id: 'paneer_raw', name: 'Raw Paneer (Cottage Cheese)', serving: '100g', cal: 265, p: 18.3, c: 3.5, f: 20.8, qty: 1 },
+          { id: 'curd_dahi', name: 'Plain Dahi / Curd (Whole Milk)', serving: '1 bowl (150g)', cal: 95, p: 5.0, c: 7.0, f: 5.2, qty: 1 },
+          { id: 'mix_veg_sabzi', name: 'Mixed Vegetable Sabzi (Dry)', serving: '1 bowl (150g)', cal: 110, p: 3.0, c: 14.0, f: 4.5, qty: 1 },
+          { id: 'masala_chai', name: 'Indian Masala Chai with Sugar & Milk', serving: '1 cup (150ml)', cal: 95, p: 3.0, c: 14.0, f: 3.2, qty: 1 },
+          { id: 'whey_protein', name: 'Whey Protein Isolate/Concentrate', serving: '1 scoop (30g)', cal: 120, p: 25.0, c: 2.0, f: 1.0, qty: 1 }
+        ];
+        renderPlateSummary();
+        showToast('Loaded standard healthy Indian meal day!', '🍛');
+      });
+
+      // Snack Burn Estimator setup
+      renderSnackGrid();
+
+      // Initial Master Calculation
+      updateAllCalculations();
+    });
+  </script>
+</body>
+</html>

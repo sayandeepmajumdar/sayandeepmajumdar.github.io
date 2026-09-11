@@ -81,6 +81,7 @@ function buildHomepage() {
                   <div class="card__links">
                     <a class="card__link" href="tools/bmi-calculator.html">BMI Calculator</a>
                     <a class="card__link" href="tools/age-calculator.html">Age Calculator</a>
+                    <a class="card__link" href="tools/calorie-calculator.html">Calorie Calculator</a>
                   </div>
                 </div>
 
@@ -138,6 +139,22 @@ function buildHomepage() {
                 </div>
 
                 <div class="card" style="cursor:default;padding:1.125rem">
+                  <span class="card__icon">📐</span>
+                  <div class="card__title">Geometry</div>
+                  <div class="card__links">
+                    <a class="card__link" href="tools/triangle-calculator.html">Triangle Calculator</a>
+                    <a class="card__link" href="tools/volume-calculator.html">Volume Calculator</a>
+                    <a class="card__link" href="tools/slope-calculator.html">Slope Calculator</a>
+                    <a class="card__link" href="tools/area-calculator.html">Area Calculator</a>
+                    <a class="card__link" href="tools/distance-calculator.html">Distance Calculator</a>
+                    <a class="card__link" href="tools/circle-calculator.html">Circle Calculator</a>
+                    <a class="card__link" href="tools/surface-area-calculator.html">Surface Area Calculator</a>
+                    <a class="card__link" href="tools/pythagorean-calculator.html">Pythagorean Theorem</a>
+                    <a class="card__link" href="tools/right-triangle-calculator.html">Right Triangle Calculator</a>
+                  </div>
+                </div>
+
+                <div class="card" style="cursor:default;padding:1.125rem">
                   <span class="card__icon">📊</span>
                   <div class="card__title">Advanced</div>
                   <div class="card__links">
@@ -173,6 +190,16 @@ async function loadCalcPage(hash) {
     '#/time-calculator': () => import('./calculators/time.js'),
     '#/bmi-calculator': () => import('./calculators/bmi.js'),
     '#/age-calculator': () => import('./calculators/age.js'),
+    '#/calorie-calculator': () => import('./calculators/calorie.js'),
+    '#/triangle-calculator': () => import('./calculators/triangle.js'),
+    '#/volume-calculator': () => import('./calculators/volume.js'),
+    '#/slope-calculator': () => import('./calculators/slope.js'),
+    '#/area-calculator': () => import('./calculators/area.js'),
+    '#/distance-calculator': () => import('./calculators/distance.js'),
+    '#/circle-calculator': () => import('./calculators/circle.js'),
+    '#/surface-area-calculator': () => import('./calculators/surfaceArea.js'),
+    '#/pythagorean-calculator': () => import('./calculators/pythagorean.js'),
+    '#/right-triangle-calculator': () => import('./calculators/rightTriangle.js'),
     '#/percentage-calculator': () => import('./calculators/percentage.js'),
     '#/mortgage-calculator': () => import('./calculators/mortgage.js'),
     '#/amortization-calculator': () => import('./calculators/amortization.js'),
