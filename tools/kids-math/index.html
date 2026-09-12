@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kids Math Quest — Playful Arithmetic Adventure — Toolzy</title>
+  <meta name="description" content="A vibrant, gamified educational web app for kids to learn addition, subtraction, multiplication, and division with visual counting manipulatives, cute animated mascot, synthesized audio, reward badges, and certificate generator." />
+
+  <!-- Google Fonts: Fredoka & Nunito for friendly rounded typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            fredoka: ['Fredoka', 'Nunito', 'system-ui', 'sans-serif'],
+            sans: ['Nunito', 'Fredoka', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            paper: 'var(--color-bg, #ffffff)',
+            surface: 'var(--color-surface, #f8fafc)',
+            'surface-alt': 'var(--color-surface-alt, #f1f5f9)',
+            ink: 'var(--color-ink, #0f172a)',
+            muted: 'var(--color-muted, #64748b)',
+            line: 'var(--color-line, #e2e8f0)',
+            accent: 'var(--color-accent, #3b82f6)',
+            'accent-hover': 'var(--color-accent-hover, #2563eb)',
+            // Playful Kids Colors
+            sunshine: '#f59e0b',
+            bubblegum: '#ec4899',
+            emeraldly: '#10b981',
+            sky: '#0ea5e9',
+            lavender: '#8b5cf6',
+            coral: '#f43f5e',
+          },
+          boxShadow: {
+            'bouncy': '0 8px 0 rgba(0,0,0,0.08), 0 15px 25px rgba(0,0,0,0.05)',
+            'btn-3d': '0 6px 0 rgba(0,0,0,0.15)',
+            'btn-3d-active': '0 1px 0 rgba(0,0,0,0.15)',
+          },
+          animation: {
+            'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+            'wiggle': 'wiggle 0.5s ease-in-out',
+            'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            'float': 'float 3s ease-in-out infinite',
+            'pulse-glow': 'pulseGlow 2s infinite',
+          },
+          keyframes: {
+            bounceGentle: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            wiggle: {
+              '0%, 100%': { transform: 'rotate(0deg)' },
+              '25%': { transform: 'rotate(-6deg)' },
+              '75%': { transform: 'rotate(6deg)' },
+            },
+            popIn: {
+              '0%': { transform: 'scale(0.8)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+              '50%': { opacity: '0.85', transform: 'scale(1.05)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --color-bg: #fdfbf7;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f4f4f5;
+      --color-ink: #18181b;
+      --color-muted: #71717a;
+      --color-line: #e4e4e7;
+      --color-accent: #f59e0b;
+      --color-accent-hover: #d97706;
+    }
+    .dark {
+      --color-bg: #090d16;
+      --color-surface: #0f172a;
+      --color-surface-alt: #1e293b;
+      --color-ink: #f8fafc;
+      --color-muted: #94a3b8;
+      --color-line: #1e293b;
+      --color-accent: #fbbf24;
+      --color-accent-hover: #f59e0b;
+    }
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Nunito', 'Fredoka', system-ui, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    /* 3D button press tactile feel */
+    .btn-play-3d {
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      box-shadow: 0 6px 0 var(--btn-shadow-color, rgba(0,0,0,0.2));
+    }
+    .btn-play-3d:active, .btn-play-3d.pressed {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 var(--btn-shadow-color, rgba(0,0,0,0.2));
+    }
+
+    /* Chunky option bubbles */
+    .bubble-opt {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bubble-opt:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+    .bubble-opt:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* Counting item bounce */
+    .count-item {
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .count-item:hover {
+      transform: scale(1.25) rotate(8deg);
+    }
+    .count-item.counted {
+      filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.5));
+      animation: wiggle 0.4s ease;
+    }
+
+    /* Print certificate styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-printable, #certificate-printable * {
+        visibility: visible;
+      }
+      #certificate-printable {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+  </style>
+
+  <!-- Theme Synchronization Script -->
+  <script>
+    (function () {
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      var saved = localStorage.getItem('toolbox:theme') || localStorage.getItem('theme-mode');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light');
+
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'THEME_CHANGE') {
+          applyTheme(event.data.theme);
+        }
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen pb-16 overflow-x-hidden">
+
+  <!-- Confetti Canvas (Fullscreen Overlay) -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+
+    <!-- ========================================================================= -->
+    <!-- TOP NAVBAR: Branding, Level Badge, Stars, Audio Toggle, Settings -->
+    <!-- ========================================================================= -->
+    <header class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-surface border border-line shadow-sm">
+      
+      <!-- Brand & Mascot Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-orange-400 to-rose-400 p-0.5 shadow-md flex items-center justify-center transform hover:rotate-6 transition-transform">
+          <div class="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 flex items-center justify-center text-2xl">
+            🦖
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-fredoka text-xl sm:text-2xl font-extrabold tracking-tight text-ink">
+              Kids Math Quest
+            </h1>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-fredoka font-bold bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+              Toolzy
+            </span>
+          </div>
+          <p class="text-xs text-muted font-fredoka">Fun & easy arithmetic adventure for kids!</p>
+        </div>
+      </div>
+
+      <!-- Stat Badges & Action Controls -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        
+        <!-- Level & XP Badge -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-surface-alt border border-line shadow-xs">
+          <div class="w-7 h-7 rounded-xl bg-violet-500 text-white flex items-center justify-center font-fredoka font-black text-xs shadow-sm">
+            <span id="player-level">1</span>
+          </div>
+          <div class="flex flex-col">
+            <span id="player-title" class="text-[10px] font-fredoka font-bold uppercase tracking-wider text-muted">Explorer</span>
+            <div class="w-16 sm:w-20 h-2 bg-line rounded-full overflow-hidden">
+              <div id="xp-progress-bar" class="h-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stars Counter -->
+        <div class="flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-amber-600 dark:text-amber-400 font-fredoka font-bold text-sm">
+          <span class="text-base animate-bounce-gentle">⭐</span>
+          <span id="star-counter">0</span>
+        </div>
+
+        <!-- Streak Fire Counter -->
+        <div id="streak-container" class="hidden flex items-center gap-1 px-3 py-1.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-fredoka font-bold text-sm">
+          <span class="text-base animate-pulse">🔥</span>
+          <span id="streak-counter">0</span>
+        </div>
+
+        <!-- Audio Mute/Unmute -->
+        <button
+          id="btn-toggle-sound"
+          type="button"
+          class="touch-target p-2.5 rounded-2xl bg-surface-alt border border-line text-muted hover:text-ink hover:border-accent transition-all shadow-xs"
+          title="Toggle Sound Effects"
+        >
+          <span id="sound-icon" class="text-base">🔊</span>
+        </button>
+
+        <!-- Trophy Room / Badges -->
+        <button
+          id="btn-open-trophies"
+          type="button"
+          class="touch-target px-3 py-2 rounded-2xl bg-surface-alt border border-line text-ink hover:border-amber-400 font-fredoka font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+          title="View Badges & Trophies"
+        >
+          <span class="text-base">🏆</span>
+          <span class="hidden sm:inline">Trophies</span>
+          <span id="trophy-count-badge" class="px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-bold text-[10px]">0</span>
+        </button>
+
+        <!-- Settings / Parent Dashboard -->
+        <button
+          id="btn-open-settings"
+          type="button"
+          class="touch-target p-2.5 rounded-2xl bg-surface-alt border border-line text-muted hover:text-ink hover:border-accent transition-all shadow-xs"
+          title="Parent / Teacher Settings"
+        >
+          <span class="text-base">⚙️</span>
+        </button>
+
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- OPERATION SELECTOR TABS (Addition, Subtraction, Multiplication, Division, Quest) -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-5 gap-2 sm:gap-3 p-1.5 rounded-3xl bg-surface border border-line shadow-xs">
+      
+      <!-- 1. Addition -->
+      <button
+        type="button"
+        data-op="add"
+        class="tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-amber-400 to-orange-500 shadow-md shadow-orange-500/20"
+      >
+        <span class="text-lg sm:text-xl">➕</span>
+        <span>Add</span>
+      </button>
+
+      <!-- 2. Subtraction -->
+      <button
+        type="button"
+        data-op="sub"
+        class="tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-bold text-xs sm:text-sm transition-all text-muted hover:text-ink hover:bg-surface-alt"
+      >
+        <span class="text-lg sm:text-xl">➖</span>
+        <span>Minus</span>
+      </button>
+
+      <!-- 3. Multiplication -->
+      <button
+        type="button"
+        data-op="mul"
+        class="tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-bold text-xs sm:text-sm transition-all text-muted hover:text-ink hover:bg-surface-alt"
+      >
+        <span class="text-lg sm:text-xl">✖️</span>
+        <span>Times</span>
+      </button>
+
+      <!-- 4. Division -->
+      <button
+        type="button"
+        data-op="div"
+        class="tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-bold text-xs sm:text-sm transition-all text-muted hover:text-ink hover:bg-surface-alt"
+      >
+        <span class="text-lg sm:text-xl">➗</span>
+        <span>Share</span>
+      </button>
+
+      <!-- 5. Math Safari Quest -->
+      <button
+        type="button"
+        data-op="quest"
+        class="tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-bold text-xs sm:text-sm transition-all text-muted hover:text-ink hover:bg-surface-alt relative overflow-hidden"
+      >
+        <span class="text-lg sm:text-xl">🌈</span>
+        <span>Quest</span>
+        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+      </button>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECONDARY CONTROL BAR: Stage Selector, Visual Toggle, Timer, Input Mode -->
+    <!-- ========================================================================= -->
+    <div class="flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-2xl bg-surface/60 border border-line text-xs font-fredoka">
+      
+      <!-- Stage Difficulty Selector -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-muted font-bold text-[11px] uppercase tracking-wider hidden sm:inline">Stage:</span>
+        <div class="flex items-center bg-surface-alt p-1 rounded-xl border border-line">
+          <button id="stage-btn-1" type="button" class="stage-btn px-2.5 py-1 rounded-lg font-bold bg-surface text-ink shadow-xs transition-all" data-stage="1">🌟 Easy</button>
+          <button id="stage-btn-2" type="button" class="stage-btn px-2.5 py-1 rounded-lg font-bold text-muted hover:text-ink transition-all" data-stage="2">⚡ Medium</button>
+          <button id="stage-btn-3" type="button" class="stage-btn px-2.5 py-1 rounded-lg font-bold text-muted hover:text-ink transition-all" data-stage="3">🚀 Hard</button>
+        </div>
+      </div>
+
+      <!-- Quick Toggles -->
+      <div class="flex items-center gap-2 flex-wrap">
+        
+        <!-- Visual Manipulatives Toggle -->
+        <button
+          id="btn-toggle-visuals"
+          type="button"
+          class="px-3 py-1.5 rounded-xl border font-bold flex items-center gap-1.5 transition-all bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+        >
+          <span>👀 Counting Items:</span>
+          <span id="visuals-state-text" class="font-extrabold uppercase">On</span>
+        </button>
+
+        <!-- Manipulative Item Picker -->
+        <div class="flex items-center gap-1 bg-surface-alt px-2 py-1 rounded-xl border border-line">
+          <button type="button" class="item-emoji-btn text-base hover:scale-125 transition-transform" data-emoji="🍎" title="Apples">🍎</button>
+          <button type="button" class="item-emoji-btn text-base hover:scale-125 transition-transform" data-emoji="⭐" title="Stars">⭐</button>
+          <button type="button" class="item-emoji-btn text-base hover:scale-125 transition-transform" data-emoji="🚀" title="Rockets">🚀</button>
+          <button type="button" class="item-emoji-btn text-base hover:scale-125 transition-transform" data-emoji="🍪" title="Cookies">🍪</button>
+          <button type="button" class="item-emoji-btn text-base hover:scale-125 transition-transform" data-emoji="🎈" title="Balloons">🎈</button>
+        </div>
+
+        <!-- Input Mode Switcher (Bubbles vs Numpad) -->
+        <button
+          id="btn-toggle-input-mode"
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-surface-alt border border-line text-muted hover:text-ink font-bold flex items-center gap-1 transition-all"
+          title="Switch between Multiple Choice Bubbles & Digital Keypad"
+        >
+          <span id="input-mode-icon">🔘</span>
+          <span id="input-mode-label">Bubbles</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MAIN INTERACTIVE ARENA: Mascot + Big Math Question + Visual Manipulatives -->
+    <!-- ========================================================================= -->
+    <main class="relative p-6 sm:p-10 rounded-3xl bg-surface border-2 border-line shadow-bouncy space-y-6 overflow-hidden">
+      
+      <!-- Top Arena Header: Question Progress & Friendly Timer -->
+      <div class="flex items-center justify-between text-xs font-fredoka font-bold text-muted">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="round-indicator">Question 1 of 10</span>
+        </div>
+
+        <!-- Timer / Chill Mode Indicator -->
+        <div id="timer-display" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-alt border border-line text-muted font-mono">
+          <span>⏱️</span>
+          <span id="timer-count">Untimed</span>
+        </div>
+      </div>
+
+      <!-- Mascot & Speech Bubble Row -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 my-2">
+        
+        <!-- Mascot (Cosmo the Dino) -->
+        <div id="mascot-container" class="relative group cursor-pointer" title="Click me for a friendly cheer!">
+          <div id="mascot-avatar" class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-emerald-400 via-teal-400 to-cyan-500 p-1 shadow-lg shadow-emerald-500/20 transform transition-transform hover:scale-105 active:rotate-12">
+            <div class="w-full h-full rounded-[22px] bg-white dark:bg-slate-900 flex items-center justify-center text-5xl sm:text-6xl animate-bounce-gentle select-none">
+              <span id="mascot-emoji">🦕</span>
+            </div>
+          </div>
+          <!-- Party Hat overlay on level up -->
+          <div id="mascot-hat" class="hidden absolute -top-4 -right-2 text-2xl animate-wiggle">🎉</div>
+        </div>
+
+        <!-- Mascot Speech Bubble -->
+        <div class="relative max-w-sm sm:max-w-md p-4 rounded-2xl bg-surface-alt border border-line shadow-sm text-center sm:text-left">
+          <!-- Speech Arrow -->
+          <div class="hidden sm:block absolute top-1/2 -left-2 w-4 h-4 bg-surface-alt border-l border-b border-line transform rotate-45 -translate-y-1/2"></div>
+          <p id="mascot-speech" class="font-fredoka text-sm sm:text-base font-semibold text-ink leading-snug">
+            Hi Math Adventurer! Let's solve some fun puzzles together! 🚀
+          </p>
+        </div>
+
+      </div>
+
+      <!-- ======================================================================= -->
+      <!-- BIG EQUATION CARD -->
+      <!-- ======================================================================= -->
+      <div class="p-6 sm:p-8 rounded-3xl bg-surface-alt/70 border-2 border-line/80 text-center relative shadow-inner">
+        
+        <!-- The Math Problem Expression -->
+        <div class="flex items-center justify-center gap-3 sm:gap-6 font-fredoka font-black text-4xl sm:text-6xl md:text-7xl text-ink tracking-tight select-none">
+          <span id="math-num1" class="p-3 sm:p-4 rounded-2xl bg-surface border border-line shadow-xs min-w-[70px] sm:min-w-[90px] inline-block text-amber-500">
+            3
+          </span>
+
+          <span id="math-operator" class="text-rose-500">
+            ➕
+          </span>
+
+          <span id="math-num2" class="p-3 sm:p-4 rounded-2xl bg-surface border border-line shadow-xs min-w-[70px] sm:min-w-[90px] inline-block text-sky-500">
+            4
+          </span>
+
+          <span class="text-muted opacity-60">
+            =
+          </span>
+
+          <!-- Question Answer Target Box -->
+          <span
+            id="math-answer-box"
+            class="p-3 sm:p-4 rounded-2xl bg-surface border-2 border-dashed border-amber-400 text-amber-500 min-w-[70px] sm:min-w-[90px] inline-block shadow-md animate-pulse"
+          >
+            ?
+          </span>
+        </div>
+
+        <!-- Missing Number Hint (if enabled) -->
+        <div id="algebra-hint" class="hidden mt-2 text-xs font-fredoka text-muted">
+          <span>Find the missing number to complete the sentence!</span>
+        </div>
+
+      </div>
+
+      <!-- ======================================================================= -->
+      <!-- INTERACTIVE VISUAL MANIPULATIVES (Counting Items Tray) -->
+      <!-- ======================================================================= -->
+      <div id="visual-tray" class="p-5 rounded-2xl bg-surface-alt border border-line transition-all space-y-3">
+        
+        <div class="flex items-center justify-between text-xs font-fredoka text-muted">
+          <span class="font-bold uppercase tracking-wider flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+            <span>✨</span>
+            <span>Visual Counting Helper</span>
+          </span>
+          <span class="text-[11px]">Tap items to count aloud!</span>
+        </div>
+
+        <!-- Items Container Rendered Dynamically -->
+        <div id="visual-items-container" class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 py-2 min-h-[60px]">
+          <!-- Injected via JavaScript -->
+        </div>
+
+      </div>
+
+      <!-- ======================================================================= -->
+      <!-- USER INPUT: MODE A — MULTIPLE CHOICE BUBBLES -->
+      <!-- ======================================================================= -->
+      <div id="input-container-bubbles" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-2">
+        <button
+          type="button"
+          class="bubble-opt btn-play-3d touch-target p-4 sm:p-6 rounded-2xl font-fredoka font-black text-2xl sm:text-3xl text-white bg-gradient-to-b from-amber-400 to-amber-500 border-amber-600 shadow-md"
+          style="--btn-shadow-color: #b45309;"
+          data-ans=""
+        >
+          <span class="bubble-val">5</span>
+        </button>
+
+        <button
+          type="button"
+          class="bubble-opt btn-play-3d touch-target p-4 sm:p-6 rounded-2xl font-fredoka font-black text-2xl sm:text-3xl text-white bg-gradient-to-b from-sky-400 to-sky-500 border-sky-600 shadow-md"
+          style="--btn-shadow-color: #0369a1;"
+          data-ans=""
+        >
+          <span class="bubble-val">7</span>
+        </button>
+
+        <button
+          type="button"
+          class="bubble-opt btn-play-3d touch-target p-4 sm:p-6 rounded-2xl font-fredoka font-black text-2xl sm:text-3xl text-white bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 shadow-md"
+          style="--btn-shadow-color: #047857;"
+          data-ans=""
+        >
+          <span class="bubble-val">8</span>
+        </button>
+
+        <button
+          type="button"
+          class="bubble-opt btn-play-3d touch-target p-4 sm:p-6 rounded-2xl font-fredoka font-black text-2xl sm:text-3xl text-white bg-gradient-to-b from-rose-400 to-rose-500 border-rose-600 shadow-md"
+          style="--btn-shadow-color: #be123c;"
+          data-ans=""
+        >
+          <span class="bubble-val">6</span>
+        </button>
+      </div>
+
+      <!-- ======================================================================= -->
+      <!-- USER INPUT: MODE B — DIGITAL CHUNKY NUMPAD -->
+      <!-- ======================================================================= -->
+      <div id="input-container-numpad" class="hidden max-w-sm mx-auto space-y-3 pt-2">
+        
+        <!-- Live Numpad Input Display -->
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-surface-alt border-2 border-line text-ink">
+          <span class="text-xs font-fredoka font-bold text-muted">Your Answer:</span>
+          <span id="numpad-current-val" class="font-fredoka font-black text-2xl sm:text-3xl tracking-wider text-amber-500 font-mono">_</span>
+        </div>
+
+        <!-- 3x4 Keypad -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-2.5">
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="1">1</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="2">2</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="3">3</button>
+          
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="4">4</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="5">5</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="6">6</button>
+          
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="7">7</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="8">8</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="9">9</button>
+          
+          <!-- Backspace / Clear -->
+          <button type="button" id="btn-numpad-backspace" class="btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-bold text-sm bg-rose-500/10 border border-rose-500/30 text-rose-600 hover:bg-rose-500/20" title="Delete digit">⌫ Back</button>
+          <button type="button" class="btn-numpad btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-xl sm:text-2xl bg-surface border border-line text-ink hover:bg-surface-alt" data-key="0">0</button>
+          <!-- Submit -->
+          <button type="button" id="btn-numpad-submit" class="btn-play-3d p-3 sm:p-4 rounded-xl font-fredoka font-extrabold text-sm text-white bg-emerald-500 border-emerald-600 hover:bg-emerald-600 shadow-xs" style="--btn-shadow-color: #047857;">GO! ✅</button>
+        </div>
+
+      </div>
+
+      <!-- Immediate Feedback Banner (Correct / Try Again) -->
+      <div id="feedback-banner" class="hidden p-4 rounded-2xl text-center font-fredoka font-bold transition-all">
+        <span id="feedback-text" class="text-base sm:text-lg">Awesome! Correct! 🎉</span>
+      </div>
+
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- QUEST PROGRESS MAP (Only visible in Quest Mode) -->
+    <!-- ========================================================================= -->
+    <div id="quest-map-card" class="hidden p-6 rounded-3xl bg-surface border border-line shadow-xs space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🗺️</span>
+          <h3 class="font-fredoka font-bold text-ink text-base">Math Safari Quest Map</h3>
+        </div>
+        <span id="quest-world-title" class="text-xs font-fredoka font-bold text-violet-500">World 1: Dino Meadow</span>
+      </div>
+
+      <!-- 5 Quest Station Nodes -->
+      <div class="grid grid-cols-5 gap-2 text-center text-xs font-fredoka">
+        
+        <div class="quest-node p-2 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-700 dark:text-emerald-300">
+          <div class="text-xl">🦕</div>
+          <span class="block font-bold">Meadow</span>
+          <span class="text-[10px] text-emerald-600">Active</span>
+        </div>
+
+        <div class="quest-node p-2 rounded-2xl bg-surface-alt border border-line text-muted opacity-60">
+          <div class="text-xl">🍭</div>
+          <span class="block font-bold">Candy</span>
+          <span class="text-[10px]">Locked</span>
+        </div>
+
+        <div class="quest-node p-2 rounded-2xl bg-surface-alt border border-line text-muted opacity-60">
+          <div class="text-xl">🚀</div>
+          <span class="block font-bold">Space</span>
+          <span class="text-[10px]">Locked</span>
+        </div>
+
+        <div class="quest-node p-2 rounded-2xl bg-surface-alt border border-line text-muted opacity-60">
+          <div class="text-xl">🏴‍☠️</div>
+          <span class="block font-bold">Pirate</span>
+          <span class="text-[10px]">Locked</span>
+        </div>
+
+        <div class="quest-node p-2 rounded-2xl bg-surface-alt border border-line text-muted opacity-60">
+          <div class="text-xl">🧙‍♂️</div>
+          <span class="block font-bold">Castle</span>
+          <span class="text-[10px]">Boss</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: ROUND SUMMARY & REWARD SCREEN -->
+  <!-- ========================================================================= -->
+  <div id="modal-round-summary" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-3xl bg-surface border-2 border-line p-6 sm:p-8 space-y-6 shadow-2xl text-center animate-pop-in">
+      
+      <!-- Trophy Icon & Header -->
+      <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center text-4xl mx-auto shadow-lg shadow-orange-500/20 animate-bounce-gentle">
+        🏆
+      </div>
+
+      <div class="space-y-1">
+        <h2 id="summary-headline" class="font-fredoka text-2xl font-black text-ink">Super Star Job!</h2>
+        <p id="summary-subtext" class="text-xs sm:text-sm text-muted font-fredoka">You completed this arithmetic round!</p>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+          <span class="text-[10px] font-fredoka font-bold uppercase tracking-wider text-muted block">Correct</span>
+          <span id="sum-correct" class="font-fredoka text-xl font-black text-emerald-500">10/10</span>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+          <span class="text-[10px] font-fredoka font-bold uppercase tracking-wider text-muted block">Stars</span>
+          <span id="sum-stars" class="font-fredoka text-xl font-black text-amber-500">⭐ +3</span>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-surface-alt border border-line">
+          <span class="text-[10px] font-fredoka font-bold uppercase tracking-wider text-muted block">Accuracy</span>
+          <span id="sum-accuracy" class="font-fredoka text-xl font-black text-sky-500">100%</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2 pt-2">
+        <button
+          id="btn-play-again"
+          type="button"
+          class="btn-play-3d w-full touch-target px-5 py-3.5 rounded-2xl font-fredoka font-extrabold text-sm text-white bg-gradient-to-r from-amber-400 to-orange-500 border-orange-600 shadow-md"
+          style="--btn-shadow-color: #b45309;"
+        >
+          Play Next Round! 🚀
+        </button>
+
+        <button
+          id="btn-open-certificate"
+          type="button"
+          class="btn-play-3d w-full touch-target px-5 py-3 rounded-2xl font-fredoka font-bold text-xs bg-surface-alt border border-line text-ink hover:border-amber-400 transition-colors"
+        >
+          📜 Print My Certificate of Math Wizardry
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: TROPHY ROOM & ACHIEVEMENT BADGES -->
+  <!-- ========================================================================= -->
+  <div id="modal-trophies" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-3xl bg-surface border-2 border-line p-6 sm:p-7 space-y-5 shadow-2xl animate-pop-in max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🏆</span>
+          <h3 class="font-fredoka text-lg font-black text-ink">Kids Math Trophy Room</h3>
+        </div>
+        <button id="btn-close-trophies" type="button" class="touch-target p-2 rounded-xl text-muted hover:text-ink">
+          ✕
+        </button>
+      </div>
+
+      <p class="text-xs text-muted font-fredoka">Collect shiny badges as you master math operations!</p>
+
+      <!-- Badges Grid Container -->
+      <div id="badges-grid-container" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="pt-3 border-t text-center" style="border-color: var(--color-line);">
+        <button
+          id="btn-certificate-from-trophy"
+          type="button"
+          class="btn-play-3d px-5 py-2.5 rounded-2xl font-fredoka font-bold text-xs bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/40 hover:bg-amber-400/30"
+        >
+          📜 Create Your Official Math Certificate
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 3: PARENT / TEACHER SETTINGS & REPORT CARD -->
+  <!-- ========================================================================= -->
+  <div id="modal-settings" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-lg rounded-3xl bg-surface border-2 border-line p-6 sm:p-7 space-y-5 shadow-2xl animate-pop-in max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--color-line);">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">⚙️</span>
+          <h3 class="font-fredoka text-lg font-black text-ink">Parent & Teacher Dashboard</h3>
+        </div>
+        <button id="btn-close-settings" type="button" class="touch-target p-2 rounded-xl text-muted hover:text-ink">
+          ✕
+        </button>
+      </div>
+
+      <!-- Accuracy Report Card -->
+      <div class="p-4 rounded-2xl bg-surface-alt border border-line space-y-2">
+        <h4 class="font-fredoka text-xs font-bold uppercase tracking-wider text-muted">Performance Report Card</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-fredoka">
+          <div class="p-2 rounded-xl bg-surface border border-line">
+            <span class="text-[10px] text-muted block">Addition</span>
+            <span id="report-add-acc" class="font-black text-sm text-amber-500">100%</span>
+          </div>
+          <div class="p-2 rounded-xl bg-surface border border-line">
+            <span class="text-[10px] text-muted block">Subtraction</span>
+            <span id="report-sub-acc" class="font-black text-sm text-rose-500">100%</span>
+          </div>
+          <div class="p-2 rounded-xl bg-surface border border-line">
+            <span class="text-[10px] text-muted block">Times</span>
+            <span id="report-mul-acc" class="font-black text-sm text-violet-500">100%</span>
+          </div>
+          <div class="p-2 rounded-xl bg-surface border border-line">
+            <span class="text-[10px] text-muted block">Division</span>
+            <span id="report-div-acc" class="font-black text-sm text-emerald-500">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Controls -->
+      <div class="space-y-4 font-fredoka text-xs">
+        
+        <!-- Timer Mode -->
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-bold text-ink block">Challenge Timer Mode</span>
+            <span class="text-muted text-[11px]">Give kids 60s per round for speed practice</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="setting-toggle-timer" class="sr-only peer">
+            <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <!-- Prevent Negative Answers in Subtraction -->
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-bold text-ink block">Keep Answers Positive (≥ 0)</span>
+            <span class="text-muted text-[11px]">Never ask 4 - 7 for early learners</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="setting-toggle-positive" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <!-- Sound Effects -->
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-bold text-ink block">Play Synthesized Sound Chimes</span>
+            <span class="text-muted text-[11px]">Cute marimba and fanfare sounds</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="setting-toggle-audio" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-surface-alt peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <!-- Reset All Progress -->
+        <div class="pt-3 border-t" style="border-color: var(--color-line);">
+          <button
+            id="btn-reset-data"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
+          >
+            ⚠️ Reset All Badges & Progress
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 4: PRINTABLE / EXPORTABLE OFFICIAL MATH CERTIFICATE -->
+  <!-- ========================================================================= -->
+  <div id="modal-certificate" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-surface border-2 border-line p-6 space-y-4 shadow-2xl animate-pop-in max-h-[95vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b pb-3 no-print" style="border-color: var(--color-line);">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📜</span>
+          <h3 class="font-fredoka text-lg font-black text-ink">Official Certificate of Achievement</h3>
+        </div>
+        <button id="btn-close-certificate" type="button" class="touch-target p-2 rounded-xl text-muted hover:text-ink">
+          ✕
+        </button>
+      </div>
+
+      <!-- Child Name Input Form (No Print) -->
+      <div class="flex items-center gap-2 no-print font-fredoka text-xs">
+        <label for="input-child-name" class="font-bold text-muted whitespace-nowrap">Hero's Name:</label>
+        <input
+          id="input-child-name"
+          type="text"
+          placeholder="Enter child's name (e.g. Leo or Emma)"
+          value="Math Champion"
+          class="w-full px-3 py-2 rounded-xl bg-paper border border-line text-ink font-bold focus:outline-none focus:border-amber-400"
+        />
+      </div>
+
+      <!-- ================= PRINTABLE CERTIFICATE CARD ================= -->
+      <div id="certificate-printable" class="relative p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border-4 border-amber-400 shadow-xl text-center space-y-5">
+        
+        <!-- Ribbon Corner Emblem -->
+        <div class="flex items-center justify-between">
+          <span class="text-3xl">⭐</span>
+          <span class="px-3 py-1 rounded-full bg-amber-400 text-amber-950 font-fredoka font-black text-[11px] uppercase tracking-widest">
+            OFFICIAL AWARD
+          </span>
+          <span class="text-3xl">⭐</span>
+        </div>
+
+        <div class="space-y-1">
+          <h2 class="font-fredoka text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+            Certificate of Math Wizardry
+          </h2>
+          <p class="text-xs text-muted font-fredoka">Presented by Kids Math Quest & Toolzy</p>
+        </div>
+
+        <p class="font-fredoka text-xs sm:text-sm text-ink italic">This certifies that</p>
+
+        <!-- Child's Name on Ribbon Line -->
+        <div class="py-1">
+          <span id="cert-child-name" class="font-fredoka text-3xl sm:text-4xl font-black text-orange-500 border-b-2 border-amber-400 pb-1 px-4 inline-block">
+            Math Champion
+          </span>
+        </div>
+
+        <p class="font-fredoka text-xs sm:text-sm text-ink max-w-md mx-auto leading-relaxed">
+          Has demonstrated super math bravery, sharp number mastery, and incredible arithmetic skills across Addition, Subtraction, Multiplication, and Division!
+        </p>
+
+        <!-- Seal & Date Footprint -->
+        <div class="flex items-center justify-between pt-4 border-t border-amber-200 dark:border-slate-700">
+          <div class="text-left font-fredoka">
+            <span class="text-[10px] text-muted block uppercase">Date Awarded</span>
+            <span id="cert-date" class="font-bold text-xs text-ink">September 2026</span>
+          </div>
+
+          <!-- Gold Wax Seal Badge -->
+          <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-amber-950 flex flex-col items-center justify-center font-fredoka shadow-md transform rotate-6">
+            <span class="text-base">🦖</span>
+            <span class="text-[8px] font-black uppercase tracking-tighter">Verified</span>
+          </div>
+
+          <div class="text-right font-fredoka">
+            <span class="text-[10px] text-muted block uppercase">Mascot Seal</span>
+            <span class="font-bold text-xs text-ink">Cosmo the Dino</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action: Print or Download -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t no-print" style="border-color: var(--color-line);">
+        <button
+          id="btn-print-certificate"
+          type="button"
+          class="btn-play-3d px-6 py-2.5 rounded-2xl font-fredoka font-extrabold text-xs text-white bg-amber-500 hover:bg-amber-600 shadow-md"
+          style="--btn-shadow-color: #b45309;"
+        >
+          🖨️ Print Certificate
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: Complete Game Engine, Audio Synthesizer, & Gamification Logic -->
+  <!-- ========================================================================= -->
+  <script>
+    (function () {
+      // Storage keys
+      const STORAGE_KEY_STATS = 'toolbox:kids_math_stats';
+      const STORAGE_KEY_SETTINGS = 'toolbox:kids_math_settings';
+
+      // Audio Synthesizer
+      let audioCtx = null;
+      function getAudioContext() {
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            audioCtx = new AudioContext();
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return audioCtx;
+      }
+
+      function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+        if (!state.settings.soundEnabled) return;
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start();
+          osc.stop(ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playSoundCorrect() {
+        if (!state.settings.soundEnabled) return;
+        try {
+          // Play a happy 4-note ascending major arpeggio
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          notes.forEach((freq, idx) => {
+            setTimeout(() => {
+              playTone(freq, 'triangle', 0.22, 0.15);
+            }, idx * 70);
+          });
+        } catch (e) {}
+      }
+
+      function playSoundWrong() {
+        if (!state.settings.soundEnabled) return;
+        try {
+          // Soft cartoon boing/wobble
+          playTone(220, 'sine', 0.15, 0.1);
+          setTimeout(() => playTone(180, 'sine', 0.2, 0.08), 80);
+        } catch (e) {}
+      }
+
+      function playSoundPop() {
+        if (!state.settings.soundEnabled) return;
+        playTone(600 + Math.random() * 200, 'sine', 0.06, 0.08);
+      }
+
+      function playSoundFanfare() {
+        if (!state.settings.soundEnabled) return;
+        try {
+          const melody = [
+            { f: 523.25, d: 0.15 },
+            { f: 659.25, d: 0.15 },
+            { f: 783.99, d: 0.15 },
+            { f: 1046.50, d: 0.4 },
+          ];
+          let time = 0;
+          melody.forEach(item => {
+            setTimeout(() => {
+              playTone(item.f, 'triangle', item.d, 0.2);
+            }, time);
+            time += item.d * 1000 + 30;
+          });
+        } catch (e) {}
+      }
+
+      // Confetti Engine
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas ? canvas.getContext('2d') : null;
+      let particles = [];
+      let animationFrameId = null;
+
+      function resizeCanvas() {
+        if (canvas) {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      function triggerConfetti(count = 60) {
+        if (!ctx) return;
+        const colors = ['#f59e0b', '#ec4899', '#10b981', '#0ea5e9', '#8b5cf6', '#f43f5e', '#fbbf24'];
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
+            y: window.innerHeight * 0.4,
+            vx: (Math.random() - 0.5) * 14,
+            vy: -Math.random() * 14 - 4,
+            size: Math.random() * 8 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rSpeed: (Math.random() - 0.5) * 10,
+            life: 1,
+            decay: Math.random() * 0.015 + 0.01,
+          });
+        }
+        if (!animationFrameId) {
+          updateConfetti();
+        }
+      }
+
+      function updateConfetti() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.45; // gravity
+          p.rotation += p.rSpeed;
+          p.life -= p.decay;
+
+          if (p.life <= 0 || p.y > canvas.height) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          ctx.restore();
+        }
+
+        if (particles.length > 0) {
+          animationFrameId = requestAnimationFrame(updateConfetti);
+        } else {
+          animationFrameId = null;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      // Achievement Badges Definitions
+      const BADGES = [
+        { id: 'first_step', title: 'First Step', icon: '🐣', desc: 'Answer your first question', req: s => s.totalAnswered >= 1 },
+        { id: 'high_five', title: 'High Five', icon: '✋', desc: 'Solve 5 correct questions', req: s => s.totalCorrect >= 5 },
+        { id: 'streak_3', title: 'Sparkle Streak', icon: '✨', desc: 'Get a 3-question streak', req: s => s.maxStreak >= 3 },
+        { id: 'streak_10', title: 'On Fire!', icon: '🔥', desc: 'Reach a 10-question streak', req: s => s.maxStreak >= 10 },
+        { id: 'add_champ', title: 'Addition Star', icon: '➕', desc: 'Solve 10 addition questions', req: s => s.addCorrect >= 10 },
+        { id: 'sub_wizard', title: 'Subtraction Ace', icon: '➖', desc: 'Solve 10 subtraction questions', req: s => s.subCorrect >= 10 },
+        { id: 'mul_hero', title: 'Times Hero', icon: '✖️', desc: 'Solve 10 multiplication questions', req: s => s.mulCorrect >= 10 },
+        { id: 'div_dynamo', title: 'Division Dynamo', icon: '➗', desc: 'Solve 10 division questions', req: s => s.divCorrect >= 10 },
+        { id: 'star_collector', title: 'Star Collector', icon: '⭐', desc: 'Collect 25 total stars', req: s => s.stars >= 25 },
+        { id: 'grand_champ', title: 'Math Champion', icon: '👑', desc: 'Reach Level 5 Explorer', req: s => s.level >= 5 },
+      ];
+
+      // Application State
+      const state = {
+        operation: 'add', // 'add', 'sub', 'mul', 'div', 'quest'
+        stage: 1, // 1: Easy, 2: Medium, 3: Hard
+        visualsEnabled: true,
+        itemEmoji: '🍎',
+        inputMode: 'bubbles', // 'bubbles' or 'numpad'
+        
+        currentProblem: null,
+        roundIndex: 1,
+        totalInRound: 10,
+        roundCorrectCount: 0,
+
+        numpadValue: '',
+        streak: 0,
+        timerSeconds: 60,
+        timerInterval: null,
+
+        // Persistent stats
+        stats: {
+          xp: 0,
+          level: 1,
+          stars: 0,
+          totalAnswered: 0,
+          totalCorrect: 0,
+          maxStreak: 0,
+          addCorrect: 0,
+          addTotal: 0,
+          subCorrect: 0,
+          subTotal: 0,
+          mulCorrect: 0,
+          mulTotal: 0,
+          divCorrect: 0,
+          divTotal: 0,
+          unlockedBadges: [],
+        },
+
+        // Settings
+        settings: {
+          soundEnabled: true,
+          timerEnabled: false,
+          keepPositive: true,
+        }
+      };
+
+      // Load persistent state
+      function loadSavedData() {
+        try {
+          const savedStats = localStorage.getItem(STORAGE_KEY_STATS);
+          if (savedStats) {
+            state.stats = Object.assign(state.stats, JSON.parse(savedStats));
+          }
+          const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
+          if (savedSettings) {
+            state.settings = Object.assign(state.settings, JSON.parse(savedSettings));
+          }
+        } catch (e) {}
+      }
+
+      function saveStats() {
+        try {
+          localStorage.setItem(STORAGE_KEY_STATS, JSON.stringify(state.stats));
+        } catch (e) {}
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings));
+        } catch (e) {}
+      }
+
+      // Check and unlock badges
+      function checkBadges() {
+        let newlyUnlocked = false;
+        BADGES.forEach(badge => {
+          if (!state.stats.unlockedBadges.includes(badge.id)) {
+            if (badge.req(state.stats)) {
+              state.stats.unlockedBadges.push(badge.id);
+              newlyUnlocked = true;
+            }
+          }
+        });
+        if (newlyUnlocked) {
+          saveStats();
+          updateHeaderUI();
+          triggerConfetti(40);
+        }
+      }
+
+      // Problem Generator
+      function generateProblem() {
+        let op = state.operation;
+        if (op === 'quest') {
+          const ops = ['add', 'sub', 'mul', 'div'];
+          op = ops[Math.floor(Math.random() * ops.length)];
+        }
+
+        let num1, num2, answer, symbol;
+        const stage = state.stage;
+
+        switch (op) {
+          case 'add':
+            symbol = '➕';
+            if (stage === 1) {
+              num1 = Math.floor(Math.random() * 6) + 1; // 1-6
+              num2 = Math.floor(Math.random() * 5) + 1; // 1-5
+            } else if (stage === 2) {
+              num1 = Math.floor(Math.random() * 12) + 4; // 4-15
+              num2 = Math.floor(Math.random() * 10) + 1; // 1-10
+            } else {
+              num1 = Math.floor(Math.random() * 35) + 15; // 15-49
+              num2 = Math.floor(Math.random() * 35) + 10; // 10-44
+            }
+            answer = num1 + num2;
+            break;
+
+          case 'sub':
+            symbol = '➖';
+            if (stage === 1) {
+              num1 = Math.floor(Math.random() * 7) + 3; // 3-9
+              num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 1 to num1-1
+            } else if (stage === 2) {
+              num1 = Math.floor(Math.random() * 15) + 10; // 10-24
+              num2 = Math.floor(Math.random() * (num1 - 2)) + 1;
+            } else {
+              num1 = Math.floor(Math.random() * 40) + 20; // 20-59
+              num2 = Math.floor(Math.random() * (num1 - 5)) + 5;
+            }
+            answer = num1 - num2;
+            break;
+
+          case 'mul':
+            symbol = '✖️';
+            if (stage === 1) {
+              // 2, 3, 5, 10
+              const tableOptions = [2, 3, 5, 10];
+              num1 = tableOptions[Math.floor(Math.random() * tableOptions.length)];
+              num2 = Math.floor(Math.random() * 6) + 1; // 1-6
+            } else if (stage === 2) {
+              // Tables up to 9
+              num1 = Math.floor(Math.random() * 8) + 2; // 2-9
+              num2 = Math.floor(Math.random() * 8) + 2;
+            } else {
+              // Up to 12
+              num1 = Math.floor(Math.random() * 11) + 2; // 2-12
+              num2 = Math.floor(Math.random() * 11) + 2;
+            }
+            answer = num1 * num2;
+            break;
+
+          case 'div':
+            symbol = '➗';
+            if (stage === 1) {
+              num2 = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+              answer = Math.floor(Math.random() * 5) + 1; // 1-5
+              num1 = num2 * answer;
+            } else if (stage === 2) {
+              num2 = Math.floor(Math.random() * 7) + 2; // 2-8
+              answer = Math.floor(Math.random() * 9) + 1; // 1-9
+              num1 = num2 * answer;
+            } else {
+              num2 = Math.floor(Math.random() * 9) + 2; // 2-10
+              answer = Math.floor(Math.random() * 11) + 2; // 2-12
+              num1 = num2 * answer;
+            }
+            break;
+        }
+
+        // Generate 4 plausible options for Multiple Choice
+        const options = new Set();
+        options.add(answer);
+
+        while (options.size < 4) {
+          const delta = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+          const candidate = answer + delta;
+          if (candidate >= 0 && candidate !== answer) {
+            options.add(candidate);
+          }
+        }
+
+        // Shuffle options
+        const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+
+        state.currentProblem = {
+          op,
+          num1,
+          num2,
+          answer,
+          symbol,
+          options: shuffledOptions,
+        };
+
+        renderProblem();
+      }
+
+      // Render problem in UI
+      function renderProblem() {
+        const prob = state.currentProblem;
+        if (!prob) return;
+
+        document.getElementById('math-num1').textContent = prob.num1;
+        document.getElementById('math-operator').textContent = prob.symbol;
+        document.getElementById('math-num2').textContent = prob.num2;
+        
+        const ansBox = document.getElementById('math-answer-box');
+        ansBox.textContent = '?';
+        ansBox.className = 'p-3 sm:p-4 rounded-2xl bg-surface border-2 border-dashed border-amber-400 text-amber-500 min-w-[70px] sm:min-w-[90px] inline-block shadow-md animate-pulse';
+
+        // Update Round Indicator
+        document.getElementById('round-indicator').textContent = `Question ${state.roundIndex} of ${state.totalInRound}`;
+
+        // Reset feedback banner
+        const feedback = document.getElementById('feedback-banner');
+        feedback.className = 'hidden p-4 rounded-2xl text-center font-fredoka font-bold transition-all';
+
+        // Multiple Choice Bubbles
+        const bubbleBtns = document.querySelectorAll('.bubble-opt');
+        bubbleBtns.forEach((btn, idx) => {
+          const val = prob.options[idx];
+          btn.dataset.ans = val;
+          btn.querySelector('.bubble-val').textContent = val;
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'scale-95');
+        });
+
+        // Numpad Clear
+        state.numpadValue = '';
+        updateNumpadDisplay();
+
+        // Render Visual Manipulatives
+        renderVisualManipulatives();
+
+        // Update Mascot Cheer
+        setMascotState('idle', getRandomEncouragement());
+      }
+
+      // Render Visual Counting Manipulatives (The CPA Model)
+      function renderVisualManipulatives() {
+        const tray = document.getElementById('visual-tray');
+        const container = document.getElementById('visual-items-container');
+        if (!state.visualsEnabled) {
+          tray.classList.add('hidden');
+          return;
+        }
+        tray.classList.remove('hidden');
+        container.innerHTML = '';
+
+        const prob = state.currentProblem;
+        const emoji = state.itemEmoji;
+
+        // Max visual items cap to prevent UI clutter on high numbers
+        if (prob.num1 > 25 || prob.num2 > 25) {
+          container.innerHTML = `
+            <div class="text-xs text-muted font-fredoka text-center py-2">
+              <span>🔢 Big numbers stage! Use your scratchpad skills or mental math to crack it!</span>
+            </div>
+          `;
+          return;
+        }
+
+        if (prob.op === 'add') {
+          // Group 1
+          const g1 = document.createElement('div');
+          g1.className = 'flex flex-wrap items-center justify-center gap-2 p-3 rounded-2xl bg-amber-400/10 border border-amber-400/30';
+          for (let i = 1; i <= prob.num1; i++) {
+            g1.appendChild(createCountItem(emoji, i));
+          }
+          container.appendChild(g1);
+
+          // Plus Sign
+          const plusSpan = document.createElement('span');
+          plusSpan.className = 'text-xl font-black text-rose-500 font-fredoka';
+          plusSpan.textContent = '➕';
+          container.appendChild(plusSpan);
+
+          // Group 2
+          const g2 = document.createElement('div');
+          g2.className = 'flex flex-wrap items-center justify-center gap-2 p-3 rounded-2xl bg-sky-400/10 border border-sky-400/30';
+          for (let i = 1; i <= prob.num2; i++) {
+            g2.appendChild(createCountItem(emoji, prob.num1 + i));
+          }
+          container.appendChild(g2);
+
+        } else if (prob.op === 'sub') {
+          // Total items with the second part struck through
+          const wrap = document.createElement('div');
+          wrap.className = 'flex flex-wrap items-center justify-center gap-2 p-3 rounded-2xl bg-rose-400/10 border border-rose-400/30';
+          for (let i = 1; i <= prob.num1; i++) {
+            const isSubtracted = i > (prob.num1 - prob.num2);
+            const item = createCountItem(emoji, i, isSubtracted);
+            wrap.appendChild(item);
+          }
+          container.appendChild(wrap);
+
+        } else if (prob.op === 'mul') {
+          // Array Grid of rows x cols
+          const gridWrap = document.createElement('div');
+          gridWrap.className = 'flex flex-col gap-2 p-3 rounded-2xl bg-violet-400/10 border border-violet-400/30';
+          let count = 1;
+          for (let r = 0; r < prob.num1; r++) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-center gap-2';
+            for (let c = 0; c < prob.num2; c++) {
+              row.appendChild(createCountItem(emoji, count++));
+            }
+            gridWrap.appendChild(row);
+          }
+          container.appendChild(gridWrap);
+
+        } else if (prob.op === 'div') {
+          // Grouping into baskets / buckets
+          const divWrap = document.createElement('div');
+          divWrap.className = 'flex flex-wrap items-center justify-center gap-3 p-3 rounded-2xl bg-emerald-400/10 border border-emerald-400/30';
+          const itemsPerBucket = prob.answer;
+          let count = 1;
+          for (let b = 1; b <= prob.num2; b++) {
+            const bucket = document.createElement('div');
+            bucket.className = 'flex flex-col items-center p-2.5 rounded-xl bg-surface border border-line shadow-xs';
+            const bTitle = document.createElement('span');
+            bTitle.className = 'text-[10px] font-fredoka font-bold text-muted mb-1';
+            bTitle.textContent = `Basket ${b}`;
+            bucket.appendChild(bTitle);
+
+            const bItems = document.createElement('div');
+            bItems.className = 'flex items-center gap-1';
+            for (let i = 0; i < itemsPerBucket; i++) {
+              bItems.appendChild(createCountItem(emoji, count++));
+            }
+            bucket.appendChild(bItems);
+            divWrap.appendChild(bucket);
+          }
+          container.appendChild(divWrap);
+        }
+      }
+
+      function createCountItem(emoji, index, isCrossedOut = false) {
+        const span = document.createElement('button');
+        span.type = 'button';
+        span.className = 'count-item relative text-2xl sm:text-3xl select-none focus:outline-none';
+        span.innerHTML = emoji;
+        if (isCrossedOut) {
+          span.classList.add('opacity-40');
+          span.innerHTML = `${emoji}<span class="absolute inset-0 flex items-center justify-center text-rose-600 font-bold text-sm">❌</span>`;
+        }
+
+        span.addEventListener('click', () => {
+          playSoundPop();
+          span.classList.add('counted');
+          // Add a temporary badge counter
+          let badge = span.querySelector('.count-badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'count-badge absolute -top-2 -right-2 px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-fredoka font-black text-[10px] shadow-sm animate-pop-in';
+            badge.textContent = index;
+            span.appendChild(badge);
+          }
+        });
+        return span;
+      }
+
+      // Check User Answer
+      function submitAnswer(userAns) {
+        const prob = state.currentProblem;
+        if (!prob) return;
+
+        const isCorrect = parseInt(userAns, 10) === prob.answer;
+        const ansBox = document.getElementById('math-answer-box');
+        const feedback = document.getElementById('feedback-banner');
+        const feedbackText = document.getElementById('feedback-text');
+
+        state.stats.totalAnswered++;
+        const opKey = prob.op;
+        if (opKey === 'add') state.stats.addTotal++;
+        if (opKey === 'sub') state.stats.subTotal++;
+        if (opKey === 'mul') state.stats.mulTotal++;
+        if (opKey === 'div') state.stats.divTotal++;
+
+        if (isCorrect) {
+          // Correct Answer Flow!
+          playSoundCorrect();
+          triggerConfetti(25);
+          state.roundCorrectCount++;
+          state.streak++;
+          if (state.streak > state.stats.maxStreak) {
+            state.stats.maxStreak = state.streak;
+          }
+
+          state.stats.totalCorrect++;
+          if (opKey === 'add') state.stats.addCorrect++;
+          if (opKey === 'sub') state.stats.subCorrect++;
+          if (opKey === 'mul') state.stats.mulCorrect++;
+          if (opKey === 'div') state.stats.divCorrect++;
+
+          // XP & Leveling
+          const earnedXP = 15 + (state.streak > 3 ? 10 : 0);
+          state.stats.xp += earnedXP;
+          state.stats.stars += 1;
+
+          // Level threshold = level * 100 XP
+          const nextLevelXP = state.stats.level * 100;
+          if (state.stats.xp >= nextLevelXP) {
+            state.stats.level++;
+            playSoundFanfare();
+            triggerConfetti(70);
+            showMascotLevelUp();
+          }
+
+          // UI updates
+          ansBox.textContent = prob.answer;
+          ansBox.className = 'p-3 sm:p-4 rounded-2xl bg-emerald-500 text-white min-w-[70px] sm:min-w-[90px] inline-block shadow-lg animate-wiggle';
+
+          feedback.className = 'p-4 rounded-2xl text-center font-fredoka font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 block animate-pop-in';
+          feedbackText.textContent = getPraiseMessage();
+
+          setMascotState('cheering', `Hooray! ${prob.answer} is right on the money! 🎉`);
+
+          // Disable buttons temporarily
+          disableInputs();
+
+          saveStats();
+          checkBadges();
+          updateHeaderUI();
+
+          // Proceed to next question or summary
+          setTimeout(() => {
+            nextQuestion();
+          }, 1400);
+
+        } else {
+          // Incorrect Answer Flow
+          playSoundWrong();
+          state.streak = 0;
+          updateHeaderUI();
+
+          ansBox.classList.remove('animate-pulse');
+          ansBox.classList.add('animate-wiggle', 'border-rose-500', 'text-rose-500');
+
+          feedback.className = 'p-4 rounded-2xl text-center font-fredoka font-bold bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 block animate-pop-in';
+          feedbackText.textContent = `Oops! Not quite. Tap the counting items to recount, or try another guess! 💪`;
+
+          setMascotState('encouraging', `Don't worry! You've got this! Count the items above and try again! 🌟`);
+
+          // Reset numpad input so child can retry
+          state.numpadValue = '';
+          updateNumpadDisplay();
+        }
+      }
+
+      function nextQuestion() {
+        if (state.roundIndex < state.totalInRound) {
+          state.roundIndex++;
+          generateProblem();
+        } else {
+          finishRound();
+        }
+      }
+
+      function finishRound() {
+        playSoundFanfare();
+        triggerConfetti(80);
+
+        // Populate Round Summary Modal
+        const correct = state.roundCorrectCount;
+        const total = state.totalInRound;
+        const acc = Math.round((correct / total) * 100);
+
+        document.getElementById('sum-correct').textContent = `${correct}/${total}`;
+        document.getElementById('sum-stars').textContent = `⭐ +${correct}`;
+        document.getElementById('sum-accuracy').textContent = `${acc}%`;
+
+        let headline = 'Super Star Job! 🌟';
+        let subtext = 'You showed incredible math power!';
+        if (acc === 100) {
+          headline = 'PERFECT SCORE! 👑';
+          subtext = 'Flawless arithmetic mastery! You are a Math Grandmaster!';
+        } else if (acc < 70) {
+          headline = 'Great Effort! 🚀';
+          subtext = 'Every round makes you stronger and smarter!';
+        }
+
+        document.getElementById('summary-headline').textContent = headline;
+        document.getElementById('summary-subtext').textContent = subtext;
+
+        document.getElementById('modal-round-summary').classList.remove('hidden');
+      }
+
+      function disableInputs() {
+        document.querySelectorAll('.bubble-opt').forEach(b => b.disabled = true);
+        const numSubmit = document.getElementById('btn-numpad-submit');
+        if (numSubmit) numSubmit.disabled = true;
+      }
+
+      // Numpad handler
+      function updateNumpadDisplay() {
+        const el = document.getElementById('numpad-current-val');
+        if (el) {
+          el.textContent = state.numpadValue || '_';
+        }
+      }
+
+      // Mascot expressions & praise
+      function setMascotState(mood, speechText) {
+        const emojiEl = document.getElementById('mascot-emoji');
+        const speechEl = document.getElementById('mascot-speech');
+
+        if (speechText && speechEl) {
+          speechEl.textContent = speechText;
+        }
+
+        if (emojiEl) {
+          switch (mood) {
+            case 'cheering':
+              emojiEl.textContent = '🥳';
+              break;
+            case 'encouraging':
+              emojiEl.textContent = '🤗';
+              break;
+            case 'thinking':
+              emojiEl.textContent = '🤔';
+              break;
+            case 'level_up':
+              emojiEl.textContent = '🦖';
+              break;
+            default:
+              emojiEl.textContent = '🦕';
+              break;
+          }
+        }
+      }
+
+      function showMascotLevelUp() {
+        const hat = document.getElementById('mascot-hat');
+        if (hat) hat.classList.remove('hidden');
+        setMascotState('level_up', `LEVEL UP! 🌟 You reached Level ${state.stats.level}! Wear your crown with pride!`);
+        setTimeout(() => {
+          if (hat) hat.classList.add('hidden');
+        }, 5000);
+      }
+
+      function getPraiseMessage() {
+        const praises = [
+          'Awesome Job! 🎉',
+          'Super Duper! ⭐',
+          'You Nailed It! 🎯',
+          'Brilliant Math Mind! 💡',
+          'High Five! ✋',
+          'Math Wizard Powers Activated! 🧙‍♂️',
+          'Lightning Fast! ⚡',
+          'Bingo! That\'s it! 🎈',
+        ];
+        return praises[Math.floor(Math.random() * praises.length)];
+      }
+
+      function getRandomEncouragement() {
+        const tips = [
+          'Take your time and count the friendly items! 🍎',
+          'You are doing super well! Keep going! 🚀',
+          'Arithmetic is a superpower! 💥',
+          'Tap any bubble or type your answer! 🎯',
+          'Every question you solve levels you up! ⭐',
+        ];
+        return tips[Math.floor(Math.random() * tips.length)];
+      }
+
+      // Update Header Stats UI
+      function updateHeaderUI() {
+        document.getElementById('player-level').textContent = state.stats.level;
+        document.getElementById('star-counter').textContent = state.stats.stars;
+
+        // Level Title
+        const titles = ['Novice', 'Explorer', 'Thinker', 'Solver', 'Wizard', 'Grandmaster'];
+        const titleIdx = Math.min(titles.length - 1, Math.floor((state.stats.level - 1) / 2));
+        document.getElementById('player-title').textContent = titles[titleIdx];
+
+        // XP Bar
+        const currentLevelBaseXP = (state.stats.level - 1) * 100;
+        const nextLevelXP = state.stats.level * 100;
+        const progressPercent = Math.min(100, Math.max(0, ((state.stats.xp - currentLevelBaseXP) / 100) * 100));
+        document.getElementById('xp-progress-bar').style.width = `${progressPercent}%`;
+
+        // Streak Fire
+        const streakEl = document.getElementById('streak-container');
+        const streakCount = document.getElementById('streak-counter');
+        if (state.streak >= 2) {
+          streakEl.classList.remove('hidden');
+          streakCount.textContent = state.streak;
+        } else {
+          streakEl.classList.add('hidden');
+        }
+
+        // Trophy count badge
+        document.getElementById('trophy-count-badge').textContent = state.stats.unlockedBadges.length;
+
+        // Sound icon
+        document.getElementById('sound-icon').textContent = state.settings.soundEnabled ? '🔊' : '🔇';
+
+        // Accuracy reports
+        updateReportCards();
+      }
+
+      function updateReportCards() {
+        function calcAcc(c, t) {
+          return t > 0 ? `${Math.round((c / t) * 100)}%` : '100%';
+        }
+        document.getElementById('report-add-acc').textContent = calcAcc(state.stats.addCorrect, state.stats.addTotal);
+        document.getElementById('report-sub-acc').textContent = calcAcc(state.stats.subCorrect, state.stats.subTotal);
+        document.getElementById('report-mul-acc').textContent = calcAcc(state.stats.mulCorrect, state.stats.mulTotal);
+        document.getElementById('report-div-acc').textContent = calcAcc(state.stats.divCorrect, state.stats.divTotal);
+      }
+
+      // Populate Badges in Trophy Room
+      function renderTrophiesModal() {
+        const container = document.getElementById('badges-grid-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        BADGES.forEach(badge => {
+          const isUnlocked = state.stats.unlockedBadges.includes(badge.id);
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-2xl border text-center font-fredoka transition-all ${
+            isUnlocked
+              ? 'bg-amber-400/10 border-amber-400/40 text-ink shadow-xs'
+              : 'bg-surface-alt border-line text-muted opacity-50'
+          }`;
+
+          card.innerHTML = `
+            <div class="text-3xl mb-1.5 filter ${isUnlocked ? 'drop-shadow-sm' : 'grayscale'}">
+              ${badge.icon}
+            </div>
+            <span class="font-bold text-xs block leading-tight text-ink">${badge.title}</span>
+            <span class="text-[10px] text-muted block mt-0.5">${badge.desc}</span>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-black ${
+              isUnlocked ? 'bg-amber-400 text-amber-950' : 'bg-line text-muted'
+            }">
+              ${isUnlocked ? 'UNLOCKED ✨' : 'LOCKED 🔒'}
+            </span>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      // Event Listeners Setup
+      function initEventListeners() {
+        
+        // 1. Operation Tab Switching
+        document.querySelectorAll('.tab-op-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSoundPop();
+            const op = btn.dataset.op;
+            state.operation = op;
+
+            document.querySelectorAll('.tab-op-btn').forEach(b => {
+              b.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-bold text-xs sm:text-sm transition-all text-muted hover:text-ink hover:bg-surface-alt';
+            });
+
+            // Active styling per operation
+            if (op === 'add') {
+              btn.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-amber-400 to-orange-500 shadow-md shadow-orange-500/20';
+            } else if (op === 'sub') {
+              btn.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-rose-400 to-pink-500 shadow-md shadow-rose-500/20';
+            } else if (op === 'mul') {
+              btn.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-violet-500 to-indigo-600 shadow-md shadow-violet-500/20';
+            } else if (op === 'div') {
+              btn.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-emerald-400 to-teal-500 shadow-md shadow-teal-500/20';
+            } else if (op === 'quest') {
+              btn.className = 'tab-op-btn touch-target flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-3 rounded-2xl font-fredoka font-extrabold text-xs sm:text-sm transition-all text-white bg-gradient-to-b from-fuchsia-500 to-pink-500 shadow-md shadow-fuchsia-500/20 relative overflow-hidden';
+            }
+
+            // Show/hide Quest Map Card
+            const qCard = document.getElementById('quest-map-card');
+            if (op === 'quest') {
+              qCard.classList.remove('hidden');
+            } else {
+              qCard.classList.add('hidden');
+            }
+
+            state.roundIndex = 1;
+            state.roundCorrectCount = 0;
+            generateProblem();
+          });
+        });
+
+        // 2. Stage Buttons (Easy, Medium, Hard)
+        document.querySelectorAll('.stage-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSoundPop();
+            state.stage = parseInt(btn.dataset.stage, 10);
+
+            document.querySelectorAll('.stage-btn').forEach(b => {
+              b.className = 'stage-btn px-2.5 py-1 rounded-lg font-bold text-muted hover:text-ink transition-all';
+            });
+            btn.className = 'stage-btn px-2.5 py-1 rounded-lg font-bold bg-surface text-ink shadow-xs transition-all';
+
+            state.roundIndex = 1;
+            state.roundCorrectCount = 0;
+            generateProblem();
+          });
+        });
+
+        // 3. Visual Manipulatives Toggle
+        document.getElementById('btn-toggle-visuals').addEventListener('click', () => {
+          playSoundPop();
+          state.visualsEnabled = !state.visualsEnabled;
+          const label = document.getElementById('visuals-state-text');
+          const btn = document.getElementById('btn-toggle-visuals');
+
+          if (state.visualsEnabled) {
+            label.textContent = 'On';
+            btn.className = 'px-3 py-1.5 rounded-xl border font-bold flex items-center gap-1.5 transition-all bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400';
+          } else {
+            label.textContent = 'Off';
+            btn.className = 'px-3 py-1.5 rounded-xl border font-bold flex items-center gap-1.5 transition-all bg-surface-alt border-line text-muted';
+          }
+          renderVisualManipulatives();
+        });
+
+        // 4. Manipulative Item Picker
+        document.querySelectorAll('.item-emoji-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSoundPop();
+            state.itemEmoji = btn.dataset.emoji;
+            renderVisualManipulatives();
+          });
+        });
+
+        // 5. Input Mode Switcher (Bubbles vs Numpad)
+        document.getElementById('btn-toggle-input-mode').addEventListener('click', () => {
+          playSoundPop();
+          state.inputMode = state.inputMode === 'bubbles' ? 'numpad' : 'bubbles';
+          const icon = document.getElementById('input-mode-icon');
+          const label = document.getElementById('input-mode-label');
+
+          const bubbleContainer = document.getElementById('input-container-bubbles');
+          const numpadContainer = document.getElementById('input-container-numpad');
+
+          if (state.inputMode === 'bubbles') {
+            icon.textContent = '🔘';
+            label.textContent = 'Bubbles';
+            bubbleContainer.classList.remove('hidden');
+            numpadContainer.classList.add('hidden');
+          } else {
+            icon.textContent = '🔢';
+            label.textContent = 'Numpad';
+            bubbleContainer.classList.add('hidden');
+            numpadContainer.classList.remove('hidden');
+          }
+        });
+
+        // 6. Bubble Options Click
+        document.querySelectorAll('.bubble-opt').forEach(btn => {
+          btn.addEventListener('click', () => {
+            submitAnswer(btn.dataset.ans);
+          });
+        });
+
+        // 7. Digital Numpad Click
+        document.querySelectorAll('.btn-numpad').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSoundPop();
+            const key = btn.dataset.key;
+            if (state.numpadValue.length < 5) {
+              state.numpadValue += key;
+              updateNumpadDisplay();
+            }
+          });
+        });
+
+        document.getElementById('btn-numpad-backspace').addEventListener('click', () => {
+          playSoundPop();
+          state.numpadValue = state.numpadValue.slice(0, -1);
+          updateNumpadDisplay();
+        });
+
+        document.getElementById('btn-numpad-submit').addEventListener('click', () => {
+          if (state.numpadValue) {
+            submitAnswer(state.numpadValue);
+          }
+        });
+
+        // 8. Keyboard listener (0-9, Enter, Backspace)
+        window.addEventListener('keydown', e => {
+          if (document.getElementById('input-child-name') === document.activeElement) return;
+
+          if (e.key >= '0' && e.key <= '9') {
+            if (state.inputMode === 'numpad') {
+              playSoundPop();
+              if (state.numpadValue.length < 5) {
+                state.numpadValue += e.key;
+                updateNumpadDisplay();
+              }
+            }
+          } else if (e.key === 'Enter') {
+            if (state.inputMode === 'numpad' && state.numpadValue) {
+              submitAnswer(state.numpadValue);
+            }
+          } else if (e.key === 'Backspace') {
+            if (state.inputMode === 'numpad') {
+              playSoundPop();
+              state.numpadValue = state.numpadValue.slice(0, -1);
+              updateNumpadDisplay();
+            }
+          }
+        });
+
+        // 9. Sound toggle
+        document.getElementById('btn-toggle-sound').addEventListener('click', () => {
+          state.settings.soundEnabled = !state.settings.soundEnabled;
+          saveSettings();
+          updateHeaderUI();
+          if (state.settings.soundEnabled) {
+            playSoundPop();
+          }
+        });
+
+        // 10. Trophies Modal
+        document.getElementById('btn-open-trophies').addEventListener('click', () => {
+          playSoundPop();
+          renderTrophiesModal();
+          document.getElementById('modal-trophies').classList.remove('hidden');
+        });
+        document.getElementById('btn-close-trophies').addEventListener('click', () => {
+          document.getElementById('modal-trophies').classList.add('hidden');
+        });
+
+        // 11. Settings Modal
+        document.getElementById('btn-open-settings').addEventListener('click', () => {
+          playSoundPop();
+          document.getElementById('setting-toggle-timer').checked = state.settings.timerEnabled;
+          document.getElementById('setting-toggle-positive').checked = state.settings.keepPositive;
+          document.getElementById('setting-toggle-audio').checked = state.settings.soundEnabled;
+          document.getElementById('modal-settings').classList.remove('hidden');
+        });
+        document.getElementById('btn-close-settings').addEventListener('click', () => {
+          document.getElementById('modal-settings').classList.add('hidden');
+        });
+
+        document.getElementById('setting-toggle-timer').addEventListener('change', e => {
+          state.settings.timerEnabled = e.target.checked;
+          saveSettings();
+          document.getElementById('timer-count').textContent = state.settings.timerEnabled ? '60s' : 'Untimed';
+        });
+        document.getElementById('setting-toggle-positive').addEventListener('change', e => {
+          state.settings.keepPositive = e.target.checked;
+          saveSettings();
+        });
+        document.getElementById('setting-toggle-audio').addEventListener('change', e => {
+          state.settings.soundEnabled = e.target.checked;
+          saveSettings();
+          updateHeaderUI();
+        });
+
+        document.getElementById('btn-reset-data').addEventListener('click', () => {
+          if (confirm('Reset all Stars, XP, and Trophy Badges?')) {
+            localStorage.removeItem(STORAGE_KEY_STATS);
+            state.stats = {
+              xp: 0,
+              level: 1,
+              stars: 0,
+              totalAnswered: 0,
+              totalCorrect: 0,
+              maxStreak: 0,
+              addCorrect: 0,
+              addTotal: 0,
+              subCorrect: 0,
+              subTotal: 0,
+              mulCorrect: 0,
+              mulTotal: 0,
+              divCorrect: 0,
+              divTotal: 0,
+              unlockedBadges: [],
+            };
+            saveStats();
+            updateHeaderUI();
+            alert('Progress has been reset!');
+          }
+        });
+
+        // 12. Round Summary Modal: Play Next
+        document.getElementById('btn-play-again').addEventListener('click', () => {
+          playSoundPop();
+          document.getElementById('modal-round-summary').classList.add('hidden');
+          state.roundIndex = 1;
+          state.roundCorrectCount = 0;
+          generateProblem();
+        });
+
+        // 13. Certificate Modal
+        function openCertificate() {
+          playSoundPop();
+          const today = new Date();
+          const dateStr = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          document.getElementById('cert-date').textContent = dateStr;
+
+          const childNameInput = document.getElementById('input-child-name');
+          document.getElementById('cert-child-name').textContent = childNameInput.value || 'Math Champion';
+
+          document.getElementById('modal-certificate').classList.remove('hidden');
+        }
+
+        document.getElementById('btn-open-certificate').addEventListener('click', openCertificate);
+        document.getElementById('btn-certificate-from-trophy').addEventListener('click', () => {
+          document.getElementById('modal-trophies').classList.add('hidden');
+          openCertificate();
+        });
+
+        document.getElementById('btn-close-certificate').addEventListener('click', () => {
+          document.getElementById('modal-certificate').classList.add('hidden');
+        });
+
+        document.getElementById('input-child-name').addEventListener('input', e => {
+          document.getElementById('cert-child-name').textContent = e.target.value.trim() || 'Math Champion';
+        });
+
+        document.getElementById('btn-print-certificate').addEventListener('click', () => {
+          window.print();
+        });
+
+        // Mascot click cheer
+        document.getElementById('mascot-container').addEventListener('click', () => {
+          playSoundPop();
+          triggerConfetti(20);
+          setMascotState('cheering', `I love doing math with you! You are super smart! 🦕💫`);
+        });
+
+      }
+
+      // Initialize Application
+      loadSavedData();
+      initEventListeners();
+      updateHeaderUI();
+      checkBadges();
+      generateProblem();
+
+    })();
+  </script>
+</body>
+</html>

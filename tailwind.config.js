@@ -12,6 +12,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        serif: ["Outfit", "Playfair Display", "Georgia", "serif"],
         mono: ["JetBrains Mono", "monospace"]
       },
       colors: {
