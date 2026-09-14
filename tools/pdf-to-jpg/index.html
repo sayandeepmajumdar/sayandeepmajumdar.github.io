@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF to JPG & PNG Converter — 100% Client-Side In-Browser Image Converter — Toolzy</title>
+  <meta name="description" content="Free, 100% client-side in-browser PDF to JPG and PNG converter. Convert PDF documents to high-resolution 300 DPI images with zero server uploads, page range filtering, quality controls, and batch ZIP download." />
+  <meta name="keywords" content="pdf to jpg, pdf to png, convert pdf to images, pdf image extractor, 300 dpi pdf converter, client side pdf converter, in browser pdf to jpg, offline pdf to image, high quality pdf to jpg, free pdf converter" />
+  <link rel="canonical" href="https://sayandeepmajumdar.github.io/tools/pdf-to-jpg/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            theme: {
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'surface-alt': 'var(--color-surface-alt)',
+              ink: 'var(--color-ink)',
+              muted: 'var(--color-muted)',
+              line: 'var(--color-line)',
+              accent: 'var(--color-accent)',
+              'accent-hover': 'var(--color-accent-hover)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- JSZip for Batch Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --color-bg: #fafaf9;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f5f5f4;
+      --color-ink: #1c1917;
+      --color-muted: #78716c;
+      --color-line: #e7e5e4;
+      --color-accent: #2563eb;
+      --color-accent-hover: #1d4ed8;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --color-bg: #0c0a09;
+      --color-surface: #1c1917;
+      --color-surface-alt: #292524;
+      --color-ink: #fafaf9;
+      --color-muted: #a8a29e;
+      --color-line: #292524;
+      --color-accent: #3b82f6;
+      --color-accent-hover: #60a5fa;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-ink);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.3);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.5);
+    }
+
+    /* Checkerboard pattern for transparency preview */
+    .checkerboard-pattern {
+      background-color: #ffffff;
+      background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+                        linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+                        linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+    html.dark .checkerboard-pattern {
+      background-color: #1f2937;
+      background-image: linear-gradient(45deg, #111827 25%, transparent 25%),
+                        linear-gradient(-45deg, #111827 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #111827 75%),
+                        linear-gradient(-45deg, transparent 75%, #111827 75%);
+    }
+
+    /* Smooth transitions */
+    .btn-action {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-action:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-500/20 selection:text-blue-500">
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-12 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-theme-surface border border-theme-line shadow-2xl text-xs font-semibold text-theme-ink">
+    <span id="toast-icon">✅</span>
+    <span id="toast-msg">Notification message</span>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 border-b border-theme-line bg-theme-surface/90 backdrop-blur-md px-4 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <a href="/tools/" class="flex items-center gap-2 text-theme-ink hover:opacity-90 transition-opacity">
+        <span class="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 font-black text-sm border border-blue-500/20">
+          🖼️
+        </span>
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight hidden sm:inline">PDF to JPG & PNG</span>
+          <span class="text-[10px] text-theme-muted font-mono leading-none hidden sm:inline">100% In-Browser Converter</span>
+        </div>
+      </a>
+
+      <!-- Privacy Guarantee Pill -->
+      <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+        <span>🛡️</span>
+        <span class="hidden md:inline">100% Client-Side •</span>
+        <span>Zero Server Uploads</span>
+      </div>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Theme Switcher -->
+      <button id="btn-toggle-theme" type="button" class="p-2 rounded-xl text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors" title="Toggle Light / Dark Mode">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Back to Toolzy Hub -->
+      <a href="/tools/" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink hover:bg-theme-surface-alt border border-theme-line transition-colors hidden sm:inline-flex items-center gap-1">
+        <span>Tools Hub</span>
+        <span>→</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- Hero / Title Section -->
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-theme-ink">
+        Convert PDF to JPG & PNG Images
+      </h1>
+      <p class="text-xs sm:text-sm text-theme-muted leading-relaxed">
+        Extract and convert every PDF page into crisp, high-resolution JPG or lossless PNG images directly in your browser. No size limits, no server uploads, and total document privacy.
+      </p>
+    </div>
+
+    <!-- Upload / Drag & Drop Zone -->
+    <div
+      id="dropzone"
+      class="group relative border-2 border-dashed border-theme-line hover:border-blue-500/70 bg-theme-surface hover:bg-theme-surface-alt/40 rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 shadow-xs"
+    >
+      <input id="file-input" type="file" accept=".pdf,application/pdf" class="hidden" />
+
+      <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-3xl mx-auto mb-4 group-hover:scale-110 transition-transform">
+        📑
+      </div>
+
+      <h3 class="text-base font-bold text-theme-ink mb-1">
+        Drop your PDF file here, or <span class="text-blue-500 underline underline-offset-2">browse files</span>
+      </h3>
+      <p class="text-xs text-theme-muted mb-4">
+        Supports all standard and multi-page PDFs • 100% Private in your browser memory
+      </p>
+
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-theme-surface-alt border border-theme-line text-[11px] font-mono text-theme-muted">
+        <span>JPG (Quality 10–100%)</span>
+        <span>•</span>
+        <span>Lossless PNG</span>
+        <span>•</span>
+        <span>Up to 300 DPI</span>
+        <span>•</span>
+        <span>ZIP Download</span>
+      </div>
+    </div>
+
+    <!-- Active Conversion Workspace (Hidden until PDF loaded) -->
+    <div id="workspace" class="hidden space-y-6">
+
+      <!-- Document Overview & Reset Bar -->
+      <div class="p-4 sm:p-5 rounded-2xl bg-theme-surface border border-theme-line shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5 min-w-0 flex-1">
+          <div class="w-12 h-14 rounded-xl bg-blue-500/10 text-blue-500 flex flex-col items-center justify-center font-bold shrink-0 border border-blue-500/20">
+            <span class="text-lg">📄</span>
+            <span class="text-[9px] font-mono leading-none mt-0.5">PDF</span>
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <h2 id="doc-name" class="font-bold text-sm sm:text-base text-theme-ink truncate">document.pdf</h2>
+            <div class="flex items-center gap-2 text-xs font-mono text-theme-muted mt-0.5 flex-wrap">
+              <span id="doc-pages-badge" class="px-2 py-0.5 rounded-md bg-theme-surface-alt border border-theme-line font-semibold text-theme-ink">0 Pages</span>
+              <span>•</span>
+              <span id="doc-size">0 KB</span>
+              <span>•</span>
+              <span id="doc-dims">A4</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-change-file" type="button" class="btn-action px-3.5 py-1.5 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-rose-500/20 transition-colors self-start sm:self-auto flex items-center gap-1.5">
+          <span>🔄</span>
+          <span>Choose another PDF</span>
+        </button>
+      </div>
+
+      <!-- Settings & Controls Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left 2 Cols: Detailed Configuration -->
+        <div class="lg:col-span-2 space-y-5">
+          
+          <!-- Format & Resolution Card -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-5">
+            <h3 class="text-sm font-bold text-theme-ink flex items-center gap-2 border-b border-theme-line pb-3">
+              <span>⚙️ Output Settings</span>
+            </h3>
+
+            <!-- 1. Format Selection (JPG vs PNG) -->
+            <div>
+              <label class="block text-xs font-semibold text-theme-ink mb-2">Target Image Format</label>
+              <div class="grid grid-cols-2 gap-3">
+                <!-- JPG Option -->
+                <label class="format-card relative flex items-center justify-between p-3.5 rounded-xl border-2 border-blue-500 bg-blue-500/5 cursor-pointer transition-all">
+                  <input type="radio" name="target-format" value="jpeg" checked class="hidden" />
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center font-black text-xs">JPG</span>
+                    <div>
+                      <div class="font-bold text-xs text-theme-ink">JPG / JPEG</div>
+                      <div class="text-[11px] text-theme-muted">Smaller file size • Ideal for photos & web</div>
+                    </div>
+                  </div>
+                  <span class="format-check text-blue-500 text-sm font-bold">✓</span>
+                </label>
+
+                <!-- PNG Option -->
+                <label class="format-card relative flex items-center justify-between p-3.5 rounded-xl border-2 border-theme-line hover:border-blue-500/40 bg-theme-surface-alt/40 cursor-pointer transition-all">
+                  <input type="radio" name="target-format" value="png" class="hidden" />
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-black text-xs">PNG</span>
+                    <div>
+                      <div class="font-bold text-xs text-theme-ink">PNG (Lossless)</div>
+                      <div class="text-[11px] text-theme-muted">Crisp vector text & transparency option</div>
+                    </div>
+                  </div>
+                  <span class="format-check hidden text-blue-500 text-sm font-bold">✓</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 2. DPI & Resolution Presets -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-semibold text-theme-ink">Resolution & DPI Quality</label>
+                <span id="val-render-dimensions" class="text-[11px] font-mono text-theme-muted">Estimated: ~1240 × 1754 px</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2.5">
+                <!-- 72 DPI -->
+                <button type="button" data-dpi="72" class="btn-dpi p-3 rounded-xl border-2 border-theme-line hover:border-blue-500/40 bg-theme-surface-alt/40 text-left transition-all">
+                  <div class="font-bold text-xs text-theme-ink">72 DPI</div>
+                  <div class="text-[10px] text-theme-muted mt-0.5">Web / Fast</div>
+                  <div class="text-[9px] font-mono text-theme-muted mt-1">1.0x Scale</div>
+                </button>
+
+                <!-- 150 DPI (Recommended) -->
+                <button type="button" data-dpi="150" class="btn-dpi p-3 rounded-xl border-2 border-blue-500 bg-blue-500/5 text-left transition-all shadow-xs">
+                  <div class="font-bold text-xs text-blue-600 dark:text-blue-400">150 DPI ⭐</div>
+                  <div class="text-[10px] text-theme-muted mt-0.5">Balanced</div>
+                  <div class="text-[9px] font-mono text-blue-500 font-semibold mt-1">~2.08x Scale</div>
+                </button>
+
+                <!-- 300 DPI -->
+                <button type="button" data-dpi="300" class="btn-dpi p-3 rounded-xl border-2 border-theme-line hover:border-blue-500/40 bg-theme-surface-alt/40 text-left transition-all">
+                  <div class="font-bold text-xs text-theme-ink">300 DPI</div>
+                  <div class="text-[10px] text-theme-muted mt-0.5">Print Quality</div>
+                  <div class="text-[9px] font-mono text-theme-muted mt-1">~4.16x Scale</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. Dynamic Format Controls: JPG Quality Slider vs PNG Transparency -->
+            <!-- JPG Quality Section -->
+            <div id="section-jpg-controls" class="space-y-2 p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line">
+              <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-theme-ink">JPG Compression Quality</span>
+                <span id="val-jpg-quality" class="font-mono text-blue-500 font-bold">85% (High Quality)</span>
+              </div>
+              <input id="slider-jpg-quality" type="range" min="20" max="100" value="85" class="w-full accent-blue-600 cursor-pointer" />
+              <div class="flex justify-between text-[10px] font-mono text-theme-muted">
+                <span>Smaller File (20%)</span>
+                <span>Balanced (80%)</span>
+                <span>Maximum Quality (100%)</span>
+              </div>
+            </div>
+
+            <!-- PNG Options Section (Hidden by default) -->
+            <div id="section-png-controls" class="hidden space-y-3 p-3.5 rounded-xl bg-theme-surface-alt/50 border border-theme-line">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-theme-ink">PNG Transparency</div>
+                  <div class="text-[11px] text-theme-muted">Retain transparent areas or fill with solid background</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input id="chk-png-transparent" type="checkbox" class="sr-only peer" />
+                  <div class="w-9 h-5 bg-theme-line peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <!-- Background Color Choice (when transparent is unchecked) -->
+              <div id="png-bg-fill-row" class="flex items-center justify-between pt-2 border-t border-theme-line text-xs">
+                <span class="text-theme-muted">Page Background Fill</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" class="btn-bg-choice px-2.5 py-1 rounded-md text-[11px] font-medium border border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400" data-bg="#ffffff">White (#FFF)</button>
+                  <button type="button" class="btn-bg-choice px-2.5 py-1 rounded-md text-[11px] font-medium border border-theme-line bg-theme-surface text-theme-muted hover:text-theme-ink" data-bg="#f8fafc">Off-White</button>
+                  <input id="custom-bg-color" type="color" value="#ffffff" class="w-7 h-7 rounded border border-theme-line cursor-pointer bg-transparent" title="Choose custom background color" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Advanced Adjustments: Color Filter & Rotation -->
+            <div class="pt-2 border-t border-theme-line grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Color Mode -->
+              <div>
+                <label class="block text-xs font-semibold text-theme-ink mb-1.5">Color Palette Filter</label>
+                <select id="select-color-mode" class="w-full text-xs p-2 rounded-xl bg-theme-surface border border-theme-line text-theme-ink focus:outline-none focus:border-blue-500">
+                  <option value="original">Full Color (Original)</option>
+                  <option value="grayscale">Grayscale / Black & White</option>
+                  <option value="invert">Invert Colors (Dark Mode)</option>
+                </select>
+              </div>
+
+              <!-- Page Rotation -->
+              <div>
+                <label class="block text-xs font-semibold text-theme-ink mb-1.5">Page Orientation / Rotation</label>
+                <div class="flex items-center gap-2">
+                  <button id="btn-rotate-ccw" type="button" class="btn-action flex-1 p-2 rounded-xl bg-theme-surface border border-theme-line text-xs font-semibold text-theme-ink hover:bg-theme-surface-alt flex items-center justify-center gap-1">
+                    <span>↺</span>
+                    <span>-90°</span>
+                  </button>
+                  <span id="val-rotation-badge" class="px-2.5 py-2 rounded-xl bg-theme-surface-alt border border-theme-line text-xs font-mono font-bold text-theme-muted min-w-[50px] text-center">0°</span>
+                  <button id="btn-rotate-cw" type="button" class="btn-action flex-1 p-2 rounded-xl bg-theme-surface border border-theme-line text-xs font-semibold text-theme-ink hover:bg-theme-surface-alt flex items-center justify-center gap-1">
+                    <span>↻</span>
+                    <span>+90°</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Page Selection Filtering -->
+          <div class="p-5 sm:p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-theme-line pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-theme-ink flex items-center gap-2">
+                  <span>📄 Page Selection</span>
+                  <span id="selected-pages-count-badge" class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-bold">
+                    All Pages (0)
+                  </span>
+                </h3>
+              </div>
+
+              <!-- Quick Range Buttons -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" id="btn-select-all" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">All</button>
+                <button type="button" id="btn-select-first" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-theme-surface-alt text-theme-muted hover:text-theme-ink border border-theme-line">First Page</button>
+                <button type="button" id="btn-select-odd" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-theme-surface-alt text-theme-muted hover:text-theme-ink border border-theme-line">Odd</button>
+                <button type="button" id="btn-select-even" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-theme-surface-alt text-theme-muted hover:text-theme-ink border border-theme-line">Even</button>
+              </div>
+            </div>
+
+            <!-- Custom Page Range Input -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5 text-xs">
+                <span class="font-semibold text-theme-ink">Custom Page Range or Numbers:</span>
+                <span class="text-[11px] font-mono text-theme-muted">e.g. 1-3, 5, 8-10</span>
+              </div>
+              <input id="input-page-range" type="text" placeholder="1-5, 8" class="w-full text-xs font-mono p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-ink placeholder:text-theme-muted focus:outline-none focus:border-blue-500" />
+            </div>
+
+            <!-- Interactive Visual Page Picker Grid -->
+            <div>
+              <button id="btn-toggle-page-picker" type="button" class="text-xs font-semibold text-blue-500 hover:underline flex items-center gap-1">
+                <span>View & Select Pages Visually (<span id="picker-total-pages-label">0</span> thumbnails)</span>
+                <span id="picker-chevron">▼</span>
+              </button>
+
+              <div id="visual-page-picker" class="hidden pt-3 mt-3 border-t border-theme-line">
+                <div id="thumbnail-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 max-h-72 overflow-y-auto p-1">
+                  <!-- Thumbnail cards injected dynamically -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Right 1 Col: Summary & Action Card -->
+        <div class="space-y-5">
+          <div class="p-5 sm:p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-4 sticky top-20">
+            <h3 class="text-sm font-bold text-theme-ink border-b border-theme-line pb-3 flex items-center justify-between">
+              <span>Conversion Summary</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            </h3>
+
+            <div class="space-y-2.5 text-xs font-mono">
+              <div class="flex justify-between py-1 border-b border-theme-line/50">
+                <span class="text-theme-muted">Format:</span>
+                <strong id="summary-format" class="text-theme-ink uppercase font-bold">JPG</strong>
+              </div>
+              <div class="flex justify-between py-1 border-b border-theme-line/50">
+                <span class="text-theme-muted">Resolution:</span>
+                <strong id="summary-dpi" class="text-theme-ink font-bold">150 DPI</strong>
+              </div>
+              <div class="flex justify-between py-1 border-b border-theme-line/50">
+                <span class="text-theme-muted">Color:</span>
+                <strong id="summary-color" class="text-theme-ink font-bold">Full Color</strong>
+              </div>
+              <div class="flex justify-between py-1 border-b border-theme-line/50">
+                <span class="text-theme-muted">Pages to Convert:</span>
+                <strong id="summary-pages" class="text-blue-500 font-bold">0 Pages</strong>
+              </div>
+            </div>
+
+            <!-- Start Conversion CTA -->
+            <button
+              id="btn-start-convert"
+              type="button"
+              class="btn-action w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2"
+            >
+              <span>⚡ Convert to Images</span>
+            </button>
+
+            <!-- Privacy reassurance note -->
+            <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed flex items-start gap-2">
+              <span class="text-sm">🛡️</span>
+              <span>Your files are processed directly inside your browser. No files are uploaded to any server.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-Time Progress Card (Shown during active conversion) -->
+      <div id="progress-card" class="hidden p-6 rounded-2xl bg-theme-surface border border-theme-line shadow-xs space-y-3 animate-in fade-in duration-150">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <span id="progress-status-text" class="text-theme-ink flex items-center gap-2">
+            <span class="animate-spin text-blue-500">⟳</span>
+            <span>Rasterizing PDF pages onto canvas...</span>
+          </span>
+          <span id="progress-percent" class="font-mono text-blue-500 font-bold">0%</span>
+        </div>
+
+        <div class="w-full h-3 rounded-full bg-theme-surface-alt overflow-hidden border border-theme-line">
+          <div id="progress-bar-fill" class="h-full bg-blue-600 rounded-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] font-mono text-theme-muted">
+          <span id="progress-details">Page 1 of 1...</span>
+          <button id="btn-cancel-convert" type="button" class="text-rose-500 hover:underline font-semibold">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Converted Results Section -->
+      <div id="results-section" class="hidden space-y-4">
+        
+        <!-- Results Header & Batch Download Actions -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-theme-surface border border-theme-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-theme-ink flex items-center gap-2">
+              <span>🎉 Conversion Complete!</span>
+              <span id="results-count-badge" class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold">
+                0 images
+              </span>
+            </h3>
+            <p id="results-meta-text" class="text-xs text-theme-muted mt-0.5 font-mono">
+              Total converted size: 0 MB • Ready for download
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button id="btn-download-all-zip" type="button" class="btn-action px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5">
+              <span>📦</span>
+              <span>Download All as ZIP</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Converted Images Grid -->
+        <div id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <!-- Converted image cards rendered dynamically -->
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Lightbox Modal for Fullscreen Image Preview -->
+    <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center">
+        <!-- Close button -->
+        <button id="btn-close-lightbox" type="button" class="absolute -top-10 right-0 text-white text-2xl hover:opacity-80 p-2 font-bold" title="Close Preview">
+          ✕
+        </button>
+        <div class="checkerboard-pattern rounded-2xl p-2 border border-white/20 max-h-[80vh] overflow-auto shadow-2xl flex items-center justify-center">
+          <img id="lightbox-img" src="" alt="Fullscreen Preview" class="max-h-[75vh] max-w-full object-contain rounded-lg" />
+        </div>
+        <div id="lightbox-meta" class="text-white text-xs font-mono mt-3 text-center">
+          Page 1 • 2480 × 3508 px
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Prompt Modal for Encrypted PDFs -->
+    <div id="password-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden flex items-center justify-center p-4">
+      <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line max-w-sm w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl font-bold">
+            🔒
+          </div>
+          <div>
+            <h4 class="font-bold text-sm text-theme-ink">Encrypted Document</h4>
+            <p class="text-xs text-theme-muted">This PDF is protected with a password.</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-theme-ink mb-1">Enter Document Password</label>
+          <input id="input-pdf-password" type="password" placeholder="Password..." class="w-full text-xs p-2.5 rounded-xl bg-theme-surface-alt border border-theme-line text-theme-ink focus:outline-none focus:border-blue-500 font-mono" />
+          <p id="password-error-msg" class="text-[11px] text-rose-500 mt-1 hidden">Incorrect password. Please try again.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button id="btn-cancel-password" type="button" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-theme-muted hover:text-theme-ink border border-theme-line">
+            Cancel
+          </button>
+          <button id="btn-submit-password" type="button" class="btn-action px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs">
+            Unlock & Open
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Educational Guide & Technical FAQ -->
+    <div class="p-6 rounded-3xl bg-theme-surface border border-theme-line text-xs space-y-6 text-theme-muted">
+      
+      <!-- Feature Highlights -->
+      <div>
+        <h3 class="text-sm font-bold text-theme-ink flex items-center gap-2 mb-3">
+          <span>💡 How In-Browser PDF Conversion Works</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 leading-relaxed">
+          <div class="p-4 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+            <h4 class="font-bold text-theme-ink">1. 100% Client-Side Privacy</h4>
+            <p class="text-[11px]">
+              Mozilla's PDF.js WebAssembly engine compiles and executes entirely inside your browser. No files, text, or images are ever transmitted across the internet.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+            <h4 class="font-bold text-theme-ink">2. Crisp Vector Rasterization</h4>
+            <p class="text-[11px]">
+              Unlike bitmap screenshots, PDF vector paths and fonts are dynamically re-rasterized at chosen DPI scales (up to 300 DPI) for razor-sharp typography and diagrams.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-theme-surface-alt/50 border border-theme-line space-y-1">
+            <h4 class="font-bold text-theme-ink">3. Instant Batch ZIP Export</h4>
+            <p class="text-[11px]">
+              Converted images are packaged on-the-fly into a clean `.zip` archive via JSZip, allowing you to download 50+ converted pages with a single click.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DPI & Format Comparison Guide -->
+      <div class="border-t border-theme-line pt-5 space-y-3">
+        <h4 class="font-bold text-theme-ink text-xs">Which format and resolution should I choose?</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-[11px] font-mono">
+            <thead>
+              <tr class="border-b border-theme-line text-theme-ink font-bold">
+                <th class="py-2 pr-3">Preset</th>
+                <th class="py-2 pr-3">Resolution (A4)</th>
+                <th class="py-2 pr-3">Best Format</th>
+                <th class="py-2">Ideal Use Case</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-theme-line/60">
+              <tr>
+                <td class="py-2 pr-3 font-bold text-theme-ink">72 DPI</td>
+                <td class="py-2 pr-3">595 × 842 px</td>
+                <td class="py-2 pr-3 text-amber-500 font-bold">JPG (75%)</td>
+                <td class="py-2 font-sans">Quick thumbnails, mobile chats, previewing drafts with minimal file weight.</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-3 font-bold text-blue-500">150 DPI</td>
+                <td class="py-2 pr-3">1240 × 1754 px</td>
+                <td class="py-2 pr-3 text-blue-500 font-bold">JPG or PNG</td>
+                <td class="py-2 font-sans">Presentations, emails, Notion docs, reading digital contracts on laptop/tablet.</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-3 font-bold text-emerald-500">300 DPI</td>
+                <td class="py-2 pr-3">2480 × 3508 px</td>
+                <td class="py-2 pr-3 text-emerald-500 font-bold">PNG / High JPG</td>
+                <td class="py-2 font-sans">Official submissions, physical printing, archival quality, complex blueprints & charts.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="border-t border-theme-line pt-5 space-y-3">
+        <h4 class="font-bold text-theme-ink text-xs">Frequently Asked Questions (FAQ)</h4>
+        
+        <div class="space-y-2.5">
+          <details class="group p-3 rounded-xl bg-theme-surface-alt/40 border border-theme-line cursor-pointer">
+            <summary class="font-semibold text-theme-ink list-none flex items-center justify-between">
+              <span>Is it really safe to convert confidential or legal PDFs here?</span>
+              <span class="group-open:rotate-180 transition-transform text-xs">▼</span>
+            </summary>
+            <p class="text-[11px] mt-2 leading-relaxed text-theme-muted">
+              Yes, absolutely. Unlike cloud-based converters that upload your files to external remote servers, Toolzy's converter runs 100% locally in your browser's JavaScript sandbox. You can even disconnect your internet connection after opening this page and it will continue to work offline!
+            </p>
+          </details>
+
+          <details class="group p-3 rounded-xl bg-theme-surface-alt/40 border border-theme-line cursor-pointer">
+            <summary class="font-semibold text-theme-ink list-none flex items-center justify-between">
+              <span>Why does my converted JPG have a white background instead of transparent?</span>
+              <span class="group-open:rotate-180 transition-transform text-xs">▼</span>
+            </summary>
+            <p class="text-[11px] mt-2 leading-relaxed text-theme-muted">
+              The JPEG specification does not support alpha transparency. Without a solid background, transparent PDF areas would turn pitch black. If you need transparent backgrounds, select <strong>PNG format</strong> and enable the "PNG Transparency" toggle.
+            </p>
+          </details>
+
+          <details class="group p-3 rounded-xl bg-theme-surface-alt/40 border border-theme-line cursor-pointer">
+            <summary class="font-semibold text-theme-ink list-none flex items-center justify-between">
+              <span>Can I convert password-protected PDFs?</span>
+              <span class="group-open:rotate-180 transition-transform text-xs">▼</span>
+            </summary>
+            <p class="text-[11px] mt-2 leading-relaxed text-theme-muted">
+              Yes. If your PDF is encrypted, our tool will automatically open an inline password dialog. The decryption happens strictly in your browser using standard PDF crypto algorithms.
+            </p>
+          </details>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // Initialize PDF.js worker
+    if (window.pdfjsLib) {
+      if (window.location.protocol.startsWith('chrome-extension') || window.location.protocol.startsWith('moz-extension')) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '../_vendor/pdf.worker.min.js';
+      } else {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    }
+
+    // App State
+    let currentPdfDoc = null;
+    let currentFile = null;
+    let currentArrayBuffer = null;
+    let totalPages = 0;
+    let selectedPageNumbers = new Set();
+    let isConverting = false;
+    let cancelRequested = false;
+    let userRotation = 0; // 0, 90, 180, 270
+    let convertedResults = []; // [{ pageNum, blob, dataUrl, width, height, size }]
+
+    // Configuration State
+    const config = {
+      format: 'jpeg', // 'jpeg' or 'png'
+      dpi: 150,       // 72, 150, 300
+      quality: 0.85,  // 0.2 to 1.0 (for JPEG)
+      transparent: false, // for PNG
+      backgroundColor: '#ffffff',
+      colorMode: 'original', // 'original', 'grayscale', 'invert'
+    };
+
+    // Helper: format bytes
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Helper: Toast notification
+    function showToast(msg, icon = '✅') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      document.getElementById('toast-icon').innerText = icon;
+      toast.classList.remove('translate-y-12', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-12', 'opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // UI Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const workspace = document.getElementById('workspace');
+    const docName = document.getElementById('doc-name');
+    const docPagesBadge = document.getElementById('doc-pages-badge');
+    const docSize = document.getElementById('doc-size');
+    const docDims = document.getElementById('doc-dims');
+    const btnChangeFile = document.getElementById('btn-change-file');
+    const btnStartConvert = document.getElementById('btn-start-convert');
+    const progressCard = document.getElementById('progress-card');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressDetails = document.getElementById('progress-details');
+    const btnCancelConvert = document.getElementById('btn-cancel-convert');
+    const resultsSection = document.getElementById('results-section');
+    const resultsGrid = document.getElementById('results-grid');
+    const resultsCountBadge = document.getElementById('results-count-badge');
+    const resultsMetaText = document.getElementById('results-meta-text');
+    const btnDownloadAllZip = document.getElementById('btn-download-all-zip');
+    const lightboxModal = document.getElementById('lightbox-modal');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxMeta = document.getElementById('lightbox-meta');
+    const btnCloseLightbox = document.getElementById('btn-close-lightbox');
+    const passwordModal = document.getElementById('password-modal');
+    const inputPdfPassword = document.getElementById('input-pdf-password');
+    const btnSubmitPassword = document.getElementById('btn-submit-password');
+    const btnCancelPassword = document.getElementById('btn-cancel-password');
+    const passwordErrorMsg = document.getElementById('password-error-msg');
+
+    // Page range input & picker
+    const inputPageRange = document.getElementById('input-page-range');
+    const selectedPagesCountBadge = document.getElementById('selected-pages-count-badge');
+    const btnTogglePagePicker = document.getElementById('btn-toggle-page-picker');
+    const visualPagePicker = document.getElementById('visual-page-picker');
+    const thumbnailGrid = document.getElementById('thumbnail-grid');
+    const pickerChevron = document.getElementById('picker-chevron');
+    const pickerTotalPagesLabel = document.getElementById('picker-total-pages-label');
+
+    // DRAG AND DROP / FILE INPUT HANDLERS
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-blue-500', 'bg-blue-500/5');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-blue-500', 'bg-blue-500/5');
+      if (e.dataTransfer.files?.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files?.length) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    // Handle PDF File Load
+    async function handleFile(file, password = '') {
+      if (!file || (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf'))) {
+        showToast('Please select a valid PDF (.pdf) file.', '⚠️');
+        return;
+      }
+
+      currentFile = file;
+      docName.innerText = file.name;
+      docSize.innerText = formatBytes(file.size);
+
+      try {
+        currentArrayBuffer = await file.arrayBuffer();
+        await loadPdfDocument(password);
+      } catch (err) {
+        console.error('Error loading PDF:', err);
+      }
+    }
+
+    async function getFreshBuffer() {
+      if (currentFile) {
+        try {
+          return await currentFile.arrayBuffer();
+        } catch (e) {
+          console.warn('Could not re-read from currentFile, falling back to slice:', e);
+        }
+      }
+      if (currentArrayBuffer && currentArrayBuffer.byteLength > 0) {
+        return currentArrayBuffer.slice(0);
+      }
+      return null;
+    }
+
+    async function loadPdfDocument(password = '') {
+      const buffer = await getFreshBuffer();
+      if (!buffer || buffer.byteLength === 0) {
+        alert('Could not access document data. Please choose the PDF file again.');
+        return;
+      }
+
+      // Keep master buffer copy intact
+      if (!currentArrayBuffer || currentArrayBuffer.byteLength === 0) {
+        currentArrayBuffer = buffer.slice(0);
+      }
+
+      try {
+        // ALWAYS pass a cloned copy so the PDF.js Web Worker never detaches the original buffer
+        const bufferCopy = buffer.slice(0);
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(bufferCopy),
+          password: password,
+        });
+
+        currentPdfDoc = await loadingTask.promise;
+        passwordModal.classList.add('hidden');
+        passwordErrorMsg.classList.add('hidden');
+        inputPdfPassword.value = '';
+
+        totalPages = currentPdfDoc.numPages;
+        docPagesBadge.innerText = `${totalPages} Page${totalPages === 1 ? '' : 's'}`;
+        pickerTotalPagesLabel.innerText = totalPages;
+
+        // Reset page selection to all pages
+        selectedPageNumbers = new Set(Array.from({ length: totalPages }, (_, i) => i + 1));
+        updatePageSelectionDisplay();
+
+        // Get first page to inspect dimensions
+        const firstPage = await currentPdfDoc.getPage(1);
+        const unscaledViewport = firstPage.getViewport({ scale: 1.0 });
+        const ptW = Math.round(unscaledViewport.width);
+        const ptH = Math.round(unscaledViewport.height);
+        docDims.innerText = `${ptW} × ${ptH} pt`;
+
+        updateEstimatedDimensions();
+
+        // Reveal workspace & hide dropzone
+        dropzone.classList.add('hidden');
+        workspace.classList.remove('hidden');
+        resultsSection.classList.add('hidden');
+        convertedResults = [];
+
+        // Build thumbnail picker
+        renderThumbnailGrid();
+      } catch (err) {
+        const isPasswordErr =
+          err.name === 'PasswordException' ||
+          err.code === 1 ||
+          err.code === 2 ||
+          (err.message && err.message.toLowerCase().includes('password'));
+
+        if (isPasswordErr) {
+          // Document requires password or incorrect password
+          passwordModal.classList.remove('hidden');
+          if (password) {
+            passwordErrorMsg.classList.remove('hidden');
+          } else {
+            passwordErrorMsg.classList.add('hidden');
+          }
+          inputPdfPassword.focus();
+          inputPdfPassword.select();
+        } else {
+          alert('Could not open PDF: ' + (err.message || 'Unknown error.'));
+        }
+      }
+    }
+
+    // Password modal actions
+    btnSubmitPassword.addEventListener('click', async () => {
+      const pwd = inputPdfPassword.value;
+      btnSubmitPassword.disabled = true;
+      const originalText = btnSubmitPassword.innerText;
+      btnSubmitPassword.innerText = 'Unlocking...';
+
+      try {
+        await loadPdfDocument(pwd);
+      } finally {
+        btnSubmitPassword.disabled = false;
+        btnSubmitPassword.innerText = originalText;
+      }
+    });
+    inputPdfPassword.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        btnSubmitPassword.click();
+      }
+    });
+    btnCancelPassword.addEventListener('click', () => {
+      passwordModal.classList.add('hidden');
+      passwordErrorMsg.classList.add('hidden');
+      inputPdfPassword.value = '';
+      if (!currentPdfDoc) {
+        currentPdfDoc = null;
+        currentFile = null;
+        currentArrayBuffer = null;
+        workspace.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+      }
+    });
+
+    // Reset / Change file
+    btnChangeFile.addEventListener('click', () => {
+      currentPdfDoc = null;
+      currentFile = null;
+      currentArrayBuffer = null;
+      totalPages = 0;
+      selectedPageNumbers.clear();
+      convertedResults = [];
+      fileInput.value = '';
+      workspace.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    });
+
+    // PAGE SELECTION LOGIC
+    function updatePageSelectionDisplay() {
+      const count = selectedPageNumbers.size;
+      selectedPagesCountBadge.innerText = count === totalPages
+        ? `All Pages (${count})`
+        : `${count} of ${totalPages} Pages`;
+      document.getElementById('summary-pages').innerText = `${count} Page${count === 1 ? '' : 's'}`;
+
+      // Update range text input reflection
+      if (count === totalPages) {
+        inputPageRange.value = `1-${totalPages}`;
+      } else {
+        const sorted = Array.from(selectedPageNumbers).sort((a, b) => a - b);
+        inputPageRange.value = formatRanges(sorted);
+      }
+
+      // Update checkboxes in visual picker
+      document.querySelectorAll('.thumbnail-checkbox').forEach(cb => {
+        const p = Number(cb.dataset.page);
+        cb.checked = selectedPageNumbers.has(p);
+      });
+      document.querySelectorAll('.thumbnail-card').forEach(card => {
+        const p = Number(card.dataset.page);
+        if (selectedPageNumbers.has(p)) {
+          card.classList.add('ring-2', 'ring-blue-500');
+        } else {
+          card.classList.remove('ring-2', 'ring-blue-500');
+        }
+      });
+
+      btnStartConvert.disabled = count === 0;
+    }
+
+    function formatRanges(nums) {
+      if (!nums.length) return '';
+      const ranges = [];
+      let start = nums[0];
+      let prev = nums[0];
+
+      for (let i = 1; i < nums.length; i++) {
+        if (nums[i] === prev + 1) {
+          prev = nums[i];
+        } else {
+          ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+          start = nums[i];
+          prev = nums[i];
+        }
+      }
+      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+      return ranges.join(', ');
+    }
+
+    function parseRangeString(str, max) {
+      const set = new Set();
+      if (!str.trim()) return set;
+
+      const parts = str.split(',');
+      for (const part of parts) {
+        const clean = part.trim();
+        if (clean.includes('-')) {
+          const [s, e] = clean.split('-').map(x => parseInt(x.trim(), 10));
+          if (!isNaN(s) && !isNaN(e)) {
+            const low = Math.max(1, Math.min(s, e));
+            const high = Math.min(max, Math.max(s, e));
+            for (let i = low; i <= high; i++) set.add(i);
+          }
+        } else {
+          const num = parseInt(clean, 10);
+          if (!isNaN(num) && num >= 1 && num <= max) {
+            set.add(num);
+          }
+        }
+      }
+      return set;
+    }
+
+    inputPageRange.addEventListener('input', (e) => {
+      const parsed = parseRangeString(e.target.value, totalPages);
+      selectedPageNumbers = parsed;
+      updatePageSelectionDisplay();
+    });
+
+    document.getElementById('btn-select-all').addEventListener('click', () => {
+      selectedPageNumbers = new Set(Array.from({ length: totalPages }, (_, i) => i + 1));
+      updatePageSelectionDisplay();
+    });
+    document.getElementById('btn-select-first').addEventListener('click', () => {
+      selectedPageNumbers = new Set([1]);
+      updatePageSelectionDisplay();
+    });
+    document.getElementById('btn-select-odd').addEventListener('click', () => {
+      selectedPageNumbers = new Set(Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p % 2 !== 0));
+      updatePageSelectionDisplay();
+    });
+    document.getElementById('btn-select-even').addEventListener('click', () => {
+      selectedPageNumbers = new Set(Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p % 2 === 0));
+      updatePageSelectionDisplay();
+    });
+
+    // Visual Page Picker Toggle
+    btnTogglePagePicker.addEventListener('click', () => {
+      visualPagePicker.classList.toggle('hidden');
+      pickerChevron.innerText = visualPagePicker.classList.contains('hidden') ? '▼' : '▲';
+    });
+
+    async function renderThumbnailGrid() {
+      thumbnailGrid.innerHTML = '';
+      if (!currentPdfDoc) return;
+
+      for (let p = 1; p <= totalPages; p++) {
+        const card = document.createElement('div');
+        card.className = `thumbnail-card relative p-2 rounded-xl bg-theme-surface border border-theme-line cursor-pointer transition-all flex flex-col items-center gap-1.5 ${selectedPageNumbers.has(p) ? 'ring-2 ring-blue-500' : 'opacity-80'}`;
+        card.dataset.page = p;
+
+        card.innerHTML = `
+          <div class="relative w-full aspect-[3/4] rounded-lg bg-theme-surface-alt overflow-hidden border border-theme-line/60 flex items-center justify-center">
+            <canvas id="thumb-canvas-${p}" class="w-full h-full object-contain"></canvas>
+            <input type="checkbox" data-page="${p}" ${selectedPageNumbers.has(p) ? 'checked' : ''} class="thumbnail-checkbox absolute top-1.5 left-1.5 w-4 h-4 rounded text-blue-600 accent-blue-600 cursor-pointer shadow-xs" />
+          </div>
+          <span class="text-[10px] font-mono font-bold text-theme-muted">Page ${p}</span>
+        `;
+
+        card.addEventListener('click', (e) => {
+          if (e.target.tagName !== 'INPUT') {
+            const cb = card.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+          }
+          if (card.querySelector('input[type="checkbox"]').checked) {
+            selectedPageNumbers.add(p);
+          } else {
+            selectedPageNumbers.delete(p);
+          }
+          updatePageSelectionDisplay();
+        });
+
+        thumbnailGrid.appendChild(card);
+
+        // Render low-res thumbnail asynchronously
+        currentPdfDoc.getPage(p).then(page => {
+          const canvas = document.getElementById(`thumb-canvas-${p}`);
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          const viewport = page.getViewport({ scale: 0.25 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          page.render({ canvasContext: ctx, viewport });
+        });
+      }
+    }
+
+    // FORMAT & DPI CONTROLS
+    // Format switcher (JPG vs PNG)
+    document.querySelectorAll('input[name="target-format"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        config.format = e.target.value;
+        const isJpg = config.format === 'jpeg';
+
+        document.getElementById('section-jpg-controls').classList.toggle('hidden', !isJpg);
+        document.getElementById('section-png-controls').classList.toggle('hidden', isJpg);
+        document.getElementById('summary-format').innerText = isJpg ? 'JPG' : 'PNG';
+
+        document.querySelectorAll('.format-card').forEach(card => {
+          const input = card.querySelector('input');
+          const check = card.querySelector('.format-check');
+          if (input.checked) {
+            card.classList.add('border-blue-500', 'bg-blue-500/5');
+            card.classList.remove('border-theme-line', 'bg-theme-surface-alt/40');
+            check.classList.remove('hidden');
+          } else {
+            card.classList.remove('border-blue-500', 'bg-blue-500/5');
+            card.classList.add('border-theme-line', 'bg-theme-surface-alt/40');
+            check.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // DPI Presets (72, 150, 300)
+    document.querySelectorAll('.btn-dpi').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetBtn = e.currentTarget;
+        const dpi = parseInt(targetBtn.dataset.dpi, 10);
+        config.dpi = dpi;
+        document.getElementById('summary-dpi').innerText = `${dpi} DPI`;
+
+        document.querySelectorAll('.btn-dpi').forEach(b => {
+          b.classList.remove('border-blue-500', 'bg-blue-500/5', 'shadow-xs');
+          b.classList.add('border-theme-line', 'bg-theme-surface-alt/40');
+          b.querySelector('div:first-child').classList.remove('text-blue-600', 'dark:text-blue-400');
+          b.querySelector('div:first-child').classList.add('text-theme-ink');
+        });
+
+        targetBtn.classList.add('border-blue-500', 'bg-blue-500/5', 'shadow-xs');
+        targetBtn.classList.remove('border-theme-line', 'bg-theme-surface-alt/40');
+        targetBtn.querySelector('div:first-child').classList.add('text-blue-600', 'dark:text-blue-400');
+        targetBtn.querySelector('div:first-child').classList.remove('text-theme-ink');
+
+        updateEstimatedDimensions();
+      });
+    });
+
+    function updateEstimatedDimensions() {
+      if (!currentPdfDoc) return;
+      currentPdfDoc.getPage(1).then(page => {
+        const scale = config.dpi / 72;
+        const vp = page.getViewport({ scale, rotation: userRotation });
+        const w = Math.round(vp.width);
+        const h = Math.round(vp.height);
+        document.getElementById('val-render-dimensions').innerText = `Estimated: ~${w} × ${h} px`;
+      });
+    }
+
+    // JPG Quality Slider
+    const sliderJpgQuality = document.getElementById('slider-jpg-quality');
+    const valJpgQuality = document.getElementById('val-jpg-quality');
+    sliderJpgQuality.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      config.quality = val / 100;
+      let label = `${val}%`;
+      if (val >= 90) label += ' (Maximum Quality)';
+      else if (val >= 75) label += ' (High Quality)';
+      else if (val >= 50) label += ' (Balanced)';
+      else label += ' (Compact Size)';
+      valJpgQuality.innerText = label;
+    });
+
+    // PNG Transparency Toggle
+    const chkPngTransparent = document.getElementById('chk-png-transparent');
+    const pngBgFillRow = document.getElementById('png-bg-fill-row');
+    chkPngTransparent.addEventListener('change', (e) => {
+      config.transparent = e.target.checked;
+      pngBgFillRow.style.opacity = config.transparent ? '0.4' : '1.0';
+      pngBgFillRow.style.pointerEvents = config.transparent ? 'none' : 'auto';
+    });
+
+    // PNG Background fill preset buttons
+    document.querySelectorAll('.btn-bg-choice').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const bg = e.target.dataset.bg;
+        config.backgroundColor = bg;
+        document.getElementById('custom-bg-color').value = bg;
+        document.querySelectorAll('.btn-bg-choice').forEach(b => {
+          b.classList.remove('border-blue-500', 'bg-blue-500/10', 'text-blue-600');
+          b.classList.add('border-theme-line', 'bg-theme-surface', 'text-theme-muted');
+        });
+        e.target.classList.add('border-blue-500', 'bg-blue-500/10', 'text-blue-600');
+        e.target.classList.remove('border-theme-line', 'bg-theme-surface', 'text-theme-muted');
+      });
+    });
+
+    document.getElementById('custom-bg-color').addEventListener('input', (e) => {
+      config.backgroundColor = e.target.value;
+    });
+
+    // Color mode selector
+    const selectColorMode = document.getElementById('select-color-mode');
+    selectColorMode.addEventListener('change', (e) => {
+      config.colorMode = e.target.value;
+      const textMap = {
+        original: 'Full Color',
+        grayscale: 'Grayscale (B&W)',
+        invert: 'Inverted (Dark Mode)'
+      };
+      document.getElementById('summary-color').innerText = textMap[config.colorMode];
+    });
+
+    // Rotation controls
+    document.getElementById('btn-rotate-cw').addEventListener('click', () => {
+      userRotation = (userRotation + 90) % 360;
+      document.getElementById('val-rotation-badge').innerText = `${userRotation}°`;
+      updateEstimatedDimensions();
+    });
+    document.getElementById('btn-rotate-ccw').addEventListener('click', () => {
+      userRotation = (userRotation - 90 + 360) % 360;
+      document.getElementById('val-rotation-badge').innerText = `${userRotation}°`;
+      updateEstimatedDimensions();
+    });
+
+    // CONVERSION ENGINE (ASYNCHRONOUS CANVAS RENDERING)
+    btnStartConvert.addEventListener('click', startConversion);
+    btnCancelConvert.addEventListener('click', () => {
+      cancelRequested = true;
+      progressDetails.innerText = 'Cancelling conversion...';
+    });
+
+    async function startConversion() {
+      if (isConverting || !currentPdfDoc || selectedPageNumbers.size === 0) return;
+
+      isConverting = true;
+      cancelRequested = false;
+      btnStartConvert.disabled = true;
+      progressCard.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+      convertedResults = [];
+      resultsGrid.innerHTML = '';
+
+      const pagesToProcess = Array.from(selectedPageNumbers).sort((a, b) => a - b);
+      const totalToConvert = pagesToProcess.length;
+
+      const scale = config.dpi / 72;
+      const mimeType = config.format === 'jpeg' ? 'image/jpeg' : 'image/png';
+      const fileExt = config.format === 'jpeg' ? 'jpg' : 'png';
+
+      for (let i = 0; i < totalToConvert; i++) {
+        if (cancelRequested) {
+          showToast('Conversion cancelled.', '⚠️');
+          break;
+        }
+
+        const pageNum = pagesToProcess[i];
+        const currentCount = i + 1;
+        const percent = Math.round((currentCount / totalToConvert) * 100);
+
+        progressBarFill.style.width = `${percent}%`;
+        progressPercent.innerText = `${percent}%`;
+        progressDetails.innerText = `Rendering Page ${pageNum} of ${totalPages} (${currentCount}/${totalToConvert})...`;
+
+        // Render page
+        try {
+          const page = await currentPdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale, rotation: (page.rotate + userRotation) % 360 });
+
+          // Offscreen canvas setup
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          // Fill background (unless PNG with transparency checked)
+          if (config.format === 'jpeg' || !config.transparent) {
+            ctx.fillStyle = config.backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+
+          // Render PDF page content
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          // Apply color mode transformations if requested
+          if (config.colorMode === 'grayscale') {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            for (let j = 0; j < d.length; j += 4) {
+              const avg = (d[j] * 0.299 + d[j + 1] * 0.587 + d[j + 2] * 0.114);
+              d[j] = avg;
+              d[j + 1] = avg;
+              d[j + 2] = avg;
+            }
+            ctx.putImageData(imgData, 0, 0);
+          } else if (config.colorMode === 'invert') {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            for (let j = 0; j < d.length; j += 4) {
+              d[j] = 255 - d[j];
+              d[j + 1] = 255 - d[j + 1];
+              d[j + 2] = 255 - d[j + 2];
+            }
+            ctx.putImageData(imgData, 0, 0);
+          }
+
+          // Convert canvas to blob
+          const blob = await new Promise((resolve) => {
+            canvas.toBlob(resolve, mimeType, config.quality);
+          });
+
+          const dataUrl = URL.createObjectURL(blob);
+
+          convertedResults.push({
+            pageNum,
+            blob,
+            dataUrl,
+            width: canvas.width,
+            height: canvas.height,
+            size: blob.size,
+            ext: fileExt,
+          });
+
+          // Memory cleanup
+          canvas.width = 0;
+          canvas.height = 0;
+
+          // Yield execution to keep browser UI responsive
+          await new Promise(r => setTimeout(r, 0));
+        } catch (err) {
+          console.error(`Error rendering page ${pageNum}:`, err);
+        }
+      }
+
+      // Finish progress
+      progressBarFill.style.width = '100%';
+      progressPercent.innerText = '100%';
+      progressDetails.innerText = 'All selected pages converted!';
+      setTimeout(() => progressCard.classList.add('hidden'), 500);
+
+      isConverting = false;
+      btnStartConvert.disabled = false;
+
+      if (convertedResults.length > 0) {
+        renderResults();
+        resultsSection.classList.remove('hidden');
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast(`Converted ${convertedResults.length} page(s) successfully!`);
+      }
+    }
+
+    // RESULTS RENDERING & DOWNLOAD SUITE
+    function renderResults() {
+      resultsGrid.innerHTML = '';
+      const totalBytes = convertedResults.reduce((acc, r) => acc + r.size, 0);
+
+      resultsCountBadge.innerText = `${convertedResults.length} image${convertedResults.length === 1 ? '' : 's'}`;
+      resultsMetaText.innerText = `Total converted size: ${formatBytes(totalBytes)} • Format: ${config.format.toUpperCase()} (${config.dpi} DPI)`;
+
+      const baseName = (currentFile?.name || 'document').replace(/\.[^/.]+$/, '');
+
+      convertedResults.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'group p-3.5 rounded-2xl bg-theme-surface border border-theme-line shadow-xs flex flex-col justify-between hover:border-blue-500/40 transition-all';
+
+        const filename = `${baseName}_page_${String(item.pageNum).padStart(2, '0')}.${item.ext}`;
+
+        card.innerHTML = `
+          <div>
+            <!-- Image Thumbnail & Lightbox Click -->
+            <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden border border-theme-line cursor-pointer ${config.transparent ? 'checkerboard-pattern' : 'bg-theme-surface-alt'}">
+              <img src="${item.dataUrl}" alt="Page ${item.pageNum}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1">
+                <span>🔍</span>
+                <span>Click to Zoom</span>
+              </div>
+              <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-bold">
+                Page ${item.pageNum}
+              </span>
+            </div>
+
+            <!-- Metadata Info -->
+            <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-theme-muted">
+              <span>${item.width} × ${item.height} px</span>
+              <strong class="text-theme-ink font-semibold">${formatBytes(item.size)}</strong>
+            </div>
+          </div>
+
+          <!-- Card Action Buttons -->
+          <div class="mt-3.5 pt-3 border-t border-theme-line grid grid-cols-2 gap-2">
+            <button type="button" class="btn-copy-img btn-action px-2.5 py-1.5 rounded-lg bg-theme-surface-alt hover:bg-theme-surface text-theme-ink border border-theme-line text-[11px] font-semibold flex items-center justify-center gap-1">
+              <span>📋</span>
+              <span>Copy</span>
+            </button>
+            <button type="button" class="btn-download-img btn-action px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs">
+              <span>⬇️</span>
+              <span>Save</span>
+            </button>
+          </div>
+        `;
+
+        // Lightbox trigger
+        card.querySelector('.aspect-\\[3\\/4\\]').addEventListener('click', () => {
+          openLightbox(item.dataUrl, item.pageNum, item.width, item.height);
+        });
+
+        // Copy button
+        card.querySelector('.btn-copy-img').addEventListener('click', async () => {
+          try {
+            await copyBlobToClipboard(item.blob);
+            showToast(`Page ${item.pageNum} copied to clipboard!`);
+          } catch (err) {
+            console.error('Clipboard error:', err);
+            showToast('Could not copy to clipboard directly.', '⚠️');
+          }
+        });
+
+        // Single download button
+        card.querySelector('.btn-download-img').addEventListener('click', () => {
+          downloadBlob(item.blob, filename);
+        });
+
+        resultsGrid.appendChild(card);
+      });
+    }
+
+    // Single blob downloader
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Copy to clipboard helper
+    async function copyBlobToClipboard(blob) {
+      if (!navigator.clipboard || !window.ClipboardItem) {
+        throw new Error('Clipboard API unsupported');
+      }
+
+      // If JPEG, convert to PNG for standard clipboard compatibility
+      let clipboardBlob = blob;
+      if (blob.type !== 'image/png') {
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+        await new Promise(r => img.onload = r);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        clipboardBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': clipboardBlob })
+      ]);
+    }
+
+    // Lightbox modal helpers
+    function openLightbox(url, pageNum, width, height) {
+      lightboxImg.src = url;
+      lightboxMeta.innerText = `Page ${pageNum} of ${totalPages} • Dimensions: ${width} × ${height} px • ${config.format.toUpperCase()} (${config.dpi} DPI)`;
+      lightboxModal.classList.remove('hidden');
+    }
+    btnCloseLightbox.addEventListener('click', () => {
+      lightboxModal.classList.add('hidden');
+      lightboxImg.src = '';
+    });
+    lightboxModal.addEventListener('click', (e) => {
+      if (e.target === lightboxModal) {
+        lightboxModal.classList.add('hidden');
+        lightboxImg.src = '';
+      }
+    });
+
+    // Batch Download All as ZIP
+    btnDownloadAllZip.addEventListener('click', async () => {
+      if (convertedResults.length === 0) return;
+
+      const btn = btnDownloadAllZip;
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳</span><span>Packaging ZIP...</span>`;
+
+      try {
+        const zip = new JSZip();
+        const baseName = (currentFile?.name || 'document').replace(/\.[^/.]+$/, '');
+        const padLen = String(totalPages).length > 2 ? String(totalPages).length : 2;
+
+        convertedResults.forEach(item => {
+          const numStr = String(item.pageNum).padStart(padLen, '0');
+          const entryName = `${baseName}_page_${numStr}.${item.ext}`;
+          zip.file(entryName, item.blob);
+        });
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const zipName = `${baseName}_converted_${config.format}_${Date.now()}.zip`;
+        downloadBlob(zipBlob, zipName);
+        showToast('ZIP archive downloaded successfully!');
+      } catch (err) {
+        console.error('Error generating zip:', err);
+        showToast('Failed to create ZIP archive.', '⚠️');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
+
+    // THEME MANAGEMENT (SYNC WITH TOOLZY HUB)
+    document.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('toolbox:theme') === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-icon').innerText = '☀️';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('theme-icon').innerText = '🌙';
+      }
+
+      document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+        const nextDark = !document.documentElement.classList.contains('dark');
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('toolbox:theme', 'dark');
+          document.getElementById('theme-icon').innerText = '☀️';
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('toolbox:theme', 'light');
+          document.getElementById('theme-icon').innerText = '🌙';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
