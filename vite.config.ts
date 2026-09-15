@@ -50,6 +50,11 @@ export default defineConfig({
             res.end();
             return;
           }
+          if (url === '/vigyan' || url === '/science') {
+            res.writeHead(301, { Location: '/vigyan/' });
+            res.end();
+            return;
+          }
           if (url.startsWith('/rasoi/') && !url.includes('.')) {
             req.url = '/rasoi/index.html';
             next();
@@ -62,6 +67,11 @@ export default defineConfig({
           }
           if ((url.startsWith('/itihaas/') || url.startsWith('/history/')) && !url.includes('.')) {
             req.url = '/itihaas/index.html';
+            next();
+            return;
+          }
+          if ((url.startsWith('/vigyan/') || url.startsWith('/science/')) && !url.includes('.')) {
+            req.url = '/vigyan/index.html';
             next();
             return;
           }
@@ -101,6 +111,11 @@ export default defineConfig({
             res.end();
             return;
           }
+          if (url === '/vigyan' || url === '/science') {
+            res.writeHead(301, { Location: '/vigyan/' });
+            res.end();
+            return;
+          }
           if (url.startsWith('/rasoi/') && !url.includes('.')) {
             req.url = '/rasoi/index.html';
             next();
@@ -113,6 +128,11 @@ export default defineConfig({
           }
           if ((url.startsWith('/itihaas/') || url.startsWith('/history/')) && !url.includes('.')) {
             req.url = '/itihaas/index.html';
+            next();
+            return;
+          }
+          if ((url.startsWith('/vigyan/') || url.startsWith('/science/')) && !url.includes('.')) {
+            req.url = '/vigyan/index.html';
             next();
             return;
           }
@@ -220,6 +240,29 @@ export default defineConfig({
             return result;
           }
 
+          if (ctx.filename.includes('vigyan/index.html')) {
+            let result = html;
+            result = result.replace(
+              /\s*<script\s+type="module"[^>]*src="\/assets\/vigyan\/[^"]*"[^>]*><\/script>/g,
+              ''
+            );
+            result = result.replace(
+              /\s*<link\s+rel="modulepreload"[^>]*href="\/assets\/[^"]*"[^>]*>/g,
+              ''
+            );
+            result = result.replace(
+              /\s*<link\s+rel="stylesheet"[^>]*href="\/assets\/vigyan\/[^"]*"[^>]*>/g,
+              ''
+            );
+            if (!result.includes('/src/vigyan/main.tsx')) {
+              result = result.replace(
+                '</head>',
+                '  <script type="module" src="/src/vigyan/main.tsx"></script>\n</head>'
+              );
+            }
+            return result;
+          }
+
           return html;
         },
       },
@@ -246,6 +289,7 @@ export default defineConfig({
         rasoi: path.resolve(__dirname, 'rasoi/index.html'),
         yatra: path.resolve(__dirname, 'yatra/index.html'),
         itihaas: path.resolve(__dirname, 'itihaas/index.html'),
+        vigyan: path.resolve(__dirname, 'vigyan/index.html'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
@@ -257,6 +301,9 @@ export default defineConfig({
           }
           if (chunkInfo.name === 'itihaas') {
             return 'assets/itihaas/itihaas-[hash].js';
+          }
+          if (chunkInfo.name === 'vigyan') {
+            return 'assets/vigyan/vigyan-[hash].js';
           }
           return 'assets/toolbox/toolbox-[hash].js';
         },
@@ -270,6 +317,9 @@ export default defineConfig({
           if (chunkInfo.name.includes('itihaas')) {
             return 'assets/itihaas/[name]-[hash].js';
           }
+          if (chunkInfo.name.includes('vigyan')) {
+            return 'assets/vigyan/[name]-[hash].js';
+          }
           return 'assets/toolbox/[name]-[hash].js';
         },
         assetFileNames: (assetInfo) => {
@@ -282,6 +332,9 @@ export default defineConfig({
           }
           if (name.includes('itihaas')) {
             return 'assets/itihaas/[name]-[hash].[ext]';
+          }
+          if (name.includes('vigyan')) {
+            return 'assets/vigyan/[name]-[hash].[ext]';
           }
           return 'assets/toolbox/[name]-[hash].[ext]';
         },
