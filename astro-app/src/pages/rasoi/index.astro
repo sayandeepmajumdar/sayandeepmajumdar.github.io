@@ -1,0 +1,339 @@
+---
+import RasoiLayout from '../../layouts/RasoiLayout.astro';
+import Navbar from '../../components/rasoi/Navbar.astro';
+import Footer from '../../components/rasoi/Footer.astro';
+import RecipeCard from '../../components/rasoi/RecipeCard.astro';
+import { PantryModal } from '../../components/rasoi/PantryModal';
+import {
+  getPopularRecipes,
+  getQuickAndEasyRecipes,
+  getVegetarianFavorites,
+  getNonVegetarianFavorites,
+  REGIONS,
+} from '../../data/rasoi/recipes';
+import type { Region } from '../../types/rasoi';
+
+const popularRecipes = getPopularRecipes();
+const quickRecipes = getQuickAndEasyRecipes(30).slice(0, 4);
+const vegFavorites = getVegetarianFavorites().slice(0, 4);
+const nonVegFavorites = getNonVegetarianFavorites().slice(0, 4);
+
+const regionMeta: Record<Region, { emoji: string; highlight: string; count: number }> = {
+  'North Indian': { emoji: '🍲', highlight: 'Rich gravies & tandoor', count: 16 },
+  'South Indian': { emoji: '🥥', highlight: 'Crispy dosas & sambar', count: 10 },
+  'Bengali': { emoji: '🐟', highlight: 'Mustard fish & sweets', count: 4 },
+  'Punjabi': { emoji: '🫓', highlight: 'Chole bhature & saag', count: 4 },
+  'Gujarati': { emoji: '🧆', highlight: 'Dhokla, thepla & snacks', count: 3 },
+  'Maharashtrian': { emoji: '🌶️', highlight: 'Pav bhaji, vada pav & misal', count: 4 },
+  'Hyderabadi': { emoji: '🍗', highlight: 'Nizami dum biryanis', count: 3 },
+  'Rajasthani': { emoji: '👑', highlight: 'Dal baati & gatte', count: 2 },
+  'Kashmiri': { emoji: '🏔️', highlight: 'Rogan josh & dum aloo', count: 2 },
+};
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Rasoi — Authentic Indian Recipes',
+  url: 'https://sayandeepmajumdar.github.io/rasoi/',
+  description:
+    'Discover 50+ authentic regional Indian recipes across North Indian, South Indian, Bengali, Punjabi, Gujarati, and Maharashtrian cuisines with exact measurements and step-by-step instructions.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://sayandeepmajumdar.github.io/rasoi/explore/?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Rasoi',
+    url: 'https://sayandeepmajumdar.github.io/rasoi/',
+  },
+};
+---
+
+<RasoiLayout
+  title="Rasoi — Authentic Indian Recipes & Step-by-Step Cooking Guides"
+  description="Explore 50+ authentic regional Indian recipes across North Indian, South Indian, Bengali, Punjabi, Gujarati, and Maharashtrian cuisines with exact measurements and step-by-step instructions."
+  canonicalUrl="https://sayandeepmajumdar.github.io/rasoi/"
+  structuredData={structuredData}
+>
+  <Navbar slot="header" currentPath="/rasoi/" />
+
+  <div class="space-y-16 sm:space-y-24 pb-16">
+    {/* 1. Visually Impressive Hero Section */}
+    <section class="relative overflow-hidden bg-gradient-to-b from-[#f8f3eb] via-[#faf7f2] to-white pt-10 sm:pt-16 pb-16 sm:pb-24 border-b border-stone-200/60">
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[450px] bg-gradient-to-br from-amber-200/40 via-rose-200/20 to-transparent blur-3xl pointer-events-none -z-10 rounded-full"></div>
+      <div class="absolute -top-12 -right-12 w-64 h-64 bg-amber-300/20 rounded-full blur-2xl pointer-events-none -z-10"></div>
+
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 sm:space-y-8">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-900/10 border border-rose-900/20 text-rose-900 text-xs font-bold uppercase tracking-wider shadow-2xs">
+          <span>✨ 100% Authentic Regional Flavors</span>
+        </div>
+
+        <h1 class="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-stone-900 tracking-tight leading-[1.1]">
+          Indian food. <span class="text-rose-900">Real recipes.</span>{' '}
+          <span class="bg-gradient-to-r from-amber-600 to-rose-700 bg-clip-text text-transparent">
+            Made simple.
+          </span>
+        </h1>
+
+        <p class="text-stone-600 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-normal">
+          Explore authentic Indian dishes with clear ingredients, precise measurements, and
+          step-by-step cooking instructions.
+        </p>
+
+        {/* Hero Search Bar Form */}
+        <div class="max-w-2xl mx-auto pt-2">
+          <form action="/rasoi/explore/" method="get" class="relative flex items-center shadow-md rounded-2xl">
+            <svg class="absolute left-4 w-5 h-5 text-stone-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              name="q"
+              placeholder="Search for a recipe, ingredient, or cuisine (e.g. paneer, biryani, dosa)..."
+              class="w-full pl-12 pr-28 py-4 rounded-2xl bg-white border border-stone-300 text-stone-900 placeholder:text-stone-400 text-sm sm:text-base focus:outline-none focus:border-rose-900 focus:ring-4 focus:ring-rose-900/10 transition-all"
+            />
+            <button
+              type="submit"
+              class="absolute right-2 px-5 py-2.5 rounded-xl bg-rose-900 hover:bg-rose-950 text-white font-bold text-xs sm:text-sm transition-all"
+            >
+              Search
+            </button>
+          </form>
+        </div>
+
+        {/* CTA Buttons */}
+        <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-4">
+          <a
+            href="/rasoi/explore/"
+            class="flex items-center gap-2 px-7 py-3.5 rounded-full bg-rose-900 hover:bg-rose-950 text-white font-bold text-sm sm:text-base shadow-lg shadow-rose-950/20 hover:scale-105 active:scale-95 transition-all"
+          >
+            <span>🧭 Explore 50+ Recipes</span>
+          </a>
+
+          <a
+            href="#browse-cuisines"
+            class="flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-stone-50 text-stone-800 font-bold text-sm sm:text-base border border-stone-300 shadow-2xs hover:border-amber-500 hover:scale-105 active:scale-95 transition-all"
+          >
+            <span>🥘 Browse Regions</span>
+          </a>
+        </div>
+
+        {/* Quick Platform Stats */}
+        <div class="pt-6 grid grid-cols-3 max-w-lg mx-auto divide-x divide-stone-200 text-center">
+          <div>
+            <span class="block font-serif font-black text-2xl sm:text-3xl text-rose-950">50+</span>
+            <span class="text-stone-500 text-xs font-semibold uppercase tracking-wider">Authentic Dishes</span>
+          </div>
+          <div>
+            <span class="block font-serif font-black text-2xl sm:text-3xl text-rose-950">9</span>
+            <span class="text-stone-500 text-xs font-semibold uppercase tracking-wider">Cuisine Regions</span>
+          </div>
+          <div>
+            <span class="block font-serif font-black text-2xl sm:text-3xl text-rose-950">100%</span>
+            <span class="text-stone-500 text-xs font-semibold uppercase tracking-wider">Static HTML</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/* 2. Popular Indian Recipes */}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-2 text-rose-900 text-xs font-bold uppercase tracking-wider mb-1">
+            <span>🏆 Most Loved by Foodies</span>
+          </div>
+          <h2 class="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
+            Popular Indian Recipes
+          </h2>
+        </div>
+
+        <a
+          href="/rasoi/explore/"
+          class="flex items-center gap-1.5 text-sm font-bold text-rose-900 hover:text-rose-950 hover:underline self-start sm:self-auto"
+        >
+          <span>View All 50 Recipes</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {popularRecipes.map((recipe, idx) => (
+          <RecipeCard recipe={recipe} priority={idx < 3} />
+        ))}
+      </div>
+    </section>
+
+    {/* 3. Browse by Cuisine & Region */}
+    <section id="browse-cuisines" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-24">
+      <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
+          <span>🗺️ Culinary Map of India</span>
+        </div>
+        <h2 class="font-serif text-2xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
+          Browse by Cuisine &amp; Region
+        </h2>
+        <p class="text-stone-600 text-sm">
+          Travel from Punjab's rich butter curries to coastal Bengal and fragrant southern coconut dishes.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6">
+        {REGIONS.map((region) => {
+          const meta = regionMeta[region];
+          return (
+            <a
+              href={`/rasoi/explore/?region=${encodeURIComponent(region)}`}
+              class="group relative p-5 sm:p-6 rounded-3xl bg-white border border-stone-200/80 shadow-2xs hover:shadow-xl hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between"
+            >
+              <div class="flex items-start justify-between">
+                <div class="w-14 h-14 rounded-2xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-3xl shadow-2xs transition-colors group-hover:scale-110 duration-300">
+                  {meta.emoji}
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-stone-100 group-hover:bg-rose-100 group-hover:text-rose-900 text-stone-600 text-xs font-bold transition-colors">
+                  {meta.count} dishes
+                </span>
+              </div>
+
+              <div class="mt-4">
+                <h3 class="font-serif font-bold text-lg sm:text-xl text-stone-900 group-hover:text-rose-900 transition-colors">
+                  {region}
+                </h3>
+                <p class="text-xs text-stone-500 mt-1 line-clamp-1">{meta.highlight}</p>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-800 group-hover:text-rose-900">
+                <span>Explore region</span>
+                <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    {/* 4. Pantry Matcher Feature Banner */}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-rose-950 via-rose-900 to-amber-950 text-white p-8 sm:p-12 shadow-xl">
+        <div class="relative z-10 max-w-2xl space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+            <span>👨‍🍳 Smart Pantry Assistant</span>
+          </div>
+          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+            Cook with what you have in your kitchen
+          </h2>
+          <p class="text-stone-300 text-sm sm:text-base leading-relaxed">
+            Have potatoes, onions, tomatoes, or paneer? Tell Rasoi what's in your pantry, and we'll
+            instantly calculate matching authentic recipes with ingredient match percentages.
+          </p>
+          <div class="pt-2">
+            <PantryModal client:idle />
+          </div>
+        </div>
+
+        <div class="absolute right-0 bottom-0 translate-x-10 translate-y-10 text-8xl opacity-10 select-none pointer-events-none hidden md:block">
+          🥘
+        </div>
+      </div>
+    </section>
+
+    {/* 5. Quick & Easy (< 30 min) */}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-1.5 text-amber-700 text-xs font-bold uppercase tracking-wider mb-1">
+            <span>⏱️ Fast &amp; Delicious</span>
+          </div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+            Quick &amp; Easy Indian Recipes
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-500 mt-0.5">
+            Ready in 30 minutes or less with straightforward steps.
+          </p>
+        </div>
+
+        <a
+          href="/rasoi/explore/"
+          class="text-xs sm:text-sm font-bold text-rose-900 hover:underline flex items-center gap-1"
+        >
+          <span>See more quick dishes</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {quickRecipes.map((recipe) => (
+          <RecipeCard recipe={recipe} />
+        ))}
+      </div>
+    </section>
+
+    {/* 6. Vegetarian Favorites */}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-1.5 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-1">
+            <span>🌿 Plant-Based &amp; Pure Veg</span>
+          </div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+            Vegetarian Favorites
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-500 mt-0.5">
+            Paneer classics, hearty lentils, and aromatic vegetable curries.
+          </p>
+        </div>
+
+        <a
+          href="/rasoi/explore/?diet=Vegetarian"
+          class="text-xs sm:text-sm font-bold text-emerald-800 hover:underline flex items-center gap-1"
+        >
+          <span>Explore all vegetarian</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {vegFavorites.map((recipe) => (
+          <RecipeCard recipe={recipe} />
+        ))}
+      </div>
+    </section>
+
+    {/* 7. Non-Vegetarian Favorites */}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <div>
+          <div class="flex items-center gap-1.5 text-rose-900 text-xs font-bold uppercase tracking-wider mb-1">
+            <span>🍗 Tandoori, Curries &amp; Biryanis</span>
+          </div>
+          <h2 class="font-serif text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+            Non-Vegetarian Favorites
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-500 mt-0.5">
+            Smoky tandoori grills, rich chicken curries, and slow-cooked Nizami biryanis.
+          </p>
+        </div>
+
+        <a
+          href="/rasoi/explore/?diet=Non-Vegetarian"
+          class="text-xs sm:text-sm font-bold text-rose-900 hover:underline flex items-center gap-1"
+        >
+          <span>Explore all non-vegetarian</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {nonVegFavorites.map((recipe) => (
+          <RecipeCard recipe={recipe} />
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <Footer slot="footer" />
+</RasoiLayout>

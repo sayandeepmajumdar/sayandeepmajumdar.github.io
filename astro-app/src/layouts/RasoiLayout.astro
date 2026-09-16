@@ -1,0 +1,85 @@
+---
+import '../styles/rasoi.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  structuredData?: Record<string, any>;
+}
+
+const {
+  title = 'Rasoi — Authentic Indian Recipes & Cooking Guides',
+  description = 'Explore 50+ authentic regional Indian recipes across North Indian, South Indian, Bengali, Punjabi, Gujarati, and Maharashtrian cuisines with exact measurements and step-by-step instructions.',
+  canonicalUrl = 'https://sayandeepmajumdar.github.io/rasoi/',
+  ogImage = 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=1200&q=80',
+  structuredData,
+} = Astro.props;
+
+const defaultJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Rasoi',
+  url: 'https://sayandeepmajumdar.github.io/rasoi/',
+  description: description,
+  publisher: {
+    '@type': 'Organization',
+    name: 'Rasoi',
+    url: 'https://sayandeepmajumdar.github.io/rasoi/',
+  },
+};
+
+const activeJsonLd = structuredData || defaultJsonLd;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta
+      name="keywords"
+      content="indian recipes, authentic indian food, butter chicken, biryani, paneer tikka, dosa, chole bhature, dal makhani, vegetarian indian recipes, regional indian cooking, rasoi"
+    />
+    <meta name="author" content="Sayandeep Majumdar · Rasoi" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍛</text></svg>"
+    />
+
+    <!-- OpenGraph Social Tags -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(activeJsonLd, null, 2)} />
+  </head>
+  <body class="rasoi-theme bg-[#faf7f2] text-stone-900 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-200 selection:text-rose-950">
+    <slot name="header" />
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+    <slot name="footer" />
+  </body>
+</html>
