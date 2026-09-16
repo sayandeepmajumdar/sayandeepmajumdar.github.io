@@ -1,0 +1,85 @@
+---
+import Navbar from '../components/itihaas/Navbar.astro';
+import Footer from '../components/itihaas/Footer.astro';
+import type { EraId } from '../types/itihaas';
+import '../styles/itihaas.css';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  ogImage?: string;
+  structuredData?: Record<string, any>;
+  activeEraId?: EraId;
+  currentPath: string;
+}
+
+const {
+  title,
+  description,
+  canonicalUrl,
+  ogImage = 'https://images.unsplash.com/photo-1599837565318-67429bde7162?auto=format&fit=crop&w=1200&q=80',
+  structuredData,
+  activeEraId,
+  currentPath,
+} = Astro.props;
+
+const defaultStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'ITIHAAS — Chronicles of India',
+  url: 'https://sayandeepmajumdar.github.io/itihaas/',
+  applicationCategory: 'EducationalApplication',
+  description: 'Interactive chronological history platform featuring 4,500+ years of Indian civilizational milestones, the 90-year Freedom Struggle, key figures cross-linking, and educational recap quizzes.',
+  operatingSystem: 'All',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Itihaas',
+    url: 'https://sayandeepmajumdar.github.io/itihaas/',
+  },
+};
+
+const jsonLd = structuredData || defaultStructuredData;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content="indian history, freedom struggle, 1857 revolt, mahatma gandhi, subhas chandra bose, bhagat singh, dandi march, quit india, ashoka, chola dynasty, shivaji maharaj, indian constitution, indian timelines" />
+    <meta name="author" content="Sayandeep Majumdar · Itihaas" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇮🇳</text></svg>" />
+
+    <!-- OpenGraph Social Tags -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd, null, 2)} />
+  </head>
+  <body class="bg-[#07090e] text-stone-100 min-h-screen flex flex-col font-sans antialiased selection:bg-orange-500 selection:text-white">
+    <Navbar currentPath={currentPath} activeEraId={activeEraId} />
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

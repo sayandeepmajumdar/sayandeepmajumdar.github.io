@@ -1,0 +1,266 @@
+---
+import ItihaasLayout from '../../layouts/ItihaasLayout.astro';
+import { ERAS } from '../../data/itihaas/eras';
+import { getEventsByEra } from '../../data/itihaas/events';
+import { getQuizByEra } from '../../data/itihaas/quizzes';
+import { InteractiveTimeline } from '../../components/itihaas/InteractiveTimeline';
+import { RecapQuiz } from '../../components/itihaas/RecapQuiz';
+import type { EraInfo } from '../../types/itihaas';
+
+export function getStaticPaths() {
+  return ERAS.map((era, index) => {
+    const prevEra = index > 0 ? ERAS[index - 1] : null;
+    const nextEra = index < ERAS.length - 1 ? ERAS[index + 1] : null;
+    const events = getEventsByEra(era.id);
+    const quiz = getQuizByEra(era.id);
+
+    return {
+      params: { era: era.slug },
+      props: {
+        era,
+        events,
+        quiz,
+        prevEra,
+        nextEra,
+      },
+    };
+  });
+}
+
+interface Props {
+  era: EraInfo;
+  events: ReturnType<typeof getEventsByEra>;
+  quiz?: ReturnType<typeof getQuizByEra>;
+  prevEra: EraInfo | null;
+  nextEra: EraInfo | null;
+}
+
+const { era, events, quiz, prevEra, nextEra } = Astro.props;
+
+// Era-specific SEO Titles & Descriptions
+const seoMetadataMap: Record<string, { title: string; description: string; ogImage: string }> = {
+  ancient: {
+    title: 'Ancient India (2500 BCE – 1206 CE) — Itihaas Timeline',
+    description: 'Explore Ancient India: Indus Valley civilization, Vedic philosophy, the Mauryan Empire under Ashoka, classical Gupta mathematics, and Chola naval supremacy.',
+    ogImage: 'https://images.unsplash.com/photo-1599837565318-67429bde7162?auto=format&fit=crop&w=1200&q=80',
+  },
+  medieval: {
+    title: 'Medieval India (1206 – 1757 CE) — Itihaas Timeline',
+    description: 'Explore Medieval India: Delhi Sultanate, Vijayanagara glory at Hampi, Mughal cultural synthesis and architecture, and Chhatrapati Shivaji Maharaj’s Swarajya.',
+    ogImage: 'https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1200&q=80',
+  },
+  colonial: {
+    title: 'Colonial Era (1757 – 1857 CE) — Itihaas Timeline',
+    description: 'Explore the Colonial Era: Battle of Plassey, Company territorial rule, economic drain of wealth, early soldier mutinies, and the Santhal tribal revolution.',
+    ogImage: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=1200&q=80',
+  },
+  'freedom-struggle': {
+    title: 'Indian Freedom Struggle (1857 – 1947) — Itihaas Timeline',
+    description: 'Chronicle of the Indian Freedom Struggle: 1857 Revolt, Swadeshi Movement, Jallianwala Bagh, Non-Cooperation, Dandi Salt March, Quit India, Netaji’s INA, and 1947 Independence.',
+    ogImage: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=1200&q=80',
+  },
+  'post-independence': {
+    title: 'Post-Independence India (1947 – Present) — Itihaas Timeline',
+    description: 'Explore Modern India: Integration of 565 princely states, Ambedkar’s Constitution, Green Revolution, ISRO space exploration, and Chandrayaan lunar missions.',
+    ogImage: 'https://images.unsplash.com/photo-1599837565318-67429bde7162?auto=format&fit=crop&w=1200&q=80',
+  },
+};
+
+const seo = seoMetadataMap[era.id] || {
+  title: `${era.name} — Itihaas Timeline`,
+  description: era.shortDescription,
+  ogImage: 'https://images.unsplash.com/photo-1599837565318-67429bde7162?auto=format&fit=crop&w=1200&q=80',
+};
+
+const canonicalUrl = `https://sayandeepmajumdar.github.io/itihaas/${era.slug}/`;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: seo.title,
+  url: canonicalUrl,
+  description: seo.description,
+  publisher: {
+    '@type': 'Organization',
+    name: 'Itihaas',
+    url: 'https://sayandeepmajumdar.github.io/itihaas/',
+  },
+};
+
+// Unique figures in this era
+const eraFigures = Array.from(new Set(events.flatMap((e) => e.keyFigures)));
+---
+
+<ItihaasLayout
+  title={seo.title}
+  description={seo.description}
+  canonicalUrl={canonicalUrl}
+  ogImage={seo.ogImage}
+  structuredData={structuredData}
+  activeEraId={era.id}
+  currentPath={`/itihaas/${era.slug}/`}
+>
+  <div class="w-full pb-20">
+    <!-- Top Era Switcher Tabs -->
+    <div class="border-b border-white/10 bg-[#0c0f18]/80 backdrop-blur-md sticky top-16 sm:top-20 z-30 py-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <a
+            href="/itihaas/"
+            class="px-3 py-1.5 rounded-xl text-xs font-medium text-stone-400 hover:text-white hover:bg-white/5 whitespace-nowrap transition-colors flex items-center gap-1.5"
+          >
+            <span>Overview</span>
+          </a>
+
+          {ERAS.map((e) => {
+            const isCurrent = e.id === era.id;
+            return (
+              <a
+                href={`/itihaas/${e.slug}/`}
+                class={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  isCurrent
+                    ? 'bg-white/15 text-white shadow-sm border border-white/20'
+                    : 'text-stone-400 hover:text-white hover:bg-white/5'
+                }`}
+                style={isCurrent ? { borderColor: e.accentColor } : {}}
+              >
+                <span
+                  class="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: e.accentColor }}
+                  aria-hidden="true"
+                />
+                <span>{e.name}</span>
+                <span class="text-[10px] text-stone-400 font-mono">
+                  ({e.milestoneCount})
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
+    <!-- Era Hero Header -->
+    <section class="relative overflow-hidden py-12 sm:py-16 border-b border-white/10 bg-gradient-to-b from-[#111526] to-[#0a0d16]">
+      <!-- Ambient Glow -->
+      <div
+        class="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[120px] pointer-events-none opacity-20"
+        style={{ backgroundColor: era.accentColor }}
+        aria-hidden="true"
+      />
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="text-3xl sm:text-4xl" aria-hidden="true">
+            {era.icon}
+          </span>
+          <span
+            class="text-xs uppercase font-bold tracking-widest px-3 py-1 rounded-full border font-mono"
+            style={{
+              backgroundColor: `${era.accentColor}20`,
+              color: era.accentColor,
+              borderColor: `${era.accentColor}40`,
+            }}
+          >
+            {era.hindiName}
+          </span>
+          <span class="text-xs font-mono text-stone-400 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="2" />
+              <polyline points="12 6 12 12 16 14" stroke-width="2" />
+            </svg>
+            <span>{era.period}</span>
+          </span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl font-black font-display tracking-tight text-white">
+          {era.name}
+        </h1>
+
+        <p class="text-sm sm:text-base text-stone-300 max-w-3xl leading-relaxed">
+          {era.fullDescription}
+        </p>
+
+        <!-- Key Figures in this Era -->
+        {eraFigures.length > 0 && (
+          <div class="pt-4 flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-stone-400 font-semibold flex items-center gap-1">
+              <span>👥</span>
+              <span>Key Figures in this Era:</span>
+            </span>
+            {eraFigures.slice(0, 10).map((fig) => (
+              <span class="px-2.5 py-1 rounded-lg bg-white/5 text-stone-300 border border-white/10 text-xs font-medium">
+                {fig}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Main Content Area: Timeline + Recap Quiz -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <!-- The Interactive Vertical Timeline Island -->
+      <InteractiveTimeline
+        client:idle
+        events={events}
+        eraName={era.name}
+        accentColor={era.accentColor}
+      />
+
+      <!-- End of Era Recap Quiz Island -->
+      {quiz && (
+        <RecapQuiz
+          client:visible
+          quiz={quiz}
+          eraName={era.name}
+          accentColor={era.accentColor}
+          nextEra={nextEra || undefined}
+        />
+      )}
+
+      <!-- Previous / Next Era Jump Footer Navigation -->
+      <div class="mt-16 pt-8 border-t border-white/10 flex items-center justify-between gap-4 flex-wrap">
+        {prevEra ? (
+          <a
+            href={`/itihaas/${prevEra.slug}/`}
+            class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group text-left"
+          >
+            <svg class="w-5 h-5 text-stone-400 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <div>
+              <span class="text-[11px] text-stone-400 uppercase font-mono block">
+                Previous Era
+              </span>
+              <span class="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
+                {prevEra.name}
+              </span>
+            </div>
+          </a>
+        ) : (
+          <div />
+        )}
+
+        {nextEra && (
+          <a
+            href={`/itihaas/${nextEra.slug}/`}
+            class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group text-right ml-auto"
+          >
+            <div>
+              <span class="text-[11px] text-stone-400 uppercase font-mono block">
+                Next Era
+              </span>
+              <span class="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
+                {nextEra.name}
+              </span>
+            </div>
+            <svg class="w-5 h-5 text-stone-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+</ItihaasLayout>
