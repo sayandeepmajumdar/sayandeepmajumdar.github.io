@@ -1,0 +1,91 @@
+---
+import Navbar from '../components/yatra/Navbar.astro';
+import Footer from '../components/yatra/Footer.astro';
+import '../styles/yatra.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  keywords?: string;
+  image?: string;
+  jsonLd?: Record<string, any>;
+}
+
+const {
+  title = 'YATRA — Discover India | Interactive SVG Map & Travel Guide',
+  description = 'Traverse 100+ authentic Indian destinations on an interactive SVG map with real-time animated flight journeys, regional highlights, travel styles, and curated itineraries.',
+  keywords = 'yatra, india travel, interactive india map, travel discovery, explore india, indian destinations, heritage travel, himalayas, goa beaches, kerala backwaters, rajasthan forts, travel guide',
+  image = 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=80',
+  jsonLd,
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site || 'https://sayandeepmajumdar.github.io');
+
+const defaultJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'YATRA',
+  url: canonicalUrl.toString(),
+  applicationCategory: 'TravelApplication',
+  description: description,
+  operatingSystem: 'All',
+  author: {
+    '@type': 'Person',
+    name: 'Sayandeep Majumdar',
+    url: 'https://sayandeepmajumdar.github.io/',
+  },
+};
+---
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={keywords} />
+    <meta name="author" content="Sayandeep Majumdar · Yatra" />
+    <link rel="canonical" href={canonicalUrl.toString()} />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>"
+    />
+
+    <!-- OpenGraph Social Tags -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl.toString()} />
+    <meta property="og:image" content={image} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd || defaultJsonLd)} />
+  </head>
+  <body class="bg-[#0c0f17] text-stone-100 min-h-screen flex flex-col font-sans selection:bg-amber-600 selection:text-white antialiased">
+    <!-- Sticky Top Navbar -->
+    <Navbar currentPath={Astro.url.pathname} />
+
+    <!-- Main Content Area -->
+    <main class="flex-1 w-full">
+      <slot />
+    </main>
+
+    <!-- Editorial Footer -->
+    <Footer />
+  </body>
+</html>
