@@ -1,0 +1,467 @@
+---
+import RasoiLayout from '../../../layouts/RasoiLayout.astro';
+import Navbar from '../../../components/rasoi/Navbar.astro';
+import Footer from '../../../components/rasoi/Footer.astro';
+import RecipeCard from '../../../components/rasoi/RecipeCard.astro';
+import { ServingsScaler } from '../../../components/rasoi/ServingsScaler';
+import { RecipeActions } from '../../../components/rasoi/RecipeActions';
+import { RECIPES, getSimilarRecipes } from '../../../data/rasoi/recipes';
+import type { Recipe } from '../../../types/rasoi';
+
+export function getStaticPaths() {
+  return RECIPES.map((recipe) => ({
+    params: { slug: recipe.slug },
+    props: { recipe },
+  }));
+}
+
+interface Props {
+  recipe: Recipe;
+}
+
+const { recipe } = Astro.props;
+const isVeg = recipe.diet.includes('Vegetarian') || recipe.diet.includes('Vegan');
+const similarRecipes = getSimilarRecipes(recipe, 4);
+
+function formatDurationIso(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `PT${h}H${m}M`;
+  if (h > 0) return `PT${h}H`;
+  return `PT${m}M`;
+}
+
+const canonicalUrl = `https://sayandeepmajumdar.github.io/rasoi/recipe/${recipe.slug}/`;
+
+const ingredientsList = recipe.ingredients.flatMap((group) =>
+  group.items.map((item) => {
+    const parts = [];
+    if (item.amount) parts.push(item.amount);
+    if (item.unit) parts.push(item.unit);
+    parts.push(item.name);
+    if (item.notes) parts.push(`(${item.notes})`);
+    return parts.join(' ');
+  })
+);
+
+const instructionsList = recipe.instructions.map((inst) => ({
+  '@type': 'HowToStep',
+  name: inst.title,
+  text: inst.instruction,
+  url: `${canonicalUrl}#step-${inst.step}`,
+}));
+
+const recipeStructuredData = {
+  '@context': 'https://schema.org/',
+  '@type': 'Recipe',
+  name: recipe.name,
+  image: [recipe.image],
+  description: recipe.description,
+  keywords: recipe.tags.join(', '),
+  author: {
+    '@type': 'Organization',
+    name: 'Rasoi',
+  },
+  prepTime: formatDurationIso(recipe.prepTime),
+  cookTime: formatDurationIso(recipe.cookTime),
+  totalTime: formatDurationIso(recipe.totalTime),
+  recipeCategory: recipe.category,
+  recipeCuisine: recipe.cuisine,
+  recipeYield: `${recipe.servings} servings`,
+  nutrition: {
+    '@type': 'NutritionInformation',
+    calories: `${recipe.nutrition.calories} calories`,
+    proteinContent: `${recipe.nutrition.protein} g`,
+    carbohydrateContent: `${recipe.nutrition.carbs} g`,
+    fatContent: `${recipe.nutrition.fat} g`,
+    fiberContent: `${recipe.nutrition.fiber || 0} g`,
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: recipe.rating.toString(),
+    reviewCount: recipe.ratingCount.toString(),
+    bestRating: '5',
+    worstRating: '1',
+  },
+  recipeIngredient: ingredientsList,
+  recipeInstructions: instructionsList,
+};
+---
+
+<RasoiLayout
+  title={`${recipe.name} Recipe — Authentic Indian Cooking | Rasoi`}
+  description={`${recipe.description} Complete step-by-step procedure, authentic measurements, pro tips, and nutritional breakdown.`}
+  canonicalUrl={canonicalUrl}
+  ogImage={recipe.image}
+  structuredData={recipeStructuredData}
+>
+  <Navbar slot="header" currentPath="/rasoi/explore/" />
+
+  <article class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10">
+    {/* Navigation Breadcrumbs & Actions Bar */}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-stone-200/80">
+      <nav class="flex items-center gap-2 text-xs sm:text-sm font-bold text-stone-700">
+        <a href="/rasoi/" class="hover:text-rose-900 transition-colors">Rasoi</a>
+        <span class="text-stone-400">/</span>
+        <a href="/rasoi/explore/" class="hover:text-rose-900 transition-colors">Recipes</a>
+        <span class="text-stone-400">/</span>
+        <span class="text-stone-500 font-medium truncate max-w-[200px] sm:max-w-xs">{recipe.name}</span>
+      </nav>
+
+      {/* Interactive Actions Island (Share, Print, Save to Favorites) */}
+      <RecipeActions
+        client:load
+        recipeId={recipe.id}
+        recipeName={recipe.name}
+        recipeDescription={recipe.description}
+      />
+    </div>
+
+    {/* Hero Header: Title, Badges, Rating */}
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        {/* Vegetarian / Non-Vegetarian Indicator Badge */}
+        <span
+          class={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+            isVeg
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              : 'bg-rose-50 text-rose-900 border-rose-300'
+          }`}
+        >
+          <span class={`w-2 h-2 rounded-full ${isVeg ? 'bg-emerald-600' : 'bg-rose-700'}`}></span>
+          {isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
+        </span>
+
+        <a
+          href={`/rasoi/explore/?region=${encodeURIComponent(recipe.region)}`}
+          class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors"
+        >
+          {recipe.region}
+        </a>
+
+        <a
+          href={`/rasoi/explore/?category=${encodeURIComponent(recipe.category)}`}
+          class="px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 transition-colors"
+        >
+          {recipe.category}
+        </a>
+      </div>
+
+      <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl font-black text-stone-900 tracking-tight leading-tight">
+        {recipe.name}
+      </h1>
+
+      {/* Rating and Reviews Bar */}
+      <div class="flex flex-wrap items-center gap-4 text-sm text-stone-600">
+        <div class="flex items-center gap-1.5 text-amber-500">
+          <div class="flex items-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <svg
+                class={`w-4 h-4 ${
+                  star <= Math.floor(recipe.rating)
+                    ? 'fill-amber-400 text-amber-400'
+                    : 'fill-stone-200 text-stone-200'
+                }`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            ))}
+          </div>
+          <span class="font-bold text-stone-900 ml-1">{recipe.rating.toFixed(1)}</span>
+          <span class="text-xs text-stone-500">({recipe.ratingCount.toLocaleString()} ratings)</span>
+        </div>
+
+        <span class="text-stone-300">•</span>
+
+        <span class="text-stone-600 text-xs sm:text-sm font-medium">
+          Cuisine: <strong class="font-semibold text-stone-900">{recipe.cuisine}</strong>
+        </span>
+      </div>
+
+      <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-normal pt-1">
+        {recipe.description}
+      </p>
+    </div>
+
+    {/* Large Hero Food Photography (LCP image with fetchpriority="high") */}
+    <div class="relative aspect-[16/9] md:aspect-[21/9] w-full rounded-3xl overflow-hidden shadow-lg border border-stone-200/80 bg-stone-100">
+      <img
+        src={recipe.image}
+        alt={recipe.name}
+        class="w-full h-full object-cover"
+        fetchpriority="high"
+      />
+    </div>
+
+    {/* Key Metrics Overview Bar */}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">⏱️</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Prep Time
+        </span>
+        <span class="font-serif font-black text-lg text-stone-900">{recipe.prepTime} min</span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">🍳</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Cook Time
+        </span>
+        <span class="font-serif font-black text-lg text-stone-900">{recipe.cookTime} min</span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">⌛</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Total Time
+        </span>
+        <span class="font-serif font-black text-lg text-rose-950">{recipe.totalTime} min</span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">🍽️</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Base Servings
+        </span>
+        <span class="font-serif font-black text-lg text-stone-900">{recipe.servings}</span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">👨‍🍳</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Difficulty
+        </span>
+        <span class="font-serif font-black text-lg text-stone-900">{recipe.difficulty}</span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs text-center">
+        <span class="text-xl block mb-1">🌶️</span>
+        <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+          Spice Level
+        </span>
+        <span class="font-serif font-black text-lg text-stone-900">{recipe.spiceLevel}</span>
+      </div>
+    </div>
+
+    {/* Main Recipe Content: Ingredients & Instructions Grid */}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-4">
+      {/* Left Column: Ingredients Checklist (5 Cols) */}
+      <section class="lg:col-span-5 space-y-6" id="ingredients">
+        <div class="flex items-center gap-2 pb-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center text-base">
+            🥕
+          </div>
+          <h2 class="font-serif text-2xl font-bold text-stone-900">Ingredients</h2>
+        </div>
+
+        {/* Servings Scaler Island */}
+        <ServingsScaler
+          client:idle
+          baseServings={recipe.servings}
+          ingredients={recipe.ingredients}
+        />
+
+        {/* Static Accessible Ingredients List for JS-Disabled Browsers */}
+        <noscript>
+          <div class="space-y-6 p-4 rounded-2xl bg-white border border-stone-200">
+            {recipe.ingredients.map((group) => (
+              <div class="space-y-2">
+                <h3 class="font-serif font-bold text-base text-rose-950 border-b border-stone-100 pb-1">
+                  {group.name}
+                </h3>
+                <ul class="space-y-1.5 text-sm text-stone-700">
+                  {group.items.map((item) => (
+                    <li class="flex items-start gap-2">
+                      <span class="text-amber-600 font-bold">•</span>
+                      <span>
+                        <strong>{item.amount} {item.unit}</strong> {item.name}
+                        {item.notes && <em class="text-stone-500 text-xs"> — {item.notes}</em>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </noscript>
+      </section>
+
+      {/* Right Column: Step-by-Step Cooking Instructions (7 Cols) */}
+      <section class="lg:col-span-7 space-y-6" id="instructions">
+        <div class="flex items-center gap-2 pb-2">
+          <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-900 flex items-center justify-center text-base">
+            🔥
+          </div>
+          <h2 class="font-serif text-2xl font-bold text-stone-900">Cooking Instructions</h2>
+        </div>
+
+        <ol class="space-y-6 list-none p-0 m-0">
+          {recipe.instructions.map((step) => (
+            <li
+              id={`step-${step.step}`}
+              class="relative flex items-start gap-4 p-5 rounded-2xl bg-white border border-stone-200/90 shadow-2xs hover:border-amber-300 transition-colors"
+            >
+              {/* Number Badge */}
+              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-900 to-amber-600 text-white font-serif font-bold text-base flex items-center justify-center shrink-0 shadow-2xs">
+                {step.step < 10 ? `0${step.step}` : step.step}
+              </div>
+
+              {/* Step Details */}
+              <div class="flex-1 space-y-2">
+                <div class="flex items-baseline justify-between gap-2">
+                  <h3 class="font-serif font-bold text-base sm:text-lg text-stone-900">
+                    {step.title}
+                  </h3>
+                  {step.timeMinutes && (
+                    <span class="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 shrink-0 flex items-center gap-1">
+                      <span>⏱️</span>
+                      <span>{step.timeMinutes}m</span>
+                    </span>
+                  )}
+                </div>
+
+                <p class="text-sm text-stone-700 leading-relaxed font-normal">
+                  {step.instruction}
+                </p>
+
+                {/* Sensory Cue / Visual Indicator */}
+                {step.cue && (
+                  <div class="flex items-start gap-2 pt-1 text-xs text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200/70">
+                    <span class="text-amber-600 font-bold shrink-0">✓</span>
+                    <span>
+                      <strong class="font-semibold text-amber-950">Visual Cue:</strong>{' '}
+                      {step.cue}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </div>
+
+    {/* Advisory Cards: Chef's Tips & Substitutions */}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+      {/* Chef's Pro Tips */}
+      {recipe.tips && recipe.tips.length > 0 && (
+        <div class="p-6 rounded-3xl bg-amber-50/70 border border-amber-200 space-y-3 shadow-2xs">
+          <div class="flex items-center gap-2 text-amber-900 font-serif font-bold text-lg">
+            <span>💡</span>
+            <h3>Chef's Authentic Tips</h3>
+          </div>
+          <ul class="space-y-2.5 text-sm text-stone-700">
+            {recipe.tips.map((tip) => (
+              <li class="flex items-start gap-2.5 leading-relaxed">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0 mt-2"></span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Ingredient Substitutions */}
+      {recipe.substitutions && recipe.substitutions.length > 0 && (
+        <div class="p-6 rounded-3xl bg-rose-50/70 border border-rose-200 space-y-3 shadow-2xs">
+          <div class="flex items-center gap-2 text-rose-950 font-serif font-bold text-lg">
+            <span>🔄</span>
+            <h3>Smart Substitutions</h3>
+          </div>
+          <ul class="space-y-2.5 text-sm text-stone-700">
+            {recipe.substitutions.map((sub) => (
+              <li class="flex items-start gap-2.5 leading-relaxed">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-700 shrink-0 mt-2"></span>
+                <span>{sub}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    {/* Serving Suggestions & Nutrition Breakdown */}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Serving Suggestions */}
+      {recipe.servingSuggestions && recipe.servingSuggestions.length > 0 && (
+        <div class="p-6 rounded-3xl bg-white border border-stone-200 space-y-3 shadow-2xs">
+          <div class="flex items-center gap-2 text-stone-900 font-serif font-bold text-lg">
+            <span>🍽️</span>
+            <h3>Serving Suggestions &amp; Pairings</h3>
+          </div>
+          <ul class="space-y-2 text-sm text-stone-700">
+            {recipe.servingSuggestions.map((sugg) => (
+              <li class="flex items-start gap-2.5 leading-relaxed">
+                <span class="text-amber-600 font-bold">✓</span>
+                <span>{sugg}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Nutrition Estimates */}
+      {recipe.nutrition && (
+        <div class="p-6 rounded-3xl bg-white border border-stone-200 space-y-4 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-stone-900 font-serif font-bold text-lg">
+              <span>📊</span>
+              <h3>Estimated Nutrition</h3>
+            </div>
+            <span class="text-xs text-stone-400 font-medium">Per Serving</span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+              <span class="block text-xs font-semibold text-stone-500">Calories</span>
+              <span class="font-serif font-bold text-base text-rose-950">
+                {recipe.nutrition.calories}
+              </span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+              <span class="block text-xs font-semibold text-stone-500">Protein</span>
+              <span class="font-serif font-bold text-base text-stone-900">
+                {recipe.nutrition.protein}g
+              </span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+              <span class="block text-xs font-semibold text-stone-500">Carbs</span>
+              <span class="font-serif font-bold text-base text-stone-900">
+                {recipe.nutrition.carbs}g
+              </span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+              <span class="block text-xs font-semibold text-stone-500">Fat</span>
+              <span class="font-serif font-bold text-base text-stone-900">
+                {recipe.nutrition.fat}g
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Similar Recipes Recommendations */}
+    {similarRecipes.length > 0 && (
+      <section class="pt-10 border-t border-stone-200 space-y-6">
+        <div>
+          <h2 class="font-serif text-2xl font-bold text-stone-900">Similar Recipes You'll Love</h2>
+          <p class="text-xs sm:text-sm text-stone-500">
+            Other authentic dishes from {recipe.region} and {recipe.category}.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {similarRecipes.map((item) => (
+            <RecipeCard recipe={item} />
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+
+  <Footer slot="footer" />
+</RasoiLayout>
