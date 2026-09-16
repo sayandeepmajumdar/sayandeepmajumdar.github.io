@@ -1,0 +1,306 @@
+---
+import YatraLayout from '../../../layouts/YatraLayout.astro';
+import { DESTINATIONS } from '../../../data/yatra/destinations';
+import { SaveButton } from '../../../components/yatra/islands/SaveButton';
+import type { Destination } from '../../../types/yatra';
+
+export async function getStaticPaths() {
+  return DESTINATIONS.map((dest) => ({
+    params: { id: dest.id },
+    props: { destination: dest },
+  }));
+}
+
+interface Props {
+  destination: Destination;
+}
+
+const { destination } = Astro.props;
+
+// Related destinations in the same region or sharing categories
+const relatedDestinations = DESTINATIONS.filter(
+  (d) => d.id !== destination.id && (d.region === destination.region || d.state === destination.state)
+).slice(0, 4);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristDestination',
+  name: destination.name,
+  description: destination.description,
+  image: destination.image,
+  touristType: destination.travelStyle,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: destination.city || destination.name,
+    addressRegion: destination.state,
+    addressCountry: 'IN',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: destination.coordinates.y,
+    longitude: destination.coordinates.x,
+  },
+};
+---
+
+<YatraLayout
+  title={`${destination.name}, ${destination.state} Travel Guide — YATRA | Discover India`}
+  description={`Travel guide to ${destination.name}, ${destination.state}: ${destination.description} Best time to visit: ${destination.bestTime}, ideal stay: ${destination.idealDuration}.`}
+  image={destination.image}
+  jsonLd={jsonLd}
+>
+  <article class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Breadcrumb Navigation -->
+    <nav class="flex items-center gap-2 text-xs text-stone-400 overflow-x-auto pb-1" aria-label="Breadcrumb">
+      <a href="/yatra/" class="hover:text-amber-400 transition-colors">Yatra</a>
+      <span>/</span>
+      <a href="/yatra/explore/" class="hover:text-amber-400 transition-colors">Destinations</a>
+      <span>/</span>
+      <a
+        href={`/yatra/explore/?region=${encodeURIComponent(destination.region)}`}
+        class="hover:text-amber-400 transition-colors"
+      >
+        {destination.region}
+      </a>
+      <span>/</span>
+      <span class="text-white font-medium truncate">{destination.name}</span>
+    </nav>
+
+    <!-- Header Hero Banner -->
+    <header class="relative rounded-3xl overflow-hidden glass-card border border-white/10 shadow-2xl">
+      <div class="relative h-72 sm:h-96 w-full overflow-hidden bg-stone-900">
+        <img
+          src={destination.image}
+          alt={destination.name}
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0c0f17] via-black/40 to-transparent"></div>
+
+        <!-- Badges on Image -->
+        <div class="absolute top-4 left-4 flex flex-wrap items-center gap-2">
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-stone-950 shadow-md">
+            {destination.region} India
+          </span>
+          {destination.categories.map((c) => (
+            <span class="px-3 py-1 rounded-full text-xs font-medium bg-black/50 text-white backdrop-blur-md border border-white/10">
+              {c}
+            </span>
+          ))}
+        </div>
+
+        <!-- Destination Title Overlay -->
+        <div class="absolute bottom-6 left-6 right-6">
+          <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold font-display text-white tracking-tight leading-tight">
+            {destination.name}
+          </h1>
+          <p class="text-sm sm:text-base text-stone-300 flex items-center gap-2 mt-2">
+            <span class="text-amber-400">📍</span>
+            <span>{destination.state}, India</span>
+            {destination.city && destination.city !== destination.name && (
+              <span class="text-stone-400">({destination.city})</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="p-4 sm:p-6 bg-[#0e1320] border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            href={`/yatra/?dest=${destination.id}`}
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all text-decoration-none"
+          >
+            <span>✈️ Fly on Interactive Map</span>
+          </a>
+          <SaveButton client:load destinationId={destination.id} destinationName={destination.name} />
+        </div>
+
+        <button
+          id="share-destination-btn"
+          class="px-4 py-2.5 rounded-xl glass-panel text-xs sm:text-sm text-stone-300 hover:text-white hover:bg-white/10 border border-white/10 transition-colors flex items-center gap-2"
+        >
+          <span>Share Guide</span>
+          <span>🔗</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Quick Info Matrix -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 rounded-2xl glass-panel border border-white/10 text-xs sm:text-sm">
+      <div class="space-y-1">
+        <span class="text-stone-400 text-xs block">Best Season</span>
+        <strong class="text-white font-semibold block">{destination.bestTime}</strong>
+      </div>
+      <div class="space-y-1">
+        <span class="text-stone-400 text-xs block">Ideal Stay</span>
+        <strong class="text-white font-semibold block">{destination.idealDuration}</strong>
+      </div>
+      <div class="space-y-1">
+        <span class="text-stone-400 text-xs block">Region</span>
+        <strong class="text-white font-semibold block">{destination.region} India</strong>
+      </div>
+      <div class="space-y-1">
+        <span class="text-stone-400 text-xs block">Travel Styles</span>
+        <strong class="text-white font-semibold block truncate">
+          {destination.travelStyle.slice(0, 2).join(', ')}
+        </strong>
+      </div>
+    </section>
+
+    <!-- Editorial Narrative -->
+    <section class="space-y-4">
+      <h2 class="text-2xl sm:text-3xl font-bold font-display text-amber-400">
+        About {destination.name}
+      </h2>
+      <p class="text-stone-300 text-base sm:text-lg leading-relaxed font-light">
+        {destination.description}
+      </p>
+    </section>
+
+    <!-- Must-Experience Highlights -->
+    <section class="space-y-4">
+      <h2 class="text-2xl sm:text-3xl font-bold font-display text-amber-400">
+        Must-Experience Highlights
+      </h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        {destination.highlights.map((highlight) => (
+          <div class="p-4 rounded-2xl glass-panel border border-white/5 flex items-start gap-3">
+            <span class="text-amber-400 text-base flex-shrink-0 mt-0.5">✓</span>
+            <span class="text-sm text-stone-200 leading-relaxed">{highlight}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Curated 3-Day Itinerary Framework -->
+    <section class="space-y-4">
+      <h2 class="text-2xl sm:text-3xl font-bold font-display text-amber-400">
+        Curated {destination.idealDuration} Itinerary
+      </h2>
+      <div class="space-y-4">
+        <div class="p-5 rounded-2xl glass-panel border border-white/5 space-y-2">
+          <div class="font-bold text-base text-white flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">
+              1
+            </span>
+            <span>Day 1: Arrival, Local Atmosphere & Iconic Landmarks</span>
+          </div>
+          <p class="text-sm text-stone-300 ml-9 leading-relaxed">
+            Settle in and explore {destination.highlights[0] || 'the central cultural hub'}. Take evening walks to sample local specialties and soak in the authentic atmosphere.
+          </p>
+        </div>
+
+        <div class="p-5 rounded-2xl glass-panel border border-white/5 space-y-2">
+          <div class="font-bold text-base text-white flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">
+              2
+            </span>
+            <span>Day 2: Deep Exploration & Signature Experiences</span>
+          </div>
+          <p class="text-sm text-stone-300 ml-9 leading-relaxed">
+            Dedicate the full day to {destination.highlights[1] || 'natural and architectural wonders'}, followed by {destination.highlights[2] || 'scenic sunset viewpoints'}.
+          </p>
+        </div>
+
+        {destination.highlights[3] && (
+          <div class="p-5 rounded-2xl glass-panel border border-white/5 space-y-2">
+            <div class="font-bold text-base text-white flex items-center gap-2">
+              <span class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">
+                3
+              </span>
+              <span>Day 3: Nearby Excursions & Souvenir Trails</span>
+            </div>
+            <p class="text-sm text-stone-300 ml-9 leading-relaxed">
+              Journey to {destination.nearbyPlaces[0] || 'nearby attractions'} and discover {destination.highlights[3]}.
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Nearby Places & Tags -->
+    <section class="space-y-4 pt-4 border-t border-white/10">
+      {destination.nearbyPlaces.length > 0 && (
+        <div class="space-y-2">
+          <h3 class="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+            Nearby Excursions
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            {destination.nearbyPlaces.map((np) => (
+              <a
+                href={`/yatra/explore/?q=${encodeURIComponent(np)}`}
+                class="px-3 py-1.5 rounded-xl text-xs bg-white/5 hover:bg-amber-500/20 text-stone-300 hover:text-amber-300 transition-colors border border-white/5"
+              >
+                📍 {np}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div class="space-y-2 pt-2">
+        <h3 class="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+          Tags & Categorization
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          {destination.tags.map((tag) => (
+            <span class="px-3 py-1 rounded-xl text-xs bg-stone-800/80 text-stone-300 border border-stone-700/60">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Related Destinations -->
+    {relatedDestinations.length > 0 && (
+      <section class="space-y-4 pt-8 border-t border-white/10">
+        <h2 class="text-2xl font-bold font-display text-white">
+          More to Explore in {destination.region} India
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {relatedDestinations.map((rel) => (
+            <a
+              href={`/yatra/destination/${rel.id}/`}
+              class="group rounded-2xl glass-card overflow-hidden border border-white/10 hover:border-amber-500/40 transition-all duration-300 block text-decoration-none"
+            >
+              <div class="relative h-36 w-full overflow-hidden bg-stone-800">
+                <img
+                  src={rel.image}
+                  alt={rel.name}
+                  loading="lazy"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+                <div class="absolute bottom-2 left-2 text-xs font-semibold text-white">
+                  {rel.name}
+                </div>
+              </div>
+              <div class="p-3 text-xs text-stone-400 flex items-center justify-between">
+                <span>{rel.state}</span>
+                <span class="text-amber-400 font-medium">Read Guide →</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+</YatraLayout>
+
+<script is:inline>
+  const shareBtn = document.getElementById('share-destination-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: document.title,
+          url: window.location.href,
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Destination link copied to clipboard!');
+      }
+    });
+  }
+</script>
