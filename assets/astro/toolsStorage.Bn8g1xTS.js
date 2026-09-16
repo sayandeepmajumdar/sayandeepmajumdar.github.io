@@ -1,0 +1,6 @@
+import{c as s}from"./createLucideIcon.BAWfcnwk.js";/**
+ * @license lucide-react v1.46.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const r={name:"refresh-cw",size:24,node:[["path",{d:"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8",key:"v9h5vc"}],["path",{d:"M21 3v5h-5",key:"1q7to0"}],["path",{d:"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16",key:"3uifl3"}],["path",{d:"M8 16H3v5",key:"1cv678"}]]};r.node;const l=s(r),a="toolbox:favorites",i="toolbox:recent_tools";function c(){if(typeof window>"u")return[];try{const t=localStorage.getItem(a);return t?JSON.parse(t):[]}catch{return[]}}function u(t){if(typeof window>"u")return!1;try{const e=c(),n=e.indexOf(t);let o=!1;return n>=0?(e.splice(n,1),o=!1):(e.unshift(t),o=!0),localStorage.setItem(a,JSON.stringify(e)),window.dispatchEvent(new CustomEvent("toolbox:favorites-updated",{detail:e})),o}catch{return!1}}function f(){if(typeof window>"u")return[];try{const t=localStorage.getItem(i);return t?JSON.parse(t):[]}catch{return[]}}function w(t){if(!(typeof window>"u"))try{let e=f();e=e.filter(n=>n!==t),e.unshift(t),e.length>10&&(e=e.slice(0,10)),localStorage.setItem(i,JSON.stringify(e)),window.dispatchEvent(new CustomEvent("toolbox:recents-updated",{detail:e}))}catch{}}export{l as R,f as a,c as g,w as r,u as t};

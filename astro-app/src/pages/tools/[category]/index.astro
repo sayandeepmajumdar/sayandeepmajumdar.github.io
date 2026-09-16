@@ -1,0 +1,93 @@
+---
+import ToolsLayout from '../../../layouts/ToolsLayout.astro';
+import { TOOLS } from '../../../data/tools/tools';
+import { CATEGORIES } from '../../../data/tools/categories';
+import type { CategoryInfo, Tool } from '../../../types/tools';
+import { ToolsExplorer } from '../../../components/tools/islands/ToolsExplorer';
+import { DynamicIcon } from '../../../components/tools/common/DynamicIcon';
+
+export function getStaticPaths() {
+  return CATEGORIES.map((category) => {
+    const categoryTools = TOOLS.filter(
+      (t) => t.category === category.id || t.secondaryCategories?.includes(category.id)
+    );
+    return {
+      params: { category: category.slug },
+      props: { category, tools: categoryTools },
+    };
+  });
+}
+
+interface Props {
+  category: CategoryInfo;
+  tools: Tool[];
+}
+
+const { category, tools } = Astro.props;
+
+const title = `${category.name} Tools — Free, 100% Client-Side Developer Utilities | Toolzy`;
+const description = `${category.description} Explore ${tools.length} free, privacy-first developer tools with zero telemetry.`;
+const canonicalUrl = `https://sayandeepmajumdar.github.io/tools/${category.slug}/`;
+const currentPath = `/tools/${category.slug}/`;
+---
+
+<ToolsLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  currentPath={currentPath}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+    {/* Breadcrumb Navigation */}
+    <nav class="flex items-center gap-2 text-xs text-muted" aria-label="Breadcrumb">
+      <a href="/tools/" class="hover:text-ink transition-colors">Catalog</a>
+      <span class="text-line">/</span>
+      <span class="text-ink font-semibold">{category.name}</span>
+    </nav>
+
+    {/* Category Hero Banner */}
+    <div class="p-6 sm:p-8 rounded-3xl bg-surface border border-line shadow-xs">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-accent-light flex items-center justify-center text-accent shrink-0 shadow-inner">
+            <DynamicIcon name={category.icon} className="w-7 h-7" />
+          </div>
+
+          <div>
+            <div class="flex items-center gap-3 flex-wrap">
+              <h1 class="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
+                {category.name} Tools
+              </h1>
+              <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20">
+                {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                100% Client-Side
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-muted mt-2 leading-relaxed max-w-3xl">
+              {category.description}
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="/tools/"
+          class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline self-start sm:self-auto shrink-0"
+        >
+          <span>← Back to all tools</span>
+        </a>
+      </div>
+    </div>
+
+    {/* Explorer Island focused on this category */}
+    <div class="pt-2">
+      <ToolsExplorer
+        client:load
+        initialCategory={category.id}
+        initialTools={TOOLS}
+        categories={CATEGORIES}
+      />
+    </div>
+  </div>
+</ToolsLayout>

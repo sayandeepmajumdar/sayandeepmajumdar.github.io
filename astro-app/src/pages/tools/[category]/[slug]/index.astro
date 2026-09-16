@@ -1,0 +1,225 @@
+---
+import ToolsLayout from '../../../../layouts/ToolsLayout.astro';
+import { TOOLS } from '../../../../data/tools/tools';
+import { CATEGORIES } from '../../../../data/tools/categories';
+import type { Tool } from '../../../../types/tools';
+import { DynamicIcon } from '../../../../components/tools/common/DynamicIcon';
+import { ToolEmbed } from '../../../../components/tools/islands/ToolEmbed';
+import { getStandaloneToolUrl } from '../../../../utils/toolsStorage';
+
+export function getStaticPaths() {
+  const paths: any[] = [];
+
+  for (const tool of TOOLS) {
+    // Primary category route
+    paths.push({
+      params: { category: tool.category, slug: tool.slug },
+      props: { tool, currentCategory: tool.category, isSecondary: false },
+    });
+
+    // Secondary categories routes (if any)
+    if (tool.secondaryCategories) {
+      for (const secCat of tool.secondaryCategories) {
+        paths.push({
+          params: { category: secCat, slug: tool.slug },
+          props: { tool, currentCategory: secCat, isSecondary: true },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+interface Props {
+  tool: Tool;
+  currentCategory: string;
+  isSecondary: boolean;
+}
+
+const { tool, currentCategory, isSecondary } = Astro.props;
+
+const categoryInfo = CATEGORIES.find((c) => c.id === currentCategory) || {
+  id: currentCategory,
+  name: currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1),
+  slug: currentCategory,
+  description: '',
+  icon: 'Code2',
+};
+
+// Canonical always points to primary category path
+const canonicalUrl = `https://sayandeepmajumdar.github.io/tools/${tool.category}/${tool.slug}/`;
+const currentPath = `/tools/${currentCategory}/${tool.slug}/`;
+const title = `${tool.name} — Free, 100% Client-Side Developer Tool | Toolzy`;
+const description = `${tool.description} Fast, secure, and privacy-first with zero server telemetry.`;
+const standaloneUrl = getStandaloneToolUrl(tool.slug);
+
+// Related tools in same category
+const relatedTools = TOOLS.filter(
+  (t) => (t.category === currentCategory || t.secondaryCategories?.includes(currentCategory as any)) && t.id !== tool.id
+).slice(0, 4);
+---
+
+<ToolsLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  currentPath={currentPath}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    {/* Breadcrumbs */}
+    <nav class="flex items-center gap-2 text-xs text-muted" aria-label="Breadcrumb">
+      <a href="/tools/" class="hover:text-ink transition-colors">Catalog</a>
+      <span class="text-line">/</span>
+      <a href={`/tools/${currentCategory}/`} class="hover:text-ink transition-colors">
+        {categoryInfo.name}
+      </a>
+      <span class="text-line">/</span>
+      <span class="text-ink font-semibold truncate max-w-xs">{tool.name}</span>
+    </nav>
+
+    {/* Tool Header Card */}
+    <div class="p-6 sm:p-8 rounded-3xl bg-surface border border-line shadow-xs transition-colors">
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div class="flex items-start gap-4">
+          <div class="w-13 h-13 rounded-2xl bg-accent-light flex items-center justify-center text-accent shrink-0 shadow-inner">
+            <DynamicIcon name={tool.icon} className="w-6 h-6" />
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <h1 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-ink tracking-tight">
+                {tool.name}
+              </h1>
+              {tool.localProcessing && (
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                  </svg>
+                  <span>100% Client-Side</span>
+                </span>
+              )}
+              {tool.badge && (
+                <span class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-surface-alt border border-line text-muted">
+                  {tool.badge}
+                </span>
+              )}
+              {tool.popular && (
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  ★ Popular
+                </span>
+              )}
+            </div>
+
+            <p class="text-xs sm:text-sm text-muted mt-2 leading-relaxed max-w-3xl">
+              {tool.description}
+            </p>
+
+            {/* Tags */}
+            {tool.tags && tool.tags.length > 0 && (
+              <div class="flex flex-wrap items-center gap-1.5 mt-3">
+                {tool.tags.map((tag) => (
+                  <span class="text-[11px] font-mono text-muted bg-surface-alt border border-line/60 px-2 py-0.5 rounded-md">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Standalone Link CTA */}
+        <div class="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <a
+            href={standaloneUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-alt hover:bg-surface border border-line text-ink hover:text-accent transition-all shadow-2xs"
+            title="Open zero-dependency standalone page"
+          >
+            <span>Standalone Window</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {/* Interactive Embedded Tool Island */}
+    <div class="w-full">
+      <ToolEmbed
+        client:load
+        toolId={tool.id}
+        slug={tool.slug}
+        title={tool.name}
+        category={tool.category}
+      />
+    </div>
+
+    {/* Related Tools Section */}
+    {relatedTools.length > 0 && (
+      <div class="mt-12 pt-8 border-t border-line/60">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-ink flex items-center gap-2">
+            <span>More in {categoryInfo.name}</span>
+            <span class="text-xs font-mono font-normal text-muted">
+              ({relatedTools.length})
+            </span>
+          </h3>
+          <a
+            href={`/tools/${currentCategory}/`}
+            class="text-xs font-semibold text-accent hover:underline"
+          >
+            View all {categoryInfo.name} tools →
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {relatedTools.map((rel) => (
+            <a
+              href={`/tools/${rel.category}/${rel.slug}/`}
+              class="group p-4 rounded-2xl bg-surface border border-line hover:border-accent/60 transition-all hover:shadow-xs flex flex-col justify-between"
+            >
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center text-accent group-hover:scale-105 transition-transform">
+                    <DynamicIcon name={rel.icon} className="w-4 h-4" />
+                  </div>
+                  <h4 class="text-sm font-bold text-ink group-hover:text-accent transition-colors truncate">
+                    {rel.name}
+                  </h4>
+                </div>
+                <p class="text-xs text-muted line-clamp-2 leading-relaxed">
+                  {rel.description}
+                </p>
+              </div>
+
+              <div class="mt-3 pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-muted font-mono">
+                <span>{rel.category}</span>
+                <span class="text-accent group-hover:translate-x-0.5 transition-transform">→</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Request a Tool Prompt */}
+    <div class="mt-8 p-6 rounded-3xl bg-surface border border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div>
+        <h4 class="text-sm font-bold text-ink">Need a customized utility or new feature?</h4>
+        <p class="text-xs text-muted mt-0.5">Let us know what developer tool or data formatter you would like us to build next.</p>
+      </div>
+      <a
+        href={`mailto:developerslab101@gmail.com?subject=Tool%20Enhancement%20-%20${encodeURIComponent(tool.name)}&body=Hi%20Toolzy%20Team%2C%0A%0AI%20have%20feedback%20or%20a%20feature%20request%20for%20${encodeURIComponent(tool.name)}%3A%0A%0A`}
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-accent text-white hover:bg-accent-hover transition-colors shrink-0 shadow-xs"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        <span>Request Tool or Feature</span>
+      </a>
+    </div>
+  </div>
+</ToolsLayout>
