@@ -1,0 +1,113 @@
+---
+import MathlifyLayout from '../../../layouts/MathlifyLayout.astro';
+import CalculatorIsland from '../../../components/mathlify/islands/CalculatorIsland';
+import { CALCULATORS } from '../../../data/mathlify/calculators';
+import type { CalculatorMeta } from '../../../types/mathlify';
+
+export async function getStaticPaths() {
+  return CALCULATORS.map((calculator) => ({
+    params: { slug: calculator.slug },
+    props: { calculator },
+  }));
+}
+
+interface Props {
+  calculator: CalculatorMeta;
+}
+
+const { calculator } = Astro.props;
+
+const canonicalUrl = `https://sayandeepmajumdar.github.io/mathlify/tools/${calculator.slug}.html`;
+
+// Structured Data: WebApplication + FAQPage
+const schemas: any[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    'name': calculator.title,
+    'url': canonicalUrl,
+    'applicationCategory': 'EducationalApplication',
+    'operatingSystem': 'All',
+    'browserRequirements': 'Requires JavaScript',
+    'offers': {
+      '@type': 'Offer',
+      'price': '0',
+      'priceCurrency': 'USD',
+    },
+    'description': calculator.description,
+  },
+];
+
+if (calculator.faqs && calculator.faqs.length > 0) {
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': calculator.faqs.map((f) => ({
+      '@type': 'Question',
+      'name': f.question,
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': f.answer,
+      },
+    })),
+  });
+}
+---
+
+<MathlifyLayout
+  title={calculator.title}
+  description={calculator.description}
+  keywords={calculator.keywords}
+  canonicalUrl={canonicalUrl}
+  jsonLd={schemas}
+>
+  <div class="container" style="max-width:960px;margin:0 auto;padding:2rem 1rem 4rem;">
+    <!-- Breadcrumb -->
+    <div class="page-header" style="margin-bottom:2rem;">
+      <nav class="page-header__breadcrumb" style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:var(--color-text-muted);margin-bottom:0.75rem;" aria-label="Breadcrumb">
+        <a href="/mathlify/" style="color:var(--color-accent);text-decoration:none;">Home</a>
+        <span>›</span>
+        <span>{calculator.name}</span>
+      </nav>
+      <h1 class="page-header__title" style="font-size:2.25rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:0.5rem;color:var(--color-text);">
+        {calculator.h1 || calculator.name}
+      </h1>
+      <p class="page-header__desc" style="font-size:1.05rem;color:var(--color-text-muted);line-height:1.6;margin:0;">
+        {calculator.pageDesc || calculator.description}
+      </p>
+    </div>
+
+    <!-- Calculator and Sidebar Grid -->
+    <div class="calc-layout" style="display:grid;grid-template-columns:1fr 300px;gap:2rem;align-items:start;">
+      <!-- Interactive Calculator Island -->
+      <div style="min-width:0;">
+        <CalculatorIsland client:load scriptName={calculator.scriptName} calcName={calculator.name} />
+      </div>
+
+      <!-- Informative Sidebar Widgets -->
+      <aside style="min-width:0;">
+        <Fragment set:html={calculator.sidebarHtml} />
+      </aside>
+    </div>
+
+    <!-- Editorial Math SEO Guide & Explanation -->
+    {calculator.guideHtml && (
+      <section
+        class="calc-seo-guide"
+        style="margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid var(--color-border);"
+      >
+        <Fragment set:html={calculator.guideHtml} />
+      </section>
+    )}
+
+    <!-- Navigation Footer Links -->
+    <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <a href="/mathlify/" class="btn btn--ghost" style="display:inline-flex;align-items:center;gap:0.5rem;">
+        ← Back to All Calculators
+      </a>
+      <a href="#top" class="btn btn--ghost" style="display:inline-flex;align-items:center;gap:0.5rem;" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">
+        ↑ Back to Top
+      </a>
+    </div>
+  </div>
+</MathlifyLayout>
