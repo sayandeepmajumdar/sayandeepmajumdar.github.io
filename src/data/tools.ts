@@ -1140,6 +1140,30 @@ export const TOOLS: Tool[] = [
     localProcessing: true,
     badge: 'Travel & Discovery',
   },
+  {
+    id: 'world-explorer',
+    name: 'WORLD EXPLORER — Interactive Geography & Atlas',
+    slug: 'world-explorer',
+    description: 'Learn the world one country at a time. Interactive SVG world map, national flag symbolism, 120+ audio phrases, capitals, country comparisons, and educational games.',
+    category: 'productivity',
+    secondaryCategories: ['developer'],
+    icon: 'Globe',
+    tags: [
+      'geography',
+      'world map',
+      'flags',
+      'languages',
+      'countries',
+      'capitals',
+      'atlas',
+      'quiz',
+      'world explorer',
+      'education'
+    ],
+    popular: true,
+    localProcessing: true,
+    badge: 'Interactive Atlas',
+  },
 ];
 
 export const TOOLS_BY_ID = new Map<string, Tool>(

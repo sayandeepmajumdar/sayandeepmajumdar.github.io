@@ -277,6 +277,12 @@ export default defineConfig({
     port: 3000,
     open: false,
     strictPort: false,
+    proxy: {
+      '/world-explorer': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',
