@@ -1,0 +1,115 @@
+import { PseudocodeLine } from '../engine/Step';
+
+export const ARRAY_PSEUDOCODE: Record<string, PseudocodeLine[]> = {
+  access: [
+    { lineNumber: 1, indent: 0, code: 'function accessElement(array, index):' },
+    { lineNumber: 2, indent: 1, code: 'if index < 0 or index >= array.length:', comment: 'Bounds check' },
+    { lineNumber: 3, indent: 2, code: 'throw OutOfBoundsError' },
+    { lineNumber: 4, indent: 1, code: 'memoryOffset = baseAddress + (index * elementSize)' },
+    { lineNumber: 5, indent: 1, code: 'return array[index]', comment: 'O(1) direct memory access' },
+  ],
+  insert: [
+    { lineNumber: 1, indent: 0, code: 'function insertAt(array, index, value):' },
+    { lineNumber: 2, indent: 1, code: 'for i = array.length down to index + 1:', comment: 'Shift right' },
+    { lineNumber: 3, indent: 2, code: 'array[i] = array[i - 1]' },
+    { lineNumber: 4, indent: 1, code: 'array[index] = value', comment: 'Insert new value' },
+    { lineNumber: 5, indent: 1, code: 'return array' },
+  ],
+  delete: [
+    { lineNumber: 1, indent: 0, code: 'function deleteAt(array, index):' },
+    { lineNumber: 2, indent: 1, code: 'removedValue = array[index]', comment: 'Save target' },
+    { lineNumber: 3, indent: 1, code: 'for i = index to array.length - 2:', comment: 'Shift left' },
+    { lineNumber: 4, indent: 2, code: 'array[i] = array[i + 1]' },
+    { lineNumber: 5, indent: 1, code: 'array.pop()', comment: 'Truncate end element' },
+    { lineNumber: 6, indent: 1, code: 'return removedValue' },
+  ],
+  update: [
+    { lineNumber: 1, indent: 0, code: 'function updateAt(array, index, newValue):' },
+    { lineNumber: 2, indent: 1, code: 'oldValue = array[index]' },
+    { lineNumber: 3, indent: 1, code: 'array[index] = newValue', comment: 'Direct O(1) write' },
+    { lineNumber: 4, indent: 1, code: 'return array' },
+  ],
+  swap: [
+    { lineNumber: 1, indent: 0, code: 'function swapElements(array, i, j):' },
+    { lineNumber: 2, indent: 1, code: 'temp = array[i]', comment: 'Store A[i] in temp' },
+    { lineNumber: 3, indent: 1, code: 'array[i] = array[j]', comment: 'Write A[j] into A[i]' },
+    { lineNumber: 4, indent: 1, code: 'array[j] = temp', comment: 'Write temp into A[j]' },
+    { lineNumber: 5, indent: 1, code: 'return array' },
+  ],
+  reverse: [
+    { lineNumber: 1, indent: 0, code: 'function reverseArray(array):' },
+    { lineNumber: 2, indent: 1, code: 'left = 0, right = array.length - 1' },
+    { lineNumber: 3, indent: 1, code: 'while left < right:' },
+    { lineNumber: 4, indent: 2, code: 'swap(array[left], array[right])', comment: 'Pairwise exchange' },
+    { lineNumber: 5, indent: 2, code: 'left = left + 1' },
+    { lineNumber: 6, indent: 2, code: 'right = right - 1' },
+    { lineNumber: 7, indent: 1, code: 'return array' },
+  ],
+  rotate: [
+    { lineNumber: 1, indent: 0, code: 'function rotateRight(array, k):' },
+    { lineNumber: 2, indent: 1, code: 'k = k % array.length' },
+    { lineNumber: 3, indent: 1, code: 'reverse(array, 0, array.length - 1)' },
+    { lineNumber: 4, indent: 1, code: 'reverse(array, 0, k - 1)' },
+    { lineNumber: 5, indent: 1, code: 'reverse(array, k, array.length - 1)' },
+    { lineNumber: 6, indent: 1, code: 'return array' },
+  ],
+};
+
+export const SEARCHING_PSEUDOCODE: Record<string, PseudocodeLine[]> = {
+  linearSearch: [
+    { lineNumber: 1, indent: 0, code: 'function linearSearch(array, target):' },
+    { lineNumber: 2, indent: 1, code: 'for i = 0 to array.length - 1:' },
+    { lineNumber: 3, indent: 2, code: 'if array[i] == target:', comment: 'Compare current element' },
+    { lineNumber: 4, indent: 3, code: 'return i', comment: 'Target found at index i' },
+    { lineNumber: 5, indent: 1, code: 'return -1', comment: 'Target not found in array' },
+  ],
+  binarySearch: [
+    { lineNumber: 1, indent: 0, code: 'function binarySearch(sortedArray, target):' },
+    { lineNumber: 2, indent: 1, code: 'low = 0, high = sortedArray.length - 1' },
+    { lineNumber: 3, indent: 1, code: 'while low <= high:' },
+    { lineNumber: 4, indent: 2, code: 'mid = Math.floor((low + high) / 2)' },
+    { lineNumber: 5, indent: 2, code: 'if sortedArray[mid] == target:' },
+    { lineNumber: 6, indent: 3, code: 'return mid', comment: 'Found target at mid!' },
+    { lineNumber: 7, indent: 2, code: 'else if sortedArray[mid] < target:' },
+    { lineNumber: 8, indent: 3, code: 'low = mid + 1', comment: 'Target is in right half' },
+    { lineNumber: 9, indent: 2, code: 'else:' },
+    { lineNumber: 10, indent: 3, code: 'high = mid - 1', comment: 'Target is in left half' },
+    { lineNumber: 11, indent: 1, code: 'return -1', comment: 'Target not found' },
+  ],
+};
+
+export const SORTING_PSEUDOCODE: Record<string, PseudocodeLine[]> = {
+  bubbleSort: [
+    { lineNumber: 1, indent: 0, code: 'function bubbleSort(array):' },
+    { lineNumber: 2, indent: 1, code: 'n = array.length' },
+    { lineNumber: 3, indent: 1, code: 'for i = 0 to n - 1:' },
+    { lineNumber: 4, indent: 2, code: 'for j = 0 to n - i - 2:' },
+    { lineNumber: 5, indent: 3, code: 'if array[j] > array[j + 1]:', comment: 'Compare adjacent elements' },
+    { lineNumber: 6, indent: 4, code: 'swap(array[j], array[j + 1])', comment: 'Larger value bubbles right' },
+    { lineNumber: 7, indent: 1, code: 'return array' },
+  ],
+  selectionSort: [
+    { lineNumber: 1, indent: 0, code: 'function selectionSort(array):' },
+    { lineNumber: 2, indent: 1, code: 'n = array.length' },
+    { lineNumber: 3, indent: 1, code: 'for i = 0 to n - 2:' },
+    { lineNumber: 4, indent: 2, code: 'minIdx = i', comment: 'Assume first unsorted is min' },
+    { lineNumber: 5, indent: 2, code: 'for j = i + 1 to n - 1:' },
+    { lineNumber: 6, indent: 3, code: 'if array[j] < array[minIdx]:' },
+    { lineNumber: 7, indent: 4, code: 'minIdx = j', comment: 'New minimum found' },
+    { lineNumber: 8, indent: 2, code: 'if minIdx != i:' },
+    { lineNumber: 9, indent: 3, code: 'swap(array[i], array[minIdx])', comment: 'Place min at index i' },
+    { lineNumber: 10, indent: 1, code: 'return array' },
+  ],
+  insertionSort: [
+    { lineNumber: 1, indent: 0, code: 'function insertionSort(array):' },
+    { lineNumber: 2, indent: 1, code: 'n = array.length' },
+    { lineNumber: 3, indent: 1, code: 'for i = 1 to n - 1:' },
+    { lineNumber: 4, indent: 2, code: 'key = array[i]', comment: 'Extract element to insert' },
+    { lineNumber: 5, indent: 2, code: 'j = i - 1' },
+    { lineNumber: 6, indent: 2, code: 'while j >= 0 and array[j] > key:' },
+    { lineNumber: 7, indent: 3, code: 'array[j + 1] = array[j]', comment: 'Shift element rightward' },
+    { lineNumber: 8, indent: 3, code: 'j = j - 1' },
+    { lineNumber: 9, indent: 2, code: 'array[j + 1] = key', comment: 'Insert key into sorted slot' },
+    { lineNumber: 10, indent: 1, code: 'return array' },
+  ],
+};

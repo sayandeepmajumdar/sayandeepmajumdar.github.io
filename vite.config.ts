@@ -55,6 +55,16 @@ export default defineConfig({
             res.end();
             return;
           }
+          if (url === '/kernel-lab' || url === '/lab') {
+            res.writeHead(301, { Location: '/kernel-lab/' });
+            res.end();
+            return;
+          }
+          if (url.startsWith('/kernel-lab/') && !url.includes('.')) {
+            req.url = '/kernel-lab/index.html';
+            next();
+            return;
+          }
           if (url.startsWith('/rasoi/') && !url.includes('.')) {
             req.url = '/rasoi/index.html';
             next();
@@ -114,6 +124,16 @@ export default defineConfig({
           if (url === '/vigyan' || url === '/science') {
             res.writeHead(301, { Location: '/vigyan/' });
             res.end();
+            return;
+          }
+          if (url === '/kernel-lab' || url === '/lab') {
+            res.writeHead(301, { Location: '/kernel-lab/' });
+            res.end();
+            return;
+          }
+          if (url.startsWith('/kernel-lab/') && !url.includes('.')) {
+            req.url = '/kernel-lab/index.html';
+            next();
             return;
           }
           if (url.startsWith('/rasoi/') && !url.includes('.')) {
@@ -263,6 +283,29 @@ export default defineConfig({
             return result;
           }
 
+          if (ctx.filename.includes('kernel-lab/index.html')) {
+            let result = html;
+            result = result.replace(
+              /\s*<script\s+type="module"[^>]*src="\/assets\/kernel-lab\/[^"]*"[^>]*><\/script>/g,
+              ''
+            );
+            result = result.replace(
+              /\s*<link\s+rel="modulepreload"[^>]*href="\/assets\/[^"]*"[^>]*>/g,
+              ''
+            );
+            result = result.replace(
+              /\s*<link\s+rel="stylesheet"[^>]*href="\/assets\/kernel-lab\/[^"]*"[^>]*>/g,
+              ''
+            );
+            if (!result.includes('/src/kernel-lab/main.tsx')) {
+              result = result.replace(
+                '</head>',
+                '  <script type="module" src="/src/kernel-lab/main.tsx"></script>\n</head>'
+              );
+            }
+            return result;
+          }
+
           return html;
         },
       },
@@ -296,9 +339,13 @@ export default defineConfig({
         yatra: path.resolve(__dirname, 'yatra/index.html'),
         itihaas: path.resolve(__dirname, 'itihaas/index.html'),
         vigyan: path.resolve(__dirname, 'vigyan/index.html'),
+        kernelLab: path.resolve(__dirname, 'kernel-lab/index.html'),
       },
       output: {
         entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === 'kernelLab') {
+            return 'assets/kernel-lab/kernel-lab-[hash].js';
+          }
           if (chunkInfo.name === 'rasoi') {
             return 'assets/rasoi/rasoi-[hash].js';
           }
@@ -314,6 +361,9 @@ export default defineConfig({
           return 'assets/toolbox/toolbox-[hash].js';
         },
         chunkFileNames: (chunkInfo) => {
+          if (chunkInfo.name.includes('kernelLab') || chunkInfo.name.includes('kernel-lab')) {
+            return 'assets/kernel-lab/[name]-[hash].js';
+          }
           if (chunkInfo.name.includes('rasoi')) {
             return 'assets/rasoi/[name]-[hash].js';
           }
@@ -330,6 +380,9 @@ export default defineConfig({
         },
         assetFileNames: (assetInfo) => {
           const name = assetInfo.name || '';
+          if (name.includes('kernel-lab') || name.includes('kernelLab')) {
+            return 'assets/kernel-lab/[name]-[hash].[ext]';
+          }
           if (name.includes('rasoi')) {
             return 'assets/rasoi/[name]-[hash].[ext]';
           }
