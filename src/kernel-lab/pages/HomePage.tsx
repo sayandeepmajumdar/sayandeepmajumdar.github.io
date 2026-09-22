@@ -105,12 +105,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     },
     {
       id: 'linked-list',
-      title: 'Linked Lists',
-      badge: 'Coming Soon',
+      title: 'Linked List Lab',
+      badge: 'V1 Interactive',
       category: 'Data Structures',
-      description: 'Singly and doubly linked nodes with pointer redirection visualizer.',
-      icon: <GitFork className="w-6 h-6 text-slate-500" />,
-      active: false,
+      description: 'Dynamic pointer rewiring, node references, heap memory addresses, and 3-pointer reversal.',
+      icon: <GitFork className="w-6 h-6 text-emerald-400" />,
+      active: true,
     },
     {
       id: 'trees',

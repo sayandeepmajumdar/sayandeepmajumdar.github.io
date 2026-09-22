@@ -5,6 +5,7 @@ import { CommandPalette, CommandItem } from './components/ui/CommandPalette';
 import { KeyboardShortcutsModal } from './components/ui/KeyboardShortcutsModal';
 import { HomePage } from './pages/HomePage';
 import { ArrayLabPage } from './pages/ArrayLabPage';
+import { LinkedListLabPage } from './pages/LinkedListLabPage';
 import { SearchingLab } from './features/searching/components/SearchingLab';
 import { SortingLab } from './features/sorting/components/SortingLab';
 import { SortingComparison } from './features/sorting/components/SortingComparison';
@@ -69,6 +70,13 @@ export const App: React.FC = () => {
       category: 'Arrays',
       description: 'Access, insert, delete, swap, update, reverse, and rotate in simulated memory.',
       onSelect: () => handleSelectTab('arrays'),
+    },
+    {
+      id: 'linked-list',
+      title: 'Linked List Laboratory',
+      category: 'Data Structures',
+      description: 'Dynamic pointer rewiring, prepend, append, delete, reverse, and RAM memory view.',
+      onSelect: () => handleSelectTab('linked-list'),
     },
     {
       id: 'searching-linear',
@@ -175,15 +183,7 @@ export const App: React.FC = () => {
           {currentTab === 'complexity' && <ComplexityLab />}
           {currentTab === 'challenges' && <ChallengeLab />}
 
-          {/* Coming Soon Modules */}
-          {currentTab === 'linked-list' && (
-            <ComingSoonPage
-              moduleName="Linked Lists"
-              category="Data Structures"
-              description="Interactive node pointer rewiring, head/tail manipulation, and cycle detection."
-              onBackToArrays={() => handleSelectTab('arrays')}
-            />
-          )}
+          {currentTab === 'linked-list' && <LinkedListLabPage />}
           {currentTab === 'stack' && (
             <ComingSoonPage
               moduleName="Stack (LIFO)"

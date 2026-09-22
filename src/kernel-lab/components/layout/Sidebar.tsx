@@ -56,9 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {
           id: 'linked-list',
           label: 'Linked List',
-          icon: <GitFork className="w-4 h-4 text-slate-500" />,
-          active: false,
-          badge: 'Soon',
+          icon: <GitFork className="w-4 h-4 text-emerald-400" />,
+          active: true,
+          badge: 'V1',
         },
         {
           id: 'stack',
