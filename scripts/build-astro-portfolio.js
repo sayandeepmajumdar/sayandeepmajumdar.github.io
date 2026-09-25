@@ -18,11 +18,19 @@ const destAssetsAstro = path.join(rootDir, 'assets', 'astro');
 // 1. Copy generated root index.html
 fs.copyFileSync(path.join(astroDist, 'index.html'), destIndex);
 
-// 2. Copy generated astro assets
+// 2. Copy generated lab hub page
+const destLab = path.join(rootDir, 'lab');
+const srcLab = path.join(astroDist, 'lab');
+if (fs.existsSync(srcLab)) {
+  fs.mkdirSync(destLab, { recursive: true });
+  fs.cpSync(srcLab, destLab, { recursive: true });
+}
+
+// 3. Copy generated astro assets
 fs.mkdirSync(destAssetsAstro, { recursive: true });
 fs.cpSync(path.join(astroDist, 'assets', 'astro'), destAssetsAstro, { recursive: true });
 
-// 3. Ensure .nojekyll exists
+// 4. Ensure .nojekyll exists
 fs.writeFileSync(path.join(rootDir, '.nojekyll'), '', 'utf8');
 
-console.log('✓ Successfully deployed Astro Portfolio to root index.html and assets/astro/');
+console.log('✓ Successfully deployed Astro Portfolio to root index.html, lab/, and assets/astro/');

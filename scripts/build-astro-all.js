@@ -36,6 +36,10 @@ function deployDir(srcRel, destRel) {
 fs.copyFileSync(path.join(astroDist, 'index.html'), path.join(rootDir, 'index.html'));
 console.log('  ✓ Root portfolio deployed to index.html');
 
+// Lab
+deployDir('lab', 'lab');
+console.log('  ✓ Lab hub deployed to lab/');
+
 // Itihaas
 deployDir('itihaas', 'itihaas');
 console.log('  ✓ Itihaas deployed to itihaas/');

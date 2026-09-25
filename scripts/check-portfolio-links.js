@@ -65,7 +65,7 @@ for (const asset of assetMatches) {
 }
 
 // 4. Extract cross-section internal routes
-const routeMatches = [...html.matchAll(/href="(\/(?:tools|mathlify|games|rasoi|itihaas|vigyan|yatra|resume|sitemap\.xml)\/?)"/g)].map(m => m[1]);
+const routeMatches = [...html.matchAll(/href="(\/(?:lab|tools|mathlify|games|rasoi|itihaas|vigyan|yatra|resume|sitemap\.xml)\/?)"/g)].map(m => m[1]);
 let routeErrors = 0;
 for (const route of routeMatches) {
   const localRoutePath = path.join(rootDir, route.endsWith('/') ? `${route}index.html` : route);
